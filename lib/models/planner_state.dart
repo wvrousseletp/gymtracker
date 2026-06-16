@@ -1,0 +1,196 @@
+import 'exercise.dart';
+import 'routine.dart';
+import 'workout_log.dart';
+import 'medidas.dart';
+import 'diet.dart';
+
+class SettingsState {
+  final bool sound;
+  final bool vibration;
+  final int prepSeconds;
+
+  SettingsState({
+    required this.sound,
+    required this.vibration,
+    required this.prepSeconds,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'sound': sound,
+    'vibration': vibration,
+    'prepSeconds': prepSeconds,
+  };
+
+  factory SettingsState.fromJson(Map<String, dynamic> json) => SettingsState(
+    sound: json['sound'] ?? true,
+    vibration: json['vibration'] ?? true,
+    prepSeconds: (json['prepSeconds'] as num?)?.toInt() ?? 5,
+  );
+}
+
+class PersonalRecord {
+  final double weight;
+  final int reps;
+  final String date;
+  final String routineName;
+
+  PersonalRecord({
+    required this.weight,
+    required this.reps,
+    required this.date,
+    required this.routineName,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'weight': weight,
+    'reps': reps,
+    'date': date,
+    'routineName': routineName,
+  };
+
+  factory PersonalRecord.fromJson(Map<String, dynamic> json) => PersonalRecord(
+    weight: (json['weight'] as num?)?.toDouble() ?? 0.0,
+    reps: (json['reps'] as num?)?.toInt() ?? 0,
+    date: json['date'] ?? '',
+    routineName: json['routineName'] ?? '',
+  );
+}
+
+class ActiveWorkoutState {
+  final String name;
+  final int startTime; // Epoch milissegundos
+  final List<ActiveExercise> exercises;
+  final int currentExerciseIndex;
+  final int elapsedSeconds;
+  final WorkoutRecovery recovery;
+  final bool isWarmup;
+  final int warmupDurationSeconds;
+  final bool paused;
+
+  ActiveWorkoutState({
+    required this.name,
+    required this.startTime,
+    required this.exercises,
+    required this.currentExerciseIndex,
+    required this.elapsedSeconds,
+    required this.recovery,
+    required this.isWarmup,
+    required this.warmupDurationSeconds,
+    this.paused = false,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'startTime': startTime,
+    'exercises': exercises.map((e) => e.toJson()).toList(),
+    'currentExerciseIndex': currentExerciseIndex,
+    'elapsedSeconds': elapsedSeconds,
+    'recovery': recovery.toJson(),
+    'isWarmup': isWarmup,
+    'warmupDurationSeconds': warmupDurationSeconds,
+    'paused': paused,
+  };
+
+  factory ActiveWorkoutState.fromJson(Map<String, dynamic> json) => ActiveWorkoutState(
+    name: json['name'] ?? '',
+    startTime: (json['startTime'] as num?)?.toInt() ?? DateTime.now().millisecondsSinceEpoch,
+    exercises: json['exercises'] != null
+        ? (json['exercises'] as List).map((e) => ActiveExercise.fromJson(e)).toList()
+        : [],
+    currentExerciseIndex: (json['currentExerciseIndex'] as num?)?.toInt() ?? 0,
+    elapsedSeconds: (json['elapsedSeconds'] as num?)?.toInt() ?? 0,
+    recovery: json['recovery'] != null
+        ? WorkoutRecovery.fromJson(json['recovery'])
+        : WorkoutRecovery(sleepOk: 'ok', pain: [], warmUpDone: false),
+    isWarmup: json['isWarmup'] ?? false,
+    warmupDurationSeconds: (json['warmupDurationSeconds'] as num?)?.toInt() ?? 0,
+    paused: json['paused'] ?? false,
+  );
+}
+
+class PlannerState {
+  final List<LibraryExercise> library;
+  final List<Routine> routines;
+  final Map<String, List<String>> planner; // Dia -> lista de strings de ID/Prefixo
+  final List<WorkoutLog> history;
+  final Map<String, PersonalRecord> prs; // exerciseId -> record
+  final List<BodyMeasurement> medidas;
+  final SettingsState settings;
+  final ActiveWorkoutState? activeWorkout;
+  final DietState diet;
+
+  PlannerState({
+    required this.library,
+    required this.routines,
+    required this.planner,
+    required this.history,
+    required this.prs,
+    required this.medidas,
+    required this.settings,
+    this.activeWorkout,
+    required this.diet,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'library': library.map((e) => e.toJson()).toList(),
+    'routines': routines.map((r) => r.toJson()).toList(),
+    'planner': planner,
+    'history': history.map((h) => h.toJson()).toList(),
+    'prs': prs.map((k, v) => MapEntry(k, v.toJson())),
+    'medidas': medidas.map((m) => m.toJson()).toList(),
+    'settings': settings.toJson(),
+    'activeWorkout': activeWorkout?.toJson(),
+    'diet': diet.toJson(),
+  };
+
+  factory PlannerState.fromJson(Map<String, dynamic> json) {
+    Map<String, List<String>> plannerMap = {};
+    if (json['planner'] != null) {
+      (json['planner'] as Map).forEach((k, v) {
+        plannerMap[k.toString()] = List<String>.from(v);
+      });
+    }
+
+    Map<String, PersonalRecord> prsMap = {};
+    if (json['prs'] != null) {
+      (json['prs'] as Map).forEach((k, v) {
+        prsMap[k.toString()] = PersonalRecord.fromJson(Map<String, dynamic>.from(v));
+      });
+    }
+
+    return PlannerState(
+      library: json['library'] != null
+          ? (json['library'] as List).map((e) => LibraryExercise.fromJson(e)).toList()
+          : [],
+      routines: json['routines'] != null
+          ? (json['routines'] as List).map((r) => Routine.fromJson(r)).toList()
+          : [],
+      planner: plannerMap,
+      history: json['history'] != null
+          ? (json['history'] as List).map((h) => WorkoutLog.fromJson(h)).toList()
+          : [],
+      prs: prsMap,
+      medidas: json['medidas'] != null
+          ? (json['medidas'] as List).map((m) => BodyMeasurement.fromJson(m)).toList()
+          : [],
+      settings: json['settings'] != null
+          ? SettingsState.fromJson(json['settings'])
+          : SettingsState(sound: true, vibration: true, prepSeconds: 5),
+      activeWorkout: json['activeWorkout'] != null
+          ? ActiveWorkoutState.fromJson(json['activeWorkout'])
+          : null,
+      diet: json['diet'] != null
+          ? DietState.fromJson(json['diet'])
+          : DietState(
+              caloriesGoal: 2000,
+              proteinGoal: 150.0,
+              carbsGoal: 200.0,
+              fatGoal: 70.0,
+              waterGoalMl: 2000,
+              meals: [],
+              waterIntakeMl: 0,
+              fasting: FastingState(history: []),
+            ),
+    );
+  }
+}

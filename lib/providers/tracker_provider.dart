@@ -1,0 +1,1138 @@
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/profile.dart';
+import '../models/exercise.dart';
+import '../models/routine.dart';
+import '../models/workout_log.dart';
+import '../models/medidas.dart';
+import '../models/diet.dart';
+import '../models/planner_state.dart';
+import '../services/watch_service.dart';
+
+class TrackerProvider extends ChangeNotifier {
+  List<Profile> _profiles = [];
+  String _currentUserId = 'vicente';
+  PlannerState? _state;
+  bool _isLoading = true;
+
+  List<Profile> get profiles => _profiles;
+  String get currentUserId => _currentUserId;
+  PlannerState? get state => _state;
+  bool get isLoading => _isLoading;
+
+  Profile get currentProfile => _profiles.firstWhere(
+        (p) => p.id == _currentUserId,
+        orElse: () => Profile(
+          id: 'vicente',
+          name: 'Vicente',
+          avatar: '🏋️',
+          colorAccent: 'Branco',
+          password: '',
+          hasPassword: false,
+        ),
+      );
+
+  TrackerProvider() {
+    _init();
+  }
+
+  Future<void> _init() async {
+    await loadProfiles();
+    await loadCurrentState();
+    WatchService.instance.init(this);
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  // --- PROFILE MANAGEMENT ---
+  Future<void> loadProfiles() async {
+    final prefs = await SharedPreferences.getInstance();
+    final profilesRaw = prefs.getString('los_mooscles_profiles_config');
+    
+    if (profilesRaw != null) {
+      try {
+        final parsed = json.decode(profilesRaw);
+        if (parsed['profiles'] != null) {
+          _profiles = (parsed['profiles'] as List)
+              .map((p) => Profile.fromJson(p))
+              .toList();
+        }
+        _currentUserId = parsed['currentUserId'] ?? 'vicente';
+      } catch (e) {
+        _profiles = _getDefaultProfiles();
+        _currentUserId = 'vicente';
+      }
+    } else {
+      _profiles = _getDefaultProfiles();
+      _currentUserId = 'vicente';
+    }
+    
+    if (_profiles.isEmpty) {
+      _profiles = _getDefaultProfiles();
+    }
+  }
+
+  Future<void> saveProfilesConfig() async {
+    final prefs = await SharedPreferences.getInstance();
+    final config = {
+      'profiles': _profiles.map((p) => p.toJson()).toList(),
+      'currentUserId': _currentUserId,
+    };
+    await prefs.setString('los_mooscles_profiles_config', json.encode(config));
+  }
+
+  Future<bool> switchProfile(String profileId, String password) async {
+    final target = _profiles.firstWhere((p) => p.id == profileId);
+    if (target.hasPassword && target.password != password) {
+      return false; // Senha incorreta
+    }
+    _currentUserId = profileId;
+    await saveProfilesConfig();
+    _isLoading = true;
+    notifyListeners();
+    await loadCurrentState();
+    _isLoading = false;
+    notifyListeners();
+    return true;
+  }
+
+  Future<void> createProfile(String name, String avatar, String color, String password) async {
+    final id = name.toLowerCase().replaceAll(' ', '_') + '_' + DateTime.now().millisecondsSinceEpoch.toString();
+    final newProfile = Profile(
+      id: id,
+      name: name,
+      avatar: avatar,
+      colorAccent: color,
+      password: password,
+      hasPassword: password.isNotEmpty,
+    );
+    _profiles.add(newProfile);
+    _currentUserId = id;
+    await saveProfilesConfig();
+    await loadCurrentState(); // Carrega o estado padrão para o novo perfil
+    notifyListeners();
+  }
+
+  Future<void> updateProfile(String id, String name, String avatar, String color, String password) async {
+    final idx = _profiles.indexWhere((p) => p.id == id);
+    if (idx != -1) {
+      _profiles[idx] = Profile(
+        id: id,
+        name: name,
+        avatar: avatar,
+        colorAccent: color,
+        password: password,
+        hasPassword: password.isNotEmpty,
+      );
+      await saveProfilesConfig();
+      notifyListeners();
+    }
+  }
+
+  Future<void> deleteProfile(String id) async {
+    if (_profiles.length <= 1 || _currentUserId == id) return;
+    _profiles.removeWhere((p) => p.id == id);
+    await saveProfilesConfig();
+    
+    // Deleta do Firebase se necessário
+    try {
+      FirebaseFirestore.instance
+          .collection('users')
+          .doc(id)
+          .delete();
+    } catch (e) {
+      // Ignora erro se estiver offline ou sem Firebase
+    }
+    notifyListeners();
+  }
+
+  // --- STATE PERSISTENCE (SHAPED STATE) ---
+  Future<void> loadCurrentState() async {
+    final prefs = await SharedPreferences.getInstance();
+    final stateRaw = prefs.getString('shapeup_tracker_state_$_currentUserId');
+    
+    if (stateRaw != null) {
+      try {
+        _state = PlannerState.fromJson(json.decode(stateRaw));
+      } catch (e) {
+        _state = _getDefaultState();
+      }
+    } else {
+      _state = _getDefaultState();
+    }
+    
+    // Tenta sincronizar com o Firebase
+    syncStateWithFirebase();
+  }
+
+  Future<void> saveState() async {
+    if (_state == null) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      'shapeup_tracker_state_$_currentUserId', 
+      json.encode(_state!.toJson())
+    );
+    
+    // Sincroniza com o Apple Watch via Bluetooth
+    WatchService.instance.sendRoutines(_state!.routines);
+    if (_state!.activeWorkout != null) {
+      WatchService.instance.sendActiveWorkout(_state!.activeWorkout!);
+    } else {
+      WatchService.instance.sendActiveWorkoutCleared();
+    }
+    
+    // Sincroniza em segundo plano
+    syncStateWithFirebase();
+  }
+
+  // --- FIREBASE SYNC ---
+  Future<void> syncStateWithFirebase() async {
+    if (_state == null) return;
+    
+    try {
+      final docRef = FirebaseFirestore.instance.collection('users').doc(_currentUserId);
+      final docSnap = await docRef.get();
+      
+      if (docSnap.exists) {
+        final data = docSnap.data();
+        if (data != null && data['jsonState'] != null) {
+          final remoteState = PlannerState.fromJson(json.decode(data['jsonState']));
+          
+          // Mantenha o mais recente. Como não temos um timestamp, 
+          // usaremos o tamanho da lista de histórico como um indicador simples de progresso,
+          // ou simplesmente atualizaremos o Firebase se o local tiver mais itens.
+          if (_state!.history.length >= remoteState.history.length) {
+            await docRef.set({
+              'jsonState': json.encode(_state!.toJson()),
+              'updatedAt': FieldValue.serverTimestamp(),
+            });
+          } else {
+            _state = remoteState;
+            notifyListeners();
+            // Salva localmente
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString(
+              'shapeup_tracker_state_$_currentUserId', 
+              json.encode(_state!.toJson())
+            );
+          }
+        }
+      } else {
+        // Envia dados locais se não houver dados remotos
+        await docRef.set({
+          'jsonState': json.encode(_state!.toJson()),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+    } catch (e) {
+      // Ignora falhas de conexão de rede ou Firebase não configurado
+      debugPrint('[Firebase] Erro de sincronização: $e');
+    }
+  }
+
+  // --- WORKOUT OPERATIONS ---
+  void startWorkout(Routine routine, WorkoutRecovery recovery, bool isWarmup) {
+    if (_state == null) return;
+
+    final workoutExercises = routine.exercises.map((ex) {
+      final ref = _state!.library.firstWhere(
+        (l) => l.id == ex.exerciseId,
+        orElse: () => LibraryExercise(
+          id: ex.exerciseId,
+          name: 'Exercício',
+          muscle: 'Geral',
+          measurementType: 'reps',
+        ),
+      );
+
+      return ActiveExercise(
+        id: ex.id,
+        name: ref.name,
+        muscle: ref.muscle,
+        executionType: ref.executionType,
+        measurementType: ref.measurementType,
+        sets: ex.sets,
+        reps: ex.reps,
+        rest: ex.rest,
+        weight: ex.weight,
+        setsState: List<bool>.filled(ex.sets, false),
+        performedCardios: List<PerformedCardio?>.filled(ex.sets, null),
+        failureReport: List<bool>.filled(ex.sets, false),
+      );
+    }).toList();
+
+    final activeWorkout = ActiveWorkoutState(
+      name: routine.name,
+      startTime: DateTime.now().millisecondsSinceEpoch,
+      exercises: workoutExercises,
+      currentExerciseIndex: 0,
+      elapsedSeconds: 0,
+      recovery: recovery,
+      isWarmup: isWarmup,
+      warmupDurationSeconds: 0,
+    );
+
+    _state = PlannerState(
+      library: _state!.library,
+      routines: _state!.routines,
+      planner: _state!.planner,
+      history: _state!.history,
+      prs: _state!.prs,
+      medidas: _state!.medidas,
+      settings: _state!.settings,
+      activeWorkout: activeWorkout,
+      diet: _state!.diet,
+    );
+
+    saveState();
+    notifyListeners();
+  }
+
+  void completeSet(int exIndex, int setIndex, bool isDone, {double? distance, int? duration, bool isFailure = false}) {
+    if (_state == null || _state!.activeWorkout == null) return;
+
+    final active = _state!.activeWorkout!;
+    final exercises = List<ActiveExercise>.from(active.exercises);
+    final ex = exercises[exIndex];
+
+    final newSetsState = List<bool>.from(ex.setsState);
+    newSetsState[setIndex] = isDone;
+
+    final newCardios = List<PerformedCardio?>.from(ex.performedCardios);
+    if (distance != null && duration != null) {
+      newCardios[setIndex] = PerformedCardio(distanceKm: distance, durationSeconds: duration);
+    }
+
+    final newFailure = List<bool>.from(ex.failureReport);
+    newFailure[setIndex] = isFailure;
+
+    exercises[exIndex] = ActiveExercise(
+      id: ex.id,
+      name: ex.name,
+      muscle: ex.muscle,
+      executionType: ex.executionType,
+      measurementType: ex.measurementType,
+      sets: ex.sets,
+      reps: ex.reps,
+      rest: ex.rest,
+      weight: ex.weight,
+      setsState: newSetsState,
+      performedCardios: newCardios,
+      failureReport: newFailure,
+    );
+
+    final updatedWorkout = ActiveWorkoutState(
+      name: active.name,
+      startTime: active.startTime,
+      exercises: exercises,
+      currentExerciseIndex: active.currentExerciseIndex,
+      elapsedSeconds: active.elapsedSeconds,
+      recovery: active.recovery,
+      isWarmup: active.isWarmup,
+      warmupDurationSeconds: active.warmupDurationSeconds,
+      paused: active.paused,
+    );
+
+    _state = PlannerState(
+      library: _state!.library,
+      routines: _state!.routines,
+      planner: _state!.planner,
+      history: _state!.history,
+      prs: _state!.prs,
+      medidas: _state!.medidas,
+      settings: _state!.settings,
+      activeWorkout: updatedWorkout,
+      diet: _state!.diet,
+    );
+
+    saveState();
+    notifyListeners();
+  }
+
+  void updateWorkoutTimer(int seconds, {bool isWarmupTimer = false}) {
+    if (_state == null || _state!.activeWorkout == null) return;
+    final active = _state!.activeWorkout!;
+
+    final updatedWorkout = ActiveWorkoutState(
+      name: active.name,
+      startTime: active.startTime,
+      exercises: active.exercises,
+      currentExerciseIndex: active.currentExerciseIndex,
+      elapsedSeconds: isWarmupTimer ? active.elapsedSeconds : seconds,
+      recovery: active.recovery,
+      isWarmup: active.isWarmup,
+      warmupDurationSeconds: isWarmupTimer ? seconds : active.warmupDurationSeconds,
+      paused: active.paused,
+    );
+
+    _state = PlannerState(
+      library: _state!.library,
+      routines: _state!.routines,
+      planner: _state!.planner,
+      history: _state!.history,
+      prs: _state!.prs,
+      medidas: _state!.medidas,
+      settings: _state!.settings,
+      activeWorkout: updatedWorkout,
+      diet: _state!.diet,
+    );
+    notifyListeners();
+  }
+
+  void setCurrentExerciseIndex(int index) {
+    if (_state == null || _state!.activeWorkout == null) return;
+    final active = _state!.activeWorkout!;
+
+    final updatedWorkout = ActiveWorkoutState(
+      name: active.name,
+      startTime: active.startTime,
+      exercises: active.exercises,
+      currentExerciseIndex: index,
+      elapsedSeconds: active.elapsedSeconds,
+      recovery: active.recovery,
+      isWarmup: active.isWarmup,
+      warmupDurationSeconds: active.warmupDurationSeconds,
+      paused: active.paused,
+    );
+
+    _state = PlannerState(
+      library: _state!.library,
+      routines: _state!.routines,
+      planner: _state!.planner,
+      history: _state!.history,
+      prs: _state!.prs,
+      medidas: _state!.medidas,
+      settings: _state!.settings,
+      activeWorkout: updatedWorkout,
+      diet: _state!.diet,
+    );
+    saveState();
+    notifyListeners();
+  }
+
+  void pauseWorkout(bool isPaused) {
+    if (_state == null || _state!.activeWorkout == null) return;
+    final active = _state!.activeWorkout!;
+
+    final updatedWorkout = ActiveWorkoutState(
+      name: active.name,
+      startTime: active.startTime,
+      exercises: active.exercises,
+      currentExerciseIndex: active.currentExerciseIndex,
+      elapsedSeconds: active.elapsedSeconds,
+      recovery: active.recovery,
+      isWarmup: active.isWarmup,
+      warmupDurationSeconds: active.warmupDurationSeconds,
+      paused: isPaused,
+    );
+
+    _state = PlannerState(
+      library: _state!.library,
+      routines: _state!.routines,
+      planner: _state!.planner,
+      history: _state!.history,
+      prs: _state!.prs,
+      medidas: _state!.medidas,
+      settings: _state!.settings,
+      activeWorkout: updatedWorkout,
+      diet: _state!.diet,
+    );
+    saveState();
+    notifyListeners();
+  }
+
+  void discardActiveWorkout() {
+    if (_state == null) return;
+    _state = PlannerState(
+      library: _state!.library,
+      routines: _state!.routines,
+      planner: _state!.planner,
+      history: _state!.history,
+      prs: _state!.prs,
+      medidas: _state!.medidas,
+      settings: _state!.settings,
+      activeWorkout: null,
+      diet: _state!.diet,
+    );
+    saveState();
+    notifyListeners();
+  }
+
+  void finishWorkout(int duration, int rpeValue, String notes) {
+    if (_state == null || _state!.activeWorkout == null) return;
+
+    final active = _state!.activeWorkout!;
+    int totalSets = 0;
+    int completedSets = 0;
+    double totalWeightVolume = 0.0;
+
+    final List<LogExercise> exercisesSummary = active.exercises.map((ex) {
+      final done = ex.setsState.where((s) => s).length;
+      totalSets += ex.sets;
+      completedSets += done;
+
+      double finalWeight = ex.weight;
+      int finalReps = ex.reps;
+      final isCardio = ex.muscle.toLowerCase().contains('cardio');
+
+      if (isCardio) {
+        final completedList = ex.performedCardios.where((c) => c != null).toList();
+        if (completedList.isNotEmpty) {
+          final totalDist = completedList.fold<double>(0, (sum, c) => sum + c!.distanceKm);
+          final totalDurMin = completedList.fold<int>(0, (sum, c) => sum + (c!.durationSeconds ~/ 60));
+          finalWeight = totalDist / completedList.length;
+          finalReps = totalDurMin ~/ completedList.length;
+        }
+      } else {
+        // Carga de volume total de musculação
+        for (int i = 0; i < ex.sets; i++) {
+          if (ex.setsState[i]) {
+            totalWeightVolume += ex.weight * ex.reps;
+          }
+        }
+      }
+
+      return LogExercise(
+        name: ex.name,
+        muscle: ex.muscle,
+        sets: ex.sets,
+        completedSets: done,
+        reps: finalReps,
+        weight: finalWeight,
+        performedCardios: ex.performedCardios,
+        rpe: rpeValue,
+        failureReport: ex.failureReport,
+        executionType: ex.executionType,
+      );
+    }).toList();
+
+    // Cria log de histórico
+    final log = WorkoutLog(
+      id: "log-${DateTime.now().millisecondsSinceEpoch}",
+      name: active.name,
+      date: DateTime.now().toUtc().toIso8601String(),
+      duration: duration,
+      completedSets: completedSets,
+      totalSets: totalSets,
+      totalWeight: totalWeightVolume,
+      rpe: rpeValue,
+      notes: notes,
+      recovery: active.recovery,
+      exercises: exercisesSummary,
+      warmupDurationSeconds: active.warmupDurationSeconds,
+    );
+
+    final List<WorkoutLog> newHistory = List.from(_state!.history)..insert(0, log);
+
+    // Atualiza Recordes Pessoais (PRs)
+    final Map<String, PersonalRecord> newPrs = Map.from(_state!.prs);
+    active.exercises.forEach((ex) {
+      final done = ex.setsState.where((s) => s).length;
+      if (done == 0) return;
+
+      final isCardio = ex.muscle.toLowerCase().contains('cardio');
+      double prWeight = ex.weight;
+      int prReps = ex.reps;
+
+      if (isCardio) {
+        final completedList = ex.performedCardios.where((c) => c != null).toList();
+        if (completedList.isNotEmpty) {
+          var maxCardio = completedList[0]!;
+          completedList.forEach((p) {
+            if (p!.distanceKm > maxCardio.distanceKm) {
+              maxCardio = p;
+            }
+          });
+          prWeight = maxCardio.distanceKm;
+          prReps = maxCardio.durationSeconds ~/ 60;
+        } else {
+          return; // Sem cardio feito
+        }
+      }
+
+      // Procura ID correspondente na biblioteca
+      final libEx = _state!.library.firstWhere((l) => l.name == ex.name, orElse: () => LibraryExercise(id: '', name: '', muscle: '', measurementType: ''));
+      if (libEx.id.isEmpty) return;
+
+      final currentPr = newPrs[libEx.id];
+      if (currentPr == null || prWeight > currentPr.weight || (prWeight == currentPr.weight && prReps > currentPr.reps)) {
+        newPrs[libEx.id] = PersonalRecord(
+          weight: prWeight,
+          reps: prReps,
+          date: DateTime.now().toUtc().toIso8601String(),
+          routineName: active.name,
+        );
+      }
+    });
+
+    _state = PlannerState(
+      library: _state!.library,
+      routines: _state!.routines,
+      planner: _state!.planner,
+      history: newHistory,
+      prs: newPrs,
+      medidas: _state!.medidas,
+      settings: _state!.settings,
+      activeWorkout: null,
+      diet: _state!.diet,
+    );
+
+    saveState();
+    notifyListeners();
+  }
+
+  // --- WEEKLY PLANNER ACTIONS ---
+  void addPlannerItem(String day) {
+    if (_state == null) return;
+    final planner = Map<String, List<String>>.from(_state!.planner);
+    planner[day] = List<String>.from(planner[day] ?? [])..add("");
+    _state = PlannerState(
+      library: _state!.library,
+      routines: _state!.routines,
+      planner: planner,
+      history: _state!.history,
+      prs: _state!.prs,
+      medidas: _state!.medidas,
+      settings: _state!.settings,
+      activeWorkout: _state!.activeWorkout,
+      diet: _state!.diet,
+    );
+    saveState();
+    notifyListeners();
+  }
+
+  void updatePlannerItem(String day, int index, String value) {
+    if (_state == null) return;
+    final planner = Map<String, List<String>>.from(_state!.planner);
+    planner[day] = List<String>.from(planner[day] ?? []);
+    planner[day]![index] = value;
+    
+    _state = PlannerState(
+      library: _state!.library,
+      routines: _state!.routines,
+      planner: planner,
+      history: _state!.history,
+      prs: _state!.prs,
+      medidas: _state!.medidas,
+      settings: _state!.settings,
+      activeWorkout: _state!.activeWorkout,
+      diet: _state!.diet,
+    );
+    saveState();
+    notifyListeners();
+  }
+
+  void reorderPlannerItem(String day, int index, bool moveUp) {
+    if (_state == null) return;
+    final planner = Map<String, List<String>>.from(_state!.planner);
+    planner[day] = List<String>.from(planner[day] ?? []);
+    final targetIndex = moveUp ? index - 1 : index + 1;
+
+    if (targetIndex < 0 || targetIndex >= planner[day]!.length) return;
+
+    final temp = planner[day]![index];
+    planner[day]![index] = planner[day]![targetIndex];
+    planner[day]![targetIndex] = temp;
+
+    _state = PlannerState(
+      library: _state!.library,
+      routines: _state!.routines,
+      planner: planner,
+      history: _state!.history,
+      prs: _state!.prs,
+      medidas: _state!.medidas,
+      settings: _state!.settings,
+      activeWorkout: _state!.activeWorkout,
+      diet: _state!.diet,
+    );
+    saveState();
+    notifyListeners();
+  }
+
+  void removePlannerItem(String day, int index) {
+    if (_state == null) return;
+    final planner = Map<String, List<String>>.from(_state!.planner);
+    planner[day] = List<String>.from(planner[day] ?? [])..removeAt(index);
+    _state = PlannerState(
+      library: _state!.library,
+      routines: _state!.routines,
+      planner: planner,
+      history: _state!.history,
+      prs: _state!.prs,
+      medidas: _state!.medidas,
+      settings: _state!.settings,
+      activeWorkout: _state!.activeWorkout,
+      diet: _state!.diet,
+    );
+    saveState();
+    notifyListeners();
+  }
+
+  // --- LIBRARY OPERATIONS ---
+  void addLibraryExercise(String name, String muscle, String measurementType, String? notes, String? executionType) {
+    if (_state == null) return;
+    final newEx = LibraryExercise(
+      id: "lib-${DateTime.now().millisecondsSinceEpoch}",
+      name: name,
+      muscle: muscle,
+      measurementType: measurementType,
+      notes: notes,
+      executionType: executionType,
+    );
+    final library = List<LibraryExercise>.from(_state!.library)..add(newEx);
+    _state = PlannerState(
+      library: library,
+      routines: _state!.routines,
+      planner: _state!.planner,
+      history: _state!.history,
+      prs: _state!.prs,
+      medidas: _state!.medidas,
+      settings: _state!.settings,
+      activeWorkout: _state!.activeWorkout,
+      diet: _state!.diet,
+    );
+    saveState();
+    notifyListeners();
+  }
+
+  void deleteLibraryExercise(String id) {
+    if (_state == null) return;
+    final library = List<LibraryExercise>.from(_state!.library)..removeWhere((e) => e.id == id);
+    
+    // Remove referências no planejador
+    final planner = Map<String, List<String>>.from(_state!.planner);
+    planner.forEach((k, v) {
+      planner[k] = v.where((item) => !item.contains('exercise:$id')).toList();
+    });
+
+    // Remove referências nas rotinas
+    final routines = _state!.routines.map((r) {
+      return Routine(
+        id: r.id,
+        name: r.name,
+        defaultRest: r.defaultRest,
+        exercises: r.exercises.where((ex) => ex.exerciseId != id).toList(),
+      );
+    }).toList();
+
+    _state = PlannerState(
+      library: library,
+      routines: routines,
+      planner: planner,
+      history: _state!.history,
+      prs: _state!.prs,
+      medidas: _state!.medidas,
+      settings: _state!.settings,
+      activeWorkout: _state!.activeWorkout,
+      diet: _state!.diet,
+    );
+    saveState();
+    notifyListeners();
+  }
+
+  // --- ROUTINE OPERATIONS ---
+  void addRoutine(String name, int defaultRest, List<RoutineExercise> exercises) {
+    if (_state == null) return;
+    final r = Routine(
+      id: "routine-${DateTime.now().millisecondsSinceEpoch}",
+      name: name,
+      defaultRest: defaultRest,
+      exercises: exercises,
+    );
+    final routines = List<Routine>.from(_state!.routines)..add(r);
+    _state = PlannerState(
+      library: _state!.library,
+      routines: routines,
+      planner: _state!.planner,
+      history: _state!.history,
+      prs: _state!.prs,
+      medidas: _state!.medidas,
+      settings: _state!.settings,
+      activeWorkout: _state!.activeWorkout,
+      diet: _state!.diet,
+    );
+    saveState();
+    notifyListeners();
+  }
+
+  void deleteRoutine(String id) {
+    if (_state == null) return;
+    final routines = List<Routine>.from(_state!.routines)..removeWhere((r) => r.id == id);
+    
+    // Remove referências no planejador
+    final planner = Map<String, List<String>>.from(_state!.planner);
+    planner.forEach((k, v) {
+      planner[k] = v.where((item) => item != 'routine:$id' && item != id).toList();
+    });
+
+    _state = PlannerState(
+      library: _state!.library,
+      routines: routines,
+      planner: planner,
+      history: _state!.history,
+      prs: _state!.prs,
+      medidas: _state!.medidas,
+      settings: _state!.settings,
+      activeWorkout: _state!.activeWorkout,
+      diet: _state!.diet,
+    );
+    saveState();
+    notifyListeners();
+  }
+
+  // --- MEASUREMENT OPERATIONS ---
+  void addMeasurement(BodyMeasurement record) {
+    if (_state == null) return;
+    final index = _state!.medidas.indexWhere((m) => m.date == record.date);
+    final List<BodyMeasurement> list = List.from(_state!.medidas);
+
+    if (index != -1) {
+      list[index] = record;
+    } else {
+      list.add(record);
+    }
+
+    _state = PlannerState(
+      library: _state!.library,
+      routines: _state!.routines,
+      planner: _state!.planner,
+      history: _state!.history,
+      prs: _state!.prs,
+      medidas: list,
+      settings: _state!.settings,
+      activeWorkout: _state!.activeWorkout,
+      diet: _state!.diet,
+    );
+    saveState();
+    notifyListeners();
+  }
+
+  void deleteMeasurement(String id) {
+    if (_state == null) return;
+    final list = List<BodyMeasurement>.from(_state!.medidas)..removeWhere((m) => m.id == id);
+    _state = PlannerState(
+      library: _state!.library,
+      routines: _state!.routines,
+      planner: _state!.planner,
+      history: _state!.history,
+      prs: _state!.prs,
+      medidas: list,
+      settings: _state!.settings,
+      activeWorkout: _state!.activeWorkout,
+      diet: _state!.diet,
+    );
+    saveState();
+    notifyListeners();
+  }
+
+  // --- SETTINGS OPERATIONS ---
+  void updateSettings(bool sound, bool vibration, int prepSeconds) {
+    if (_state == null) return;
+    final newSettings = SettingsState(
+      sound: sound,
+      vibration: vibration,
+      prepSeconds: prepSeconds,
+    );
+    _state = PlannerState(
+      library: _state!.library,
+      routines: _state!.routines,
+      planner: _state!.planner,
+      history: _state!.history,
+      prs: _state!.prs,
+      medidas: _state!.medidas,
+      settings: newSettings,
+      activeWorkout: _state!.activeWorkout,
+      diet: _state!.diet,
+    );
+    saveState();
+    notifyListeners();
+  }
+
+  // --- DIET & WATER OPERATIONS ---
+  void updateWaterIntake(int quantityMl) {
+    if (_state == null) return;
+    final currentDiet = _state!.diet;
+    final newDiet = DietState(
+      caloriesGoal: currentDiet.caloriesGoal,
+      proteinGoal: currentDiet.proteinGoal,
+      carbsGoal: currentDiet.carbsGoal,
+      fatGoal: currentDiet.fatGoal,
+      waterGoalMl: currentDiet.waterGoalMl,
+      meals: currentDiet.meals,
+      waterIntakeMl: quantityMl,
+      fasting: currentDiet.fasting,
+    );
+
+    _state = PlannerState(
+      library: _state!.library,
+      routines: _state!.routines,
+      planner: _state!.planner,
+      history: _state!.history,
+      prs: _state!.prs,
+      medidas: _state!.medidas,
+      settings: _state!.settings,
+      activeWorkout: _state!.activeWorkout,
+      diet: newDiet,
+    );
+    saveState();
+    notifyListeners();
+  }
+
+  void addMeal(String name, int cals, double prot, double carbs, double fat, String time) {
+    if (_state == null) return;
+    final currentDiet = _state!.diet;
+    final meal = Meal(
+      id: "meal-${DateTime.now().millisecondsSinceEpoch}",
+      name: name,
+      calories: cals,
+      protein: prot,
+      carbs: carbs,
+      fat: fat,
+      time: time,
+    );
+    final meals = List<Meal>.from(currentDiet.meals)..add(meal);
+    
+    final newDiet = DietState(
+      caloriesGoal: currentDiet.caloriesGoal,
+      proteinGoal: currentDiet.proteinGoal,
+      carbsGoal: currentDiet.carbsGoal,
+      fatGoal: currentDiet.fatGoal,
+      waterGoalMl: currentDiet.waterGoalMl,
+      meals: meals,
+      waterIntakeMl: currentDiet.waterIntakeMl,
+      fasting: currentDiet.fasting,
+    );
+
+    _state = PlannerState(
+      library: _state!.library,
+      routines: _state!.routines,
+      planner: _state!.planner,
+      history: _state!.history,
+      prs: _state!.prs,
+      medidas: _state!.medidas,
+      settings: _state!.settings,
+      activeWorkout: _state!.activeWorkout,
+      diet: newDiet,
+    );
+    saveState();
+    notifyListeners();
+  }
+
+  void deleteMeal(String mealId) {
+    if (_state == null) return;
+    final currentDiet = _state!.diet;
+    final meals = List<Meal>.from(currentDiet.meals)..removeWhere((m) => m.id == mealId);
+    
+    final newDiet = DietState(
+      caloriesGoal: currentDiet.caloriesGoal,
+      proteinGoal: currentDiet.proteinGoal,
+      carbsGoal: currentDiet.carbsGoal,
+      fatGoal: currentDiet.fatGoal,
+      waterGoalMl: currentDiet.waterGoalMl,
+      meals: meals,
+      waterIntakeMl: currentDiet.waterIntakeMl,
+      fasting: currentDiet.fasting,
+    );
+
+    _state = PlannerState(
+      library: _state!.library,
+      routines: _state!.routines,
+      planner: _state!.planner,
+      history: _state!.history,
+      prs: _state!.prs,
+      medidas: _state!.medidas,
+      settings: _state!.settings,
+      activeWorkout: _state!.activeWorkout,
+      diet: newDiet,
+    );
+    saveState();
+    notifyListeners();
+  }
+
+  // --- FASTING ACTIONS ---
+  void startFasting(double hours) {
+    if (_state == null) return;
+    final currentDiet = _state!.diet;
+    
+    final newFasting = FastingState(
+      history: currentDiet.fasting.history,
+      active: ActiveFasting(
+        startTime: DateTime.now().toUtc().toIso8601String(),
+        goalDurationHours: hours,
+      ),
+    );
+
+    final newDiet = DietState(
+      caloriesGoal: currentDiet.caloriesGoal,
+      proteinGoal: currentDiet.proteinGoal,
+      carbsGoal: currentDiet.carbsGoal,
+      fatGoal: currentDiet.fatGoal,
+      waterGoalMl: currentDiet.waterGoalMl,
+      meals: currentDiet.meals,
+      waterIntakeMl: currentDiet.waterIntakeMl,
+      fasting: newFasting,
+    );
+
+    _state = PlannerState(
+      library: _state!.library,
+      routines: _state!.routines,
+      planner: _state!.planner,
+      history: _state!.history,
+      prs: _state!.prs,
+      medidas: _state!.medidas,
+      settings: _state!.settings,
+      activeWorkout: _state!.activeWorkout,
+      diet: newDiet,
+    );
+    saveState();
+    notifyListeners();
+  }
+
+  void endFasting() {
+    if (_state == null || _state!.diet.fasting.active == null) return;
+    final currentDiet = _state!.diet;
+    final active = currentDiet.fasting.active!;
+
+    final record = FastingRecord(
+      id: "fast-${DateTime.now().millisecondsSinceEpoch}",
+      startTime: active.startTime,
+      endTime: DateTime.now().toUtc().toIso8601String(),
+      goalDurationHours: active.goalDurationHours,
+    );
+
+    final history = List<FastingRecord>.from(currentDiet.fasting.history)..insert(0, record);
+
+    final newFasting = FastingState(
+      history: history,
+      active: null,
+    );
+
+    final newDiet = DietState(
+      caloriesGoal: currentDiet.caloriesGoal,
+      proteinGoal: currentDiet.proteinGoal,
+      carbsGoal: currentDiet.carbsGoal,
+      fatGoal: currentDiet.fatGoal,
+      waterGoalMl: currentDiet.waterGoalMl,
+      meals: currentDiet.meals,
+      waterIntakeMl: currentDiet.waterIntakeMl,
+      fasting: newFasting,
+    );
+
+    _state = PlannerState(
+      library: _state!.library,
+      routines: _state!.routines,
+      planner: _state!.planner,
+      history: _state!.history,
+      prs: _state!.prs,
+      medidas: _state!.medidas,
+      settings: _state!.settings,
+      activeWorkout: _state!.activeWorkout,
+      diet: newDiet,
+    );
+    saveState();
+    notifyListeners();
+  }
+
+  // --- INITIALIZERS FOR DEFAULT STATE ---
+  PlannerState _getDefaultState() {
+    return PlannerState(
+      library: _getDefaultLibrary(),
+      routines: _getDefaultRoutines(),
+      planner: _getDefaultPlanner(),
+      history: [],
+      prs: {},
+      medidas: [],
+      settings: SettingsState(sound: true, vibration: true, prepSeconds: 5),
+      diet: DietState(
+        caloriesGoal: 2000,
+        proteinGoal: 150.0,
+        carbsGoal: 200.0,
+        fatGoal: 70.0,
+        waterGoalMl: 2000,
+        meals: [],
+        waterIntakeMl: 0,
+        fasting: FastingState(history: []),
+      ),
+    );
+  }
+
+  List<LibraryExercise> _getDefaultLibrary() {
+    return [
+      LibraryExercise(id: "lib-1", name: "Supino Reto", muscle: "Peito", notes: "Foco no controle da descida, barra até o peito.", measurementType: "reps"),
+      LibraryExercise(id: "lib-2", name: "Desenvolvimento Halteres", muscle: "Ombros", notes: "Coluna reta, cotovelos levemente flexionados para frente.", measurementType: "reps"),
+      LibraryExercise(id: "lib-3", name: "Tríceps Pulley", muscle: "Tríceps", notes: "Manter cotovelos fixados nas costelas.", measurementType: "reps"),
+      LibraryExercise(id: "lib-4", name: "Elevação Lateral", muscle: "Ombros", notes: "Elevar halteres até a linha dos ombros, punho firme.", measurementType: "reps"),
+      LibraryExercise(id: "lib-5", name: "Puxada Alta Pulley", muscle: "Costas", notes: "Puxar em direção ao peito inclinado levemente para trás.", measurementType: "reps"),
+      LibraryExercise(id: "lib-6", name: "Remada Curvada", muscle: "Costas", notes: "Tronco inclinado 45 graus, coluna neutra.", measurementType: "reps"),
+      LibraryExercise(id: "lib-7", name: "Rosca Direta", muscle: "Bíceps", notes: "Sem balançar o corpo, contração máxima no topo.", measurementType: "reps"),
+      LibraryExercise(id: "lib-8", name: "Encolhimento Halteres", muscle: "Ombros", notes: "Elevação vertical dos ombros sem girá-los.", measurementType: "reps"),
+      LibraryExercise(id: "lib-9", name: "Agachamento Livre", muscle: "Pernas", notes: "Pés na largura dos ombros, joelhos alinhados com a ponta dos pés.", measurementType: "reps"),
+      LibraryExercise(id: "lib-10", name: "Leg Press 45", muscle: "Pernas", notes: "Não estender os joelhos completamente no final.", measurementType: "reps"),
+      LibraryExercise(id: "lib-11", name: "Cadeira Extensora", muscle: "Pernas", notes: "Tronco firme no encosto, extensão completa.", measurementType: "reps"),
+      LibraryExercise(id: "lib-12", name: "Gêmeos em Pé", muscle: "Pernas", notes: "Amplitude máxima no calcanhar.", measurementType: "reps"),
+      LibraryExercise(id: "lib-13", name: "Abdominal Supra", muscle: "Core", notes: "Contrair abdômen sem puxar o pescoço.", measurementType: "reps"),
+      LibraryExercise(id: "lib-14", name: "Corrida (Esteira/Rua)", muscle: "Cardio", notes: "Corrida aeróbica contínua.", measurementType: "time"),
+      LibraryExercise(id: "lib-15", name: "Bicicleta Ergométrica", muscle: "Cardio", notes: "Cadência estável com carga moderada.", measurementType: "time")
+    ];
+  }
+
+  List<Routine> _getDefaultRoutines() {
+    return [
+      Routine(
+        id: "preset-a",
+        name: "Treino A - Peito, Ombro e Tríceps",
+        defaultRest: 60,
+        exercises: [
+          RoutineExercise(id: "e1", exerciseId: "lib-1", sets: 3, reps: 10, rest: 60, weight: 20.0),
+          RoutineExercise(id: "e2", exerciseId: "lib-2", sets: 3, reps: 10, rest: 60, weight: 12.0),
+          RoutineExercise(id: "e3", exerciseId: "lib-3", sets: 3, reps: 12, rest: 45, weight: 15.0),
+          RoutineExercise(id: "e4", exerciseId: "lib-4", sets: 3, reps: 12, rest: 45, weight: 8.0)
+        ]
+      ),
+      Routine(
+        id: "preset-b",
+        name: "Treino B - Costas e Bíceps",
+        defaultRest: 60,
+        exercises: [
+          RoutineExercise(id: "e5", exerciseId: "lib-5", sets: 3, reps: 10, rest: 60, weight: 35.0),
+          RoutineExercise(id: "e6", exerciseId: "lib-6", sets: 3, reps: 10, rest: 60, weight: 30.0),
+          RoutineExercise(id: "e7", exerciseId: "lib-7", sets: 3, reps: 12, rest: 45, weight: 10.0),
+          RoutineExercise(id: "e8", exerciseId: "lib-8", sets: 3, reps: 12, rest: 45, weight: 24.0)
+        ]
+      ),
+      Routine(
+        id: "preset-c",
+        name: "Treino C - Pernas Completo",
+        defaultRest: 90,
+        exercises: [
+          RoutineExercise(id: "e9", exerciseId: "lib-9", sets: 4, reps: 10, rest: 90, weight: 40.0),
+          RoutineExercise(id: "e10", exerciseId: "lib-10", sets: 3, reps: 10, rest: 90, weight: 120.0),
+          RoutineExercise(id: "e11", exerciseId: "lib-11", sets: 3, reps: 12, rest: 60, weight: 30.0),
+          RoutineExercise(id: "e12", exerciseId: "lib-12", sets: 4, reps: 15, rest: 45, weight: 40.0)
+        ]
+      )
+    ];
+  }
+
+  Map<String, List<String>> _getDefaultPlanner() {
+    return {
+      "seg": ["routine:preset-a"],
+      "ter": ["routine:preset-b"],
+      "qua": [],
+      "qui": ["routine:preset-a"],
+      "sex": ["routine:preset-b"],
+      "sab": ["routine:preset-c"],
+      "dom": []
+    };
+  }
+
+  List<Profile> _getDefaultProfiles() {
+    return [
+      Profile(id: "vicente", name: "Vicente", password: "", colorAccent: "Branco", avatar: "🏋️", hasPassword: false),
+      Profile(id: "davi", name: "Davi", password: "", colorAccent: "Azul", avatar: "⚡", hasPassword: false),
+      Profile(id: "ana", name: "Ana", password: "", colorAccent: "Vermelho", avatar: "✨", hasPassword: false),
+    ];
+  }
+}

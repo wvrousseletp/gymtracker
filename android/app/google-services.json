@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "973584151756",
+    "project_id": "vicente-losmooscles",
+    "storage_bucket": "vicente-losmooscles.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:973584151756:android:d69c9cf923e4697a1afe69",
+        "android_client_info": {
+          "package_name": "com.vicente.losmooscles"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDOWysE65QBvz9lScGoHaz3wP5eqAWCwUY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
