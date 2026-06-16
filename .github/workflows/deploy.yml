@@ -20,12 +20,24 @@ jobs:
           p12-file-base64: ${{ secrets.IOS_DISTRIBUTION_CERTIFICATE_BASE64 }}
           p12-password: ${{ secrets.IOS_DISTRIBUTION_CERTIFICATE_PASSWORD }}
 
-      - name: Install Provisioning Profile
+      - name: Install Provisioning Profiles
         env:
-          PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+          IOS_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+          WATCH_PROFILE_BASE64: ${{ secrets.IOS_WATCH_PROVISIONING_PROFILE_BASE64 }}
         run: |
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          echo -n "$PROVISIONING_PROFILE_BASE64" | base64 --decode --output ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
+          
+          # Decode and install iOS Profile
+          echo -n "$IOS_PROFILE_BASE64" | base64 --decode --output ios_temp.mobileprovision
+          IOS_UUID=$(security cms -D -i ios_temp.mobileprovision | plutil -extract UUID raw -)
+          mv ios_temp.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$IOS_UUID.mobileprovision
+          echo "Installed iOS Profile with UUID: $IOS_UUID"
+          
+          # Decode and install Watch Profile
+          echo -n "$WATCH_PROFILE_BASE64" | base64 --decode --output watch_temp.mobileprovision
+          WATCH_UUID=$(security cms -D -i watch_temp.mobileprovision | plutil -extract UUID raw -)
+          mv watch_temp.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$WATCH_UUID.mobileprovision
+          echo "Installed Watch Profile with UUID: $WATCH_UUID"
 
       - name: Install Flutter SDK
         uses: subosito/flutter-action@v2
