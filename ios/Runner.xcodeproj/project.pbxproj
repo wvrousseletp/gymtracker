@@ -17,16 +17,16 @@
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
 		A6C5F6461EB3BC8162A68263 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7493CDB103ACAEFE26A9C788 /* Pods_Runner.framework */; };
 		D316F3212FE20CC4008A94F4 /* WatchAppApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D316F3202FE20CC4008A94F4 /* WatchAppApp.swift */; };
-		D39999992FE20CC4008A94B1 /* WatchConnectivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A94F1 /* WatchConnectivityManager.swift */; };
-		D39999992FE20CC4008A94B2 /* WorkoutSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A94F2 /* WorkoutSelectionView.swift */; };
-		D39999992FE20CC4008A94B3 /* ActiveWorkoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A94F3 /* ActiveWorkoutView.swift */; };
-		D39999992FE20CC4008A94B4 /* RestTimerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A94F4 /* RestTimerView.swift */; };
 		D316F3252FE20CC8008A94F4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D316F3242FE20CC7008A94F4 /* Assets.xcassets */; };
 		D316F3282FE20CC8008A94F4 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D316F3272FE20CC8008A94F4 /* Preview Assets.xcassets */; };
 		D316F3322FE20CC8008A94F4 /* WatchApp_Watch_AppTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D316F3312FE20CC8008A94F4 /* WatchApp_Watch_AppTests.swift */; };
 		D316F33C2FE20CC9008A94F4 /* WatchApp_Watch_AppUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D316F33B2FE20CC9008A94F4 /* WatchApp_Watch_AppUITests.swift */; };
 		D316F33E2FE20CC9008A94F4 /* WatchApp_Watch_AppUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D316F33D2FE20CC9008A94F4 /* WatchApp_Watch_AppUITestsLaunchTests.swift */; };
 		D316F3412FE20CC9008A94F4 /* WatchApp Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = D316F31E2FE20CC4008A94F4 /* WatchApp Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		D39999992FE20CC4008A94B1 /* WatchConnectivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A94F1 /* WatchConnectivityManager.swift */; };
+		D39999992FE20CC4008A94B2 /* WorkoutSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A94F2 /* WorkoutSelectionView.swift */; };
+		D39999992FE20CC4008A94B3 /* ActiveWorkoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A94F3 /* ActiveWorkoutView.swift */; };
+		D39999992FE20CC4008A94B4 /* RestTimerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A94F4 /* RestTimerView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -108,10 +108,6 @@
 		A3600077AD8C9018BA9C885A /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
 		D316F31E2FE20CC4008A94F4 /* WatchApp Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "WatchApp Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		D316F3202FE20CC4008A94F4 /* WatchAppApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchAppApp.swift; sourceTree = "<group>"; };
-		D39999992FE20CC4008A94F1 /* WatchConnectivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchConnectivityManager.swift; sourceTree = "<group>"; };
-		D39999992FE20CC4008A94F2 /* WorkoutSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutSelectionView.swift; sourceTree = "<group>"; };
-		D39999992FE20CC4008A94F3 /* ActiveWorkoutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveWorkoutView.swift; sourceTree = "<group>"; };
-		D39999992FE20CC4008A94F4 /* RestTimerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestTimerView.swift; sourceTree = "<group>"; };
 		D316F3242FE20CC7008A94F4 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D316F3272FE20CC8008A94F4 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		D316F32D2FE20CC8008A94F4 /* WatchApp Watch AppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "WatchApp Watch AppTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -120,6 +116,10 @@
 		D316F33B2FE20CC9008A94F4 /* WatchApp_Watch_AppUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchApp_Watch_AppUITests.swift; sourceTree = "<group>"; };
 		D316F33D2FE20CC9008A94F4 /* WatchApp_Watch_AppUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchApp_Watch_AppUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		D35CAB162FE15C1100B7A6F5 /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
+		D39999992FE20CC4008A94F1 /* WatchConnectivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchConnectivityManager.swift; sourceTree = "<group>"; };
+		D39999992FE20CC4008A94F2 /* WorkoutSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutSelectionView.swift; sourceTree = "<group>"; };
+		D39999992FE20CC4008A94F3 /* ActiveWorkoutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveWorkoutView.swift; sourceTree = "<group>"; };
+		D39999992FE20CC4008A94F4 /* RestTimerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestTimerView.swift; sourceTree = "<group>"; };
 		D4A6FF054925EBF1FC36E777 /* Pods-RunnerTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.release.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.release.xcconfig"; sourceTree = "<group>"; };
 		FE1A75646B124E09E7C2FF93 /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
