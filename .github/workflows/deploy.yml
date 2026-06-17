@@ -8,7 +8,7 @@ on:
 jobs:
   deploy:
     name: Build & Deploy to TestFlight
-    runs-on: macos-15
+    runs-on: macos-26
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     
