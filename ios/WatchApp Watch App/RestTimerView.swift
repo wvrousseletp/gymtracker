@@ -1,5 +1,7 @@
 import SwiftUI
+#if canImport(WatchKit)
 import WatchKit
+#endif
 
 struct RestTimerView: View {
     let durationSeconds: Int
@@ -49,8 +51,10 @@ struct RestTimerView: View {
                 timeRemaining -= 1
             } else {
                 // Timer completo: vibra o Apple Watch
+                #if canImport(WatchKit)
                 WKInterfaceDevice.current().play(.success)
                 WKInterfaceDevice.current().play(.click)
+                #endif
                 isPresented = false
             }
         }
