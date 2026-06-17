@@ -29,6 +29,16 @@ jobs:
         run: |
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           
+          # Check if secrets are set
+          if [ -z "$IOS_PROFILE_BASE64" ]; then
+            echo "::error::Secret IOS_PROVISIONING_PROFILE_BASE64 is empty or not configured!"
+            exit 1
+          fi
+          if [ -z "$WATCH_PROFILE_BASE64" ]; then
+            echo "::error::Secret IOS_WATCH_PROVISIONING_PROFILE_BASE64 is empty or not configured!"
+            exit 1
+          fi
+          
           # Decode and install iOS Profile
           echo -n "$IOS_PROFILE_BASE64" | base64 --decode --output ios_temp.mobileprovision
           IOS_UUID=$(security cms -D -i ios_temp.mobileprovision | plutil -extract UUID raw -)
