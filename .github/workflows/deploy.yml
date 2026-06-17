@@ -64,7 +64,9 @@ jobs:
       - name: Build IPA
         run: |
           flutter build ipa --release --export-method=app-store
-          IPA_PATH=$(find build/ios/ipa -name "*.ipa" | head -n 1)
+          echo "=== CONTEÚDO DO DIRETÓRIO build/ ==="
+          find build -maxdepth 5 -type f || true
+          IPA_PATH=$(find build -name "*.ipa" | head -n 1)
           echo "IPA_PATH=$IPA_PATH" >> $GITHUB_ENV
           echo "Encontrado IPA em: $IPA_PATH"
 
