@@ -62,4 +62,22 @@ post_install do |installer|
       end
     end
   end
+
+  # Patch para o erro de template do gRPC-Core no Xcode 16 / Clang
+  basic_seq_path = File.join(installer.sandbox.root, 'gRPC-Core/src/core/lib/promise/detail/basic_seq.h')
+  if File.exist?(basic_seq_path)
+    puts "Patching gRPC-Core's basic_seq.h for Xcode 16 compatibility..."
+    File.chmod(0644, basic_seq_path) rescue nil
+    content = File.read(basic_seq_path)
+    if content.include?('Traits::template CallSeqFactory(f_, *cur_, std::move(arg))')
+      new_content = content.gsub('Traits::template CallSeqFactory(f_, *cur_, std::move(arg))', 'Traits::template CallSeqFactory<>(f_, *cur_, std::move(arg))')
+      File.write(basic_seq_path, new_content)
+      puts "gRPC-Core's basic_seq.h successfully patched."
+    else
+      puts "gRPC-Core's basic_seq.h already patched or pattern not found."
+    end
+  else
+    puts "Warning: gRPC-Core's basic_seq.h not found at #{basic_seq_path}"
+  end
 end
+
