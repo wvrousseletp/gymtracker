@@ -9,6 +9,8 @@ jobs:
   deploy:
     name: Build & Deploy to TestFlight
     runs-on: macos-14
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     
     steps:
       - name: Checkout Repository
@@ -50,7 +52,7 @@ jobs:
         run: flutter pub get
 
       - name: Build IPA
-        run: flutter build ipa --release --export-method=app-store
+        run: flutter build ipa --release --export-method=app-store -- CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="Apple Distribution" DEVELOPMENT_TEAM=PJ32UPL29J
 
       - name: Upload to App Store Connect (TestFlight)
         uses: apple-actions/upload-testflight-build@v1
