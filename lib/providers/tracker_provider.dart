@@ -483,7 +483,7 @@ class TrackerProvider extends ChangeNotifier {
       activeWorkout: updatedWorkout,
       diet: _state!.diet,
     );
-    notifyListeners();
+    // notifyListeners(); // Otimizado: evita reconstrução de todo o app a cada segundo.
   }
 
   void setCurrentExerciseIndex(int index) {

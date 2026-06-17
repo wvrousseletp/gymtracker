@@ -531,17 +531,20 @@ class JejumTab extends StatefulWidget {
 
 class _JejumTabState extends State<JejumTab> {
   Timer? _timer;
-  Duration _elapsed = Duration.zero;
+  late final ValueNotifier<Duration> _elapsedNotifier;
+  double _selectedGoalHours = 16.0;
 
   @override
   void initState() {
     super.initState();
+    _elapsedNotifier = ValueNotifier<Duration>(Duration.zero);
     _startTimer();
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _elapsedNotifier.dispose();
     super.dispose();
   }
 
@@ -552,9 +555,7 @@ class _JejumTabState extends State<JejumTab> {
         try {
           final start = DateTime.parse(active.startTime);
           final now = DateTime.now().toUtc();
-          setState(() {
-            _elapsed = now.difference(start);
-          });
+          _elapsedNotifier.value = now.difference(start);
         } catch (e) {
           // parse error
         }
@@ -572,7 +573,6 @@ class _JejumTabState extends State<JejumTab> {
     }
 
     final active = diet.fasting.active;
-    double selectedGoalHours = 16.0;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -593,32 +593,32 @@ class _JejumTabState extends State<JejumTab> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Relógio
-                    Text(
-                      _formatDuration(_elapsed),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 36,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.0,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      "Meta: ${active.goalDurationHours.toStringAsFixed(0)} horas",
-                      style: const TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Barra Progresso
-                    Builder(
-                      builder: (context) {
+                    // Relógio e Barra de Progresso reativos
+                    ValueListenableBuilder<Duration>(
+                      valueListenable: _elapsedNotifier,
+                      builder: (context, elapsed, child) {
                         final goalSecs = active.goalDurationHours * 3600;
-                        final elapsedSecs = _elapsed.inSeconds;
+                        final elapsedSecs = elapsed.inSeconds;
                         final progress = goalSecs > 0 ? (elapsedSecs / goalSecs).clamp(0.0, 1.0) : 0.0;
 
                         return Column(
                           children: [
+                            Text(
+                              _formatDuration(elapsed),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 36,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              "Meta: ${active.goalDurationHours.toStringAsFixed(0)} horas",
+                              style: const TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(height: 16),
+
                             LinearProgressIndicator(
                               value: progress,
                               backgroundColor: Colors.white.withOpacity(0.05),
@@ -693,14 +693,14 @@ class _JejumTabState extends State<JejumTab> {
                           ),
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<double>(
-                              value: selectedGoalHours,
+                              value: _selectedGoalHours,
                               dropdownColor: const Color(0xff1c1c1e),
                               style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
                               isExpanded: true,
                               onChanged: (val) {
                                 if (val != null) {
                                   setDialogState(() {
-                                    selectedGoalHours = val;
+                                    _selectedGoalHours = val;
                                   });
                                 }
                               },
@@ -718,8 +718,8 @@ class _JejumTabState extends State<JejumTab> {
                           height: 44,
                           child: ElevatedButton(
                             onPressed: () {
-                              provider.startFasting(selectedGoalHours);
-                              _elapsed = Duration.zero;
+                              provider.startFasting(_selectedGoalHours);
+                              _elapsedNotifier.value = Duration.zero;
                               _startTimer();
                             },
                             style: ElevatedButton.styleFrom(

@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/tracker_provider.dart';
@@ -144,7 +145,7 @@ class _MainNavigationState extends State<MainNavigation> {
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: 96), // Espaço para a dock flutuante
-                    child: IndexedStack(
+                    child: FadeIndexedStack(
                       index: _currentIndex,
                       children: _screens,
                     ),
@@ -162,31 +163,39 @@ class _MainNavigationState extends State<MainNavigation> {
             child: Container(
               height: 64,
               decoration: BoxDecoration(
-                color: const Color(0xff141416).withOpacity(0.4),
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.08),
-                  width: 1.0,
-                ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.5),
-                    blurRadius: 32,
+                    color: Colors.black.withOpacity(0.4),
+                    blurRadius: 24,
                     offset: const Offset(0, 8),
                   ),
                 ],
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(24),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildNavItem(0, Icons.fitness_center_outlined, "Treino", accentColor),
-                    _buildNavItem(1, Icons.calendar_today_outlined, "Planejar", accentColor),
-                    _buildNavItem(2, Icons.list_alt_outlined, "Treinos", accentColor),
-                    _buildNavItem(3, Icons.bar_chart_outlined, "Progresso", accentColor),
-                    _buildNavItem(4, Icons.restaurant_outlined, "Dieta", accentColor),
-                  ],
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 12.0, sigmaY: 12.0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xff141416).withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.08),
+                        width: 1.0,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildNavItem(0, Icons.fitness_center_outlined, "Treino", accentColor),
+                        _buildNavItem(1, Icons.calendar_today_outlined, "Planejar", accentColor),
+                        _buildNavItem(2, Icons.list_alt_outlined, "Treinos", accentColor),
+                        _buildNavItem(3, Icons.bar_chart_outlined, "Progresso", accentColor),
+                        _buildNavItem(4, Icons.restaurant_outlined, "Dieta", accentColor),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -208,26 +217,101 @@ class _MainNavigationState extends State<MainNavigation> {
       },
       behavior: HitTestBehavior.opaque,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              color: color,
-              size: 22,
+            AnimatedScale(
+              scale: isSelected ? 1.15 : 1.0,
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOutCubic,
+              child: Icon(
+                icon,
+                color: color,
+                size: 21,
+              ),
             ),
             const SizedBox(height: 2),
             Text(
               label,
               style: TextStyle(
                 fontSize: 9,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w800,
                 color: color,
+              ),
+            ),
+            const SizedBox(height: 2),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              height: 4,
+              width: isSelected ? 4 : 0,
+              decoration: BoxDecoration(
+                color: accentColor,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: accentColor.withOpacity(0.8),
+                    blurRadius: 4,
+                    spreadRadius: 1,
+                  ),
+                ],
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class FadeIndexedStack extends StatefulWidget {
+  final int index;
+  final List<Widget> children;
+  final Duration duration;
+
+  const FadeIndexedStack({
+    Key? key,
+    required this.index,
+    required this.children,
+    this.duration = const Duration(milliseconds: 200),
+  }) : super(key: key);
+
+  @override
+  State<FadeIndexedStack> createState() => _FadeIndexedStackState();
+}
+
+class _FadeIndexedStackState extends State<FadeIndexedStack> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: widget.duration);
+    _controller.forward();
+  }
+
+  @override
+  void didUpdateWidget(FadeIndexedStack oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.index != widget.index) {
+      _controller.reset();
+      _controller.forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _controller,
+      child: IndexedStack(
+        index: widget.index,
+        children: widget.children,
       ),
     );
   }

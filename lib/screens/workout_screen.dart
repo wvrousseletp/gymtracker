@@ -672,11 +672,11 @@ class ActiveWorkoutView extends StatefulWidget {
 
 class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
   Timer? _stopwatchTimer;
-  int _workoutDurationSeconds = 0;
+  late final ValueNotifier<int> _workoutDurationNotifier;
 
   // Estados dos Timers de Descanso/Preparo do painel
   Timer? _countdownTimer;
-  int _countdownSecondsRemaining = 0;
+  late final ValueNotifier<int> _countdownSecondsNotifier;
   int _countdownTotalSeconds = 0;
   bool _timerActive = false;
   bool _timerIsPrep = false;
@@ -690,13 +690,14 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
   void initState() {
     super.initState();
     _currentExIdx = widget.activeWorkout.currentExerciseIndex;
-    _workoutDurationSeconds = widget.activeWorkout.elapsedSeconds;
+    _workoutDurationNotifier = ValueNotifier<int>(widget.activeWorkout.elapsedSeconds);
+    _countdownSecondsNotifier = ValueNotifier<int>(0);
     
     // Iniciar cronômetro do treino
     _startStopwatch();
 
     // Se o treino acabou de começar, vamos disparar o tempo de PREPARO inicial!
-    if (_workoutDurationSeconds == 0 && widget.activeWorkout.exercises.isNotEmpty) {
+    if (_workoutDurationNotifier.value == 0 && widget.activeWorkout.exercises.isNotEmpty) {
       final firstEx = widget.activeWorkout.exercises[0];
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _triggerPrepTimer(widget.provider.state!.settings.prepSeconds, firstEx.name, 1);
@@ -708,17 +709,17 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
   void dispose() {
     _stopwatchTimer?.cancel();
     _countdownTimer?.cancel();
+    _workoutDurationNotifier.dispose();
+    _countdownSecondsNotifier.dispose();
     super.dispose();
   }
 
   void _startStopwatch() {
     _stopwatchTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!widget.activeWorkout.paused) {
-        setState(() {
-          _workoutDurationSeconds++;
-        });
+        _workoutDurationNotifier.value++;
         // Sincroniza periodicamente com o provider
-        widget.provider.updateWorkoutTimer(_workoutDurationSeconds);
+        widget.provider.updateWorkoutTimer(_workoutDurationNotifier.value);
       }
     });
   }
@@ -729,11 +730,11 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
     setState(() {
       _timerActive = true;
       _timerIsPrep = true;
-      _countdownSecondsRemaining = seconds;
       _countdownTotalSeconds = seconds;
       _timerNextExName = nextExName;
       _timerNextSetNum = nextSetNum;
     });
+    _countdownSecondsNotifier.value = seconds;
 
     _startCountdownTimer();
   }
@@ -744,28 +745,26 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
     setState(() {
       _timerActive = true;
       _timerIsPrep = false;
-      _countdownSecondsRemaining = seconds;
       _countdownTotalSeconds = seconds;
       _timerNextExName = nextExName;
       _timerNextSetNum = nextSetNum;
     });
+    _countdownSecondsNotifier.value = seconds;
 
     _startCountdownTimer();
   }
 
   void _startCountdownTimer() {
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_countdownSecondsRemaining > 0) {
-        setState(() {
-          _countdownSecondsRemaining--;
-        });
+      if (_countdownSecondsNotifier.value > 0) {
+        _countdownSecondsNotifier.value--;
         
         // Emitir bipe sonoro nos últimos segundos se habilitado nas configurações
         final settings = widget.provider.state!.settings;
         if (settings.sound) {
-          if (_countdownSecondsRemaining <= 3 && _countdownSecondsRemaining > 0) {
+          if (_countdownSecondsNotifier.value <= 3 && _countdownSecondsNotifier.value > 0) {
             SystemSound.play(SystemSoundType.click);
-          } else if (_countdownSecondsRemaining == 0) {
+          } else if (_countdownSecondsNotifier.value == 0) {
             SystemSound.play(SystemSoundType.click);
           }
         }
@@ -799,9 +798,6 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
     final exercises = workout.exercises;
     final accentColor = ThemeUtils.getColor(widget.provider.currentProfile.colorAccent);
 
-    // Formatar cronômetro de treino
-    final durationStr = _formatDuration(_workoutDurationSeconds);
-
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Stack(
@@ -825,9 +821,14 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(color: accentColor, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.0),
                           ),
-                          Text(
-                            durationStr,
-                            style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900),
+                          ValueListenableBuilder<int>(
+                            valueListenable: _workoutDurationNotifier,
+                            builder: (context, elapsed, child) {
+                              return Text(
+                                _formatDuration(elapsed),
+                                style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900),
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -955,26 +956,33 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
                         const SizedBox(height: 24),
 
                         // Relógio
-                        Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            SizedBox(
-                              width: 140,
-                              height: 140,
-                              child: CircularProgressIndicator(
-                                value: _countdownTotalSeconds > 0
-                                    ? (_countdownSecondsRemaining / _countdownTotalSeconds)
-                                    : 0,
-                                strokeWidth: 8,
-                                backgroundColor: Colors.white.withOpacity(0.05),
-                                valueColor: AlwaysStoppedAnimation<Color>(_timerIsPrep ? Colors.amber : accentColor),
-                              ),
-                            ),
-                            Text(
-                              "$_countdownSecondsRemaining",
-                              style: const TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.w900),
-                            ),
-                          ],
+                        ValueListenableBuilder<int>(
+                          valueListenable: _countdownSecondsNotifier,
+                          builder: (context, remaining, child) {
+                            return Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 140,
+                                  height: 140,
+                                  child: RepaintBoundary(
+                                    child: CircularProgressIndicator(
+                                      value: _countdownTotalSeconds > 0
+                                          ? (remaining / _countdownTotalSeconds)
+                                          : 0,
+                                      strokeWidth: 8,
+                                      backgroundColor: Colors.white.withOpacity(0.05),
+                                      valueColor: AlwaysStoppedAnimation<Color>(_timerIsPrep ? Colors.amber : accentColor),
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  "$remaining",
+                                  style: const TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.w900),
+                                ),
+                              ],
+                            );
+                          },
                         ),
                         const SizedBox(height: 24),
 
@@ -1338,7 +1346,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
                 onPressed: () {
                   // Concluir treino no provider
                   widget.provider.finishWorkout(
-                    _workoutDurationSeconds,
+                    _workoutDurationNotifier.value,
                     rpeVal.toInt(),
                     notesCtrl.text.trim(),
                   );

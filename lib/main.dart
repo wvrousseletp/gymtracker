@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'firebase_options.dart';
 import 'providers/tracker_provider.dart';
 import 'screens/main_navigation.dart';
@@ -34,7 +35,7 @@ class MyApp extends StatelessWidget {
           background: Colors.black,
           surface: Color(0xff1c1c1e),
         ),
-        fontFamily: 'Outfit', // Uses modern sans-serif typography on mobile
+        textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme),
         useMaterial3: true,
       ),
       home: const MainNavigation(),
