@@ -374,6 +374,27 @@ class TrackerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void startSingleExercise(LibraryExercise exercise) {
+    if (_state == null) return;
+    final tempRoutine = Routine(
+      id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
+      name: exercise.name,
+      defaultRest: 60,
+      isDynamicExercise: true,
+      exercises: [
+        RoutineExercise(
+          id: 'temp_ex_${DateTime.now().millisecondsSinceEpoch}',
+          exerciseId: exercise.id,
+          sets: 3,
+          reps: 10,
+          rest: 60,
+          weight: 0.0,
+        )
+      ],
+    );
+    startWorkout(tempRoutine, WorkoutRecovery(sleepOk: 'ok', pain: [], warmUpDone: false), false);
+  }
+
   void completeSet(int exIndex, int setIndex, bool isDone, {double? distance, int? duration, bool isFailure = false}) {
     if (_state == null || _state!.activeWorkout == null) return;
 

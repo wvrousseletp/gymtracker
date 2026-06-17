@@ -330,6 +330,47 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                   );
                 }).toList(),
               ),
+            const SizedBox(height: 24),
+
+            // Iniciar Exercício Avulso
+            const Text(
+              "Iniciar Exercício Avulso",
+              style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+
+            GestureDetector(
+              onTap: () {
+                _showSelectExerciseDialog(context, provider, state);
+              },
+              child: GlassCard(
+                padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+                borderColor: Colors.white.withOpacity(0.04),
+                child: Row(
+                  children: [
+                    Icon(Icons.play_circle_outline, color: accentColor, size: 28),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Selecionar da Biblioteca",
+                            style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            "Inicie uma sessão de treino rápida com unicamente esse exercício",
+                            style: TextStyle(color: Colors.white38, fontSize: 11),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.arrow_forward_ios, color: Colors.white38, size: 14),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -384,6 +425,147 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showSelectExerciseDialog(BuildContext context, TrackerProvider provider, PlannerState state) {
+    final library = state.library;
+    final accentColor = ThemeUtils.getColor(provider.currentProfile.colorAccent);
+    
+    if (library.isEmpty) {
+      showDialog(
+        context: context,
+        builder: (dialogCtx) => AlertDialog(
+          backgroundColor: const Color(0xff1c1c1e),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: Colors.white.withOpacity(0.08)),
+          ),
+          title: const Text("Biblioteca Vazia", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          content: const Text("Cadastre alguns exercícios na aba 'Rotinas' primeiro.", style: TextStyle(color: Colors.white70)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogCtx),
+              child: const Text("OK", style: TextStyle(color: Colors.blueAccent)),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        String searchQuery = "";
+        return StatefulBuilder(
+          builder: (context, setState) {
+            final filteredList = library.where((ex) {
+              return ex.name.toLowerCase().contains(searchQuery.toLowerCase()) ||
+                  ex.muscle.toLowerCase().contains(searchQuery.toLowerCase());
+            }).toList();
+
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.75,
+              decoration: BoxDecoration(
+                color: const Color(0xff1c1c1e).withOpacity(0.95),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                border: Border.all(color: Colors.white.withOpacity(0.08)),
+              ),
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Cabeçalho
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        "Iniciar Exercício",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white54),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  // Campo de busca
+                  TextField(
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: "Buscar exercício ou grupo muscular...",
+                      hintStyle: const TextStyle(color: Colors.white30),
+                      prefixIcon: const Icon(Icons.search, color: Colors.white38),
+                      filled: true,
+                      fillColor: Colors.white.withOpacity(0.05),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    ),
+                    onChanged: (val) {
+                      setState(() {
+                        searchQuery = val;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Lista de exercícios
+                  Expanded(
+                    child: filteredList.isEmpty
+                        ? const Center(
+                            child: Text(
+                              "Nenhum exercício encontrado.",
+                              style: TextStyle(color: Colors.white38, fontStyle: FontStyle.italic),
+                            ),
+                          )
+                        : ListView.builder(
+                            itemCount: filteredList.length,
+                            itemBuilder: (context, index) {
+                              final ex = filteredList[index];
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.02),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.white.withOpacity(0.04)),
+                                ),
+                                child: ListTile(
+                                  title: Text(
+                                    ex.name,
+                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                  ),
+                                  subtitle: Text(
+                                    ex.muscle,
+                                    style: TextStyle(color: accentColor.withOpacity(0.7), fontSize: 12),
+                                  ),
+                                  trailing: const Icon(Icons.play_arrow_rounded, color: Colors.white54),
+                                  onTap: () {
+                                    Navigator.pop(context); // fecha modal
+                                    provider.startSingleExercise(ex); 
+                                  },
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
