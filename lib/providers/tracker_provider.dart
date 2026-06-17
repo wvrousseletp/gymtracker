@@ -98,8 +98,12 @@ class TrackerProvider extends ChangeNotifier {
     return true;
   }
 
+  String generateProfileId(String name) {
+    return name.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '_').replaceAll(RegExp(r'[^a-z0-9_]'), '');
+  }
+
   Future<void> createProfile(String name, String avatar, String color, String password) async {
-    final id = name.toLowerCase().replaceAll(' ', '_') + '_' + DateTime.now().millisecondsSinceEpoch.toString();
+    final id = generateProfileId(name);
     final newProfile = Profile(
       id: id,
       name: name,
@@ -111,7 +115,8 @@ class TrackerProvider extends ChangeNotifier {
     _profiles.add(newProfile);
     _currentUserId = id;
     await saveProfilesConfig();
-    await loadCurrentState(); // Carrega o estado padrão para o novo perfil
+    _state = _getDefaultState();
+    await saveState(); // This will trigger syncStateWithFirebase which uploads the profile config
     notifyListeners();
   }
 
@@ -127,6 +132,17 @@ class TrackerProvider extends ChangeNotifier {
         hasPassword: password.isNotEmpty,
       );
       await saveProfilesConfig();
+      
+      // Update in Firebase as well
+      try {
+        final docRef = FirebaseFirestore.instance.collection('users').doc(id);
+        await docRef.update({
+          'profile': _profiles[idx].toJson(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      } catch (e) {
+        debugPrint('[Firebase] Erro ao atualizar perfil na nuvem: $e');
+      }
       notifyListeners();
     }
   }
@@ -187,6 +203,65 @@ class TrackerProvider extends ChangeNotifier {
     syncStateWithFirebase();
   }
 
+  // --- FIREBASE CLOUD MANAGEMENT ---
+  Future<Map<String, dynamic>?> checkProfileExistsInCloud(String profileId) async {
+    try {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(profileId).get();
+      if (doc.exists) {
+        final data = doc.data();
+        if (data != null && data['profile'] != null) {
+          return Map<String, dynamic>.from(data['profile']);
+        }
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<bool> importProfileFromCloud(String profileId, String password) async {
+    try {
+      final docRef = FirebaseFirestore.instance.collection('users').doc(profileId);
+      final docSnap = await docRef.get();
+      if (!docSnap.exists) return false;
+      
+      final data = docSnap.data();
+      if (data == null) return false;
+      
+      // Checa a senha do perfil remoto
+      if (data['profile'] != null) {
+        final remoteProfile = Profile.fromJson(data['profile']);
+        
+        if (remoteProfile.hasPassword && remoteProfile.password != password) {
+          return false; // Senha incorreta
+        }
+        
+        // Adiciona à lista local se não existir
+        if (!_profiles.any((p) => p.id == remoteProfile.id)) {
+          _profiles.add(remoteProfile);
+        }
+        _currentUserId = remoteProfile.id;
+        await saveProfilesConfig();
+        
+        // Carrega o estado e salva localmente
+        if (data['jsonState'] != null) {
+          _state = PlannerState.fromJson(json.decode(data['jsonState']));
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString(
+            'shapeup_tracker_state_$_currentUserId', 
+            json.encode(_state!.toJson())
+          );
+        }
+        notifyListeners();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('[Firebase] Erro ao importar perfil: $e');
+      return false;
+    }
+  }
+
   // --- FIREBASE SYNC ---
   Future<void> syncStateWithFirebase() async {
     if (_state == null) return;
@@ -200,12 +275,10 @@ class TrackerProvider extends ChangeNotifier {
         if (data != null && data['jsonState'] != null) {
           final remoteState = PlannerState.fromJson(json.decode(data['jsonState']));
           
-          // Mantenha o mais recente. Como não temos um timestamp, 
-          // usaremos o tamanho da lista de histórico como um indicador simples de progresso,
-          // ou simplesmente atualizaremos o Firebase se o local tiver mais itens.
           if (_state!.history.length >= remoteState.history.length) {
             await docRef.set({
               'jsonState': json.encode(_state!.toJson()),
+              'profile': currentProfile.toJson(),
               'updatedAt': FieldValue.serverTimestamp(),
             });
           } else {
@@ -217,12 +290,23 @@ class TrackerProvider extends ChangeNotifier {
               'shapeup_tracker_state_$_currentUserId', 
               json.encode(_state!.toJson())
             );
+            
+            // Também sincroniza as informações de perfil localmente se vierem da nuvem
+            if (data['profile'] != null) {
+              final remoteProfile = Profile.fromJson(data['profile']);
+              final idx = _profiles.indexWhere((p) => p.id == remoteProfile.id);
+              if (idx != -1) {
+                _profiles[idx] = remoteProfile;
+                await saveProfilesConfig();
+              }
+            }
           }
         }
       } else {
         // Envia dados locais se não houver dados remotos
         await docRef.set({
           'jsonState': json.encode(_state!.toJson()),
+          'profile': currentProfile.toJson(),
           'updatedAt': FieldValue.serverTimestamp(),
         });
       }

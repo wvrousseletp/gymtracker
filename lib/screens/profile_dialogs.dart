@@ -182,6 +182,19 @@ class _ProfileManagerSheetState extends State<ProfileManagerSheet> {
                   );
                 },
               ),
+              const SizedBox(height: 12),
+              Center(
+                child: TextButton.icon(
+                  onPressed: () {
+                    _showImportProfileDialog(context, provider);
+                  },
+                  icon: Icon(Icons.cloud_download_outlined, color: accentColor),
+                  label: Text(
+                    "Importar Perfil da Nuvem",
+                    style: TextStyle(color: accentColor, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
             ] else ...[
               // CREATE OR EDIT PROFILE FORM
               Row(
@@ -364,18 +377,73 @@ class _ProfileManagerSheetState extends State<ProfileManagerSheet> {
                           if (_formKey.currentState!.validate()) {
                             final name = _nameController.text.trim();
                             final pwd = _passwordController.text.trim();
+                            final id = provider.generateProfileId(name);
                             
                             if (_editingProfileId == null) {
-                              // Create profile
-                              await provider.createProfile(name, _selectedAvatar, _selectedColor, pwd);
+                              // Validar duplicidade local
+                              if (provider.profiles.any((p) => p.id == id)) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("Já existe um perfil com este nome neste aparelho!"),
+                                    backgroundColor: Colors.orangeAccent,
+                                  ),
+                                );
+                                return;
+                              }
+                              
+                              // Validar duplicidade na nuvem
+                              showDialog(
+                                context: context,
+                                barrierDismissible: false,
+                                builder: (loadingCtx) => const Center(
+                                  child: CircularProgressIndicator(color: Colors.blueAccent),
+                                ),
+                              );
+                              
+                              final cloudProfile = await provider.checkProfileExistsInCloud(id);
+                              Navigator.pop(context); // Fechar indicador de carregamento
+                              
+                              if (cloudProfile != null) {
+                                // Existe na nuvem, sugerir importação
+                                showDialog(
+                                  context: context,
+                                  builder: (confirmCtx) => AlertDialog(
+                                    backgroundColor: const Color(0xff1c1c1e),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                      side: BorderSide(color: Colors.white.withOpacity(0.08)),
+                                    ),
+                                    title: const Text("Perfil já existente", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16)),
+                                    content: Text("O perfil '$name' já possui dados salvos na nuvem. Deseja importá-lo em vez de criar um novo?", style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(confirmCtx),
+                                        child: const Text("Escolher outro nome", style: TextStyle(color: Colors.white54)),
+                                      ),
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.pop(confirmCtx);
+                                          _showImportProfileDialog(context, provider);
+                                        },
+                                        child: const Text("Importar", style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.w700)),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              } else {
+                                // Criar normalmente
+                                await provider.createProfile(name, _selectedAvatar, _selectedColor, pwd);
+                                setState(() {
+                                  _isEditing = false;
+                                });
+                              }
                             } else {
                               // Edit profile
                               await provider.updateProfile(_editingProfileId!, name, _selectedAvatar, _selectedColor, pwd);
+                              setState(() {
+                                _isEditing = false;
+                              });
                             }
-                            
-                            setState(() {
-                              _isEditing = false;
-                            });
                           }
                         },
                         style: ElevatedButton.styleFrom(
@@ -499,5 +567,193 @@ class _ProfileManagerSheetState extends State<ProfileManagerSheet> {
         ],
       ),
     );
+  }
+
+  void _showImportProfileDialog(BuildContext context, TrackerProvider provider) {
+    final nameController = TextEditingController();
+    final pinController = TextEditingController();
+    bool isSearching = false;
+    bool showPinField = false;
+    String? foundProfileId;
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              backgroundColor: const Color(0xff1c1c1e),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(color: Colors.white.withOpacity(0.08)),
+              ),
+              title: const Text(
+                "Importar Perfil",
+                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (!showPinField) ...[
+                    const Text(
+                      "Digite o nome exato do perfil que deseja importar da nuvem:",
+                      style: TextStyle(color: Colors.white70, fontSize: 13),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: nameController,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.white.withOpacity(0.05),
+                        hintText: "Nome do perfil",
+                        hintStyle: const TextStyle(color: Colors.white30),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                  ] else ...[
+                    const Text(
+                      "Perfil encontrado! Digite a senha para continuar:",
+                      style: TextStyle(color: Colors.white70, fontSize: 13),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: pinController,
+                      obscureText: true,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.white.withOpacity(0.05),
+                        hintText: "Senha",
+                        hintStyle: const TextStyle(color: Colors.white30),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                  ],
+                  if (isSearching) ...[
+                    const SizedBox(height: 16),
+                    const Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.blueAccent),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogCtx),
+                  child: const Text("Cancelar", style: TextStyle(color: Colors.white54)),
+                ),
+                TextButton(
+                  onPressed: isSearching ? null : () async {
+                    if (!showPinField) {
+                      final name = nameController.text.trim();
+                      if (name.isEmpty) return;
+                      
+                      setState(() {
+                        isSearching = true;
+                      });
+                      
+                      final id = provider.generateProfileId(name);
+                      final profileData = await provider.checkProfileExistsInCloud(id);
+                      
+                      setState(() {
+                        isSearching = false;
+                      });
+                      
+                      if (profileData != null) {
+                        final hasPassword = profileData['hasPassword'] ?? false;
+                        if (hasPassword) {
+                          setState(() {
+                            showPinField = true;
+                            foundProfileId = id;
+                          });
+                        } else {
+                          // Importa direto se não tiver senha
+                          setState(() {
+                            isSearching = true;
+                          });
+                          final success = await provider.importProfileFromCloud(id, "");
+                          setState(() {
+                            isSearching = false;
+                          });
+                          if (success) {
+                            Navigator.pop(dialogCtx);
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("Perfil importado com sucesso!"),
+                                backgroundColor: Colors.green,
+                              ),
+                            ); 
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("Erro ao importar perfil!"),
+                                backgroundColor: Colors.redAccent,
+                              ),
+                            ); 
+                          }
+                        }
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Perfil não encontrado na nuvem!"),
+                            backgroundColor: Colors.orangeAccent,
+                          ),
+                        );
+                      }
+                    } else {
+                      final pin = pinController.text.trim();
+                      setState(() {
+                        isSearching = true;
+                      });
+                      
+                      final success = await provider.importProfileFromCloud(foundProfileId!, pin);
+                      
+                      setState(() { 
+                        isSearching = false;
+                      });
+                      
+                      if (success) {
+                        Navigator.pop(dialogCtx);
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Perfil importado com sucesso!"),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Senha incorreta ou erro ao importar!"),
+                            backgroundColor: Colors.redAccent,
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  child: Text(
+                    showPinField ? "Confirmar" : "Buscar",
+                    style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    ); 
   }
 }
