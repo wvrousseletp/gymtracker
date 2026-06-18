@@ -1333,21 +1333,21 @@ class TrackerProvider extends ChangeNotifier {
 
   List<LibraryExercise> _getDefaultLibrary() {
     return [
-      LibraryExercise(id: "lib-1", name: "Supino Reto", muscle: "Peito", notes: "Foco no controle da descida, barra até o peito.", measurementType: "reps"),
-      LibraryExercise(id: "lib-2", name: "Desenvolvimento Halteres", muscle: "Ombros", notes: "Coluna reta, cotovelos levemente flexionados para frente.", measurementType: "reps"),
-      LibraryExercise(id: "lib-3", name: "Tríceps Pulley", muscle: "Tríceps", notes: "Manter cotovelos fixados nas costelas.", measurementType: "reps"),
-      LibraryExercise(id: "lib-4", name: "Elevação Lateral", muscle: "Ombros", notes: "Elevar halteres até a linha dos ombros, punho firme.", measurementType: "reps"),
-      LibraryExercise(id: "lib-5", name: "Puxada Alta Pulley", muscle: "Costas", notes: "Puxar em direção ao peito inclinado levemente para trás.", measurementType: "reps"),
-      LibraryExercise(id: "lib-6", name: "Remada Curvada", muscle: "Costas", notes: "Tronco inclinado 45 graus, coluna neutra.", measurementType: "reps"),
-      LibraryExercise(id: "lib-7", name: "Rosca Direta", muscle: "Bíceps", notes: "Sem balançar o corpo, contração máxima no topo.", measurementType: "reps"),
-      LibraryExercise(id: "lib-8", name: "Encolhimento Halteres", muscle: "Ombros", notes: "Elevação vertical dos ombros sem girá-los.", measurementType: "reps"),
-      LibraryExercise(id: "lib-9", name: "Agachamento Livre", muscle: "Pernas", notes: "Pés na largura dos ombros, joelhos alinhados com a ponta dos pés.", measurementType: "reps"),
-      LibraryExercise(id: "lib-10", name: "Leg Press 45", muscle: "Pernas", notes: "Não estender os joelhos completamente no final.", measurementType: "reps"),
-      LibraryExercise(id: "lib-11", name: "Cadeira Extensora", muscle: "Pernas", notes: "Tronco firme no encosto, extensão completa.", measurementType: "reps"),
-      LibraryExercise(id: "lib-12", name: "Gêmeos em Pé", muscle: "Pernas", notes: "Amplitude máxima no calcanhar.", measurementType: "reps"),
-      LibraryExercise(id: "lib-13", name: "Abdominal Supra", muscle: "Core", notes: "Contrair abdômen sem puxar o pescoço.", measurementType: "reps"),
-      LibraryExercise(id: "lib-14", name: "Corrida (Esteira/Rua)", muscle: "Cardio", notes: "Corrida aeróbica contínua.", measurementType: "time"),
-      LibraryExercise(id: "lib-15", name: "Bicicleta Ergométrica", muscle: "Cardio", notes: "Cadência estável com carga moderada.", measurementType: "time")
+      LibraryExercise(id: "lib-1", name: "Supino Reto", muscle: "Peito", notes: "Foco no controle da descida, barra até o peito.", measurementType: "reps", executionType: "Barra"),
+      LibraryExercise(id: "lib-2", name: "Desenvolvimento Halteres", muscle: "Ombros", notes: "Coluna reta, cotovelos levemente flexionados para frente.", measurementType: "reps", executionType: "Haltere"),
+      LibraryExercise(id: "lib-3", name: "Tríceps Pulley", muscle: "Tríceps", notes: "Manter cotovelos fixados nas costelas.", measurementType: "reps", executionType: "Máquina"),
+      LibraryExercise(id: "lib-4", name: "Elevação Lateral", muscle: "Ombros", notes: "Elevar halteres até a linha dos ombros, punho firme.", measurementType: "reps", executionType: "Haltere"),
+      LibraryExercise(id: "lib-5", name: "Puxada Alta Pulley", muscle: "Costas", notes: "Puxar em direção ao peito inclinado levemente para trás.", measurementType: "reps", executionType: "Máquina"),
+      LibraryExercise(id: "lib-6", name: "Remada Curvada", muscle: "Costas", notes: "Tronco inclinado 45 graus, coluna neutra.", measurementType: "reps", executionType: "Barra"),
+      LibraryExercise(id: "lib-7", name: "Rosca Direta", muscle: "Bíceps", notes: "Sem balançar o corpo, contração máxima no topo.", measurementType: "reps", executionType: "Barra"),
+      LibraryExercise(id: "lib-8", name: "Encolhimento Halteres", muscle: "Ombros", notes: "Elevação vertical dos ombros sem girá-los.", measurementType: "reps", executionType: "Haltere"),
+      LibraryExercise(id: "lib-9", name: "Agachamento Livre", muscle: "Pernas", notes: "Pés na largura dos ombros, joelhos alinhados com a ponta dos pés.", measurementType: "reps", executionType: "Livre"),
+      LibraryExercise(id: "lib-10", name: "Leg Press 45", muscle: "Pernas", notes: "Não estender os joelhos completamente no final.", measurementType: "reps", executionType: "Máquina"),
+      LibraryExercise(id: "lib-11", name: "Cadeira Extensora", muscle: "Pernas", notes: "Tronco firme no encosto, extensão completa.", measurementType: "reps", executionType: "Máquina"),
+      LibraryExercise(id: "lib-12", name: "Gêmeos em Pé", muscle: "Pernas", notes: "Amplitude máxima no calcanhar.", measurementType: "reps", executionType: "Máquina"),
+      LibraryExercise(id: "lib-13", name: "Abdominal Supra", muscle: "Core", notes: "Contrair abdômen sem puxar o pescoço.", measurementType: "reps", executionType: "Livre"),
+      LibraryExercise(id: "lib-14", name: "Corrida (Esteira/Rua)", muscle: "Cardio", notes: "Corrida aeróbica contínua.", measurementType: "time", executionType: "Livre"),
+      LibraryExercise(id: "lib-15", name: "Bicicleta Ergométrica", muscle: "Cardio", notes: "Cadência estável com carga moderada.", measurementType: "time", executionType: "Máquina")
     ];
   }
 

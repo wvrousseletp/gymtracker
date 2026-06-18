@@ -20,7 +20,7 @@ class LibraryExercise {
     'name': name,
     'muscle': muscle,
     'measurementType': measurementType,
-    'executionType': executionType,
+    'executionType': executionType ?? 'Livre',
     'notes': notes,
   };
 
@@ -29,7 +29,7 @@ class LibraryExercise {
     name: json['name'] ?? '',
     muscle: json['muscle'] ?? 'Geral',
     measurementType: json['measurementType'] ?? 'reps',
-    executionType: json['executionType'],
+    executionType: json['executionType'] ?? 'Livre',
     notes: json['notes'],
   );
 }

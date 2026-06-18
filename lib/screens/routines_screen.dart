@@ -711,8 +711,35 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
             itemBuilder: (context, index) {
               final ex = library[index];
               return ListTile(
-                title: Text(ex.name, style: const TextStyle(color: Colors.white, fontSize: 14)),
-                subtitle: Text(ex.muscle, style: const TextStyle(color: Colors.white38, fontSize: 12)),
+                title: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        ex.name,
+                        style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (ex.executionType != null && ex.executionType!.isNotEmpty) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.blueAccent.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          ex.executionType!,
+                          style: const TextStyle(color: Colors.blueAccent, fontSize: 9, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                subtitle: Text(
+                  "${ex.muscle} • ${ex.measurementType == 'time' ? 'Isometria' : 'Repetições'}",
+                  style: const TextStyle(color: Colors.white38, fontSize: 12),
+                ),
                 onTap: () {
                   setState(() {
                     _exercises.add(RoutineExercise(
@@ -863,17 +890,31 @@ class _LibraryTabState extends State<LibraryTab> {
                                           ex.name,
                                           style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
                                         ),
-                                        if (ex.executionType == 'isometric') ...[
+                                        if (ex.measurementType == 'time') ...[
                                           const SizedBox(width: 6),
                                           Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                             decoration: BoxDecoration(
-                                              color: Colors.white.withOpacity(0.08),
+                                              color: Colors.amber.withOpacity(0.15),
                                               borderRadius: BorderRadius.circular(4),
                                             ),
                                             child: const Text(
                                               "Isometria",
-                                              style: TextStyle(color: Colors.white70, fontSize: 9, fontWeight: FontWeight.bold),
+                                              style: TextStyle(color: Colors.amber, fontSize: 9, fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                        ],
+                                        if (ex.executionType != null && ex.executionType!.isNotEmpty) ...[
+                                          const SizedBox(width: 6),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: Colors.blueAccent.withOpacity(0.15),
+                                              borderRadius: BorderRadius.circular(4),
+                                            ),
+                                            child: Text(
+                                              ex.executionType!,
+                                              style: const TextStyle(color: Colors.blueAccent, fontSize: 9, fontWeight: FontWeight.bold),
                                             ),
                                           ),
                                         ],
@@ -881,7 +922,7 @@ class _LibraryTabState extends State<LibraryTab> {
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      "${ex.muscle} • ${ex.measurementType == 'time' ? 'Tempo' : 'Repetições'}",
+                                      "${ex.muscle} • ${ex.measurementType == 'time' ? 'Isometria' : 'Repetições'}",
                                       style: const TextStyle(color: Colors.white38, fontSize: 11),
                                     ),
                                     if (ex.notes != null && ex.notes!.trim().isNotEmpty) ...[
@@ -943,9 +984,10 @@ class _LibraryTabState extends State<LibraryTab> {
 
   void _openAddExerciseDialog(BuildContext context, TrackerProvider provider) {
     final nameCtrl = TextEditingController();
+    String category = "Musculação"; // "Musculação" ou "Cardio"
     String muscle = "Peito";
-    String mType = "reps";
-    bool isIsometric = false;
+    String equipment = "Barra"; // "Barra", "Haltere", "Máquina", "Livre"
+    String measurement = "Repetições"; // "Repetições", "Tempo de Isometria"
     final notesCtrl = TextEditingController();
 
     showDialog(
@@ -978,75 +1020,170 @@ class _LibraryTabState extends State<LibraryTab> {
                   ),
                   const SizedBox(height: 12),
 
-                  // Músculo
-                  const Text("Grupo Muscular", style: TextStyle(color: Colors.white54, fontSize: 11)),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: muscle,
-                        dropdownColor: const Color(0xff1c1c1e),
-                        style: const TextStyle(color: Colors.white, fontSize: 14),
-                        isExpanded: true,
-                        onChanged: (val) {
-                          if (val != null) setState(() => muscle = val);
-                        },
-                        items: ["Peito", "Costas", "Pernas", "Ombros", "Bíceps", "Tríceps", "Core", "Cardio", "Outros"]
-                            .map((m) => DropdownMenuItem(value: m, child: Text(m)))
-                            .toList(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Medição
-                  const Text("Tipo de Medição", style: TextStyle(color: Colors.white54, fontSize: 11)),
-                  const SizedBox(height: 4),
+                  // Tipo de Exercício
+                  const Text("Tipo de Exercício", style: TextStyle(color: Colors.white54, fontSize: 11)),
+                  const SizedBox(height: 6),
                   Row(
                     children: [
                       Expanded(
-                        child: RadioListTile<String>(
-                          title: const Text("Reps", style: TextStyle(color: Colors.white, fontSize: 13)),
-                          value: "reps",
-                          groupValue: mType,
-                          dense: true,
-                          contentPadding: EdgeInsets.zero,
-                          onChanged: (val) {
-                            if (val != null) setState(() => mType = val);
+                        child: ChoiceChip(
+                          label: const Center(child: Text("Musculação")),
+                          selected: category == "Musculação",
+                          selectedColor: widget.accentColor.withOpacity(0.25),
+                          disabledColor: Colors.transparent,
+                          backgroundColor: Colors.white.withOpacity(0.05),
+                          labelStyle: TextStyle(color: category == "Musculação" ? widget.accentColor : Colors.white70, fontSize: 13, fontWeight: FontWeight.bold),
+                          onSelected: (selected) {
+                            if (selected) {
+                              setState(() {
+                                category = "Musculação";
+                                if (muscle == "Cardio") {
+                                  muscle = "Peito";
+                                }
+                              });
+                            }
                           },
                         ),
                       ),
+                      const SizedBox(width: 8),
                       Expanded(
-                        child: RadioListTile<String>(
-                          title: const Text("Tempo", style: TextStyle(color: Colors.white, fontSize: 13)),
-                          value: "time",
-                          groupValue: mType,
-                          dense: true,
-                          contentPadding: EdgeInsets.zero,
-                          onChanged: (val) {
-                            if (val != null) setState(() => mType = val);
+                        child: ChoiceChip(
+                          label: const Center(child: Text("Cardio")),
+                          selected: category == "Cardio",
+                          selectedColor: widget.accentColor.withOpacity(0.25),
+                          disabledColor: Colors.transparent,
+                          backgroundColor: Colors.white.withOpacity(0.05),
+                          labelStyle: TextStyle(color: category == "Cardio" ? widget.accentColor : Colors.white70, fontSize: 13, fontWeight: FontWeight.bold),
+                          onSelected: (selected) {
+                            if (selected) {
+                              setState(() {
+                                category = "Cardio";
+                                muscle = "Cardio";
+                              });
+                            }
                           },
                         ),
                       ),
                     ],
                   ),
+                  const SizedBox(height: 12),
 
-                  // Isometria
-                  CheckboxListTile(
-                    title: const Text("Isometric (Segurar Carga)", style: TextStyle(color: Colors.white, fontSize: 13)),
-                    value: isIsometric,
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    onChanged: (val) {
-                      if (val != null) setState(() => isIsometric = val);
-                    },
-                  ),
-                  const SizedBox(height: 6),
+                  // Grupo Muscular (se Musculação)
+                  if (category == "Musculação") ...[
+                    const Text("Grupo Muscular", style: TextStyle(color: Colors.white54, fontSize: 11)),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: muscle == "Cardio" ? "Peito" : muscle,
+                          dropdownColor: const Color(0xff1c1c1e),
+                          style: const TextStyle(color: Colors.white, fontSize: 14),
+                          isExpanded: true,
+                          onChanged: (val) {
+                            if (val != null) setState(() => muscle = val);
+                          },
+                          items: ["Peito", "Costas", "Pernas", "Ombros", "Bíceps", "Tríceps", "Core", "Outros"]
+                              .map((m) => DropdownMenuItem(value: m, child: Text(m)))
+                              .toList(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+
+                  // Tipo de Equipamento (se Musculação)
+                  if (category == "Musculação") ...[
+                    const Text("Tipo de Equipamento", style: TextStyle(color: Colors.white54, fontSize: 11)),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: equipment,
+                          dropdownColor: const Color(0xff1c1c1e),
+                          style: const TextStyle(color: Colors.white, fontSize: 14),
+                          isExpanded: true,
+                          onChanged: (val) {
+                            if (val != null) setState(() => equipment = val);
+                          },
+                          items: ["Barra", "Haltere", "Máquina", "Livre"]
+                              .map((m) => DropdownMenuItem(value: m, child: Text(m)))
+                              .toList(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+
+                  // Tipo de Medição (se Musculação)
+                  if (category == "Musculação") ...[
+                    const Text("Tipo de Medição", style: TextStyle(color: Colors.white54, fontSize: 11)),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ChoiceChip(
+                            label: const Center(child: Text("Repetições")),
+                            selected: measurement == "Repetições",
+                            selectedColor: Colors.blueAccent.withOpacity(0.2),
+                            disabledColor: Colors.transparent,
+                            backgroundColor: Colors.white.withOpacity(0.05),
+                            labelStyle: TextStyle(color: measurement == "Repetições" ? Colors.blueAccent : Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
+                            onSelected: (selected) {
+                              if (selected) {
+                                setState(() => measurement = "Repetições");
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ChoiceChip(
+                            label: const Center(child: Text("Isometria")),
+                            selected: measurement == "Tempo de Isometria",
+                            selectedColor: Colors.amber.withOpacity(0.2),
+                            disabledColor: Colors.transparent,
+                            backgroundColor: Colors.white.withOpacity(0.05),
+                            labelStyle: TextStyle(color: measurement == "Tempo de Isometria" ? Colors.amber : Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
+                            onSelected: (selected) {
+                              if (selected) {
+                                setState(() => measurement = "Tempo de Isometria");
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+
+                  // Tipo de Medição (se Cardio)
+                  if (category == "Cardio") ...[
+                    const Text("Tipo de Medição", style: TextStyle(color: Colors.white54, fontSize: 11)),
+                    const SizedBox(height: 6),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Text(
+                        "Distância + Tempo (Automático)",
+                        style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
 
                   // Observação
                   TextField(
@@ -1073,12 +1210,20 @@ class _LibraryTabState extends State<LibraryTab> {
                 onPressed: () {
                   final name = nameCtrl.text.trim();
                   if (name.isNotEmpty) {
+                    final isCardioEx = category == "Cardio";
+                    final mType = isCardioEx 
+                        ? "time" 
+                        : (measurement == "Tempo de Isometria" ? "time" : "reps");
+                    final execType = isCardioEx 
+                        ? "Livre" 
+                        : equipment;
+
                     provider.addLibraryExercise(
                       name,
-                      muscle,
+                      isCardioEx ? "Cardio" : muscle,
                       mType,
                       notesCtrl.text.trim(),
-                      isIsometric ? "isometric" : null,
+                      execType,
                     );
                     Navigator.pop(dialogCtx);
                   }

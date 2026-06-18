@@ -1076,7 +1076,9 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
             style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
           ),
           Text(
-            ex.muscle,
+            ex.executionType != null && ex.executionType!.isNotEmpty
+                ? "${ex.muscle} • ${ex.executionType}"
+                : ex.muscle,
             style: const TextStyle(color: Colors.white38, fontSize: 12),
           ),
           const SizedBox(height: 16),
