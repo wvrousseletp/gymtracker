@@ -6,6 +6,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     static let shared = WatchConnectivityManager()
 
     @Published var routines: [WatchRoutine] = []
+    @Published var library: [WatchLibraryExercise] = []
     @Published var activeWorkout: WatchActiveWorkoutState?
     @Published var isReachable = false
 
@@ -61,6 +62,15 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                         print("Error decoding routines: \(error)")
                     }
                 }
+            case "updateLibrary":
+                if let jsonString = data["library"] as? String,
+                   let jsonData = jsonString.data(using: .utf8) {
+                    do {
+                        self.library = try JSONDecoder().decode([WatchLibraryExercise].self, from: jsonData)
+                    } catch {
+                        print("Error decoding library: \(error)")
+                    }
+                }
             case "updateActiveWorkout":
                 if let jsonString = data["activeWorkout"] as? String,
                    let jsonData = jsonString.data(using: .utf8) {
@@ -84,12 +94,29 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         sendToiPhone(["action": "startWorkout", "routineId": routineId])
     }
 
+    func startSingleExercise(exerciseId: String) {
+        sendToiPhone(["action": "startSingleExercise", "exerciseId": exerciseId])
+    }
+
     func toggleSet(exerciseIndex: Int, setIndex: Int) {
         sendToiPhone([
             "action": "toggleSet",
             "exerciseIndex": exerciseIndex,
             "setIndex": setIndex
         ])
+    }
+
+    func updateExerciseWeightReps(exerciseIndex: Int, weight: Double, reps: Int) {
+        sendToiPhone([
+            "action": "updateExerciseWeightReps",
+            "exerciseIndex": exerciseIndex,
+            "weight": weight,
+            "reps": reps
+        ])
+    }
+
+    func skipRest() {
+        sendToiPhone(["action": "skipRest"])
     }
 
     func completeWorkout() {
@@ -131,6 +158,22 @@ struct WatchRoutineExercise: Codable, Identifiable {
     let weight: Double
 }
 
+struct WatchLibraryExercise: Codable, Identifiable {
+    let id: String
+    let name: String
+    let muscle: String
+    let executionType: String
+    let measurementType: String
+}
+
+struct WatchRestTimer: Codable {
+    let endTime: Int
+    let totalSeconds: Int
+    let nextExerciseName: String
+    let nextSetNum: Int
+    let isPrep: Bool
+}
+
 struct WatchActiveWorkoutState: Codable {
     let name: String
     let startTime: Int
@@ -138,6 +181,7 @@ struct WatchActiveWorkoutState: Codable {
     let currentExerciseIndex: Int
     let elapsedSeconds: Int
     let paused: Bool
+    let restTimer: WatchRestTimer?
 }
 
 struct WatchActiveExercise: Codable, Identifiable {

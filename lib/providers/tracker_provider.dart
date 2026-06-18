@@ -193,6 +193,7 @@ class TrackerProvider extends ChangeNotifier {
     
     // Sincroniza com o Apple Watch via Bluetooth
     WatchService.instance.sendRoutines(_state!.routines);
+    WatchService.instance.sendLibrary(_state!.library);
     if (_state!.activeWorkout != null) {
       WatchService.instance.sendActiveWorkout(_state!.activeWorkout!);
     } else {
@@ -428,6 +429,164 @@ class TrackerProvider extends ChangeNotifier {
       failureReport: newFailure,
     );
 
+    // Calcular cronômetro de descanso se a série foi completada
+    WatchRestTimer? computedRestTimer = active.restTimer;
+    int computedExIndex = active.currentExerciseIndex;
+    if (isDone) {
+      if (setIndex < ex.sets - 1) {
+        final endTime = DateTime.now().millisecondsSinceEpoch + (ex.rest * 1000);
+        computedRestTimer = WatchRestTimer(
+          endTime: endTime,
+          totalSeconds: ex.rest,
+          nextExerciseName: ex.name,
+          nextSetNum: setIndex + 2,
+          isPrep: false,
+        );
+      } else if (exIndex < exercises.length - 1) {
+        final nextEx = exercises[exIndex + 1];
+        final endTime = DateTime.now().millisecondsSinceEpoch + (ex.rest * 1000);
+        computedRestTimer = WatchRestTimer(
+          endTime: endTime,
+          totalSeconds: ex.rest,
+          nextExerciseName: nextEx.name,
+          nextSetNum: 1,
+          isPrep: false,
+        );
+        computedExIndex = exIndex + 1;
+      } else {
+        computedRestTimer = null;
+      }
+    } else {
+      // Se desmarcou, cancela o timer de descanso ativo
+      computedRestTimer = null;
+    }
+
+    final updatedWorkout = ActiveWorkoutState(
+      name: active.name,
+      startTime: active.startTime,
+      exercises: exercises,
+      currentExerciseIndex: computedExIndex,
+      elapsedSeconds: active.elapsedSeconds,
+      recovery: active.recovery,
+      isWarmup: active.isWarmup,
+      warmupDurationSeconds: active.warmupDurationSeconds,
+      paused: active.paused,
+      restTimer: computedRestTimer,
+    );
+
+    _state = PlannerState(
+      library: _state!.library,
+      routines: _state!.routines,
+      planner: _state!.planner,
+      history: _state!.history,
+      prs: _state!.prs,
+      medidas: _state!.medidas,
+      settings: _state!.settings,
+      activeWorkout: updatedWorkout,
+      diet: _state!.diet,
+    );
+
+    saveState();
+    notifyListeners();
+  }
+
+  void startRestTimer(int seconds, String nextExName, int nextSetNum, bool isPrep) {
+    if (_state == null || _state!.activeWorkout == null) return;
+    final active = _state!.activeWorkout!;
+
+    final endTime = DateTime.now().millisecondsSinceEpoch + (seconds * 1000);
+    final restTimer = WatchRestTimer(
+      endTime: endTime,
+      totalSeconds: seconds,
+      nextExerciseName: nextExName,
+      nextSetNum: nextSetNum,
+      isPrep: isPrep,
+    );
+
+    final updatedWorkout = ActiveWorkoutState(
+      name: active.name,
+      startTime: active.startTime,
+      exercises: active.exercises,
+      currentExerciseIndex: active.currentExerciseIndex,
+      elapsedSeconds: active.elapsedSeconds,
+      recovery: active.recovery,
+      isWarmup: active.isWarmup,
+      warmupDurationSeconds: active.warmupDurationSeconds,
+      paused: active.paused,
+      restTimer: restTimer,
+    );
+
+    _state = PlannerState(
+      library: _state!.library,
+      routines: _state!.routines,
+      planner: _state!.planner,
+      history: _state!.history,
+      prs: _state!.prs,
+      medidas: _state!.medidas,
+      settings: _state!.settings,
+      activeWorkout: updatedWorkout,
+      diet: _state!.diet,
+    );
+
+    saveState();
+    notifyListeners();
+  }
+
+  void clearRestTimer() {
+    if (_state == null || _state!.activeWorkout == null) return;
+    final active = _state!.activeWorkout!;
+
+    final updatedWorkout = ActiveWorkoutState(
+      name: active.name,
+      startTime: active.startTime,
+      exercises: active.exercises,
+      currentExerciseIndex: active.currentExerciseIndex,
+      elapsedSeconds: active.elapsedSeconds,
+      recovery: active.recovery,
+      isWarmup: active.isWarmup,
+      warmupDurationSeconds: active.warmupDurationSeconds,
+      paused: active.paused,
+      restTimer: null,
+    );
+
+    _state = PlannerState(
+      library: _state!.library,
+      routines: _state!.routines,
+      planner: _state!.planner,
+      history: _state!.history,
+      prs: _state!.prs,
+      medidas: _state!.medidas,
+      settings: _state!.settings,
+      activeWorkout: updatedWorkout,
+      diet: _state!.diet,
+    );
+
+    saveState();
+    notifyListeners();
+  }
+
+  void updateExerciseWeightReps(int exIndex, double weight, int reps) {
+    if (_state == null || _state!.activeWorkout == null) return;
+    final active = _state!.activeWorkout!;
+    final exercises = List<ActiveExercise>.from(active.exercises);
+    if (exIndex >= exercises.length) return;
+
+    final ex = exercises[exIndex];
+    exercises[exIndex] = ActiveExercise(
+      id: ex.id,
+      name: ex.name,
+      muscle: ex.muscle,
+      executionType: ex.executionType,
+      measurementType: ex.measurementType,
+      sets: ex.sets,
+      reps: reps,
+      rest: ex.rest,
+      weight: weight,
+      setsState: ex.setsState,
+      performedCardios: ex.performedCardios,
+      failureReport: ex.failureReport,
+    );
+
     final updatedWorkout = ActiveWorkoutState(
       name: active.name,
       startTime: active.startTime,
@@ -438,6 +597,7 @@ class TrackerProvider extends ChangeNotifier {
       isWarmup: active.isWarmup,
       warmupDurationSeconds: active.warmupDurationSeconds,
       paused: active.paused,
+      restTimer: active.restTimer,
     );
 
     _state = PlannerState(

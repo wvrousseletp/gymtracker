@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import '../models/routine.dart';
+import '../models/exercise.dart';
 import '../models/planner_state.dart';
 import '../models/workout_log.dart';
 import '../providers/tracker_provider.dart';
@@ -18,6 +19,7 @@ class WatchService {
     
     // Envia dados iniciais se houver
     sendRoutines(provider.state?.routines ?? []);
+    sendLibrary(provider.state?.library ?? []);
     if (provider.state?.activeWorkout != null) {
       sendActiveWorkout(provider.state!.activeWorkout!);
     }
@@ -58,6 +60,28 @@ class WatchService {
         }
         break;
 
+      case 'skipRest':
+        _provider!.clearRestTimer();
+        break;
+
+      case 'updateExerciseWeightReps':
+        final int exerciseIndex = call.arguments['exerciseIndex'] as int;
+        final double weight = (call.arguments['weight'] as num).toDouble();
+        final int reps = call.arguments['reps'] as int;
+        _provider!.updateExerciseWeightReps(exerciseIndex, weight, reps);
+        break;
+
+      case 'startSingleExercise':
+        final String exerciseId = call.arguments as String;
+        final exercise = _provider!.state?.library.firstWhere((e) => e.id == exerciseId);
+        if (exercise != null) {
+          _provider!.startSingleExercise(exercise);
+          if (_provider!.state?.activeWorkout != null) {
+            sendActiveWorkout(_provider!.state!.activeWorkout!);
+          }
+        }
+        break;
+
       case 'completeWorkout':
         final active = _provider!.state?.activeWorkout;
         if (active != null) {
@@ -83,6 +107,15 @@ class WatchService {
       await _channel.invokeMethod('updateRoutines', json.encode(routinesJson));
     } on PlatformException catch (e) {
       print("[WatchService] Erro ao enviar rotinas: $e");
+    }
+  }
+
+  Future<void> sendLibrary(List<LibraryExercise> library) async {
+    try {
+      final List<Map<String, dynamic>> libraryJson = library.map((e) => e.toJson()).toList();
+      await _channel.invokeMethod('updateLibrary', json.encode(libraryJson));
+    } on PlatformException catch (e) {
+      print("[WatchService] Erro ao enviar biblioteca: $e");
     }
   }
 

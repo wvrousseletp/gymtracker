@@ -46,6 +46,13 @@ import WatchConnectivity
       } else {
         result(FlutterError(code: "INVALID_ARGUMENT", message: "Expected JSON string for routines", details: nil))
       }
+    case "updateLibrary":
+      if let json = call.arguments as? String {
+        session.transferUserInfo(["action": "updateLibrary", "library": json])
+        result(nil)
+      } else {
+        result(FlutterError(code: "INVALID_ARGUMENT", message: "Expected JSON string for library", details: nil))
+      }
     case "updateActiveWorkout":
       if let json = call.arguments as? String {
         session.transferUserInfo(["action": "updateActiveWorkout", "activeWorkout": json])
@@ -106,6 +113,22 @@ import WatchConnectivity
             "exerciseIndex": exerciseIndex,
             "setIndex": setIndex
           ])
+        }
+      case "skipRest":
+        self.methodChannel?.invokeMethod("skipRest", arguments: nil)
+      case "updateExerciseWeightReps":
+        if let exerciseIndex = data["exerciseIndex"] as? Int,
+           let weight = data["weight"] as? Double,
+           let reps = data["reps"] as? Int {
+          self.methodChannel?.invokeMethod("updateExerciseWeightReps", arguments: [
+            "exerciseIndex": exerciseIndex,
+            "weight": weight,
+            "reps": reps
+          ])
+        }
+      case "startSingleExercise":
+        if let exerciseId = data["exerciseId"] as? String {
+          self.methodChannel?.invokeMethod("startSingleExercise", arguments: exerciseId)
         }
       case "completeWorkout":
         self.methodChannel?.invokeMethod("completeWorkout", arguments: nil)

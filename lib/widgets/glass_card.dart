@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 
 class GlassCard extends StatelessWidget {
@@ -23,8 +22,13 @@ class GlassCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: margin,
+      padding: padding,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(borderRadius),
+        border: Border.all(
+          color: borderColor ?? Colors.white.withOpacity(0.08),
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.3),
@@ -32,31 +36,18 @@ class GlassCard extends StatelessWidget {
             offset: const Offset(0, 8),
           ),
         ],
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withOpacity(opacity),
+            Colors.white.withOpacity(opacity * 0.3),
+          ],
+        ),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(borderRadius),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20.0, sigmaY: 20.0),
-          child: Container(
-            padding: padding,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(borderRadius),
-              border: Border.all(
-                color: borderColor ?? Colors.white.withOpacity(0.08),
-                width: 1.5,
-              ),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Colors.white.withOpacity(opacity),
-                  Colors.white.withOpacity(opacity * 0.3),
-                ],
-              ),
-            ),
-            child: child,
-          ),
-        ),
+        child: child,
       ),
     );
   }

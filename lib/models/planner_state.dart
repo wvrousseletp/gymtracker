@@ -56,6 +56,38 @@ class PersonalRecord {
   );
 }
 
+class WatchRestTimer {
+  final int endTime; // Epoch milissegundos
+  final int totalSeconds;
+  final String nextExerciseName;
+  final int nextSetNum;
+  final bool isPrep;
+
+  WatchRestTimer({
+    required this.endTime,
+    required this.totalSeconds,
+    required this.nextExerciseName,
+    required this.nextSetNum,
+    required this.isPrep,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'endTime': endTime,
+    'totalSeconds': totalSeconds,
+    'nextExerciseName': nextExerciseName,
+    'nextSetNum': nextSetNum,
+    'isPrep': isPrep,
+  };
+
+  factory WatchRestTimer.fromJson(Map<String, dynamic> json) => WatchRestTimer(
+    endTime: (json['endTime'] as num?)?.toInt() ?? 0,
+    totalSeconds: (json['totalSeconds'] as num?)?.toInt() ?? 0,
+    nextExerciseName: json['nextExerciseName'] ?? '',
+    nextSetNum: (json['nextSetNum'] as num?)?.toInt() ?? 0,
+    isPrep: json['isPrep'] ?? false,
+  );
+}
+
 class ActiveWorkoutState {
   final String name;
   final int startTime; // Epoch milissegundos
@@ -66,6 +98,7 @@ class ActiveWorkoutState {
   final bool isWarmup;
   final int warmupDurationSeconds;
   final bool paused;
+  final WatchRestTimer? restTimer;
 
   ActiveWorkoutState({
     required this.name,
@@ -77,6 +110,7 @@ class ActiveWorkoutState {
     required this.isWarmup,
     required this.warmupDurationSeconds,
     this.paused = false,
+    this.restTimer,
   });
 
   Map<String, dynamic> toJson() => {
@@ -89,6 +123,7 @@ class ActiveWorkoutState {
     'isWarmup': isWarmup,
     'warmupDurationSeconds': warmupDurationSeconds,
     'paused': paused,
+    'restTimer': restTimer?.toJson(),
   };
 
   factory ActiveWorkoutState.fromJson(Map<String, dynamic> json) => ActiveWorkoutState(
@@ -105,6 +140,7 @@ class ActiveWorkoutState {
     isWarmup: json['isWarmup'] ?? false,
     warmupDurationSeconds: (json['warmupDurationSeconds'] as num?)?.toInt() ?? 0,
     paused: json['paused'] ?? false,
+    restTimer: json['restTimer'] != null ? WatchRestTimer.fromJson(json['restTimer']) : null,
   );
 }
 

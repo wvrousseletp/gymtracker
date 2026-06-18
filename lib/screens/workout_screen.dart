@@ -696,17 +696,26 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
     // Iniciar cronômetro do treino
     _startStopwatch();
 
-    // Se o treino acabou de começar, vamos disparar o tempo de PREPARO inicial!
+    // Ouvir alterações do provedor para sincronizar timer de descanso e exercício atual
+    widget.provider.addListener(_onProviderChange);
+
+    // Se o treino acabou de começar, vamos disparar o tempo de PREPARO inicial no provedor!
     if (_workoutDurationNotifier.value == 0 && widget.activeWorkout.exercises.isNotEmpty) {
       final firstEx = widget.activeWorkout.exercises[0];
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _triggerPrepTimer(widget.provider.state!.settings.prepSeconds, firstEx.name, 1);
+        widget.provider.startRestTimer(
+          widget.provider.state!.settings.prepSeconds,
+          firstEx.name,
+          1,
+          true,
+        );
       });
     }
   }
 
   @override
   void dispose() {
+    widget.provider.removeListener(_onProviderChange);
     _stopwatchTimer?.cancel();
     _countdownTimer?.cancel();
     _workoutDurationNotifier.dispose();
@@ -724,51 +733,71 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
     });
   }
 
-  // Acionar temporizador de preparo
-  void _triggerPrepTimer(int seconds, String nextExName, int nextSetNum) {
-    _countdownTimer?.cancel();
-    setState(() {
-      _timerActive = true;
-      _timerIsPrep = true;
-      _countdownTotalSeconds = seconds;
-      _timerNextExName = nextExName;
-      _timerNextSetNum = nextSetNum;
-    });
-    _countdownSecondsNotifier.value = seconds;
+  void _onProviderChange() {
+    if (!mounted) return;
+    final active = widget.provider.state?.activeWorkout;
+    if (active == null) return;
+    
+    if (active.currentExerciseIndex != _currentExIdx) {
+      setState(() {
+        _currentExIdx = active.currentExerciseIndex;
+      });
+    }
 
-    _startCountdownTimer();
+    final timer = active.restTimer;
+    if (timer == null) {
+      if (_timerActive) {
+        _countdownTimer?.cancel();
+        setState(() {
+          _timerActive = false;
+        });
+      }
+    } else {
+      final remaining = ((timer.endTime - DateTime.now().millisecondsSinceEpoch) / 1000).round();
+      if (!_timerActive || 
+          _countdownTotalSeconds != timer.totalSeconds || 
+          _timerIsPrep != timer.isPrep || 
+          _timerNextExName != timer.nextExerciseName || 
+          _timerNextSetNum != timer.nextSetNum) {
+        _countdownTimer?.cancel();
+        setState(() {
+          _timerActive = true;
+          _timerIsPrep = timer.isPrep;
+          _countdownTotalSeconds = timer.totalSeconds;
+          _timerNextExName = timer.nextExerciseName;
+          _timerNextSetNum = timer.nextSetNum;
+        });
+        _countdownSecondsNotifier.value = remaining > 0 ? remaining : 0;
+        if (remaining > 0) {
+          _startCountdownTimerFromState(timer.endTime);
+        } else {
+          _handleTimerCompleted();
+        }
+      }
+    }
   }
 
-  // Acionar temporizador de descanso
-  void _triggerRestTimer(int seconds, String nextExName, int nextSetNum) {
+  void _startCountdownTimerFromState(int endTime) {
     _countdownTimer?.cancel();
-    setState(() {
-      _timerActive = true;
-      _timerIsPrep = false;
-      _countdownTotalSeconds = seconds;
-      _timerNextExName = nextExName;
-      _timerNextSetNum = nextSetNum;
-    });
-    _countdownSecondsNotifier.value = seconds;
-
-    _startCountdownTimer();
-  }
-
-  void _startCountdownTimer() {
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_countdownSecondsNotifier.value > 0) {
-        _countdownSecondsNotifier.value--;
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final remaining = ((endTime - now) / 1000).round();
+      
+      if (remaining > 0) {
+        _countdownSecondsNotifier.value = remaining;
         
-        // Emitir bipe sonoro nos últimos segundos se habilitado nas configurações
         final settings = widget.provider.state!.settings;
         if (settings.sound) {
-          if (_countdownSecondsNotifier.value <= 3 && _countdownSecondsNotifier.value > 0) {
-            SystemSound.play(SystemSoundType.click);
-          } else if (_countdownSecondsNotifier.value == 0) {
+          if (remaining <= 3 && remaining > 0) {
             SystemSound.play(SystemSoundType.click);
           }
         }
       } else {
+        _countdownSecondsNotifier.value = 0;
         _countdownTimer?.cancel();
         _handleTimerCompleted();
       }
@@ -780,15 +809,19 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
     if (settings.vibration) {
       HapticFeedback.vibrate();
     }
+    if (settings.sound) {
+      SystemSound.play(SystemSoundType.click);
+    }
 
     if (_timerIsPrep) {
-      // Terminou preparo -> fecha o overlay
-      setState(() {
-        _timerActive = false;
-      });
+      widget.provider.clearRestTimer();
     } else {
-      // Terminou descanso -> inicia preparo
-      _triggerPrepTimer(settings.prepSeconds, _timerNextExName, _timerNextSetNum);
+      widget.provider.startRestTimer(
+        settings.prepSeconds, 
+        _timerNextExName, 
+        _timerNextSetNum, 
+        true
+      );
     }
   }
 
@@ -993,13 +1026,15 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
                             onPressed: () {
                               _countdownTimer?.cancel();
                               if (_timerIsPrep) {
-                                // Pular Preparo
-                                setState(() {
-                                  _timerActive = false;
-                                });
+                                widget.provider.clearRestTimer();
                               } else {
-                                // Pular Descanso -> Inicia Preparo
-                                _triggerPrepTimer(widget.provider.state!.settings.prepSeconds, _timerNextExName, _timerNextSetNum);
+                                final settings = widget.provider.state!.settings;
+                                widget.provider.startRestTimer(
+                                  settings.prepSeconds,
+                                  _timerNextExName,
+                                  _timerNextSetNum,
+                                  true,
+                                );
                               }
                             },
                             style: ElevatedButton.styleFrom(
@@ -1117,9 +1152,6 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
                           final dist = double.tryParse(distController.text.trim()) ?? 0.0;
                           final dur = int.tryParse(durController.text.trim()) ?? 0;
                           widget.provider.completeSet(exIdx, setIdx, val ?? false, distance: dist, duration: dur * 60);
-                          if (val == true) {
-                            _startRestOrPrepFlow(ex, exIdx, setIdx, accentColor);
-                          }
                         },
                       ),
                     ],
@@ -1196,9 +1228,6 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
                         activeColor: accentColor,
                         onChanged: (val) {
                           widget.provider.completeSet(exIdx, setIdx, val ?? false, isFailure: isFailure);
-                          if (val == true) {
-                            _startRestOrPrepFlow(ex, exIdx, setIdx, accentColor);
-                          }
                         },
                       ),
                     ],
@@ -1224,25 +1253,8 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
     );
   }
 
-  void _startRestOrPrepFlow(ActiveExercise ex, int exIdx, int setIdx, Color accentColor) {
-    final exercises = widget.activeWorkout.exercises;
-
-    // Verificar se há uma próxima série neste mesmo exercício
-    if (setIdx < ex.sets - 1) {
-      _triggerRestTimer(ex.rest, ex.name, setIdx + 2);
-    } 
-    // Caso contrário, verificar se há um próximo exercício
-    else if (exIdx < exercises.length - 1) {
-      final nextEx = exercises[exIdx + 1];
-      _triggerRestTimer(ex.rest, nextEx.name, 1);
-      
-      // Avançar automaticamente a visualização da página do exercício
-      setState(() {
-        _currentExIdx = exIdx + 1;
-        widget.provider.setCurrentExerciseIndex(_currentExIdx);
-      });
-    }
-  }
+  // A sincronização de timers de descanso e do índice de exercício ativo
+  // agora é tratada de forma centralizada pelo provedor e seu ouvinte.
 
   void _confirmDiscardWorkout(BuildContext context) {
     showDialog(
