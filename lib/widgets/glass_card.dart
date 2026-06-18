@@ -22,7 +22,6 @@ class GlassCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: margin,
-      padding: padding,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(
@@ -45,9 +44,13 @@ class GlassCard extends StatelessWidget {
           ],
         ),
       ),
+      // Clip com raio ligeiramente menor para evitar corte de texto nas bordas
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(borderRadius),
-        child: child,
+        borderRadius: BorderRadius.circular(borderRadius - 1.5),
+        child: Padding(
+          padding: padding ?? const EdgeInsets.all(16),
+          child: child,
+        ),
       ),
     );
   }

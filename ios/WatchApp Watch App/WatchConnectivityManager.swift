@@ -127,6 +127,10 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         sendToiPhone(["action": "cancelWorkout"])
     }
 
+    func togglePause(currentlyPaused: Bool) {
+        sendToiPhone(["action": "togglePause", "paused": !currentlyPaused])
+    }
+
     private func sendToiPhone(_ message: [String: Any]) {
         guard let session = session else { return }
         if session.isReachable {

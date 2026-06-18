@@ -134,6 +134,10 @@ import WatchConnectivity
         self.methodChannel?.invokeMethod("completeWorkout", arguments: nil)
       case "cancelWorkout":
         self.methodChannel?.invokeMethod("cancelWorkout", arguments: nil)
+      case "togglePause":
+        if let paused = data["paused"] as? Bool {
+          self.methodChannel?.invokeMethod("togglePause", arguments: paused)
+        }
       default:
         break
       }

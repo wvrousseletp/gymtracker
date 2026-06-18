@@ -644,6 +644,11 @@ class TrackerProvider extends ChangeNotifier {
       diet: _state!.diet,
     );
     // notifyListeners(); // Otimizado: evita reconstrução de todo o app a cada segundo.
+
+    // Sincroniza com o Apple Watch a cada 5 segundos para manter timer atualizado no relógio
+    if (!isWarmupTimer && seconds % 5 == 0) {
+      WatchService.instance.sendActiveWorkout(updatedWorkout);
+    }
   }
 
   void setCurrentExerciseIndex(int index) {
@@ -704,9 +709,12 @@ class TrackerProvider extends ChangeNotifier {
       activeWorkout: updatedWorkout,
       diet: _state!.diet,
     );
+    // Notifica o Apple Watch imediatamente sobre pausa/retomada
+    WatchService.instance.sendActiveWorkout(updatedWorkout);
     saveState();
     notifyListeners();
   }
+
 
   void discardActiveWorkout() {
     if (_state == null) return;

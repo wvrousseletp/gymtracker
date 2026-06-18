@@ -62,6 +62,12 @@ class WatchService {
 
       case 'skipRest':
         _provider!.clearRestTimer();
+        // Envia estado atualizado após pular descanso
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (_provider!.state?.activeWorkout != null) {
+            sendActiveWorkout(_provider!.state!.activeWorkout!);
+          }
+        });
         break;
 
       case 'updateExerciseWeightReps':
@@ -69,6 +75,12 @@ class WatchService {
         final double weight = (call.arguments['weight'] as num).toDouble();
         final int reps = call.arguments['reps'] as int;
         _provider!.updateExerciseWeightReps(exerciseIndex, weight, reps);
+        // Envia estado atualizado após alterar carga/reps
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (_provider!.state?.activeWorkout != null) {
+            sendActiveWorkout(_provider!.state!.activeWorkout!);
+          }
+        });
         break;
 
       case 'startSingleExercise':
@@ -96,10 +108,22 @@ class WatchService {
         _channel.invokeMethod('workoutCancelled');
         break;
 
+      case 'togglePause':
+        final bool isPaused = call.arguments as bool;
+        _provider!.pauseWorkout(isPaused);
+        // Envia estado atualizado ao watch imediatamente
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (_provider!.state?.activeWorkout != null) {
+            sendActiveWorkout(_provider!.state!.activeWorkout!);
+          }
+        });
+        break;
+
       default:
         break;
     }
   }
+
 
   Future<void> sendRoutines(List<Routine> routines) async {
     try {
