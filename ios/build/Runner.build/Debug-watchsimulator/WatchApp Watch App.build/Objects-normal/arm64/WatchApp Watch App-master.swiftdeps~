@@ -1,0 +1,15 @@
+version: "Apple Swift version 5.7.2 (swiftlang-5.7.2.135.5 clang-1400.0.29.51)"
+options: "45435ac3e9977b39baf55e5025e4f6e39016072f96fbc64eb09489067d3f7ff6"
+build_start_time: [1781863829, 161820888]
+build_end_time: [1781863829, 273627996]
+inputs:
+  ? "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/ActiveWorkoutView.swift"
+  : !private [1781814053, 786708831]
+  ? "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/RestTimerView.swift"
+  : !private [1781777689, 874655723]
+  ? "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/WatchAppApp.swift"
+  : !private [1781650953, 971478462]
+  ? "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/WatchConnectivityManager.swift"
+  : !private [1781814061, 742402076]
+  ? "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/WorkoutSelectionView.swift"
+  : !private [1781777662, 310854673]

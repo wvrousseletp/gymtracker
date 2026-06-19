@@ -33,6 +33,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             self.isReachable = session.isReachable
             if activationState == .activated {
                 self.handleIncomingData(session.receivedApplicationContext)
+                self.requestSync()
             }
         }
     }
@@ -47,6 +48,9 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     func sessionReachabilityDidChange(_ session: WCSession) {
         DispatchQueue.main.async {
             self.isReachable = session.isReachable
+            if session.isReachable {
+                self.requestSync()
+            }
         }
     }
 
@@ -145,12 +149,47 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         sendToiPhone(["action": "startSingleExercise", "exerciseId": exerciseId])
     }
 
-    func toggleSet(exerciseIndex: Int, setIndex: Int) {
-        sendToiPhone([
+    func toggleSet(exerciseIndex: Int, setIndex: Int, isDone: Bool, isFailure: Bool, failureRep: Int?, distance: Double?, duration: Int?) {
+        var msg: [String: Any] = [
             "action": "toggleSet",
             "exerciseIndex": exerciseIndex,
-            "setIndex": setIndex
+            "setIndex": setIndex,
+            "isDone": isDone,
+            "isFailure": isFailure
+        ]
+        if let rep = failureRep {
+            msg["failureRep"] = rep
+        }
+        if let dist = distance {
+            msg["distance"] = dist
+        }
+        if let dur = duration {
+            msg["duration"] = dur
+        }
+        sendToiPhone(msg)
+    }
+
+    func updateCardio(exerciseIndex: Int, setIndex: Int, distance: Double, duration: Int) {
+        sendToiPhone([
+            "action": "updateCardio",
+            "exerciseIndex": exerciseIndex,
+            "setIndex": setIndex,
+            "distance": distance,
+            "duration": duration
         ])
+    }
+
+    func updateFailure(exerciseIndex: Int, setIndex: Int, isFailure: Bool, failureRep: Int?) {
+        var msg: [String: Any] = [
+            "action": "updateFailure",
+            "exerciseIndex": exerciseIndex,
+            "setIndex": setIndex,
+            "isFailure": isFailure
+        ]
+        if let rep = failureRep {
+            msg["failureRep"] = rep
+        }
+        sendToiPhone(msg)
     }
 
     func updateExerciseWeightReps(exerciseIndex: Int, weight: Double, reps: Int) {
@@ -176,6 +215,10 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
 
     func togglePause(currentlyPaused: Bool) {
         sendToiPhone(["action": "togglePause", "paused": !currentlyPaused])
+    }
+
+    func requestSync() {
+        sendToiPhone(["action": "requestSync"])
     }
 
     private func sendToiPhone(_ message: [String: Any]) {
@@ -292,7 +335,7 @@ struct WatchLibraryExercise: Codable, Identifiable {
 }
 
 struct WatchRestTimer: Codable {
-    let endTime: Int
+    let endTime: Int64
     let totalSeconds: Int
     let nextExerciseName: String
     let nextSetNum: Int
@@ -305,10 +348,10 @@ struct WatchRestTimer: Codable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         
-        if let val = try? container.decode(Int.self, forKey: .endTime) {
+        if let val = try? container.decode(Int64.self, forKey: .endTime) {
             endTime = val
         } else if let val = try? container.decode(Double.self, forKey: .endTime) {
-            endTime = Int(val)
+            endTime = Int64(val)
         } else {
             endTime = 0
         }
@@ -335,9 +378,42 @@ struct WatchRestTimer: Codable {
     }
 }
 
+struct WatchPerformedCardio: Codable {
+    let distanceKm: Double
+    let durationSeconds: Int
+    
+    enum CodingKeys: String, CodingKey {
+        case distanceKm, durationSeconds
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        if let val = try? container.decode(Double.self, forKey: .distanceKm) {
+            distanceKm = val
+        } else if let val = try? container.decode(Int.self, forKey: .distanceKm) {
+            distanceKm = Double(val)
+        } else {
+            distanceKm = 0.0
+        }
+        
+        if let val = try? container.decode(Int.self, forKey: .durationSeconds) {
+            durationSeconds = val
+        } else if let val = try? container.decode(Double.self, forKey: .durationSeconds) {
+            durationSeconds = Int(val)
+        } else {
+            durationSeconds = 0
+        }
+    }
+    
+    init(distanceKm: Double, durationSeconds: Int) {
+        self.distanceKm = distanceKm
+        self.durationSeconds = durationSeconds
+    }
+}
+
 struct WatchActiveWorkoutState: Codable {
     let name: String
-    let startTime: Int
+    let startTime: Int64
     let exercises: [WatchActiveExercise]
     let currentExerciseIndex: Int
     let elapsedSeconds: Int
@@ -352,10 +428,10 @@ struct WatchActiveWorkoutState: Codable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         name = (try? container.decode(String.self, forKey: .name)) ?? ""
         
-        if let val = try? container.decode(Int.self, forKey: .startTime) {
+        if let val = try? container.decode(Int64.self, forKey: .startTime) {
             startTime = val
         } else if let val = try? container.decode(Double.self, forKey: .startTime) {
-            startTime = Int(val)
+            startTime = Int64(val)
         } else {
             startTime = 0
         }
@@ -392,9 +468,14 @@ struct WatchActiveExercise: Codable, Identifiable {
     let rest: Int
     let weight: Double
     let setsState: [Bool]
+    let measurementType: String
+    let executionType: String?
+    let performedCardios: [WatchPerformedCardio?]
+    let failureReport: [Bool]
+    let failureReps: [Int?]
 
     enum CodingKeys: String, CodingKey {
-        case name, muscle, sets, reps, rest, weight, setsState
+        case name, muscle, sets, reps, rest, weight, setsState, measurementType, executionType, performedCardios, failureReport, failureReps
     }
 
     init(from decoder: Decoder) throws {
@@ -402,6 +483,8 @@ struct WatchActiveExercise: Codable, Identifiable {
         name = try container.decode(String.self, forKey: .name)
         muscle = try container.decode(String.self, forKey: .muscle)
         setsState = try container.decode([Bool].self, forKey: .setsState)
+        measurementType = (try? container.decode(String.self, forKey: .measurementType)) ?? (muscle.lowercased().contains("cardio") ? "time" : "reps")
+        executionType = try? container.decodeIfPresent(String.self, forKey: .executionType)
 
         if let val = try? container.decode(Int.self, forKey: .sets) {
             sets = val
@@ -433,6 +516,20 @@ struct WatchActiveExercise: Codable, Identifiable {
             weight = Double(val)
         } else {
             weight = 0.0
+        }
+
+        if let cardiosArray = try? container.decode([WatchPerformedCardio?].self, forKey: .performedCardios) {
+            performedCardios = cardiosArray
+        } else {
+            performedCardios = Array(repeating: nil, count: setsState.count)
+        }
+
+        failureReport = (try? container.decode([Bool].self, forKey: .failureReport)) ?? Array(repeating: false, count: setsState.count)
+        
+        if let repsArray = try? container.decode([Int?].self, forKey: .failureReps) {
+            failureReps = repsArray
+        } else {
+            failureReps = Array(repeating: nil, count: setsState.count)
         }
     }
 }

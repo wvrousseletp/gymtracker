@@ -1,0 +1,40 @@
+{
+  "source": "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/RestTimerView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "%@ (S%lld)"
+      },
+      {
+        "comment": "",
+        "key": "PREPARO"
+      },
+      {
+        "comment": "",
+        "key": "DESCANSO"
+      },
+      {
+        "comment": "",
+        "key": "Prepare-se para:"
+      },
+      {
+        "comment": "",
+        "key": "Próximo:"
+      },
+      {
+        "comment": "",
+        "key": "%llds"
+      },
+      {
+        "comment": "",
+        "key": "Pular Preparo"
+      },
+      {
+        "comment": "",
+        "key": "Pular Descanso"
+      }
+    ]
+  },
+  "version": 1
+}

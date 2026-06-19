@@ -1,0 +1,60 @@
+{
+  "source": "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/ActiveWorkoutView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Treino"
+      },
+      {
+        "comment": "",
+        "key": "PAUSADO"
+      },
+      {
+        "comment": "",
+        "key": "Carga: %.1f kg"
+      },
+      {
+        "comment": "",
+        "key": "Reps: %lld"
+      },
+      {
+        "comment": "",
+        "key": "S%lld"
+      },
+      {
+        "comment": "",
+        "key": "Finalizar Treino"
+      },
+      {
+        "comment": "",
+        "key": "Cancelar Treino"
+      },
+      {
+        "comment": "",
+        "key": "Nenhum treino ativo"
+      },
+      {
+        "comment": "",
+        "key": "Inicie um treino no iPhone\nou nesta tela."
+      },
+      {
+        "comment": "",
+        "key": "Cancelar Treino?"
+      },
+      {
+        "comment": "",
+        "key": "Isso apagará o progresso do treino atual."
+      },
+      {
+        "comment": "",
+        "key": "Sim"
+      },
+      {
+        "comment": "",
+        "key": "Não"
+      }
+    ]
+  },
+  "version": 1
+}

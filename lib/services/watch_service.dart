@@ -44,15 +44,74 @@ class WatchService {
       case 'toggleSet':
         final int exerciseIndex = call.arguments['exerciseIndex'] as int;
         final int setIndex = call.arguments['setIndex'] as int;
+        final bool isDone = call.arguments['isDone'] as bool;
+        final bool isFailure = call.arguments['isFailure'] as bool? ?? false;
+        final int? failureRep = call.arguments['failureRep'] as int?;
+        final double? distance = (call.arguments['distance'] as num?)?.toDouble();
+        final int? duration = call.arguments['duration'] as int?;
+        
+        _provider!.completeSet(
+          exerciseIndex,
+          setIndex,
+          isDone,
+          distance: distance,
+          duration: duration,
+          isFailure: isFailure,
+          failureRep: failureRep,
+        );
+        
+        // Envia de volta o estado atualizado do treino ativo
+        if (_provider!.state?.activeWorkout != null) {
+          sendActiveWorkout(_provider!.state!.activeWorkout!);
+        }
+        break;
+
+      case 'updateCardio':
+        final int exerciseIndex = call.arguments['exerciseIndex'] as int;
+        final int setIndex = call.arguments['setIndex'] as int;
+        final double distance = (call.arguments['distance'] as num).toDouble();
+        final int duration = call.arguments['duration'] as int;
         
         final active = _provider!.state?.activeWorkout;
         if (active != null && exerciseIndex < active.exercises.length) {
           final ex = active.exercises[exerciseIndex];
           if (setIndex < ex.setsState.length) {
-            final isDone = !ex.setsState[setIndex];
-            _provider!.completeSet(exerciseIndex, setIndex, isDone);
-            
-            // Envia de volta o estado atualizado do treino ativo
+            _provider!.completeSet(
+              exerciseIndex,
+              setIndex,
+              ex.setsState[setIndex],
+              distance: distance,
+              duration: duration,
+              isFailure: ex.failureReport[setIndex],
+              failureRep: ex.failureReps[setIndex],
+            );
+            if (_provider!.state?.activeWorkout != null) {
+              sendActiveWorkout(_provider!.state!.activeWorkout!);
+            }
+          }
+        }
+        break;
+
+      case 'updateFailure':
+        final int exerciseIndex = call.arguments['exerciseIndex'] as int;
+        final int setIndex = call.arguments['setIndex'] as int;
+        final bool isFailure = call.arguments['isFailure'] as bool;
+        final int? failureRep = call.arguments['failureRep'] as int?;
+        
+        final active = _provider!.state?.activeWorkout;
+        if (active != null && exerciseIndex < active.exercises.length) {
+          final ex = active.exercises[exerciseIndex];
+          if (setIndex < ex.setsState.length) {
+            final pc = setIndex < ex.performedCardios.length ? ex.performedCardios[setIndex] : null;
+            _provider!.completeSet(
+              exerciseIndex,
+              setIndex,
+              ex.setsState[setIndex],
+              distance: pc?.distanceKm,
+              duration: pc?.durationSeconds,
+              isFailure: isFailure,
+              failureRep: failureRep,
+            );
             if (_provider!.state?.activeWorkout != null) {
               sendActiveWorkout(_provider!.state!.activeWorkout!);
             }

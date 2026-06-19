@@ -7,27 +7,7 @@ struct WorkoutSelectionView: View {
         NavigationView {
             VStack {
                 if let activeWorkout = connectivityManager.activeWorkout {
-                    VStack(spacing: 12) {
-                        Image(systemName: "flame.fill")
-                            .font(.system(size: 32))
-                            .foregroundColor(.orange)
-                        
-                        Text("Treino em Andamento")
-                            .font(.headline)
-                        
-                        Text(activeWorkout.name)
-                            .font(.caption)
-                            .foregroundColor(.gray)
-                        
-                        NavigationLink(destination: ActiveWorkoutView()) {
-                            Text("Retomar Treino")
-                                .bold()
-                                .foregroundColor(.white)
-                                .padding()
-                                .background(Color.orange)
-                                .cornerRadius(8)
-                        }
-                    }
+                    ActiveWorkoutView()
                 } else {
                     if connectivityManager.routines.isEmpty && connectivityManager.library.isEmpty {
                         VStack(spacing: 8) {
@@ -97,6 +77,9 @@ struct WorkoutSelectionView: View {
                 }
             }
             .navigationTitle("Los Mooscles")
+            .onAppear {
+                connectivityManager.requestSync()
+            }
         }
     }
 }

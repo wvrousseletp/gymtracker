@@ -1,0 +1,40 @@
+{
+  "source": "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/WorkoutSelectionView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Los Mooscles"
+      },
+      {
+        "comment": "",
+        "key": "Treino em Andamento"
+      },
+      {
+        "comment": "",
+        "key": "Retomar Treino"
+      },
+      {
+        "comment": "",
+        "key": "Nenhum treino sincronizado"
+      },
+      {
+        "comment": "",
+        "key": "Abra o app no iPhone para enviar os treinos."
+      },
+      {
+        "comment": "",
+        "key": "Escolha um Treino"
+      },
+      {
+        "comment": "",
+        "key": "Exercícios Avulsos"
+      },
+      {
+        "comment": "",
+        "key": "%lld exercícios"
+      }
+    ]
+  },
+  "version": 1
+}

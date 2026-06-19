@@ -63,7 +63,7 @@ struct RestTimerView: View {
     }
 
     private func updateTimeRemaining() {
-        let now = Int(Date().timeIntervalSince1970 * 1000)
+        let now = Int64(Date().timeIntervalSince1970 * 1000)
         let diff = restTimer.endTime - now
         let remaining = max(0, Int(round(Double(diff) / 1000.0)))
         
