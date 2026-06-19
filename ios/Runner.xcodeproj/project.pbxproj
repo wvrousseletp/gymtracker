@@ -995,7 +995,7 @@
 				ENABLE_PREVIEWS = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = WatchApp;
+				INFOPLIST_KEY_CFBundleDisplayName = "Los Mooscles";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.vicente.losmooscles;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1040,7 +1040,7 @@
 				PROVISIONING_PROFILE_SPECIFIER = "Los Mooscles Watch App Store Profile";
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = WatchApp;
+				INFOPLIST_KEY_CFBundleDisplayName = "Los Mooscles";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.vicente.losmooscles;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1081,7 +1081,7 @@
 				PROVISIONING_PROFILE_SPECIFIER = "Los Mooscles Watch App Store Profile";
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = WatchApp;
+				INFOPLIST_KEY_CFBundleDisplayName = "Los Mooscles";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.vicente.losmooscles;
 				LD_RUNPATH_SEARCH_PATHS = (

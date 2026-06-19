@@ -7,6 +7,7 @@ import WatchConnectivity
   
   private var session: WCSession?
   private var methodChannel: FlutterMethodChannel?
+  private var applicationContextCache: [String: Any] = [:]
 
   override func application(
     _ application: UIApplication,
@@ -27,6 +28,7 @@ import WatchConnectivity
       session = WCSession.default
       session?.delegate = self
       session?.activate()
+      applicationContextCache = session?.applicationContext ?? [:]
     }
 
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
@@ -41,31 +43,69 @@ import WatchConnectivity
     switch call.method {
     case "updateRoutines":
       if let json = call.arguments as? String {
-        session.transferUserInfo(["action": "updateRoutines", "routines": json])
-        result(nil)
+        applicationContextCache["routines"] = json
+        do {
+          try session.updateApplicationContext(applicationContextCache)
+          result(nil)
+        } catch {
+          print("[AppDelegate] Error updating application context (routines): \(error.localizedDescription)")
+          session.transferUserInfo(["action": "updateRoutines", "routines": json])
+          result(nil)
+        }
       } else {
         result(FlutterError(code: "INVALID_ARGUMENT", message: "Expected JSON string for routines", details: nil))
       }
     case "updateLibrary":
       if let json = call.arguments as? String {
-        session.transferUserInfo(["action": "updateLibrary", "library": json])
-        result(nil)
+        applicationContextCache["library"] = json
+        do {
+          try session.updateApplicationContext(applicationContextCache)
+          result(nil)
+        } catch {
+          print("[AppDelegate] Error updating application context (library): \(error.localizedDescription)")
+          session.transferUserInfo(["action": "updateLibrary", "library": json])
+          result(nil)
+        }
       } else {
         result(FlutterError(code: "INVALID_ARGUMENT", message: "Expected JSON string for library", details: nil))
       }
     case "updateActiveWorkout":
       if let json = call.arguments as? String {
-        session.transferUserInfo(["action": "updateActiveWorkout", "activeWorkout": json])
-        result(nil)
+        applicationContextCache["activeWorkout"] = json
+        applicationContextCache["clearActiveWorkout"] = nil
+        do {
+          try session.updateApplicationContext(applicationContextCache)
+          result(nil)
+        } catch {
+          print("[AppDelegate] Error updating application context (activeWorkout): \(error.localizedDescription)")
+          session.transferUserInfo(["action": "updateActiveWorkout", "activeWorkout": json])
+          result(nil)
+        }
       } else {
         result(FlutterError(code: "INVALID_ARGUMENT", message: "Expected JSON string for active workout", details: nil))
       }
     case "clearActiveWorkout":
-      session.transferUserInfo(["action": "clearActiveWorkout"])
-      result(nil)
+      applicationContextCache["activeWorkout"] = nil
+      applicationContextCache["clearActiveWorkout"] = true
+      do {
+        try session.updateApplicationContext(applicationContextCache)
+        result(nil)
+      } catch {
+        print("[AppDelegate] Error updating application context (clearActiveWorkout): \(error.localizedDescription)")
+        session.transferUserInfo(["action": "clearActiveWorkout"])
+        result(nil)
+      }
     case "workoutFinished", "workoutCancelled":
-      session.transferUserInfo(["action": call.method])
-      result(nil)
+      applicationContextCache["activeWorkout"] = nil
+      applicationContextCache["clearActiveWorkout"] = true
+      do {
+        try session.updateApplicationContext(applicationContextCache)
+        result(nil)
+      } catch {
+        print("[AppDelegate] Error updating application context (\(call.method)): \(error.localizedDescription)")
+        session.transferUserInfo(["action": call.method])
+        result(nil)
+      }
     default:
       result(FlutterMethodNotImplemented)
     }
@@ -78,6 +118,11 @@ import WatchConnectivity
       print("WCSession activation failed with error: \(error.localizedDescription)")
     } else {
       print("WCSession activated successfully with state: \(activationState.rawValue)")
+      if activationState == .activated {
+        DispatchQueue.main.async { [weak self] in
+          self?.methodChannel?.invokeMethod("sessionActivated", arguments: nil)
+        }
+      }
     }
   }
 

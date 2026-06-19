@@ -119,6 +119,19 @@ class WatchService {
         });
         break;
 
+      case 'sessionActivated':
+        print("[WatchService] Native session activated, syncing state...");
+        if (_provider != null) {
+          sendRoutines(_provider!.state?.routines ?? []);
+          sendLibrary(_provider!.state?.library ?? []);
+          if (_provider!.state?.activeWorkout != null) {
+            sendActiveWorkout(_provider!.state!.activeWorkout!);
+          } else {
+            sendActiveWorkoutCleared();
+          }
+        }
+        break;
+
       default:
         break;
     }

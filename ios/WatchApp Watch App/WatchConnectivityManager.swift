@@ -18,12 +18,22 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             session = WCSession.default
             session?.delegate = self
             session?.activate()
+            
+            // Check if session is already activated and load cached application context
+            if session?.activationState == .activated {
+                if let context = session?.receivedApplicationContext {
+                    handleIncomingData(context)
+                }
+            }
         }
     }
 
     func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
         DispatchQueue.main.async {
             self.isReachable = session.isReachable
+            if activationState == .activated {
+                self.handleIncomingData(session.receivedApplicationContext)
+            }
         }
     }
 
@@ -48,42 +58,79 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         handleIncomingData(message)
     }
 
-    private func handleIncomingData(_ data: [String : Any]) {
-        guard let action = data["action"] as? String else { return }
+    func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String : Any]) {
+        handleIncomingData(applicationContext)
+    }
 
+    private func handleIncomingData(_ data: [String : Any]) {
         DispatchQueue.main.async {
-            switch action {
-            case "updateRoutines":
-                if let jsonString = data["routines"] as? String,
-                   let jsonData = jsonString.data(using: .utf8) {
-                    do {
-                        self.routines = try JSONDecoder().decode([WatchRoutine].self, from: jsonData)
-                    } catch {
-                        print("Error decoding routines: \(error)")
-                    }
+            // 1. Process routines
+            if let jsonString = data["routines"] as? String,
+               let jsonData = jsonString.data(using: .utf8) {
+                do {
+                    self.routines = try JSONDecoder().decode([WatchRoutine].self, from: jsonData)
+                } catch {
+                    print("Error decoding routines: \(error)")
                 }
-            case "updateLibrary":
-                if let jsonString = data["library"] as? String,
-                   let jsonData = jsonString.data(using: .utf8) {
-                    do {
-                        self.library = try JSONDecoder().decode([WatchLibraryExercise].self, from: jsonData)
-                    } catch {
-                        print("Error decoding library: \(error)")
-                    }
+            }
+
+            // 2. Process library
+            if let jsonString = data["library"] as? String,
+               let jsonData = jsonString.data(using: .utf8) {
+                do {
+                    self.library = try JSONDecoder().decode([WatchLibraryExercise].self, from: jsonData)
+                } catch {
+                    print("Error decoding library: \(error)")
                 }
-            case "updateActiveWorkout":
-                if let jsonString = data["activeWorkout"] as? String,
-                   let jsonData = jsonString.data(using: .utf8) {
-                    do {
-                        self.activeWorkout = try JSONDecoder().decode(WatchActiveWorkoutState.self, from: jsonData)
-                    } catch {
-                        print("Error decoding active workout: \(error)")
-                    }
+            }
+
+            // 3. Process active workout / clear active workout
+            if let jsonString = data["activeWorkout"] as? String,
+               let jsonData = jsonString.data(using: .utf8) {
+                do {
+                    self.activeWorkout = try JSONDecoder().decode(WatchActiveWorkoutState.self, from: jsonData)
+                } catch {
+                    print("Error decoding active workout: \(error)")
                 }
-            case "clearActiveWorkout", "workoutFinished", "workoutCancelled":
+            } else if data["clearActiveWorkout"] as? Bool == true {
                 self.activeWorkout = nil
-            default:
-                break
+            }
+
+            // 4. Process action field for compatibility (e.g. workoutFinished, workoutCancelled)
+            if let action = data["action"] as? String {
+                switch action {
+                case "updateRoutines":
+                    if let jsonString = data["routines"] as? String,
+                       let jsonData = jsonString.data(using: .utf8) {
+                        do {
+                            self.routines = try JSONDecoder().decode([WatchRoutine].self, from: jsonData)
+                        } catch {
+                            print("Error decoding routines in action: \(error)")
+                        }
+                    }
+                case "updateLibrary":
+                    if let jsonString = data["library"] as? String,
+                       let jsonData = jsonString.data(using: .utf8) {
+                        do {
+                            self.library = try JSONDecoder().decode([WatchLibraryExercise].self, from: jsonData)
+                        } catch {
+                            print("Error decoding library in action: \(error)")
+                        }
+                    }
+                case "updateActiveWorkout":
+                    if let jsonString = data["activeWorkout"] as? String,
+                       let jsonData = jsonString.data(using: .utf8) {
+                        do {
+                            self.activeWorkout = try JSONDecoder().decode(WatchActiveWorkoutState.self, from: jsonData)
+                        } catch {
+                            print("Error decoding active workout in action: \(error)")
+                        }
+                    }
+                case "clearActiveWorkout", "workoutFinished", "workoutCancelled":
+                    self.activeWorkout = nil
+                default:
+                    break
+                }
             }
         }
     }
@@ -151,6 +198,26 @@ struct WatchRoutine: Codable, Identifiable {
     let name: String
     let defaultRest: Int
     let exercises: [WatchRoutineExercise]
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, defaultRest, exercises
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        
+        if let val = try? container.decode(Int.self, forKey: .defaultRest) {
+            defaultRest = val
+        } else if let val = try? container.decode(Double.self, forKey: .defaultRest) {
+            defaultRest = Int(val)
+        } else {
+            defaultRest = 60
+        }
+
+        exercises = (try? container.decode([WatchRoutineExercise].self, forKey: .exercises)) ?? []
+    }
 }
 
 struct WatchRoutineExercise: Codable, Identifiable {
@@ -160,6 +227,47 @@ struct WatchRoutineExercise: Codable, Identifiable {
     let reps: Int
     let rest: Int
     let weight: Double
+
+    enum CodingKeys: String, CodingKey {
+        case exerciseId, sets, reps, rest, weight
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        exerciseId = try container.decode(String.self, forKey: .exerciseId)
+        
+        if let val = try? container.decode(Int.self, forKey: .sets) {
+            sets = val
+        } else if let val = try? container.decode(Double.self, forKey: .sets) {
+            sets = Int(val)
+        } else {
+            sets = 3
+        }
+
+        if let val = try? container.decode(Int.self, forKey: .reps) {
+            reps = val
+        } else if let val = try? container.decode(Double.self, forKey: .reps) {
+            reps = Int(val)
+        } else {
+            reps = 10
+        }
+
+        if let val = try? container.decode(Int.self, forKey: .rest) {
+            rest = val
+        } else if let val = try? container.decode(Double.self, forKey: .rest) {
+            rest = Int(val)
+        } else {
+            rest = 60
+        }
+
+        if let val = try? container.decode(Double.self, forKey: .weight) {
+            weight = val
+        } else if let val = try? container.decode(Int.self, forKey: .weight) {
+            weight = Double(val)
+        } else {
+            weight = 0.0
+        }
+    }
 }
 
 struct WatchLibraryExercise: Codable, Identifiable {
@@ -168,6 +276,19 @@ struct WatchLibraryExercise: Codable, Identifiable {
     let muscle: String
     let executionType: String
     let measurementType: String
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, muscle, executionType, measurementType
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        muscle = try container.decode(String.self, forKey: .muscle)
+        executionType = (try? container.decode(String.self, forKey: .executionType)) ?? "Livre"
+        measurementType = (try? container.decode(String.self, forKey: .measurementType)) ?? "reps"
+    }
 }
 
 struct WatchRestTimer: Codable {
@@ -176,6 +297,42 @@ struct WatchRestTimer: Codable {
     let nextExerciseName: String
     let nextSetNum: Int
     let isPrep: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case endTime, totalSeconds, nextExerciseName, nextSetNum, isPrep
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        if let val = try? container.decode(Int.self, forKey: .endTime) {
+            endTime = val
+        } else if let val = try? container.decode(Double.self, forKey: .endTime) {
+            endTime = Int(val)
+        } else {
+            endTime = 0
+        }
+
+        if let val = try? container.decode(Int.self, forKey: .totalSeconds) {
+            totalSeconds = val
+        } else if let val = try? container.decode(Double.self, forKey: .totalSeconds) {
+            totalSeconds = Int(val)
+        } else {
+            totalSeconds = 0
+        }
+
+        nextExerciseName = (try? container.decode(String.self, forKey: .nextExerciseName)) ?? ""
+        
+        if let val = try? container.decode(Int.self, forKey: .nextSetNum) {
+            nextSetNum = val
+        } else if let val = try? container.decode(Double.self, forKey: .nextSetNum) {
+            nextSetNum = Int(val)
+        } else {
+            nextSetNum = 0
+        }
+
+        isPrep = (try? container.decode(Bool.self, forKey: .isPrep)) ?? false
+    }
 }
 
 struct WatchActiveWorkoutState: Codable {
@@ -186,6 +343,44 @@ struct WatchActiveWorkoutState: Codable {
     let elapsedSeconds: Int
     let paused: Bool
     let restTimer: WatchRestTimer?
+
+    enum CodingKeys: String, CodingKey {
+        case name, startTime, exercises, currentExerciseIndex, elapsedSeconds, paused, restTimer
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        name = (try? container.decode(String.self, forKey: .name)) ?? ""
+        
+        if let val = try? container.decode(Int.self, forKey: .startTime) {
+            startTime = val
+        } else if let val = try? container.decode(Double.self, forKey: .startTime) {
+            startTime = Int(val)
+        } else {
+            startTime = 0
+        }
+
+        exercises = (try? container.decode([WatchActiveExercise].self, forKey: .exercises)) ?? []
+        
+        if let val = try? container.decode(Int.self, forKey: .currentExerciseIndex) {
+            currentExerciseIndex = val
+        } else if let val = try? container.decode(Double.self, forKey: .currentExerciseIndex) {
+            currentExerciseIndex = Int(val)
+        } else {
+            currentExerciseIndex = 0
+        }
+
+        if let val = try? container.decode(Int.self, forKey: .elapsedSeconds) {
+            elapsedSeconds = val
+        } else if let val = try? container.decode(Double.self, forKey: .elapsedSeconds) {
+            elapsedSeconds = Int(val)
+        } else {
+            elapsedSeconds = 0
+        }
+
+        paused = (try? container.decode(Bool.self, forKey: .paused)) ?? false
+        restTimer = try? container.decodeIfPresent(WatchRestTimer.self, forKey: .restTimer)
+    }
 }
 
 struct WatchActiveExercise: Codable, Identifiable {
@@ -197,4 +392,47 @@ struct WatchActiveExercise: Codable, Identifiable {
     let rest: Int
     let weight: Double
     let setsState: [Bool]
+
+    enum CodingKeys: String, CodingKey {
+        case name, muscle, sets, reps, rest, weight, setsState
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        name = try container.decode(String.self, forKey: .name)
+        muscle = try container.decode(String.self, forKey: .muscle)
+        setsState = try container.decode([Bool].self, forKey: .setsState)
+
+        if let val = try? container.decode(Int.self, forKey: .sets) {
+            sets = val
+        } else if let val = try? container.decode(Double.self, forKey: .sets) {
+            sets = Int(val)
+        } else {
+            sets = setsState.count
+        }
+
+        if let val = try? container.decode(Int.self, forKey: .reps) {
+            reps = val
+        } else if let val = try? container.decode(Double.self, forKey: .reps) {
+            reps = Int(val)
+        } else {
+            reps = 10
+        }
+
+        if let val = try? container.decode(Int.self, forKey: .rest) {
+            rest = val
+        } else if let val = try? container.decode(Double.self, forKey: .rest) {
+            rest = Int(val)
+        } else {
+            rest = 60
+        }
+
+        if let val = try? container.decode(Double.self, forKey: .weight) {
+            weight = val
+        } else if let val = try? container.decode(Int.self, forKey: .weight) {
+            weight = Double(val)
+        } else {
+            weight = 0.0
+        }
+    }
 }
