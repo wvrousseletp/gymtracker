@@ -107,6 +107,7 @@ class ActiveExercise {
   final List<bool> setsState;
   final List<PerformedCardio?> performedCardios;
   final List<bool> failureReport;
+  final List<int?> failureReps;
 
   ActiveExercise({
     required this.id,
@@ -121,7 +122,8 @@ class ActiveExercise {
     required this.setsState,
     required this.performedCardios,
     required this.failureReport,
-  });
+    List<int?>? failureReps,
+  }) : failureReps = failureReps ?? List<int?>.filled(sets, null);
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -136,6 +138,7 @@ class ActiveExercise {
     'setsState': setsState,
     'performedCardios': performedCardios.map((c) => c?.toJson()).toList(),
     'failureReport': failureReport,
+    'failureReps': failureReps,
   };
 
   factory ActiveExercise.fromJson(Map<String, dynamic> json) {
@@ -155,6 +158,9 @@ class ActiveExercise {
           ? (json['performedCardios'] as List).map((c) => c == null ? null : PerformedCardio.fromJson(c)).toList()
           : List.filled(setsVal, null),
       failureReport: List<bool>.from(json['failureReport'] ?? List.filled(setsVal, false)),
+      failureReps: json['failureReps'] != null
+          ? List<int?>.from(json['failureReps'])
+          : List<int?>.filled(setsVal, null),
     );
   }
 }

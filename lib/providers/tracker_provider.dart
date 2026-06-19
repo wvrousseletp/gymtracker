@@ -396,7 +396,7 @@ class TrackerProvider extends ChangeNotifier {
     startWorkout(tempRoutine, WorkoutRecovery(sleepOk: 'ok', pain: [], warmUpDone: false), false);
   }
 
-  void completeSet(int exIndex, int setIndex, bool isDone, {double? distance, int? duration, bool isFailure = false}) {
+  void completeSet(int exIndex, int setIndex, bool isDone, {double? distance, int? duration, bool isFailure = false, int? failureRep}) {
     if (_state == null || _state!.activeWorkout == null) return;
 
     final active = _state!.activeWorkout!;
@@ -414,6 +414,9 @@ class TrackerProvider extends ChangeNotifier {
     final newFailure = List<bool>.from(ex.failureReport);
     newFailure[setIndex] = isFailure;
 
+    final newFailureReps = List<int?>.from(ex.failureReps);
+    newFailureReps[setIndex] = isFailure ? failureRep : null;
+
     exercises[exIndex] = ActiveExercise(
       id: ex.id,
       name: ex.name,
@@ -427,6 +430,7 @@ class TrackerProvider extends ChangeNotifier {
       setsState: newSetsState,
       performedCardios: newCardios,
       failureReport: newFailure,
+      failureReps: newFailureReps,
     );
 
     // Calcular cronômetro de descanso se a série foi completada
@@ -777,6 +781,7 @@ class TrackerProvider extends ChangeNotifier {
         performedCardios: ex.performedCardios,
         rpe: rpeValue,
         failureReport: ex.failureReport,
+        failureReps: ex.failureReps,
         executionType: ex.executionType,
       );
     }).toList();
@@ -852,6 +857,68 @@ class TrackerProvider extends ChangeNotifier {
       diet: _state!.diet,
     );
 
+    saveState();
+    notifyListeners();
+  }
+
+  void addManualWorkoutLog(WorkoutLog log) {
+    if (_state == null) return;
+    final List<WorkoutLog> newHistory = List.from(_state!.history)..insert(0, log);
+
+    // Atualiza Recordes Pessoais (PRs)
+    final Map<String, PersonalRecord> newPrs = Map.from(_state!.prs);
+    for (var ex in log.exercises) {
+      if (ex.completedSets == 0) continue;
+
+      final isCardio = ex.muscle.toLowerCase().contains('cardio');
+      double prWeight = ex.weight;
+      int prReps = ex.reps;
+
+      if (isCardio) {
+        if (ex.performedCardios != null && ex.performedCardios!.isNotEmpty) {
+          final completedList = ex.performedCardios!.where((c) => c != null).toList();
+          if (completedList.isNotEmpty) {
+            var maxCardio = completedList[0]!;
+            for (var p in completedList) {
+              if (p!.distanceKm > maxCardio.distanceKm) {
+                maxCardio = p;
+              }
+            }
+            prWeight = maxCardio.distanceKm;
+            prReps = maxCardio.durationSeconds ~/ 60;
+          } else {
+            continue;
+          }
+        } else {
+          continue;
+        }
+      }
+
+      final libEx = _state!.library.firstWhere((l) => l.name == ex.name, orElse: () => LibraryExercise(id: '', name: '', muscle: '', measurementType: ''));
+      if (libEx.id.isEmpty) continue;
+
+      final currentPr = newPrs[libEx.id];
+      if (currentPr == null || prWeight > currentPr.weight || (prWeight == currentPr.weight && prReps > currentPr.reps)) {
+        newPrs[libEx.id] = PersonalRecord(
+          weight: prWeight,
+          reps: prReps,
+          date: log.date,
+          routineName: log.name,
+        );
+      }
+    }
+
+    _state = PlannerState(
+      library: _state!.library,
+      routines: _state!.routines,
+      planner: _state!.planner,
+      history: newHistory,
+      prs: newPrs,
+      medidas: _state!.medidas,
+      settings: _state!.settings,
+      activeWorkout: _state!.activeWorkout,
+      diet: _state!.diet,
+    );
     saveState();
     notifyListeners();
   }
@@ -968,6 +1035,35 @@ class TrackerProvider extends ChangeNotifier {
     );
     saveState();
     notifyListeners();
+  }
+
+  void updateLibraryExercise(String id, String name, String muscle, String measurementType, String? notes, String? executionType) {
+    if (_state == null) return;
+    final library = List<LibraryExercise>.from(_state!.library);
+    final idx = library.indexWhere((e) => e.id == id);
+    if (idx != -1) {
+      library[idx] = LibraryExercise(
+        id: id,
+        name: name,
+        muscle: muscle,
+        measurementType: measurementType,
+        notes: notes,
+        executionType: executionType,
+      );
+      _state = PlannerState(
+        library: library,
+        routines: _state!.routines,
+        planner: _state!.planner,
+        history: _state!.history,
+        prs: _state!.prs,
+        medidas: _state!.medidas,
+        settings: _state!.settings,
+        activeWorkout: _state!.activeWorkout,
+        diet: _state!.diet,
+      );
+      saveState();
+      notifyListeners();
+    }
   }
 
   void deleteLibraryExercise(String id) {

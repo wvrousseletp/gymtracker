@@ -10,6 +10,7 @@ class LogExercise {
   final List<PerformedCardio?>? performedCardios;
   final int rpe;
   final List<bool>? failureReport;
+  final List<int?>? failureReps;
   final String? executionType;
 
   LogExercise({
@@ -22,6 +23,7 @@ class LogExercise {
     this.performedCardios,
     required this.rpe,
     this.failureReport,
+    this.failureReps,
     this.executionType,
   });
 
@@ -35,6 +37,7 @@ class LogExercise {
     'performedCardios': performedCardios?.map((c) => c?.toJson()).toList(),
     'rpe': rpe,
     'failureReport': failureReport,
+    'failureReps': failureReps,
     'executionType': executionType,
   };
 
@@ -50,6 +53,9 @@ class LogExercise {
         : null,
     rpe: (json['rpe'] as num?)?.toInt() ?? 8,
     failureReport: json['failureReport'] != null ? List<bool>.from(json['failureReport']) : null,
+    failureReps: json['failureReps'] != null 
+        ? List<int?>.from(json['failureReps']) 
+        : (json['failureReport'] != null ? List<int?>.filled((json['failureReport'] as List).length, null) : null),
     executionType: json['executionType'],
   );
 }

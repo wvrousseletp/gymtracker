@@ -1222,31 +1222,57 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
                       const SizedBox(width: 16),
 
                       // Botão Falha (RPE/Failure)
-                      GestureDetector(
-                        onTap: () {
-                          widget.provider.completeSet(
-                            exIdx,
-                            setIdx,
-                            isDone,
-                            isFailure: !isFailure,
-                          );
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: isFailure ? Colors.redAccent.withOpacity(0.15) : Colors.white.withOpacity(0.02),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: isFailure ? Colors.redAccent : Colors.white.withOpacity(0.08)),
-                          ),
-                          child: Text(
-                            "❌ Falha",
-                            style: TextStyle(
-                              color: isFailure ? Colors.redAccent : Colors.white24,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              widget.provider.completeSet(
+                                exIdx,
+                                setIdx,
+                                isDone,
+                                isFailure: !isFailure,
+                                failureRep: !isFailure ? ex.failureReps[setIdx] : null,
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: isFailure ? Colors.redAccent.withOpacity(0.15) : Colors.white.withOpacity(0.02),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: isFailure ? Colors.redAccent : Colors.white.withOpacity(0.08)),
+                              ),
+                              child: Text(
+                                "❌ Falha",
+                                style: TextStyle(
+                                  color: isFailure ? Colors.redAccent : Colors.white24,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
                           ),
-                        ),
+                          if (isFailure) ...[
+                            const SizedBox(width: 4),
+                            GestureDetector(
+                              onTap: () {
+                                _showFailureRepDialog(context, exIdx, setIdx, ex.failureReps[setIdx]);
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: Colors.redAccent.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: Colors.redAccent.withOpacity(0.25)),
+                                ),
+                                child: Text(
+                                  "Rep: ${ex.failureReps[setIdx] ?? '-'}",
+                                  style: const TextStyle(color: Colors.redAccent, fontSize: 10, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                       const SizedBox(width: 8),
 
@@ -1255,7 +1281,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
                         value: isDone,
                         activeColor: accentColor,
                         onChanged: (val) {
-                          widget.provider.completeSet(exIdx, setIdx, val ?? false, isFailure: isFailure);
+                          widget.provider.completeSet(exIdx, setIdx, val ?? false, isFailure: isFailure, failureRep: ex.failureReps[setIdx]);
                         },
                       ),
                     ],
@@ -1263,6 +1289,57 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
                 );
               }
             },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showFailureRepDialog(BuildContext context, int exIdx, int setIdx, int? currentRep) {
+    final controller = TextEditingController(text: currentRep?.toString() ?? "");
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: const Color(0xff1c1c1e),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: Colors.white.withOpacity(0.08)),
+        ),
+        title: const Text("Repetição de Falha", style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          autofocus: true,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.white.withOpacity(0.05),
+            hintText: "Digite a repetição (ex: 8)",
+            hintStyle: const TextStyle(color: Colors.white24),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text("Cancelar", style: TextStyle(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () {
+              final rep = int.tryParse(controller.text.trim());
+              final provider = Provider.of<TrackerProvider>(context, listen: false);
+              final active = provider.state!.activeWorkout!;
+              final ex = active.exercises[exIdx];
+              provider.completeSet(
+                exIdx,
+                setIdx,
+                ex.setsState[setIdx],
+                isFailure: true,
+                failureRep: rep,
+              );
+              Navigator.pop(dialogCtx);
+            },
+            child: const Text("Salvar", style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
           ),
         ],
       ),

@@ -382,90 +382,90 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
         top: 8,
         bottom: MediaQuery.of(context).viewInsets.bottom + 24,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Drag handle
-          Center(
-            child: Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
-              margin: const EdgeInsets.symmetric(vertical: 12),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Drag handle
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+                margin: const EdgeInsets.symmetric(vertical: 12),
+              ),
             ),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                widget.existing == null ? "Nova Rotina" : "Editar Rotina",
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white),
-              ),
-              IconButton(
-                icon: Icon(Icons.add_circle_outline, color: accentColor),
-                onPressed: () {
-                  _addExercisePicker(sortedLibrary);
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          Form(
-            key: _formKey,
-            child: Column(
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      child: TextFormField(
-                        controller: _nameController,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: Colors.white.withOpacity(0.05),
-                          labelText: "Nome da Rotina",
-                          labelStyle: const TextStyle(color: Colors.white54, fontSize: 13),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                        ),
-                        validator: (value) => (value == null || value.trim().isEmpty) ? "Obrigatório" : null,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      flex: 2,
-                      child: TextFormField(
-                        controller: _restController,
-                        keyboardType: TextInputType.number,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: Colors.white.withOpacity(0.05),
-                          labelText: "Descanso (seg)",
-                          labelStyle: const TextStyle(color: Colors.white54, fontSize: 13),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                        ),
-                        validator: (value) => (value == null || int.tryParse(value) == null) ? "Inválido" : null,
-                      ),
-                    ),
-                  ],
+                Text(
+                  widget.existing == null ? "Nova Rotina" : "Editar Rotina",
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white),
+                ),
+                IconButton(
+                  icon: Icon(Icons.add_circle_outline, color: accentColor),
+                  onPressed: () {
+                    _addExercisePicker(sortedLibrary);
+                  },
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 12),
 
-          const Text(
-            "Exercícios Agendados",
-            style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 8),
+            Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: TextFormField(
+                          controller: _nameController,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: Colors.white.withOpacity(0.05),
+                            labelText: "Nome da Rotina",
+                            labelStyle: const TextStyle(color: Colors.white54, fontSize: 13),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                          ),
+                          validator: (value) => (value == null || value.trim().isEmpty) ? "Obrigatório" : null,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        flex: 2,
+                        child: TextFormField(
+                          controller: _restController,
+                          keyboardType: TextInputType.number,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: Colors.white.withOpacity(0.05),
+                            labelText: "Descanso (seg)",
+                            labelStyle: const TextStyle(color: Colors.white54, fontSize: 13),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                          ),
+                          validator: (value) => (value == null || int.tryParse(value) == null) ? "Inválido" : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
 
-          // Lista de exercícios adicionados na rotina
-          Flexible(
-            child: _exercises.isEmpty
+            const Text(
+              "Exercícios Agendados",
+              style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+
+            // Lista de exercícios adicionados na rotina
+            _exercises.isEmpty
                 ? const Padding(
                     padding: EdgeInsets.symmetric(vertical: 24),
                     child: Center(
@@ -546,7 +546,7 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                                       label: isCardio ? "Repet." : "Séries",
                                       value: ex.sets.toString(),
                                       onChanged: (val) {
-                                        _updateExerciseField(idx, sets: int.tryParse(val));
+                                        _updateExerciseField(idx, sets: int.tryParse(val) ?? 0);
                                       },
                                     ),
                                   ),
@@ -557,7 +557,7 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                                       label: isCardio ? "Minutos" : (ref.measurementType == 'time' ? "Segundos" : "Reps"),
                                       value: ex.reps.toString(),
                                       onChanged: (val) {
-                                        _updateExerciseField(idx, reps: int.tryParse(val));
+                                        _updateExerciseField(idx, reps: int.tryParse(val) ?? 0);
                                       },
                                     ),
                                   ),
@@ -569,7 +569,7 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                                         label: "Carga (kg)",
                                         value: ex.weight.toString(),
                                         onChanged: (val) {
-                                          _updateExerciseField(idx, weight: double.tryParse(val));
+                                          _updateExerciseField(idx, weight: double.tryParse(val) ?? 0.0);
                                         },
                                       ),
                                     ),
@@ -581,7 +581,7 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                                       label: "Desc. (s)",
                                       value: ex.rest.toString(),
                                       onChanged: (val) {
-                                        _updateExerciseField(idx, rest: int.tryParse(val));
+                                        _updateExerciseField(idx, rest: int.tryParse(val) ?? 0);
                                       },
                                     ),
                                   ),
@@ -593,50 +593,78 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                       },
                     ),
                   ),
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-          // Botão de Confirmação
-          SizedBox(
-            width: double.infinity,
-            height: 44,
-            child: ElevatedButton(
-              onPressed: () {
-                if (_formKey.currentState!.validate() && _exercises.isNotEmpty) {
-                  final name = _nameController.text.trim();
-                  final rest = int.parse(_restController.text.trim());
-
-                  if (widget.existing == null) {
-                    widget.provider.addRoutine(name, rest, _exercises);
-                  } else {
-                    // Atualiza substituindo na lista
-                    final state = widget.provider.state!;
-                    final idx = state.routines.indexWhere((r) => r.id == widget.existing!.id);
-                    if (idx != -1) {
-                      state.routines[idx] = Routine(
-                        id: widget.existing!.id,
-                        name: name,
-                        defaultRest: rest,
-                        exercises: _exercises,
+            // Botão de Confirmação
+            SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: ElevatedButton(
+                onPressed: () {
+                  if (_formKey.currentState!.validate()) {
+                    if (_exercises.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Adicione pelo menos um exercício à rotina!"),
+                          backgroundColor: Colors.redAccent,
+                        ),
                       );
-                      widget.provider.saveState();
+                      return;
                     }
+
+                    // Validar se há exercícios com 0 séries ou reps
+                    bool anyInvalid = false;
+                    for (var ex in _exercises) {
+                      if (ex.sets <= 0 || ex.reps <= 0) {
+                        anyInvalid = true;
+                        break;
+                      }
+                    }
+                    if (anyInvalid) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Todas as séries e repetições/tempo devem ser maiores que zero!"),
+                          backgroundColor: Colors.redAccent,
+                        ),
+                      );
+                      return;
+                    }
+
+                    final name = _nameController.text.trim();
+                    final rest = int.parse(_restController.text.trim());
+
+                    if (widget.existing == null) {
+                      widget.provider.addRoutine(name, rest, _exercises);
+                    } else {
+                      // Atualiza substituindo na lista
+                      final state = widget.provider.state!;
+                      final idx = state.routines.indexWhere((r) => r.id == widget.existing!.id);
+                      if (idx != -1) {
+                        state.routines[idx] = Routine(
+                          id: widget.existing!.id,
+                          name: name,
+                          defaultRest: rest,
+                          exercises: _exercises,
+                        );
+                        widget.provider.saveState();
+                      }
+                    }
+                    Navigator.pop(context);
                   }
-                  Navigator.pop(context);
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: accentColor,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 0,
-              ),
-              child: Text(
-                widget.existing == null ? "Criar Rotina" : "Salvar Alterações",
-                style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w800),
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: accentColor,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ),
+                child: Text(
+                  widget.existing == null ? "Criar Rotina" : "Salvar Alterações",
+                  style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w800),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -936,11 +964,22 @@ class _LibraryTabState extends State<LibraryTab> {
                                 ),
                               ),
                               if (!isSystem)
-                                IconButton(
-                                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
-                                  onPressed: () {
-                                    _confirmDeleteExercise(context, provider, ex);
-                                  },
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.edit_outlined, color: Colors.white70, size: 18),
+                                      onPressed: () {
+                                        _openAddExerciseDialog(context, provider, existing: ex);
+                                      },
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
+                                      onPressed: () {
+                                        _confirmDeleteExercise(context, provider, ex);
+                                      },
+                                    ),
+                                  ],
                                 ),
                             ],
                           ),
@@ -982,13 +1021,19 @@ class _LibraryTabState extends State<LibraryTab> {
     );
   }
 
-  void _openAddExerciseDialog(BuildContext context, TrackerProvider provider) {
-    final nameCtrl = TextEditingController();
-    String category = "Musculação"; // "Musculação" ou "Cardio"
-    String muscle = "Peito";
-    String equipment = "Barra"; // "Barra", "Haltere", "Máquina", "Livre"
-    String measurement = "Repetições"; // "Repetições", "Tempo de Isometria"
-    final notesCtrl = TextEditingController();
+  void _openAddExerciseDialog(BuildContext context, TrackerProvider provider, {LibraryExercise? existing}) {
+    final nameCtrl = TextEditingController(text: existing?.name ?? "");
+    String category = existing != null
+        ? (existing.muscle == "Cardio" ? "Cardio" : "Musculação")
+        : "Musculação";
+    String muscle = existing != null
+        ? (existing.muscle == "Cardio" ? "Peito" : existing.muscle)
+        : "Peito";
+    String equipment = existing?.executionType ?? "Barra";
+    String measurement = existing != null
+        ? (existing.measurementType == 'time' ? "Tempo de Isometria" : "Repetições")
+        : "Repetições";
+    final notesCtrl = TextEditingController(text: existing?.notes ?? "");
 
     showDialog(
       context: context,
@@ -1000,7 +1045,7 @@ class _LibraryTabState extends State<LibraryTab> {
               borderRadius: BorderRadius.circular(20),
               side: BorderSide(color: Colors.white.withOpacity(0.08)),
             ),
-            title: const Text("Novo Exercício", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16)),
+            title: Text(existing == null ? "Novo Exercício" : "Editar Exercício", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16)),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -1211,24 +1256,35 @@ class _LibraryTabState extends State<LibraryTab> {
                   final name = nameCtrl.text.trim();
                   if (name.isNotEmpty) {
                     final isCardioEx = category == "Cardio";
-                    final mType = isCardioEx 
-                        ? "time" 
+                    final mType = isCardioEx
+                        ? "time"
                         : (measurement == "Tempo de Isometria" ? "time" : "reps");
-                    final execType = isCardioEx 
-                        ? "Livre" 
+                    final execType = isCardioEx
+                        ? "Livre"
                         : equipment;
 
-                    provider.addLibraryExercise(
-                      name,
-                      isCardioEx ? "Cardio" : muscle,
-                      mType,
-                      notesCtrl.text.trim(),
-                      execType,
-                    );
+                    if (existing == null) {
+                      provider.addLibraryExercise(
+                        name,
+                        isCardioEx ? "Cardio" : muscle,
+                        mType,
+                        notesCtrl.text.trim(),
+                        execType,
+                      );
+                    } else {
+                      provider.updateLibraryExercise(
+                        existing.id,
+                        name,
+                        isCardioEx ? "Cardio" : muscle,
+                        mType,
+                        notesCtrl.text.trim(),
+                        execType,
+                      );
+                    }
                     Navigator.pop(dialogCtx);
                   }
                 },
-                child: Text("Adicionar", style: TextStyle(color: widget.accentColor, fontWeight: FontWeight.bold)),
+                child: Text(existing == null ? "Adicionar" : "Salvar", style: TextStyle(color: widget.accentColor, fontWeight: FontWeight.bold)),
               ),
             ],
           );

@@ -90,6 +90,14 @@ class _HistoryTabState extends State<HistoryTab> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          _openAddManualLogDialog(context, provider);
+        },
+        backgroundColor: widget.accentColor,
+        mini: true,
+        child: const Icon(Icons.add_task, color: Colors.black),
+      ),
       body: history.isEmpty
           ? const Center(
               child: Text(
@@ -229,6 +237,16 @@ class _HistoryTabState extends State<HistoryTab> {
                                 subtitle = "${ex.sets} séries x ${ex.reps} reps @ ${ex.weight.toStringAsFixed(1).replaceAll('.0', '')}kg";
                               }
 
+                              final failedSets = <String>[];
+                              if (ex.failureReport != null) {
+                                for (int i = 0; i < ex.failureReport!.length; i++) {
+                                  if (ex.failureReport![i]) {
+                                    final rep = (ex.failureReps != null && ex.failureReps!.length > i) ? ex.failureReps![i] : null;
+                                    failedSets.add("S${i+1}${rep != null ? ' (Rep $rep)' : ''}");
+                                  }
+                                }
+                              }
+
                               return Container(
                                 margin: const EdgeInsets.symmetric(vertical: 4),
                                 padding: const EdgeInsets.all(8),
@@ -248,9 +266,20 @@ class _HistoryTabState extends State<HistoryTab> {
                                             style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
                                           ),
                                           const SizedBox(height: 2),
-                                          Text(
-                                            subtitle,
-                                            style: const TextStyle(color: Colors.white54, fontSize: 11),
+                                          RichText(
+                                            text: TextSpan(
+                                              style: const TextStyle(color: Colors.white54, fontSize: 11),
+                                              children: [
+                                                TextSpan(text: subtitle),
+                                                if (failedSets.isNotEmpty) ...[
+                                                  const TextSpan(text: " • "),
+                                                  TextSpan(
+                                                    text: "Falha: ${failedSets.join(', ')}",
+                                                    style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+                                                  ),
+                                                ],
+                                              ],
+                                            ),
                                           ),
                                         ],
                                       ),
@@ -367,6 +396,600 @@ class _HistoryTabState extends State<HistoryTab> {
             child: const Text("Excluir", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
           ),
         ],
+      ),
+    );
+  }
+
+  void _openAddManualLogDialog(BuildContext context, TrackerProvider provider) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => ManualWorkoutLogSheet(provider: provider),
+    );
+  }
+}
+
+// ==========================================
+// FORMULÁRIO DE LOG MANUAL (SHEET)
+// ==========================================
+class ManualWorkoutLogSheet extends StatefulWidget {
+  final TrackerProvider provider;
+  const ManualWorkoutLogSheet({Key? key, required this.provider}) : super(key: key);
+
+  @override
+  State<ManualWorkoutLogSheet> createState() => _ManualWorkoutLogSheetState();
+}
+
+class _ManualWorkoutLogSheetState extends State<ManualWorkoutLogSheet> {
+  final _formKey = GlobalKey<FormState>();
+  DateTime _selectedDate = DateTime.now();
+  LibraryExercise? _selectedExercise;
+  
+  int _setsCount = 3;
+  int _repsCount = 10;
+  double _weightVal = 0.0;
+  int _rpe = 8;
+  final _notesCtrl = TextEditingController();
+
+  List<bool> _setsCompleted = List.filled(3, true);
+  List<double> _setsWeights = List.filled(3, 0.0);
+  List<int> _setsReps = List.filled(3, 10);
+  List<bool> _setsFailures = List.filled(3, false);
+  List<int?> _setsFailureReps = List.filled(3, null);
+
+  @override
+  void dispose() {
+    _notesCtrl.dispose();
+    super.dispose();
+  }
+
+  void _updateSetsLists(int newCount) {
+    if (newCount <= 0) return;
+    setState(() {
+      _setsCount = newCount;
+      _setsCompleted = List.generate(newCount, (i) => i < _setsCompleted.length ? _setsCompleted[i] : true);
+      _setsWeights = List.generate(newCount, (i) => i < _setsWeights.length ? _setsWeights[i] : _weightVal);
+      _setsReps = List.generate(newCount, (i) => i < _setsReps.length ? _setsReps[i] : _repsCount);
+      _setsFailures = List.generate(newCount, (i) => i < _setsFailures.length ? _setsFailures[i] : false);
+      _setsFailureReps = List.generate(newCount, (i) => i < _setsFailureReps.length ? _setsFailureReps[i] : null);
+    });
+  }
+
+  Future<void> _pickDate() async {
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      builder: (context, child) => Theme(
+        data: ThemeData.dark().copyWith(
+          colorScheme: ColorScheme.dark(
+            primary: ThemeUtils.getColor(widget.provider.currentProfile.colorAccent),
+            surface: const Color(0xff1c1c1e),
+          ),
+        ),
+        child: child!,
+      ),
+    );
+    if (pickedDate != null) {
+      final pickedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.fromDateTime(_selectedDate),
+        builder: (context, child) => Theme(
+          data: ThemeData.dark().copyWith(
+            colorScheme: ColorScheme.dark(
+              primary: ThemeUtils.getColor(widget.provider.currentProfile.colorAccent),
+              surface: const Color(0xff1c1c1e),
+            ),
+          ),
+          child: child!,
+        ),
+      );
+      if (pickedTime != null) {
+        setState(() {
+          _selectedDate = DateTime(pickedDate.year, pickedDate.month, pickedDate.day, pickedTime.hour, pickedTime.minute);
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final library = widget.provider.state!.library;
+    final sortedLibrary = List<LibraryExercise>.from(library)
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    final accentColor = ThemeUtils.getColor(widget.provider.currentProfile.colorAccent);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xff1c1c1e).withOpacity(0.95),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
+      ),
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 8,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+              const Text(
+                "Registrar Exercício Externo",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white),
+              ),
+              const SizedBox(height: 16),
+
+              // Data/Hora
+              InkWell(
+                onTap: _pickDate,
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text("Data e Hora", style: TextStyle(color: Colors.white70, fontSize: 13)),
+                      Text(
+                        "${_selectedDate.day.toString().padLeft(2, '0')}/${_selectedDate.month.toString().padLeft(2, '0')}/${_selectedDate.year} ${_selectedDate.hour.toString().padLeft(2, '0')}:${_selectedDate.minute.toString().padLeft(2, '0')}",
+                        style: TextStyle(color: accentColor, fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Exercício Dropdown
+              const Text("Exercício da Biblioteca", style: TextStyle(color: Colors.white54, fontSize: 11)),
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<LibraryExercise>(
+                    value: _selectedExercise,
+                    hint: const Text("Selecione um exercício...", style: TextStyle(color: Colors.white30, fontSize: 13)),
+                    dropdownColor: const Color(0xff1c1c1e),
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    isExpanded: true,
+                    onChanged: (val) {
+                      setState(() {
+                        _selectedExercise = val;
+                        if (val != null) {
+                          _repsCount = val.measurementType == 'time' ? 45 : 10;
+                          _updateSetsLists(_setsCount);
+                        }
+                      });
+                    },
+                    items: sortedLibrary
+                        .map((ex) => DropdownMenuItem(
+                              value: ex,
+                              child: Text("${ex.name} (${ex.muscle})"),
+                            ))
+                        .toList(),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              if (_selectedExercise != null) ...[
+                // Config Gerais
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text("Séries", style: TextStyle(color: Colors.white54, fontSize: 10)),
+                          const SizedBox(height: 4),
+                          TextFormField(
+                            initialValue: _setsCount.toString(),
+                            keyboardType: TextInputType.number,
+                            style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                            decoration: InputDecoration(
+                              filled: true,
+                              fillColor: Colors.white.withOpacity(0.05),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                            ),
+                            onChanged: (val) {
+                              final count = int.tryParse(val) ?? 3;
+                              _updateSetsLists(count);
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _selectedExercise!.measurementType == 'time' ? "Tempo (s)" : "Reps Padrão",
+                            style: const TextStyle(color: Colors.white54, fontSize: 10),
+                          ),
+                          const SizedBox(height: 4),
+                          TextFormField(
+                            initialValue: _repsCount.toString(),
+                            keyboardType: TextInputType.number,
+                            style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                            decoration: InputDecoration(
+                              filled: true,
+                              fillColor: Colors.white.withOpacity(0.05),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                            ),
+                            onChanged: (val) {
+                              final reps = int.tryParse(val) ?? 10;
+                              setState(() {
+                                _repsCount = reps;
+                                for (int i = 0; i < _setsReps.length; i++) {
+                                  _setsReps[i] = reps;
+                                }
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    if (!_selectedExercise!.muscle.toLowerCase().contains('cardio'))
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text("Carga Padrão (kg)", style: TextStyle(color: Colors.white54, fontSize: 10)),
+                            const SizedBox(height: 4),
+                            TextFormField(
+                              initialValue: _weightVal.toString(),
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: Colors.white.withOpacity(0.05),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                              ),
+                              onChanged: (val) {
+                                final w = double.tryParse(val) ?? 0.0;
+                                setState(() {
+                                  _weightVal = w;
+                                  for (int i = 0; i < _setsWeights.length; i++) {
+                                    _setsWeights[i] = w;
+                                  }
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Lista de Séries Customizadas
+                const Text("Detalhamento por Série:", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                const SizedBox(height: 8),
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _setsCount,
+                  itemBuilder: (context, idx) {
+                    final isCardio = _selectedExercise!.muscle.toLowerCase().contains('cardio');
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.02),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.white.withOpacity(0.06)),
+                      ),
+                      child: Row(
+                        children: [
+                          Text("S${idx + 1}", style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+                          const SizedBox(width: 8),
+                          
+                          // Input Reps / Tempo
+                          Expanded(
+                            child: TextFormField(
+                              initialValue: _setsReps[idx].toString(),
+                              keyboardType: TextInputType.number,
+                              style: const TextStyle(color: Colors.white, fontSize: 12),
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: Colors.white.withOpacity(0.04),
+                                isDense: true,
+                                contentPadding: const EdgeInsets.all(6),
+                                labelText: isCardio ? "Minutos" : (_selectedExercise!.measurementType == 'time' ? "Segs" : "Reps"),
+                                labelStyle: const TextStyle(fontSize: 10),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide.none),
+                              ),
+                              onChanged: (val) {
+                                final r = int.tryParse(val) ?? 10;
+                                _setsReps[idx] = r;
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+
+                          // Input Carga (Musculação) ou Distância (Cardio)
+                          Expanded(
+                            child: TextFormField(
+                              initialValue: isCardio ? "0.0" : _setsWeights[idx].toString(),
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              style: const TextStyle(color: Colors.white, fontSize: 12),
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: Colors.white.withOpacity(0.04),
+                                isDense: true,
+                                contentPadding: const EdgeInsets.all(6),
+                                labelText: isCardio ? "Km" : "Carga",
+                                labelStyle: const TextStyle(fontSize: 10),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide.none),
+                              ),
+                              onChanged: (val) {
+                                final w = double.tryParse(val) ?? 0.0;
+                                _setsWeights[idx] = w;
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+
+                          // Falha (apenas musculação)
+                          if (!isCardio) ...[
+                            GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _setsFailures[idx] = !_setsFailures[idx];
+                                  if (!_setsFailures[idx]) {
+                                    _setsFailureReps[idx] = null;
+                                  }
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: _setsFailures[idx] ? Colors.redAccent.withOpacity(0.15) : Colors.white.withOpacity(0.02),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: _setsFailures[idx] ? Colors.redAccent : Colors.white.withOpacity(0.08)),
+                                ),
+                                child: const Text(
+                                  "Falha",
+                                  style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ),
+                            if (_setsFailures[idx]) ...[
+                              const SizedBox(width: 4),
+                              Container(
+                                width: 28,
+                                height: 26,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.05),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: TextFormField(
+                                  initialValue: _setsFailureReps[idx]?.toString() ?? "",
+                                  keyboardType: TextInputType.number,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                                  decoration: const InputDecoration(
+                                    border: InputBorder.none,
+                                    contentPadding: EdgeInsets.zero,
+                                    isDense: true,
+                                    hintText: "-",
+                                    hintStyle: TextStyle(color: Colors.white24),
+                                  ),
+                                  onChanged: (val) {
+                                    _setsFailureReps[idx] = int.tryParse(val);
+                                  },
+                                ),
+                              ),
+                            ],
+                          ],
+                          const SizedBox(width: 4),
+
+                          // Checkbox Concluída
+                          Checkbox(
+                            value: _setsCompleted[idx],
+                            activeColor: accentColor,
+                            onChanged: (val) {
+                              setState(() {
+                                _setsCompleted[idx] = val ?? true;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+
+                // RPE e Notas
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text("Esforço (RPE 1-10)", style: TextStyle(color: Colors.white54, fontSize: 11)),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<int>(
+                                value: _rpe,
+                                dropdownColor: const Color(0xff1c1c1e),
+                                style: const TextStyle(color: Colors.white, fontSize: 14),
+                                isExpanded: true,
+                                onChanged: (val) {
+                                  if (val != null) setState(() => _rpe = val);
+                                },
+                                items: List.generate(10, (i) => i + 1)
+                                    .map((v) => DropdownMenuItem(value: v, child: Text("$v / 10")))
+                                    .toList(),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                TextField(
+                  controller: _notesCtrl,
+                  maxLines: 2,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.05),
+                    hintText: "Observações / Notas do Treino (opcional)",
+                    hintStyle: const TextStyle(color: Colors.white30, fontSize: 12),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Botão Salvar
+                SizedBox(
+                  width: double.infinity,
+                  height: 44,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (_formKey.currentState!.validate() && _selectedExercise != null) {
+                        final isCardio = _selectedExercise!.muscle.toLowerCase().contains('cardio');
+                        final completedCount = _setsCompleted.where((s) => s).length;
+                        if (completedCount == 0) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Marque pelo menos uma série como concluída!"),
+                              backgroundColor: Colors.redAccent,
+                            ),
+                          );
+                          return;
+                        }
+
+                        // Construir as sub-séries feitas
+                        List<PerformedCardio?>? cardios;
+                        if (isCardio) {
+                          cardios = [];
+                          for (int i = 0; i < _setsCount; i++) {
+                            if (_setsCompleted[i]) {
+                              cardios.add(PerformedCardio(
+                                distanceKm: _setsWeights[i],
+                                durationSeconds: _setsReps[i] * 60,
+                              ));
+                            } else {
+                              cardios.add(null);
+                            }
+                          }
+                        }
+
+                        double totalWeight = 0.0;
+                        int repsVal = 0;
+                        double weightVal = 0.0;
+                        int sumReps = 0;
+                        double sumWeight = 0.0;
+                        int countSets = 0;
+
+                        for (int i = 0; i < _setsCount; i++) {
+                          if (_setsCompleted[i]) {
+                            countSets++;
+                            sumReps += _setsReps[i];
+                            sumWeight += _setsWeights[i];
+                            if (!isCardio) {
+                              totalWeight += _setsWeights[i] * _setsReps[i];
+                            }
+                          }
+                        }
+
+                        if (countSets > 0) {
+                          repsVal = sumReps ~/ countSets;
+                          weightVal = sumWeight / countSets;
+                        }
+
+                        final logExercise = LogExercise(
+                          name: _selectedExercise!.name,
+                          muscle: _selectedExercise!.muscle,
+                          sets: _setsCount,
+                          completedSets: completedCount,
+                          reps: repsVal,
+                          weight: weightVal,
+                          performedCardios: cardios,
+                          rpe: _rpe,
+                          failureReport: _setsFailures,
+                          failureReps: _setsFailureReps,
+                          executionType: _selectedExercise!.executionType,
+                        );
+
+                        final manualLog = WorkoutLog(
+                          id: "manual-${DateTime.now().millisecondsSinceEpoch}",
+                          name: "${_selectedExercise!.name} (Externo)",
+                          date: _selectedDate.toUtc().toIso8601String(),
+                          duration: isCardio ? (sumReps * 60) : 1800, // 30 mins para musculação por padrão
+                          completedSets: completedCount,
+                          totalSets: _setsCount,
+                          totalWeight: totalWeight,
+                          rpe: _rpe,
+                          notes: _notesCtrl.text.trim(),
+                          exercises: [logExercise],
+                        );
+
+                        widget.provider.addManualWorkoutLog(manualLog);
+                        Navigator.pop(context);
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: accentColor,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text("Registrar no Histórico", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ] else ...[
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 40),
+                  child: Center(
+                    child: Text(
+                      "Selecione um exercício acima para configurar as séries.",
+                      style: TextStyle(color: Colors.white24, fontSize: 12, fontStyle: FontStyle.italic),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
