@@ -963,24 +963,24 @@ class _LibraryTabState extends State<LibraryTab> {
                                   ],
                                 ),
                               ),
-                              if (!isSystem)
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.edit_outlined, color: Colors.white70, size: 18),
-                                      onPressed: () {
-                                        _openAddExerciseDialog(context, provider, existing: ex);
-                                      },
-                                    ),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.edit_outlined, color: Colors.white70, size: 18),
+                                    onPressed: () {
+                                      _openAddExerciseDialog(context, provider, existing: ex);
+                                    },
+                                  ),
+                                  if (!isSystem)
                                     IconButton(
                                       icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
                                       onPressed: () {
                                         _confirmDeleteExercise(context, provider, ex);
                                       },
                                     ),
-                                  ],
-                                ),
+                                ],
+                              ),
                             ],
                           ),
                         ),
