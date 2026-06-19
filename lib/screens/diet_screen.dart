@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../providers/tracker_provider.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/profile_avatar.dart';
+import '../models/diet.dart';
 
 class DietScreen extends StatefulWidget {
   const DietScreen({Key? key}) : super(key: key);
@@ -550,7 +551,9 @@ class _JejumTabState extends State<JejumTab> {
 
   void _startTimer() {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      final active = Provider.of<TrackerProvider>(context, listen: false).state?.diet.fasting.active;
+      if (!mounted) return;
+      final provider = Provider.of<TrackerProvider>(context, listen: false);
+      final active = provider.state?.diet.fasting.active;
       if (active != null) {
         try {
           final start = DateTime.parse(active.startTime);
@@ -560,7 +563,119 @@ class _JejumTabState extends State<JejumTab> {
           // parse error
         }
       }
+      if (provider.state?.diet.abstinence.isNotEmpty ?? false) {
+        setState(() {});
+      }
     });
+  }
+
+  Widget _buildFastingStageCard(Duration elapsed) {
+    final hours = elapsed.inSeconds / 3600;
+    String stageTitle = "";
+    String stageDesc = "";
+    Color stageColor = Colors.amber;
+
+    if (hours < 2) {
+      stageTitle = "Absorção de Nutrientes";
+      stageDesc = "Seu corpo está digerindo a última refeição. Nível de açúcar sobe.";
+      stageColor = Colors.blueAccent;
+    } else if (hours < 12) {
+      stageTitle = "Queda de Insulina";
+      stageDesc = "A glicose diminui e o pâncreas reduz a liberação de insulina.";
+      stageColor = Colors.cyan;
+    } else if (hours < 18) {
+      stageTitle = "Início de Cetose";
+      stageDesc = "O glicogênio hepático se esgota. O corpo começa a queimar gordura.";
+      stageColor = Colors.orangeAccent;
+    } else if (hours < 24) {
+      stageTitle = "Queima de Gordura Ativa";
+      stageDesc = "A queima de gordura acelera. O hormônio do crescimento (GH) sobe.";
+      stageColor = Colors.amber;
+    } else {
+      stageTitle = "Autofagia";
+      stageDesc = "O corpo inicia a reciclagem de células velhas ou danificadas.";
+      stageColor = Colors.greenAccent;
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(top: 14),
+      child: GlassCard(
+        padding: const EdgeInsets.all(12),
+        borderColor: stageColor.withOpacity(0.2),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(shape: BoxShape.circle, color: stageColor),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  "Fase: $stageTitle",
+                  style: TextStyle(color: stageColor, fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              stageDesc,
+              style: const TextStyle(color: Colors.white70, fontSize: 11, height: 1.3),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPopularProtocols(Function(double) onSelected) {
+    final protocols = [
+      {"name": "12h Leve", "hours": 12.0},
+      {"name": "14h Moderado", "hours": 14.0},
+      {"name": "16h Padrão", "hours": 16.0},
+      {"name": "18h Avançado", "hours": 18.0},
+      {"name": "24h Completo", "hours": 24.0},
+      {"name": "OMAD (23h)", "hours": 23.0},
+    ];
+
+    return Container(
+      height: 32,
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: protocols.length,
+        itemBuilder: (context, idx) {
+          final p = protocols[idx];
+          final name = p["name"] as String;
+          final h = p["hours"] as double;
+          final isSel = _selectedGoalHours == h;
+
+          return Container(
+            margin: const EdgeInsets.only(right: 6),
+            child: ChoiceChip(
+              label: Text(name),
+              selected: isSel,
+              selectedColor: widget.accentColor.withOpacity(0.2),
+              disabledColor: Colors.transparent,
+              backgroundColor: Colors.white.withOpacity(0.04),
+              labelStyle: TextStyle(
+                color: isSel ? widget.accentColor : Colors.white70,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              onSelected: (selected) {
+                if (selected) {
+                  onSelected(h);
+                }
+              },
+            ),
+          );
+        },
+      ),
+    );
   }
 
   @override
@@ -634,6 +749,7 @@ class _JejumTabState extends State<JejumTab> {
                                 style: const TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.bold),
                               ),
                             ),
+                            _buildFastingStageCard(elapsed),
                           ],
                         );
                       },
@@ -676,14 +792,32 @@ class _JejumTabState extends State<JejumTab> {
                     padding: const EdgeInsets.all(20),
                     borderColor: Colors.white.withOpacity(0.04),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          "Iniciar Novo Jejum",
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15),
+                        const Center(
+                          child: Text(
+                            "Iniciar Novo Jejum",
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15),
+                          ),
                         ),
                         const SizedBox(height: 16),
 
-                        // Dropdown horas
+                        const Text(
+                          "Protocolos Sugeridos",
+                          style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 6),
+                        _buildPopularProtocols((h) {
+                          setDialogState(() {
+                            _selectedGoalHours = h;
+                          });
+                        }),
+
+                        const Text(
+                          "Duração Meta",
+                          style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           decoration: BoxDecoration(
@@ -704,7 +838,7 @@ class _JejumTabState extends State<JejumTab> {
                                   });
                                 }
                               },
-                              items: [12.0, 14.0, 16.0, 18.0, 20.0, 24.0, 36.0, 48.0]
+                              items: [12.0, 14.0, 16.0, 18.0, 20.0, 23.0, 24.0, 36.0, 48.0]
                                   .map((h) => DropdownMenuItem(value: h, child: Text("$h horas")))
                                   .toList(),
                             ),
@@ -741,6 +875,114 @@ class _JejumTabState extends State<JejumTab> {
             ],
             const SizedBox(height: 24),
 
+            // SEÇÃO DE ABSTINÊNCIAS
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  "Abstinências Ativas",
+                  style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800),
+                ),
+                TextButton.icon(
+                  onPressed: () => _showAddAbstinenceDialog(context, provider),
+                  icon: Icon(Icons.add_circle_outline, color: widget.accentColor, size: 16),
+                  label: Text("Nova", style: TextStyle(color: widget.accentColor, fontSize: 12, fontWeight: FontWeight.bold)),
+                  style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+
+            diet.abstinence.isEmpty
+                ? const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Center(
+                      child: Text(
+                        "Nenhuma abstinência registrada.",
+                        style: TextStyle(color: Colors.white24, fontStyle: FontStyle.italic, fontSize: 12),
+                      ),
+                    ),
+                  )
+                : ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: diet.abstinence.length,
+                    itemBuilder: (context, index) {
+                      final a = diet.abstinence[index];
+                      
+                      Duration elapsed = Duration.zero;
+                      try {
+                        final start = DateTime.parse(a.startTime);
+                        final now = DateTime.now().toUtc();
+                        elapsed = now.difference(start);
+                      } catch (e) {
+                        // ignore
+                      }
+
+                      final days = elapsed.inDays;
+                      final hours = elapsed.inHours.remainder(24);
+                      final minutes = elapsed.inMinutes.remainder(60);
+                      final seconds = elapsed.inSeconds.remainder(60);
+
+                      String timeStr = "";
+                      if (days > 0) {
+                        timeStr += "$days ${days == 1 ? 'dia' : 'dias'}, ";
+                      }
+                      timeStr += "${hours}h ${minutes}m ${seconds}s";
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: GlassCard(
+                          padding: const EdgeInsets.all(12),
+                          borderColor: Colors.white.withOpacity(0.04),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      a.title,
+                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      "Tempo: $timeStr",
+                                      style: TextStyle(color: widget.accentColor, fontSize: 11, fontWeight: FontWeight.bold),
+                                    ),
+                                    if (a.notes != null && a.notes!.isNotEmpty) ...[
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        a.notes!,
+                                        style: const TextStyle(color: Colors.white38, fontSize: 10, fontStyle: FontStyle.italic),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                              Row(
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.refresh, color: Colors.amber, size: 18),
+                                    tooltip: "Reiniciar contador",
+                                    onPressed: () => _confirmResetAbstinence(context, provider, a),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
+                                    tooltip: "Excluir rastreador",
+                                    onPressed: () => provider.deleteAbstinence(a.id),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+            const SizedBox(height: 24),
+
             // HISTÓRICO DE JEJUNS
             const Align(
               alignment: Alignment.centerLeft,
@@ -768,7 +1010,6 @@ class _JejumTabState extends State<JejumTab> {
                     itemBuilder: (context, index) {
                       final f = diet.fasting.history[index];
                       
-                      // Calcular duração
                       Duration diff = Duration.zero;
                       try {
                         final start = DateTime.parse(f.startTime);
@@ -832,6 +1073,100 @@ class _JejumTabState extends State<JejumTab> {
                   ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showAddAbstinenceDialog(BuildContext context, TrackerProvider provider) {
+    final titleCtrl = TextEditingController();
+    final notesCtrl = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: const Color(0xff1c1c1e),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: Colors.white.withOpacity(0.08)),
+        ),
+        title: const Text("Nova Abstinência", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: titleCtrl,
+              autofocus: true,
+              style: const TextStyle(color: Colors.white, fontSize: 13),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Colors.white.withOpacity(0.05),
+                hintText: "O que você vai parar? (ex: Açúcar)",
+                hintStyle: const TextStyle(color: Colors.white30, fontSize: 12),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: notesCtrl,
+              maxLines: 2,
+              style: const TextStyle(color: Colors.white, fontSize: 13),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Colors.white.withOpacity(0.05),
+                hintText: "Notas / Motivação (Opcional)",
+                hintStyle: const TextStyle(color: Colors.white30, fontSize: 12),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text("Cancelar", style: TextStyle(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () {
+              final title = titleCtrl.text.trim();
+              if (title.isNotEmpty) {
+                provider.addAbstinence(title, notesCtrl.text.trim());
+                Navigator.pop(dialogCtx);
+              }
+            },
+            child: Text("Iniciar", style: TextStyle(color: widget.accentColor, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmResetAbstinence(BuildContext context, TrackerProvider provider, AbstinenceRecord a) {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: const Color(0xff1c1c1e),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: Colors.white.withOpacity(0.08)),
+        ),
+        title: const Text("Zerar Contador?", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
+        content: Text(
+          "Deseja realmente reiniciar o tempo de '${a.title}'? O contador recomeçará do zero.",
+          style: const TextStyle(color: Colors.white70, fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text("Cancelar", style: TextStyle(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () {
+              provider.resetAbstinence(a.id);
+              Navigator.pop(dialogCtx);
+            },
+            child: const Text("Zerar", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
     );
   }

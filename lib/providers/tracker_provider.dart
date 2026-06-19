@@ -1136,6 +1136,7 @@ class TrackerProvider extends ChangeNotifier {
       meals: currentDiet.meals,
       waterIntakeMl: quantityMl,
       fasting: currentDiet.fasting,
+      abstinence: currentDiet.abstinence,
     );
 
     _state = PlannerState(
@@ -1176,6 +1177,7 @@ class TrackerProvider extends ChangeNotifier {
       meals: meals,
       waterIntakeMl: currentDiet.waterIntakeMl,
       fasting: currentDiet.fasting,
+      abstinence: currentDiet.abstinence,
     );
 
     _state = PlannerState(
@@ -1207,6 +1209,7 @@ class TrackerProvider extends ChangeNotifier {
       meals: meals,
       waterIntakeMl: currentDiet.waterIntakeMl,
       fasting: currentDiet.fasting,
+      abstinence: currentDiet.abstinence,
     );
 
     _state = PlannerState(
@@ -1246,6 +1249,7 @@ class TrackerProvider extends ChangeNotifier {
       meals: currentDiet.meals,
       waterIntakeMl: currentDiet.waterIntakeMl,
       fasting: newFasting,
+      abstinence: currentDiet.abstinence,
     );
 
     _state = PlannerState(
@@ -1291,8 +1295,144 @@ class TrackerProvider extends ChangeNotifier {
       meals: currentDiet.meals,
       waterIntakeMl: currentDiet.waterIntakeMl,
       fasting: newFasting,
+      abstinence: currentDiet.abstinence,
     );
 
+    _state = PlannerState(
+      library: _state!.library,
+      routines: _state!.routines,
+      planner: _state!.planner,
+      history: _state!.history,
+      prs: _state!.prs,
+      medidas: _state!.medidas,
+      settings: _state!.settings,
+      activeWorkout: _state!.activeWorkout,
+      diet: newDiet,
+    );
+    saveState();
+    notifyListeners();
+  }
+
+  void updateWaterGoal(int goalMl) {
+    if (_state == null) return;
+    final currentDiet = _state!.diet;
+    final newDiet = DietState(
+      caloriesGoal: currentDiet.caloriesGoal,
+      proteinGoal: currentDiet.proteinGoal,
+      carbsGoal: currentDiet.carbsGoal,
+      fatGoal: currentDiet.fatGoal,
+      waterGoalMl: goalMl,
+      meals: currentDiet.meals,
+      waterIntakeMl: currentDiet.waterIntakeMl,
+      fasting: currentDiet.fasting,
+      abstinence: currentDiet.abstinence,
+    );
+    _state = PlannerState(
+      library: _state!.library,
+      routines: _state!.routines,
+      planner: _state!.planner,
+      history: _state!.history,
+      prs: _state!.prs,
+      medidas: _state!.medidas,
+      settings: _state!.settings,
+      activeWorkout: _state!.activeWorkout,
+      diet: newDiet,
+    );
+    saveState();
+    notifyListeners();
+  }
+
+  void addAbstinence(String title, [String? notes]) {
+    if (_state == null) return;
+    final currentDiet = _state!.diet;
+    final newRecord = AbstinenceRecord(
+      id: "abst-${DateTime.now().millisecondsSinceEpoch}",
+      title: title,
+      startTime: DateTime.now().toUtc().toIso8601String(),
+      notes: notes,
+    );
+    final list = List<AbstinenceRecord>.from(currentDiet.abstinence)..add(newRecord);
+    final newDiet = DietState(
+      caloriesGoal: currentDiet.caloriesGoal,
+      proteinGoal: currentDiet.proteinGoal,
+      carbsGoal: currentDiet.carbsGoal,
+      fatGoal: currentDiet.fatGoal,
+      waterGoalMl: currentDiet.waterGoalMl,
+      meals: currentDiet.meals,
+      waterIntakeMl: currentDiet.waterIntakeMl,
+      fasting: currentDiet.fasting,
+      abstinence: list,
+    );
+    _state = PlannerState(
+      library: _state!.library,
+      routines: _state!.routines,
+      planner: _state!.planner,
+      history: _state!.history,
+      prs: _state!.prs,
+      medidas: _state!.medidas,
+      settings: _state!.settings,
+      activeWorkout: _state!.activeWorkout,
+      diet: newDiet,
+    );
+    saveState();
+    notifyListeners();
+  }
+
+  void resetAbstinence(String id) {
+    if (_state == null) return;
+    final currentDiet = _state!.diet;
+    final list = currentDiet.abstinence.map((a) {
+      if (a.id == id) {
+        return AbstinenceRecord(
+          id: a.id,
+          title: a.title,
+          startTime: DateTime.now().toUtc().toIso8601String(),
+          notes: a.notes,
+        );
+      }
+      return a;
+    }).toList();
+    final newDiet = DietState(
+      caloriesGoal: currentDiet.caloriesGoal,
+      proteinGoal: currentDiet.proteinGoal,
+      carbsGoal: currentDiet.carbsGoal,
+      fatGoal: currentDiet.fatGoal,
+      waterGoalMl: currentDiet.waterGoalMl,
+      meals: currentDiet.meals,
+      waterIntakeMl: currentDiet.waterIntakeMl,
+      fasting: currentDiet.fasting,
+      abstinence: list,
+    );
+    _state = PlannerState(
+      library: _state!.library,
+      routines: _state!.routines,
+      planner: _state!.planner,
+      history: _state!.history,
+      prs: _state!.prs,
+      medidas: _state!.medidas,
+      settings: _state!.settings,
+      activeWorkout: _state!.activeWorkout,
+      diet: newDiet,
+    );
+    saveState();
+    notifyListeners();
+  }
+
+  void deleteAbstinence(String id) {
+    if (_state == null) return;
+    final currentDiet = _state!.diet;
+    final list = List<AbstinenceRecord>.from(currentDiet.abstinence)..removeWhere((a) => a.id == id);
+    final newDiet = DietState(
+      caloriesGoal: currentDiet.caloriesGoal,
+      proteinGoal: currentDiet.proteinGoal,
+      carbsGoal: currentDiet.carbsGoal,
+      fatGoal: currentDiet.fatGoal,
+      waterGoalMl: currentDiet.waterGoalMl,
+      meals: currentDiet.meals,
+      waterIntakeMl: currentDiet.waterIntakeMl,
+      fasting: currentDiet.fasting,
+      abstinence: list,
+    );
     _state = PlannerState(
       library: _state!.library,
       routines: _state!.routines,
@@ -1327,6 +1467,7 @@ class TrackerProvider extends ChangeNotifier {
         meals: [],
         waterIntakeMl: 0,
         fasting: FastingState(history: []),
+        abstinence: [],
       ),
     );
   }

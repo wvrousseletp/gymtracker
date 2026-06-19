@@ -573,6 +573,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     final soundState = ValueNotifier<bool>(provider.state!.settings.sound);
     final vibrationState = ValueNotifier<bool>(provider.state!.settings.vibration);
     final prepController = TextEditingController(text: provider.state!.settings.prepSeconds.toString());
+    final waterController = TextEditingController(text: (provider.state?.diet.waterGoalMl ?? 2000).toString());
     final accentColor = ThemeUtils.getColor(provider.currentProfile.colorAccent);
 
     showDialog(
@@ -583,7 +584,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
           borderRadius: BorderRadius.circular(20),
           side: BorderSide(color: Colors.white.withOpacity(0.08)),
         ),
-        title: const Text("Configurações do Timer", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
+        title: const Text("Configurações Gerais", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -632,6 +633,29 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text("Meta de Água (ml)", style: TextStyle(color: Colors.white, fontSize: 13)),
+                SizedBox(
+                  width: 70,
+                  height: 36,
+                  child: TextField(
+                    controller: waterController,
+                    keyboardType: TextInputType.number,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.white.withOpacity(0.05),
+                      contentPadding: EdgeInsets.zero,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
         actions: [
@@ -642,7 +666,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
           TextButton(
             onPressed: () {
               final prep = int.tryParse(prepController.text.trim()) ?? 5;
+              final waterGoal = int.tryParse(waterController.text.trim()) ?? 2000;
               provider.updateSettings(soundState.value, vibrationState.value, prep);
+              provider.updateWaterGoal(waterGoal);
               Navigator.pop(dialogCtx);
             },
             child: Text("Salvar", style: TextStyle(color: accentColor, fontWeight: FontWeight.bold)),

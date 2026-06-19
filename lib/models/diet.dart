@@ -117,6 +117,7 @@ class DietState {
   final List<Meal> meals;
   final int waterIntakeMl;
   final FastingState fasting;
+  final List<AbstinenceRecord> abstinence;
 
   DietState({
     required this.caloriesGoal,
@@ -127,6 +128,7 @@ class DietState {
     required this.meals,
     required this.waterIntakeMl,
     required this.fasting,
+    required this.abstinence,
   });
 
   Map<String, dynamic> toJson() => {
@@ -138,6 +140,7 @@ class DietState {
     'meals': meals.map((m) => m.toJson()).toList(),
     'waterIntakeMl': waterIntakeMl,
     'fasting': fasting.toJson(),
+    'abstinence': abstinence.map((a) => a.toJson()).toList(),
   };
 
   factory DietState.fromJson(Map<String, dynamic> json) => DietState(
@@ -153,5 +156,36 @@ class DietState {
     fasting: json['fasting'] != null
         ? FastingState.fromJson(json['fasting'])
         : FastingState(history: []),
+    abstinence: json['abstinence'] != null
+        ? (json['abstinence'] as List).map((a) => AbstinenceRecord.fromJson(a)).toList()
+        : [],
+  );
+}
+
+class AbstinenceRecord {
+  final String id;
+  final String title;
+  final String startTime; // ISO String UTC
+  final String? notes;
+
+  AbstinenceRecord({
+    required this.id,
+    required this.title,
+    required this.startTime,
+    this.notes,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'startTime': startTime,
+    'notes': notes,
+  };
+
+  factory AbstinenceRecord.fromJson(Map<String, dynamic> json) => AbstinenceRecord(
+    id: json['id'] ?? '',
+    title: json['title'] ?? '',
+    startTime: json['startTime'] ?? '',
+    notes: json['notes'],
   );
 }

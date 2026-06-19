@@ -226,6 +226,7 @@ class PlannerState {
               meals: [],
               waterIntakeMl: 0,
               fasting: FastingState(history: []),
+              abstinence: [],
             ),
     );
   }
