@@ -1,6 +1,12 @@
 import UIKit
 import Flutter
 import WatchConnectivity
+#if canImport(ActivityKit)
+import ActivityKit
+#endif
+#if canImport(WidgetKit)
+import WidgetKit
+#endif
 
 @UIApplicationMain
 @objc class AppDelegate: FlutterAppDelegate, WCSessionDelegate {
@@ -8,6 +14,7 @@ import WatchConnectivity
   private var session: WCSession?
   private var methodChannel: FlutterMethodChannel?
   private var applicationContextCache: [String: Any] = [:]
+  private var workoutActivity: Any? = nil
 
   override func application(
     _ application: UIApplication,
@@ -108,6 +115,7 @@ import WatchConnectivity
     case "updateActiveWorkout":
       if let json = call.arguments as? String {
         sendToWatch("activeWorkout", json: json)
+        self.updateLiveActivity(workoutJson: json)
         result(nil)
       } else {
         result(FlutterError(code: "INVALID_ARGUMENT", message: "Expected JSON string for active workout", details: nil))
@@ -121,7 +129,37 @@ import WatchConnectivity
       }
     case "clearActiveWorkout", "workoutFinished", "workoutCancelled":
       sendToWatch("activeWorkout", json: nil, clearActive: true)
+      self.stopLiveActivity()
       result(nil)
+    case "updateWidgetData":
+      if let args = call.arguments as? [String: Any] {
+        let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles")
+        if let todayRoutineName = args["todayRoutineName"] as? String {
+          sharedDefaults?.set(todayRoutineName, forKey: "todayRoutineName")
+        }
+        if let todayRoutineExerciseCount = args["todayRoutineExerciseCount"] as? Int {
+          sharedDefaults?.set(todayRoutineExerciseCount, forKey: "todayRoutineExerciseCount")
+        }
+        if let todayRoutineExercises = args["todayRoutineExercises"] as? [String] {
+          sharedDefaults?.set(todayRoutineExercises, forKey: "todayRoutineExercises")
+        }
+        if let waterIntakeCurrent = args["waterIntakeCurrent"] as? Int {
+          sharedDefaults?.set(waterIntakeCurrent, forKey: "waterIntakeCurrent")
+        }
+        if let waterIntakeTarget = args["waterIntakeTarget"] as? Int {
+          sharedDefaults?.set(waterIntakeTarget, forKey: "waterIntakeTarget")
+        }
+        sharedDefaults?.synchronize()
+        
+        #if canImport(WidgetKit)
+        if #available(iOS 14.0, *) {
+          WidgetCenter.shared.reloadAllTimelines()
+        }
+        #endif
+        result(nil)
+      } else {
+        result(FlutterError(code: "INVALID_ARGUMENT", message: "Expected dictionary for widget data", details: nil))
+      }
     default:
       result(FlutterMethodNotImplemented)
     }
@@ -233,6 +271,10 @@ import WatchConnectivity
         self.methodChannel?.invokeMethod("completeWorkout", arguments: nil)
       case "cancelWorkout":
         self.methodChannel?.invokeMethod("cancelWorkout", arguments: nil)
+      case "postponeWorkout":
+        self.methodChannel?.invokeMethod("postponeWorkout", arguments: nil)
+      case "resumeWorkout":
+        self.methodChannel?.invokeMethod("resumeWorkout", arguments: nil)
       case "togglePause":
         if let paused = data["paused"] as? Bool {
           self.methodChannel?.invokeMethod("togglePause", arguments: paused)
@@ -243,5 +285,93 @@ import WatchConnectivity
         break
       }
     }
+  }
+
+  // MARK: - Live Activity Management
+  
+  private func updateLiveActivity(workoutJson: String) {
+    #if canImport(ActivityKit)
+    guard #available(iOS 16.1, *) else { return }
+    
+    guard let data = workoutJson.data(using: .utf8),
+          let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] else {
+        return
+    }
+    
+    let workoutName = json["name"] as? String ?? "Treino"
+    let isPaused = json["paused"] as? Bool ?? false
+    let elapsedSeconds = json["elapsedSeconds"] as? Int ?? 0
+    let postponed = json["postponed"] as? Bool ?? false
+    
+    var exerciseName = "Nenhum exercício ativo"
+    var setInfo = ""
+    
+    if let exercises = json["exercises"] as? [[String: Any]],
+       let currentIndex = json["currentExerciseIndex"] as? Int,
+       currentIndex < exercises.count {
+        let currentExercise = exercises[currentIndex]
+        exerciseName = currentExercise["name"] as? String ?? "Exercício"
+        
+        let sets = currentExercise["sets"] as? Int ?? 0
+        
+        var completedCount = 0
+        if let setsState = currentExercise["setsState"] as? [Bool] {
+            completedCount = setsState.filter { $0 }.count
+        }
+        
+        let weight = currentExercise["weight"] as? Double ?? 0.0
+        let reps = currentExercise["reps"] as? Int ?? 0
+        
+        if weight > 0 {
+            setInfo = "Série \(completedCount + 1) de \(sets) • \(weight)kg x \(reps) reps"
+        } else {
+            setInfo = "Série \(completedCount + 1) de \(sets) • \(reps) reps"
+        }
+    }
+    
+    if postponed {
+        stopLiveActivity()
+        return
+    }
+    
+    let contentState = WorkoutWidgetAttributes.ContentState(
+        exerciseName: exerciseName,
+        currentSetInfo: setInfo,
+        isPaused: isPaused,
+        elapsedSeconds: elapsedSeconds
+    )
+    
+    if let activity = workoutActivity as? Activity<WorkoutWidgetAttributes> {
+        Task {
+            await activity.update(using: contentState)
+        }
+    } else {
+        let attributes = WorkoutWidgetAttributes(workoutName: workoutName)
+        do {
+            let activity = try Activity<WorkoutWidgetAttributes>.request(
+                attributes: attributes,
+                contentState: contentState,
+                pushType: nil
+            )
+            workoutActivity = activity
+            print("Successfully started Live Activity: \(activity.id)")
+        } catch {
+            print("Failed to start Live Activity: \(error.localizedDescription)")
+        }
+    }
+    #endif
+  }
+
+  private func stopLiveActivity() {
+    #if canImport(ActivityKit)
+    guard #available(iOS 16.1, *) else { return }
+    guard let activity = workoutActivity as? Activity<WorkoutWidgetAttributes> else { return }
+    
+    Task {
+        await activity.end(dismissalPolicy: .immediate)
+        workoutActivity = nil
+        print("Successfully stopped Live Activity")
+    }
+    #endif
   }
 }

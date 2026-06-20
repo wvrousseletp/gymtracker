@@ -201,6 +201,9 @@ class TrackerProvider extends ChangeNotifier {
       WatchService.instance.sendActiveWorkoutCleared();
     }
     
+    // Sincroniza widgets locais do iOS
+    WatchService.instance.syncWidgetData();
+    
     // Sincroniza em segundo plano
     syncStateWithFirebase();
   }

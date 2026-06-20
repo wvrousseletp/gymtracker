@@ -24,6 +24,7 @@ class WatchService {
     if (provider.state?.activeWorkout != null) {
       sendActiveWorkout(provider.state!.activeWorkout!);
     }
+    syncWidgetData();
   }
 
   Future<void> _handleMethodCall(MethodCall call) async {
@@ -248,6 +249,56 @@ class WatchService {
       await _channel.invokeMethod('updatePlanner', json.encode(planner));
     } on PlatformException catch (e) {
       print("[WatchService] Erro ao enviar planner: $e");
+    }
+  }
+
+  Future<void> syncWidgetData() async {
+    try {
+      final state = _provider?.state;
+      if (state == null) return;
+      
+      // Calculate today's routine
+      final calendar = DateTime.now();
+      final weekday = calendar.weekday;
+      final String todayKey;
+      switch (weekday) {
+        case 7: todayKey = "dom"; break;
+        case 1: todayKey = "seg"; break;
+        case 2: todayKey = "ter"; break;
+        case 3: todayKey = "qua"; break;
+        case 4: todayKey = "qui"; break;
+        case 5: todayKey = "sex"; break;
+        case 6: todayKey = "sab"; break;
+        default: todayKey = "seg";
+      }
+      
+      final plannedIds = state.planner[todayKey] ?? [];
+      final todayRoutines = state.routines.where((r) => plannedIds.contains(r.id) || plannedIds.contains("routine:${r.id}")).toList();
+      
+      final String todayRoutineName = todayRoutines.isNotEmpty ? todayRoutines.first.name : "Nenhum treino planejado";
+      final int todayRoutineExerciseCount = todayRoutines.isNotEmpty ? todayRoutines.first.exercises.length : 0;
+      final List<String> todayRoutineExercises = todayRoutines.isNotEmpty 
+          ? todayRoutines.first.exercises.map<String>((e) {
+              final libEx = state.library.firstWhere(
+                (l) => l.id == e.exerciseId,
+                orElse: () => LibraryExercise(id: '', name: 'Exercício', muscle: '', measurementType: ''),
+              );
+              return libEx.name;
+            }).toList() 
+          : [];
+      
+      final int waterIntakeCurrent = state.diet.waterIntakeMl;
+      final int waterIntakeTarget = state.diet.waterGoalMl;
+      
+      await _channel.invokeMethod('updateWidgetData', {
+        'todayRoutineName': todayRoutineName,
+        'todayRoutineExerciseCount': todayRoutineExerciseCount,
+        'todayRoutineExercises': todayRoutineExercises,
+        'waterIntakeCurrent': waterIntakeCurrent,
+        'waterIntakeTarget': waterIntakeTarget,
+      });
+    } on PlatformException catch (e) {
+      print("[WatchService] Erro ao sincronizar widgets: $e");
     }
   }
 }

@@ -51,5 +51,7 @@
 	<string>Este aplicativo precisa ler seus dados de saúde (como treinos e batimentos cardíacos) para acompanhar seu progresso físico e histórico de exercícios.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>Este aplicativo precisa salvar seus treinos e dados de exercícios no aplicativo Saúde para manter seu histórico de atividades atualizado.</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 </dict>
 </plist>

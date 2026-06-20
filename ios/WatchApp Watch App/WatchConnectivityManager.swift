@@ -99,20 +99,27 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                 }
             }
 
+            let oldWorkout = self.activeWorkout
+            var receivedActiveWorkout = false
+
             // 3. Process active workout / clear active workout
             if let jsonString = data["activeWorkout"] as? String,
                let jsonData = jsonString.data(using: .utf8) {
                 do {
                     self.activeWorkout = try JSONDecoder().decode(WatchActiveWorkoutState.self, from: jsonData)
+                    receivedActiveWorkout = true
                 } catch {
                     print("Error decoding active workout: \(error)")
                 }
             } else if data["clearActiveWorkout"] as? Bool == true {
                 self.activeWorkout = nil
+                receivedActiveWorkout = true
             }
 
             // 4. Process action field for compatibility (e.g. workoutFinished, workoutCancelled)
+            var actionStr: String? = nil
             if let action = data["action"] as? String {
+                actionStr = action
                 switch action {
                 case "updateRoutines":
                     if let jsonString = data["routines"] as? String,
@@ -146,6 +153,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                        let jsonData = jsonString.data(using: .utf8) {
                         do {
                             self.activeWorkout = try JSONDecoder().decode(WatchActiveWorkoutState.self, from: jsonData)
+                            receivedActiveWorkout = true
                         } catch {
                             print("Error decoding active workout in action: \(error)")
                         }
@@ -155,6 +163,38 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                 default:
                     break
                 }
+            }
+
+            if receivedActiveWorkout || actionStr == "clearActiveWorkout" || actionStr == "workoutFinished" || actionStr == "workoutCancelled" || actionStr == "workoutPostponed" {
+                self.handleWorkoutSessionTransition(oldWorkout: oldWorkout, newWorkout: self.activeWorkout, action: actionStr)
+            }
+        }
+    }
+
+    private func handleWorkoutSessionTransition(oldWorkout: WatchActiveWorkoutState?, newWorkout: WatchActiveWorkoutState?, action: String? = nil) {
+        if oldWorkout == nil && newWorkout != nil {
+            // Workout started!
+            if let new = newWorkout, !new.postponed {
+                WorkoutManager.shared.startWorkout()
+            }
+        } else if oldWorkout != nil && newWorkout == nil {
+            // Workout ended!
+            let shouldSave = (action == "workoutFinished" || action == "completeWorkout")
+            WorkoutManager.shared.endWorkout(save: shouldSave)
+        } else if let old = oldWorkout, let new = newWorkout {
+            // Transition within workout: check pause status
+            if old.paused != new.paused {
+                if new.paused {
+                    WorkoutManager.shared.pauseWorkout()
+                } else {
+                    WorkoutManager.shared.resumeWorkout()
+                }
+            }
+            // Transition within workout: check postponed status
+            if !old.postponed && new.postponed {
+                WorkoutManager.shared.endWorkout(save: true)
+            } else if old.postponed && !new.postponed {
+                WorkoutManager.shared.startWorkout()
             }
         }
     }

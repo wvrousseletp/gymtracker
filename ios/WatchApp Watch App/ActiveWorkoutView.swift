@@ -5,6 +5,7 @@ import WatchKit
 
 struct ActiveWorkoutView: View {
     @ObservedObject var connectivityManager = WatchConnectivityManager.shared
+    @ObservedObject var workoutManager = WorkoutManager.shared
     @State private var showingCancelAlert = false
     @State private var elapsedSeconds: Int = 0
     @State private var selectedSetIndexMap: [String: Int] = [:] // exerciseId -> selectedSetIndex
@@ -493,7 +494,39 @@ struct ActiveWorkoutView: View {
                         .font(.system(size: 26, weight: .black, design: .rounded))
                         .foregroundColor(activeWorkout.paused ? .orange : .green)
                 }
-                .padding(.vertical, 8)
+                .padding(.vertical, 4)
+                
+                // HealthKit Metrics
+                HStack(spacing: 16) {
+                    VStack(spacing: 2) {
+                        HStack(spacing: 2) {
+                            Image(systemName: "heart.fill")
+                                .foregroundColor(.red)
+                                .font(.system(size: 9))
+                            Text("BATIMENTOS")
+                                .font(.system(size: 8, weight: .bold, design: .rounded))
+                                .foregroundColor(.gray)
+                        }
+                        Text(workoutManager.heartRate > 0 ? "\(Int(workoutManager.heartRate)) bpm" : "-- bpm")
+                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
+                    }
+                    
+                    VStack(spacing: 2) {
+                        HStack(spacing: 2) {
+                            Image(systemName: "flame.fill")
+                                .foregroundColor(.orange)
+                                .font(.system(size: 9))
+                            Text("CALORIAS")
+                                .font(.system(size: 8, weight: .bold, design: .rounded))
+                                .foregroundColor(.gray)
+                        }
+                        Text(workoutManager.activeCalories > 0 ? "\(Int(workoutManager.activeCalories)) kcal" : "-- kcal")
+                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
+                    }
+                }
+                .padding(.bottom, 6)
                 
                 Divider().background(Color.white.opacity(0.1))
                 
