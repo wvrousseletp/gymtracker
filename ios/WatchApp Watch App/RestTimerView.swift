@@ -14,33 +14,33 @@ struct RestTimerView: View {
     }
 
     var body: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 3) {
             // Badge superior indicando o estado
             Text(restTimer.isPrep ? "PREPARO" : "DESCANSO")
-                .font(.system(size: 9, weight: .black, design: .rounded))
+                .font(.system(size: 8, weight: .black, design: .rounded))
                 .foregroundColor(themeColor)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 3)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
                 .background(themeColor.opacity(0.15))
-                .cornerRadius(8)
+                .cornerRadius(6)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 8)
+                    RoundedRectangle(cornerRadius: 6)
                         .stroke(themeColor.opacity(0.3), lineWidth: 1)
                 )
 
             // Texto informativo do próximo exercício
-            VStack(spacing: 1) {
+            VStack(spacing: 0) {
                 Text(restTimer.isPrep ? "Prepare-se para:" : "Próximo:")
                     .font(.system(size: 8, weight: .medium))
                     .foregroundColor(.gray)
                 
                 Text("\(restTimer.nextExerciseName)")
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.system(size: 10, weight: .bold))
                     .foregroundColor(.white)
                     .lineLimit(1)
                 
                 Text("Série \(restTimer.nextSetNum)")
-                    .font(.system(size: 9))
+                    .font(.system(size: 8))
                     .foregroundColor(.gray)
             }
             .padding(.horizontal, 6)
@@ -49,28 +49,27 @@ struct RestTimerView: View {
             // Cronômetro Circular Moderno com Efeito Glow
             ZStack {
                 Circle()
-                    .stroke(lineWidth: 3)
+                    .stroke(lineWidth: 2.5)
                     .opacity(0.08)
                     .foregroundColor(.white)
 
                 Circle()
                     .trim(from: 0.0, to: restTimer.totalSeconds > 0 ? CGFloat(timeRemaining) / CGFloat(restTimer.totalSeconds) : 0)
-                    .stroke(style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                    .stroke(style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
                     .foregroundColor(themeColor)
                     .rotationEffect(Angle(degrees: 270.0))
                     .shadow(color: themeColor.opacity(0.6), radius: 3)
 
-                VStack(spacing: -2) {
+                VStack(spacing: -3) {
                     Text("\(timeRemaining)")
-                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                        .font(.system(size: 20, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
                     Text("seg")
-                        .font(.system(size: 8, weight: .semibold))
+                        .font(.system(size: 7, weight: .semibold))
                         .foregroundColor(.gray)
                 }
             }
-            .frame(width: 68, height: 68)
-            .padding(.vertical, 2)
+            .frame(width: 56, height: 56)
 
             // Botão Pular de Visual Moderno (Pill Glass)
             Button(action: {
@@ -78,17 +77,17 @@ struct RestTimerView: View {
             }) {
                 HStack(spacing: 4) {
                     Image(systemName: "forward.fill")
-                        .font(.system(size: 9))
+                        .font(.system(size: 8))
                     Text(restTimer.isPrep ? "Pular Preparo" : "Pular Descanso")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.system(size: 9, weight: .bold))
                 }
                 .foregroundColor(themeColor)
-                .padding(.vertical, 6)
-                .padding(.horizontal, 14)
+                .padding(.vertical, 5)
+                .padding(.horizontal, 12)
                 .background(Color.white.opacity(0.06))
-                .cornerRadius(16)
+                .cornerRadius(12)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16)
+                    RoundedRectangle(cornerRadius: 12)
                         .stroke(Color.white.opacity(0.1), lineWidth: 1)
                 )
             }
