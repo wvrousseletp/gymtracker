@@ -99,6 +99,7 @@ class ActiveWorkoutState {
   final int warmupDurationSeconds;
   final bool paused;
   final WatchRestTimer? restTimer;
+  final bool postponed;
 
   ActiveWorkoutState({
     required this.name,
@@ -111,6 +112,7 @@ class ActiveWorkoutState {
     required this.warmupDurationSeconds,
     this.paused = false,
     this.restTimer,
+    this.postponed = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -124,6 +126,7 @@ class ActiveWorkoutState {
     'warmupDurationSeconds': warmupDurationSeconds,
     'paused': paused,
     'restTimer': restTimer?.toJson(),
+    'postponed': postponed,
   };
 
   factory ActiveWorkoutState.fromJson(Map<String, dynamic> json) => ActiveWorkoutState(
@@ -141,6 +144,7 @@ class ActiveWorkoutState {
     warmupDurationSeconds: (json['warmupDurationSeconds'] as num?)?.toInt() ?? 0,
     paused: json['paused'] ?? false,
     restTimer: json['restTimer'] != null ? WatchRestTimer.fromJson(json['restTimer']) : null,
+    postponed: json['postponed'] ?? false,
   );
 }
 

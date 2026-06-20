@@ -73,7 +73,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     final activeWorkout = state.activeWorkout;
 
     // Alternar visualização com base na presença de um treino ativo
-    if (activeWorkout != null) {
+    if (activeWorkout != null && !activeWorkout.postponed) {
       return ActiveWorkoutView(activeWorkout: activeWorkout, provider: provider);
     } else {
       return _buildIdleView(context, provider);
@@ -132,6 +132,64 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Banner de Treino Adiado
+            if (state.activeWorkout != null && state.activeWorkout!.postponed)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: GlassCard(
+                  borderColor: accentColor.withOpacity(0.3),
+                  opacity: 0.05,
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Icon(Icons.snooze, color: accentColor, size: 28),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "TREINO ADIADO EM ANDAMENTO",
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              state.activeWorkout!.name,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          provider.resumeActiveWorkout();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: accentColor,
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          minimumSize: Size.zero,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        child: const Text(
+                          "Continuar",
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
             // Cabeçalho de treinos de hoje
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -894,6 +952,14 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
                     ),
                     Row(
                       children: [
+                        // Adiar
+                        IconButton(
+                          icon: const Icon(Icons.snooze, color: Colors.amberAccent),
+                          tooltip: "Adiar Treino",
+                          onPressed: () {
+                            widget.provider.postponeActiveWorkout();
+                          },
+                        ),
                         // Pausar
                         IconButton(
                           icon: Icon(workout.paused ? Icons.play_arrow : Icons.pause, color: Colors.white70),

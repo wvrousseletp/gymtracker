@@ -7,6 +7,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
 
     @Published var routines: [WatchRoutine] = []
     @Published var library: [WatchLibraryExercise] = []
+    @Published var planner: [String: [String]] = [:]
     @Published var activeWorkout: WatchActiveWorkoutState?
     @Published var isReachable = false
 
@@ -88,6 +89,16 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                 }
             }
 
+            // 2.1 Process planner
+            if let jsonString = data["planner"] as? String,
+               let jsonData = jsonString.data(using: .utf8) {
+                do {
+                    self.planner = try JSONDecoder().decode([String: [String]].self, from: jsonData)
+                } catch {
+                    print("Error decoding planner: \(error)")
+                }
+            }
+
             // 3. Process active workout / clear active workout
             if let jsonString = data["activeWorkout"] as? String,
                let jsonData = jsonString.data(using: .utf8) {
@@ -121,6 +132,15 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                             print("Error decoding library in action: \(error)")
                         }
                     }
+                case "updatePlanner":
+                    if let jsonString = data["planner"] as? String,
+                       let jsonData = jsonString.data(using: .utf8) {
+                        do {
+                            self.planner = try JSONDecoder().decode([String: [String]].self, from: jsonData)
+                        } catch {
+                            print("Error decoding planner in action: \(error)")
+                        }
+                    }
                 case "updateActiveWorkout":
                     if let jsonString = data["activeWorkout"] as? String,
                        let jsonData = jsonString.data(using: .utf8) {
@@ -130,7 +150,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                             print("Error decoding active workout in action: \(error)")
                         }
                     }
-                case "clearActiveWorkout", "workoutFinished", "workoutCancelled":
+                case "clearActiveWorkout", "workoutFinished", "workoutCancelled", "workoutPostponed":
                     self.activeWorkout = nil
                 default:
                     break
@@ -211,6 +231,14 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
 
     func cancelWorkout() {
         sendToiPhone(["action": "cancelWorkout"])
+    }
+
+    func postponeWorkout() {
+        sendToiPhone(["action": "postponeWorkout"])
+    }
+
+    func resumeWorkout() {
+        sendToiPhone(["action": "resumeWorkout"])
     }
 
     func togglePause(currentlyPaused: Bool) {
@@ -419,9 +447,10 @@ struct WatchActiveWorkoutState: Codable {
     let elapsedSeconds: Int
     let paused: Bool
     let restTimer: WatchRestTimer?
+    let postponed: Bool
 
     enum CodingKeys: String, CodingKey {
-        case name, startTime, exercises, currentExerciseIndex, elapsedSeconds, paused, restTimer
+        case name, startTime, exercises, currentExerciseIndex, elapsedSeconds, paused, restTimer, postponed
     }
 
     init(from decoder: Decoder) throws {
@@ -456,6 +485,7 @@ struct WatchActiveWorkoutState: Codable {
 
         paused = (try? container.decode(Bool.self, forKey: .paused)) ?? false
         restTimer = try? container.decodeIfPresent(WatchRestTimer.self, forKey: .restTimer)
+        postponed = (try? container.decode(Bool.self, forKey: .postponed)) ?? false
     }
 }
 

@@ -20,6 +20,7 @@ class WatchService {
     // Envia dados iniciais se houver
     sendRoutines(provider.state?.routines ?? []);
     sendLibrary(provider.state?.library ?? []);
+    sendPlanner(provider.state?.planner ?? {});
     if (provider.state?.activeWorkout != null) {
       sendActiveWorkout(provider.state!.activeWorkout!);
     }
@@ -167,6 +168,16 @@ class WatchService {
         _channel.invokeMethod('workoutCancelled');
         break;
 
+      case 'postponeWorkout':
+        _provider!.postponeActiveWorkout();
+        _channel.invokeMethod('workoutPostponed');
+        break;
+
+      case 'resumeWorkout':
+        _provider!.resumeActiveWorkout();
+        _channel.invokeMethod('workoutResumed');
+        break;
+
       case 'togglePause':
         final bool isPaused = call.arguments as bool;
         _provider!.pauseWorkout(isPaused);
@@ -183,6 +194,7 @@ class WatchService {
         if (_provider != null) {
           sendRoutines(_provider!.state?.routines ?? []);
           sendLibrary(_provider!.state?.library ?? []);
+          sendPlanner(_provider!.state?.planner ?? {});
           if (_provider!.state?.activeWorkout != null) {
             sendActiveWorkout(_provider!.state!.activeWorkout!);
           } else {
@@ -228,6 +240,14 @@ class WatchService {
       await _channel.invokeMethod('clearActiveWorkout');
     } on PlatformException catch (e) {
       print("[WatchService] Erro ao limpar treino ativo no watch: $e");
+    }
+  }
+
+  Future<void> sendPlanner(Map<String, List<String>> planner) async {
+    try {
+      await _channel.invokeMethod('updatePlanner', json.encode(planner));
+    } on PlatformException catch (e) {
+      print("[WatchService] Erro ao enviar planner: $e");
     }
   }
 }

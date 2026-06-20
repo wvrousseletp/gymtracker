@@ -194,6 +194,7 @@ class TrackerProvider extends ChangeNotifier {
     // Sincroniza com o Apple Watch via Bluetooth
     WatchService.instance.sendRoutines(_state!.routines);
     WatchService.instance.sendLibrary(_state!.library);
+    WatchService.instance.sendPlanner(_state!.planner);
     if (_state!.activeWorkout != null) {
       WatchService.instance.sendActiveWorkout(_state!.activeWorkout!);
     } else {
@@ -731,6 +732,68 @@ class TrackerProvider extends ChangeNotifier {
       medidas: _state!.medidas,
       settings: _state!.settings,
       activeWorkout: null,
+      diet: _state!.diet,
+    );
+    saveState();
+    notifyListeners();
+  }
+
+  void postponeActiveWorkout() {
+    if (_state == null || _state!.activeWorkout == null) return;
+    final active = _state!.activeWorkout!;
+    final updated = ActiveWorkoutState(
+      name: active.name,
+      startTime: active.startTime,
+      exercises: active.exercises,
+      currentExerciseIndex: active.currentExerciseIndex,
+      elapsedSeconds: active.elapsedSeconds,
+      recovery: active.recovery,
+      isWarmup: active.isWarmup,
+      warmupDurationSeconds: active.warmupDurationSeconds,
+      paused: true,
+      restTimer: active.restTimer,
+      postponed: true,
+    );
+    _state = PlannerState(
+      library: _state!.library,
+      routines: _state!.routines,
+      planner: _state!.planner,
+      history: _state!.history,
+      prs: _state!.prs,
+      medidas: _state!.medidas,
+      settings: _state!.settings,
+      activeWorkout: updated,
+      diet: _state!.diet,
+    );
+    saveState();
+    notifyListeners();
+  }
+
+  void resumeActiveWorkout() {
+    if (_state == null || _state!.activeWorkout == null) return;
+    final active = _state!.activeWorkout!;
+    final updated = ActiveWorkoutState(
+      name: active.name,
+      startTime: DateTime.now().millisecondsSinceEpoch - (active.elapsedSeconds * 1000),
+      exercises: active.exercises,
+      currentExerciseIndex: active.currentExerciseIndex,
+      elapsedSeconds: active.elapsedSeconds,
+      recovery: active.recovery,
+      isWarmup: active.isWarmup,
+      warmupDurationSeconds: active.warmupDurationSeconds,
+      paused: false,
+      restTimer: active.restTimer,
+      postponed: false,
+    );
+    _state = PlannerState(
+      library: _state!.library,
+      routines: _state!.routines,
+      planner: _state!.planner,
+      history: _state!.history,
+      prs: _state!.prs,
+      medidas: _state!.medidas,
+      settings: _state!.settings,
+      activeWorkout: updated,
       diet: _state!.diet,
     );
     saveState();

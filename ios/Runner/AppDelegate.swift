@@ -112,6 +112,13 @@ import WatchConnectivity
       } else {
         result(FlutterError(code: "INVALID_ARGUMENT", message: "Expected JSON string for active workout", details: nil))
       }
+    case "updatePlanner":
+      if let json = call.arguments as? String {
+        sendToWatch("planner", json: json)
+        result(nil)
+      } else {
+        result(FlutterError(code: "INVALID_ARGUMENT", message: "Expected JSON string for planner", details: nil))
+      }
     case "clearActiveWorkout", "workoutFinished", "workoutCancelled":
       sendToWatch("activeWorkout", json: nil, clearActive: true)
       result(nil)

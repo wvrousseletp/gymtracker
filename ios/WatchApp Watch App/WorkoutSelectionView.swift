@@ -3,10 +3,34 @@ import SwiftUI
 struct WorkoutSelectionView: View {
     @ObservedObject var connectivityManager = WatchConnectivityManager.shared
 
+    private func getTodayPlannedRoutines() -> [WatchRoutine] {
+        let calendar = Calendar.current
+        let weekday = calendar.component(.weekday, from: Date())
+        let todayKey: String
+        switch weekday {
+        case 1: todayKey = "dom"
+        case 2: todayKey = "seg"
+        case 3: todayKey = "ter"
+        case 4: todayKey = "qua"
+        case 5: todayKey = "qui"
+        case 6: todayKey = "sex"
+        case 7: todayKey = "sab"
+        default: todayKey = "seg"
+        }
+        
+        guard let plannedIds = connectivityManager.planner[todayKey] else {
+            return []
+        }
+        
+        return connectivityManager.routines.filter { routine in
+            plannedIds.contains(routine.id) || plannedIds.contains("routine:\(routine.id)")
+        }
+    }
+
     var body: some View {
         NavigationView {
             VStack {
-                if let activeWorkout = connectivityManager.activeWorkout {
+                if let activeWorkout = connectivityManager.activeWorkout, !activeWorkout.postponed {
                     ActiveWorkoutView()
                 } else {
                     if connectivityManager.routines.isEmpty && connectivityManager.library.isEmpty {
@@ -34,8 +58,95 @@ struct WorkoutSelectionView: View {
                         .padding()
                     } else {
                         List {
+                            // Seção 0: Treino Adiado em Andamento
+                            if let activeWorkout = connectivityManager.activeWorkout, activeWorkout.postponed {
+                                Section(header: Text("Treino Adiado").font(.system(size: 10, weight: .bold)).foregroundColor(.yellow)) {
+                                    Button(action: {
+                                        connectivityManager.resumeWorkout()
+                                    }) {
+                                        HStack(spacing: 8) {
+                                            ZStack {
+                                                Circle()
+                                                    .fill(Color.yellow.opacity(0.12))
+                                                    .frame(width: 24, height: 24)
+                                                Image(systemName: "snooze")
+                                                    .font(.system(size: 10))
+                                                    .foregroundColor(.yellow)
+                                            }
+                                            
+                                            VStack(alignment: .leading, spacing: 1) {
+                                                Text(activeWorkout.name)
+                                                    .font(.system(size: 12, weight: .bold))
+                                                    .foregroundColor(.white)
+                                                Text("Retomar Treino")
+                                                    .font(.system(size: 9))
+                                                    .foregroundColor(.yellow)
+                                            }
+                                            Spacer()
+                                            Image(systemName: "arrow.forward.circle.fill")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(.yellow)
+                                        }
+                                        .padding(.vertical, 4)
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                    .padding(8)
+                                    .background(Color.yellow.opacity(0.04))
+                                    .cornerRadius(10)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .stroke(Color.yellow.opacity(0.15), lineWidth: 1)
+                                    )
+                                }
+                            }
+
+                            // Seção 0.1: Treinos Planejados para Hoje
+                            let todayPlannedRoutines = getTodayPlannedRoutines()
+                            if !todayPlannedRoutines.isEmpty {
+                                Section(header: Text("Treinos de Hoje").font(.system(size: 10, weight: .bold)).foregroundColor(.green)) {
+                                    ForEach(todayPlannedRoutines) { routine in
+                                        Button(action: {
+                                            connectivityManager.startWorkout(routineId: routine.id)
+                                        }) {
+                                            HStack(spacing: 8) {
+                                                ZStack {
+                                                    Circle()
+                                                        .fill(Color.green.opacity(0.12))
+                                                        .frame(width: 24, height: 24)
+                                                    Image(systemName: "calendar")
+                                                        .font(.system(size: 10))
+                                                        .foregroundColor(.green)
+                                                }
+                                                
+                                                VStack(alignment: .leading, spacing: 1) {
+                                                    Text(routine.name)
+                                                        .font(.system(size: 12, weight: .bold))
+                                                        .foregroundColor(.white)
+                                                    Text("\(routine.exercises.count) exercícios")
+                                                        .font(.system(size: 9))
+                                                        .foregroundColor(.gray)
+                                                }
+                                                Spacer()
+                                                Image(systemName: "play.fill")
+                                                    .font(.system(size: 8))
+                                                    .foregroundColor(.green)
+                                            }
+                                            .padding(.vertical, 4)
+                                        }
+                                        .buttonStyle(PlainButtonStyle())
+                                        .padding(8)
+                                        .background(Color.green.opacity(0.04))
+                                        .cornerRadius(10)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 10)
+                                                .stroke(Color.green.opacity(0.15), lineWidth: 1)
+                                        )
+                                    }
+                                }
+                            }
+
                             if !connectivityManager.routines.isEmpty {
-                                Section(header: Text("Escolha um Treino").font(.system(size: 10, weight: .bold)).foregroundColor(.orange)) {
+                                Section(header: Text("Todos os Treinos").font(.system(size: 10, weight: .bold)).foregroundColor(.orange)) {
                                     ForEach(connectivityManager.routines) { routine in
                                         Button(action: {
                                             connectivityManager.startWorkout(routineId: routine.id)

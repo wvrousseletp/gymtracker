@@ -4,7 +4,6 @@ struct ActiveWorkoutView: View {
     @ObservedObject var connectivityManager = WatchConnectivityManager.shared
     @State private var showingCancelAlert = false
     @State private var elapsedSeconds: Int = 0
-    @State private var focusedExerciseIndex: Int? = nil
     @State private var selectedSetIndexMap: [String: Int] = [:] // exerciseId -> selectedSetIndex
     let stopwatchTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -35,118 +34,7 @@ struct ActiveWorkoutView: View {
         selectedSetIndexMap[key] = setIndex
     }
 
-    // MARK: - Sub-Views
-
-    private func headerView(activeWorkout: WatchActiveWorkoutState) -> some View {
-        HStack(spacing: 8) {
-            // Tempo Decorrido Dashboard
-            VStack(alignment: .leading, spacing: -2) {
-                Text("DURAÇÃO")
-                    .font(.system(size: 7, weight: .bold))
-                    .foregroundColor(.gray)
-                Text(formatDuration(elapsedSeconds))
-                    .font(.system(size: 16, weight: .black, design: .rounded))
-                    .foregroundColor(activeWorkout.paused ? .orange : .green)
-            }
-            
-            Spacer()
-            
-            // Controles de Pausa e Descanso
-            HStack(spacing: 6) {
-                if activeWorkout.restTimer != nil {
-                    Button(action: {
-                        connectivityManager.skipRest()
-                    }) {
-                        Image(systemName: "forward.fill")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundColor(.white)
-                            .frame(width: 26, height: 26)
-                            .background(Color.blue)
-                            .clipShape(Circle())
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-
-                Button(action: {
-                    connectivityManager.togglePause(currentlyPaused: activeWorkout.paused)
-                }) {
-                    Image(systemName: activeWorkout.paused ? "play.fill" : "pause.fill")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(width: 26, height: 26)
-                        .background(activeWorkout.paused ? Color.green : Color.orange)
-                        .clipShape(Circle())
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(Color.white.opacity(0.04))
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.white.opacity(0.06), lineWidth: 1)
-        )
-        .padding(.bottom, 6)
-    }
-
-    private func setSelectorView(exercise: WatchActiveExercise, exIndex: Int, isCardio: Bool) -> some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
-                ForEach(0..<exercise.sets, id: \.self) { setIndex in
-                    let isCompleted = setIndex < exercise.setsState.count ? exercise.setsState[setIndex] : false
-                    let isSelected = setIndex == getSelectedSetIndex(for: exercise, index: exIndex)
-                    let isFailure = setIndex < exercise.failureReport.count ? exercise.failureReport[setIndex] : false
-
-                    Button(action: {
-                        setSelectedSetIndex(for: exercise, index: exIndex, setIndex: setIndex)
-                    }) {
-                        VStack(spacing: 2) {
-                            Text("S\(setIndex + 1)")
-                                .font(.system(size: 8, weight: isSelected ? .black : .regular))
-                                .foregroundColor(isSelected ? .orange : .white)
-                            
-                            ZStack {
-                                Circle()
-                                    .fill(isCompleted ? (isCardio ? Color.blue.opacity(0.15) : Color.green.opacity(0.15)) : Color.white.opacity(0.04))
-                                    .frame(width: 22, height: 22)
-                                
-                                if isCompleted {
-                                    Image(systemName: "checkmark")
-                                        .font(.system(size: 8, weight: .bold))
-                                        .foregroundColor(isCardio ? .blue : .green)
-                                } else {
-                                    Circle()
-                                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                                        .frame(width: 20, height: 20)
-                                }
-                                
-                                if isFailure && !isCardio {
-                                    Image(systemName: "xmark")
-                                        .font(.system(size: 8, weight: .heavy))
-                                        .foregroundColor(.red)
-                                        .frame(width: 14, height: 14)
-                                        .background(Color.black)
-                                        .clipShape(Circle())
-                                        .offset(x: 6, y: -6)
-                                }
-                            }
-                        }
-                        .padding(5)
-                        .background(isSelected ? Color.white.opacity(0.06) : Color.clear)
-                        .cornerRadius(8)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(isSelected ? Color.orange.opacity(0.5) : Color.clear, lineWidth: 1)
-                        )
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-            }
-        }
-        .padding(.bottom, 4)
-    }
+    // MARK: - Sub-Views for Page 1 (Current Exercise)
 
     private func cardioControls(exercise: WatchActiveExercise, exIndex: Int, selectedSetIdx: Int) -> some View {
         let pc = selectedSetIdx < exercise.performedCardios.count ? exercise.performedCardios[selectedSetIdx] : nil
@@ -155,7 +43,6 @@ struct ActiveWorkoutView: View {
         let durationMin = durationSec / 60
 
         return VStack(spacing: 6) {
-            // Stepper de Distância (Largura Total)
             VStack(alignment: .leading, spacing: 2) {
                 Text("DISTÂNCIA")
                     .font(.system(size: 8, weight: .bold))
@@ -163,7 +50,6 @@ struct ActiveWorkoutView: View {
                 
                 HStack {
                     Spacer()
-                    
                     HStack(spacing: 8) {
                         Button(action: {
                             let newDist = max(0.0, distance - 0.1)
@@ -203,12 +89,10 @@ struct ActiveWorkoutView: View {
                         RoundedRectangle(cornerRadius: 14)
                             .stroke(Color.white.opacity(0.08), lineWidth: 1)
                     )
-                    
                     Spacer()
                 }
             }
 
-            // Stepper de Duração (Largura Total)
             VStack(alignment: .leading, spacing: 2) {
                 Text("DURAÇÃO")
                     .font(.system(size: 8, weight: .bold))
@@ -216,7 +100,6 @@ struct ActiveWorkoutView: View {
                 
                 HStack {
                     Spacer()
-                    
                     HStack(spacing: 8) {
                         Button(action: {
                             let newDur = max(0, durationMin - 1)
@@ -256,7 +139,6 @@ struct ActiveWorkoutView: View {
                         RoundedRectangle(cornerRadius: 14)
                             .stroke(Color.white.opacity(0.08), lineWidth: 1)
                     )
-                    
                     Spacer()
                 }
             }
@@ -268,7 +150,6 @@ struct ActiveWorkoutView: View {
         let failureRep = selectedSetIdx < exercise.failureReps.count ? exercise.failureReps[selectedSetIdx] : nil
 
         return VStack(alignment: .leading, spacing: 6) {
-            // Linha da Carga
             VStack(alignment: .leading, spacing: 2) {
                 Text("CARGA")
                     .font(.system(size: 8, weight: .bold))
@@ -276,7 +157,6 @@ struct ActiveWorkoutView: View {
                 
                 HStack {
                     Spacer()
-                    
                     HStack(spacing: 8) {
                         Button(action: {
                             let newW = max(0.0, exercise.weight - 0.5)
@@ -316,12 +196,10 @@ struct ActiveWorkoutView: View {
                         RoundedRectangle(cornerRadius: 14)
                             .stroke(Color.white.opacity(0.08), lineWidth: 1)
                     )
-                    
                     Spacer()
                 }
             }
 
-            // Linha de Repetições
             VStack(alignment: .leading, spacing: 2) {
                 Text(exercise.measurementType == "time" ? "TEMPO" : "REPS")
                     .font(.system(size: 8, weight: .bold))
@@ -329,7 +207,6 @@ struct ActiveWorkoutView: View {
                 
                 HStack {
                     Spacer()
-                    
                     HStack(spacing: 8) {
                         Button(action: {
                             let newR = max(1, exercise.reps - 1)
@@ -369,12 +246,10 @@ struct ActiveWorkoutView: View {
                         RoundedRectangle(cornerRadius: 14)
                             .stroke(Color.white.opacity(0.08), lineWidth: 1)
                     )
-                    
                     Spacer()
                 }
             }
 
-            // Linha de Falha Muscular
             VStack(alignment: .leading, spacing: 6) {
                 Button(action: {
                     connectivityManager.updateFailure(exerciseIndex: exIndex, setIndex: selectedSetIdx, isFailure: !isFailure, failureRep: failureRep)
@@ -405,7 +280,6 @@ struct ActiveWorkoutView: View {
                         
                         HStack {
                             Spacer()
-                            
                             HStack(spacing: 8) {
                                 Button(action: {
                                     let current = failureRep ?? exercise.reps
@@ -447,7 +321,6 @@ struct ActiveWorkoutView: View {
                                 RoundedRectangle(cornerRadius: 14)
                                     .stroke(Color.red.opacity(0.3), lineWidth: 1)
                             )
-                            
                             Spacer()
                         }
                     }
@@ -457,26 +330,21 @@ struct ActiveWorkoutView: View {
         }
     }
 
-    private func exerciseRowView(activeWorkout: WatchActiveWorkoutState, exIndex: Int) -> some View {
-        let exercise = activeWorkout.exercises[exIndex]
-        let isCurrent = exIndex == activeWorkout.currentExerciseIndex
-        let isExpanded = (focusedExerciseIndex == nil && isCurrent) || focusedExerciseIndex == exIndex
-        let completedCount = exercise.setsState.filter { $0 }.count
-        let isCardio = exercise.muscle.lowercased().contains("cardio")
-
-        return VStack(alignment: .leading, spacing: 4) {
-            // Cabeçalho do Card
-            Button(action: {
-                withAnimation {
-                    focusedExerciseIndex = isExpanded ? -1 : exIndex
-                }
-            }) {
-                HStack(spacing: 6) {
-                    VStack(alignment: .leading, spacing: 1) {
+    private func currentExercisePageView(activeWorkout: WatchActiveWorkoutState) -> some View {
+        let exIndex = activeWorkout.currentExerciseIndex
+        
+        return ScrollView {
+            if exIndex < activeWorkout.exercises.count {
+                let exercise = activeWorkout.exercises[exIndex]
+                let isCardio = exercise.muscle.lowercased().contains("cardio")
+                
+                VStack(alignment: .leading, spacing: 6) {
+                    // Exercise Info Header
+                    VStack(alignment: .leading, spacing: 2) {
                         Text(exercise.name)
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(isCurrent ? .orange : .white)
-                            .lineLimit(1)
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(.orange)
+                            .multilineTextAlignment(.leading)
                         
                         HStack(spacing: 4) {
                             Text(exercise.muscle)
@@ -493,92 +361,228 @@ struct ActiveWorkoutView: View {
                             }
                         }
                     }
+                    .padding(.horizontal, 4)
                     
-                    Spacer()
+                    Divider().background(Color.white.opacity(0.1))
                     
-                    // Badge de progresso compacto
-                    Text("\(completedCount)/\(exercise.sets)")
-                        .font(.system(size: 9, weight: .bold, design: .rounded))
-                        .foregroundColor(completedCount == exercise.sets ? .green : .orange)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(completedCount == exercise.sets ? Color.green.opacity(0.12) : Color.orange.opacity(0.12))
-                        .cornerRadius(6)
-                    
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                        .foregroundColor(.gray)
-                        .font(.system(size: 8, weight: .bold))
-                }
-                .padding(.vertical, 4)
-            }
-            .buttonStyle(PlainButtonStyle())
-
-            if isExpanded {
-                Divider()
-                    .background(Color.white.opacity(0.1))
-                    .padding(.vertical, 3)
-
-                // 1. Horizontal Scroll de Séries
-                setSelectorView(exercise: exercise, exIndex: exIndex, isCardio: isCardio)
-
-                // 2. Controles de Detalhes da Série Selecionada
-                let selectedSetIdx = getSelectedSetIndex(for: exercise, index: exIndex)
-                let isCompleted = selectedSetIdx < exercise.setsState.count ? exercise.setsState[selectedSetIdx] : false
-
-                VStack(alignment: .leading, spacing: 8) {
-                    if isCardio {
-                        cardioControls(exercise: exercise, exIndex: exIndex, selectedSetIdx: selectedSetIdx)
-                    } else {
-                        strengthControls(exercise: exercise, exIndex: exIndex, selectedSetIdx: selectedSetIdx)
+                    // Vertical Sets List
+                    let activeSetIdx = getSelectedSetIndex(for: exercise, index: exIndex)
+                    VStack(spacing: 4) {
+                        ForEach(0..<exercise.sets, id: \.self) { setIndex in
+                            let isCompleted = setIndex < exercise.setsState.count ? exercise.setsState[setIndex] : false
+                            let isSelected = setIndex == activeSetIdx
+                            let isFailure = setIndex < exercise.failureReport.count ? exercise.failureReport[setIndex] : false
+                            
+                            Button(action: {
+                                setSelectedSetIndex(for: exercise, index: exIndex, setIndex: setIndex)
+                            }) {
+                                HStack {
+                                    Text("Série \(setIndex + 1)")
+                                        .font(.system(size: 10, weight: isSelected ? .bold : .regular))
+                                        .foregroundColor(isSelected ? .orange : .white)
+                                    
+                                    Spacer()
+                                    
+                                    if isFailure && !isCardio {
+                                        Image(systemName: "xmark.octagon.fill")
+                                            .font(.system(size: 9))
+                                            .foregroundColor(.red)
+                                            .padding(.trailing, 2)
+                                    }
+                                    
+                                    if isCompleted {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .font(.system(size: 10, weight: .bold))
+                                            .foregroundColor(isCardio ? .blue : .green)
+                                    } else {
+                                        Image(systemName: "circle")
+                                            .font(.system(size: 10))
+                                            .foregroundColor(.white.opacity(0.3))
+                                    }
+                                }
+                                .padding(.vertical, 5)
+                                .padding(.horizontal, 8)
+                                .background(isSelected ? Color.white.opacity(0.08) : Color.white.opacity(0.02))
+                                .cornerRadius(8)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(isSelected ? Color.orange.opacity(0.5) : Color.white.opacity(0.04), lineWidth: 1)
+                                )
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
                     }
-
-                    // 3. Botão Concluir Série Glassmorphic
-                    Button(action: {
-                        let isFailure = selectedSetIdx < exercise.failureReport.count ? exercise.failureReport[selectedSetIdx] : false
-                        let failureRep = selectedSetIdx < exercise.failureReps.count ? exercise.failureReps[selectedSetIdx] : nil
-                        let pc = selectedSetIdx < exercise.performedCardios.count ? exercise.performedCardios[selectedSetIdx] : nil
+                    
+                    Divider().background(Color.white.opacity(0.1))
+                    
+                    // Controls Area
+                    VStack(alignment: .leading, spacing: 8) {
+                        if isCardio {
+                            cardioControls(exercise: exercise, exIndex: exIndex, selectedSetIdx: activeSetIdx)
+                        } else {
+                            strengthControls(exercise: exercise, exIndex: exIndex, selectedSetIdx: activeSetIdx)
+                        }
                         
-                        connectivityManager.toggleSet(
-                            exerciseIndex: exIndex,
-                            setIndex: selectedSetIdx,
-                            isDone: !isCompleted,
-                            isFailure: isFailure,
-                            failureRep: failureRep,
-                            distance: pc?.distanceKm,
-                            duration: pc?.durationSeconds
-                        )
+                        // Solid Concluir Série Button
+                        Button(action: {
+                            let isCompleted = activeSetIdx < exercise.setsState.count ? exercise.setsState[activeSetIdx] : false
+                            let isFailure = activeSetIdx < exercise.failureReport.count ? exercise.failureReport[activeSetIdx] : false
+                            let failureRep = activeSetIdx < exercise.failureReps.count ? exercise.failureReps[activeSetIdx] : nil
+                            let pc = activeSetIdx < exercise.performedCardios.count ? exercise.performedCardios[activeSetIdx] : nil
+                            
+                            connectivityManager.toggleSet(
+                                exerciseIndex: exIndex,
+                                setIndex: activeSetIdx,
+                                isDone: !isCompleted,
+                                isFailure: isFailure,
+                                failureRep: failureRep,
+                                distance: pc?.distanceKm,
+                                duration: pc?.durationSeconds
+                            )
+                        }) {
+                            let isCompleted = activeSetIdx < exercise.setsState.count ? exercise.setsState[activeSetIdx] : false
+                            HStack {
+                                Spacer()
+                                Image(systemName: isCompleted ? "checkmark.circle.fill" : "play.circle.fill")
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundColor(isCompleted ? .white : .black)
+                                Text(isCompleted ? "SÉRIE CONCLUÍDA" : "CONCLUIR SÉRIE")
+                                    .font(.system(size: 11, weight: .black))
+                                    .foregroundColor(isCompleted ? .white : .black)
+                                Spacer()
+                            }
+                            .padding(.vertical, 10)
+                            .background(isCompleted ? Color.gray.opacity(0.3) : Color.green)
+                            .cornerRadius(12)
+                            .shadow(color: isCompleted ? Color.clear : Color.green.opacity(0.3), radius: 4)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .padding(.top, 4)
+                    }
+                }
+                .padding(.horizontal, 6)
+            } else {
+                Text("Nenhum exercício ativo")
+                    .foregroundColor(.gray)
+                    .font(.caption)
+            }
+        }
+        .focusable(true)
+    }
+
+    private func workoutControlsPageView(activeWorkout: WatchActiveWorkoutState) -> some View {
+        ScrollView {
+            VStack(spacing: 8) {
+                VStack(spacing: 2) {
+                    Text("TEMPO TOTAL")
+                        .font(.system(size: 8, weight: .bold, design: .rounded))
+                        .foregroundColor(.gray)
+                    
+                    Text(formatDuration(elapsedSeconds))
+                        .font(.system(size: 26, weight: .black, design: .rounded))
+                        .foregroundColor(activeWorkout.paused ? .orange : .green)
+                }
+                .padding(.vertical, 8)
+                
+                Divider().background(Color.white.opacity(0.1))
+                
+                VStack(spacing: 6) {
+                    // Pause/Resume Workout
+                    Button(action: {
+                        connectivityManager.togglePause(currentlyPaused: activeWorkout.paused)
                     }) {
                         HStack {
-                            Spacer()
-                            Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
-                                .font(.system(size: 10))
-                                .foregroundColor(isCompleted ? .green : .white)
-                            Text(isCompleted ? "Série Concluída" : "Concluir Série")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(isCompleted ? .green : .white)
+                            Image(systemName: activeWorkout.paused ? "play.fill" : "pause.fill")
+                                .font(.system(size: 11, weight: .bold))
+                            Text(activeWorkout.paused ? "Retomar Treino" : "Pausar Treino")
+                                .font(.system(size: 11, weight: .bold))
                             Spacer()
                         }
-                        .padding(.vertical, 6)
-                        .background(isCompleted ? Color.green.opacity(0.12) : Color.white.opacity(0.04))
+                        .foregroundColor(.white)
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 12)
+                        .background(activeWorkout.paused ? Color.green.opacity(0.2) : Color.orange.opacity(0.2))
                         .cornerRadius(10)
                         .overlay(
                             RoundedRectangle(cornerRadius: 10)
-                                .stroke(isCompleted ? Color.green.opacity(0.3) : Color.white.opacity(0.08), lineWidth: 1)
+                                .stroke(activeWorkout.paused ? Color.green.opacity(0.4) : Color.orange.opacity(0.4), lineWidth: 1)
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    // Adiar Treino (Postpone)
+                    Button(action: {
+                        connectivityManager.postponeWorkout()
+                    }) {
+                        HStack {
+                            Image(systemName: "snooze")
+                                .font(.system(size: 11, weight: .bold))
+                            Text("Adiar Treino")
+                                .font(.system(size: 11, weight: .bold))
+                            Spacer()
+                        }
+                        .foregroundColor(.white)
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 12)
+                        .background(Color.blue.opacity(0.2))
+                        .cornerRadius(10)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.blue.opacity(0.4), lineWidth: 1)
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+
+                    // Finalizar Treino
+                    Button(action: {
+                        connectivityManager.completeWorkout()
+                    }) {
+                        HStack {
+                            Image(systemName: "checkmark.seal.fill")
+                                .font(.system(size: 11, weight: .bold))
+                            Text("Finalizar Treino")
+                                .font(.system(size: 11, weight: .bold))
+                            Spacer()
+                        }
+                        .foregroundColor(.green)
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 12)
+                        .background(Color.green.opacity(0.12))
+                        .cornerRadius(10)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.green.opacity(0.3), lineWidth: 1)
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    // Cancelar Treino
+                    Button(action: {
+                        showingCancelAlert = true
+                    }) {
+                        HStack {
+                            Image(systemName: "trash.fill")
+                                .font(.system(size: 11, weight: .bold))
+                            Text("Cancelar Treino")
+                                .font(.system(size: 11, weight: .bold))
+                            Spacer()
+                        }
+                        .foregroundColor(.red)
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 12)
+                        .background(Color.red.opacity(0.12))
+                        .cornerRadius(10)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.red.opacity(0.3), lineWidth: 1)
                         )
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
-                .padding(.top, 2)
+                .padding(.horizontal, 4)
             }
         }
-        .padding(8)
-        .background(Color.white.opacity(0.02))
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(isCurrent ? Color.orange.opacity(0.25) : Color.white.opacity(0.04), lineWidth: 1)
-        )
-        .padding(.vertical, 2)
+        .focusable(true)
     }
 
     // MARK: - Main Body
@@ -589,52 +593,12 @@ struct ActiveWorkoutView: View {
                 if let restTimer = activeWorkout.restTimer {
                     RestTimerView(restTimer: restTimer)
                 } else {
-                    // Lista de exercícios
-                    List {
-                        // O visor dos tempos (headerView) como o primeiro item da lista!
-                        headerView(activeWorkout: activeWorkout)
-                            .listRowBackground(Color.clear)
-                            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 4, trailing: 0))
-
-                        Section(header: Text(activeWorkout.name).font(.system(size: 9, weight: .bold)).foregroundColor(.orange)) {
-                            ForEach(0..<activeWorkout.exercises.count, id: \.self) { exIndex in
-                                exerciseRowView(activeWorkout: activeWorkout, exIndex: exIndex)
-                            }
-                        }
-
-                        Section {
-                            Button(action: {
-                                connectivityManager.completeWorkout()
-                            }) {
-                                HStack {
-                                    Spacer()
-                                    Image(systemName: "checkmark.seal.fill")
-                                        .font(.system(size: 10))
-                                    Text("Finalizar Treino")
-                                        .font(.system(size: 11, weight: .bold))
-                                        .foregroundColor(.green)
-                                    Spacer()
-                                }
-                            }
-
-                            Button(action: {
-                                showingCancelAlert = true
-                            }) {
-                                HStack {
-                                    Spacer()
-                                    Image(systemName: "trash.fill")
-                                        .font(.system(size: 10))
-                                    Text("Cancelar Treino")
-                                        .font(.system(size: 11, weight: .semibold))
-                                        .foregroundColor(.red)
-                                    Spacer()
-                                }
-                            }
-                        }
+                    TabView {
+                        currentExercisePageView(activeWorkout: activeWorkout)
+                        workoutControlsPageView(activeWorkout: activeWorkout)
                     }
-                    .listStyle(.carousel)
+                    .tabViewStyle(PageTabViewStyle())
                 }
-
             } else {
                 VStack(spacing: 12) {
                     Image(systemName: "figure.walk")
@@ -651,7 +615,7 @@ struct ActiveWorkoutView: View {
                 .padding()
             }
         }
-        .navigationTitle("Treino")
+        .navigationBarHidden(true) // Remove "Treino" text from the top of watch screens
         .alert(isPresented: $showingCancelAlert) {
             Alert(
                 title: Text("Cancelar Treino?"),
@@ -665,17 +629,9 @@ struct ActiveWorkoutView: View {
         .onAppear {
             connectivityManager.requestSync()
             updateStopwatch()
-            if let activeWorkout = connectivityManager.activeWorkout {
-                focusedExerciseIndex = activeWorkout.currentExerciseIndex
-            }
         }
         .onReceive(stopwatchTimer) { _ in
             updateStopwatch()
-        }
-        .onChange(of: connectivityManager.activeWorkout?.currentExerciseIndex) { newIndex in
-            if let index = newIndex {
-                focusedExerciseIndex = index
-            }
         }
     }
 
