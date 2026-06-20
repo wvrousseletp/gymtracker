@@ -31,6 +31,7 @@ jobs:
         env:
           IOS_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
           WATCH_PROFILE_BASE64: ${{ secrets.IOS_WATCH_PROVISIONING_PROFILE_BASE64 }}
+          WIDGET_PROFILE_BASE64: ${{ secrets.IOS_WIDGET_PROVISIONING_PROFILE_BASE64 }}
         run: |
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           
@@ -41,6 +42,10 @@ jobs:
           fi
           if [ -z "$WATCH_PROFILE_BASE64" ]; then
             echo "::error::Secret IOS_WATCH_PROVISIONING_PROFILE_BASE64 is empty or not configured!"
+            exit 1
+          fi
+          if [ -z "$WIDGET_PROFILE_BASE64" ]; then
+            echo "::error::Secret IOS_WIDGET_PROVISIONING_PROFILE_BASE64 is empty or not configured!"
             exit 1
           fi
           
@@ -55,6 +60,13 @@ jobs:
           WATCH_UUID=$(security cms -D -i watch_temp.mobileprovision | plutil -extract UUID raw -)
           mv watch_temp.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$WATCH_UUID.mobileprovision
           echo "Installed Watch Profile with UUID: $WATCH_UUID"
+          
+          # Decode and install Widget Profile
+          echo -n "$WIDGET_PROFILE_BASE64" | base64 --decode --output widget_temp.mobileprovision
+          WIDGET_UUID=$(security cms -D -i widget_temp.mobileprovision | plutil -extract UUID raw -)
+          mv widget_temp.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$WIDGET_UUID.mobileprovision
+          echo "Installed Widget Profile with UUID: $WIDGET_UUID"
+
 
       - name: Install Flutter SDK
         uses: subosito/flutter-action@v2
