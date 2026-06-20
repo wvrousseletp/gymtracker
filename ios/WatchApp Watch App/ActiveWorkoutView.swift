@@ -103,7 +103,7 @@ struct ActiveWorkoutView: View {
                         setSelectedSetIndex(for: exercise, index: exIndex, setIndex: setIndex)
                     }) {
                         VStack(spacing: 2) {
-                            Text(isCardio ? "S\(setIndex + 1)" : "S\(setIndex + 1)")
+                            Text("S\(setIndex + 1)")
                                 .font(.system(size: 8, weight: isSelected ? .black : .regular))
                                 .foregroundColor(isSelected ? .orange : .white)
                             
@@ -154,100 +154,104 @@ struct ActiveWorkoutView: View {
         let durationSec = pc?.durationSeconds ?? 0
         let durationMin = durationSec / 60
 
-        return HStack(spacing: 8) {
-            // Stepper de Distância Compacto (Estilo Pill)
-            HStack(spacing: 4) {
-                Button(action: {
-                    let newDist = max(0.0, distance - 0.1)
-                    connectivityManager.updateCardio(exerciseIndex: exIndex, setIndex: selectedSetIdx, distance: newDist, duration: durationSec)
-                }) {
-                    Image(systemName: "minus")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(width: 22, height: 22)
-                        .background(Color.white.opacity(0.1))
-                        .clipShape(Circle())
-                }
-                .buttonStyle(PlainButtonStyle())
+        return VStack(spacing: 6) {
+            // Stepper de Distância (Largura Total)
+            HStack {
+                Text("DISTÂNCIA")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundColor(.gray)
                 
-                VStack(spacing: -1) {
-                    Text("DIST")
-                        .font(.system(size: 7))
-                        .foregroundColor(.gray)
+                Spacer()
+                
+                HStack(spacing: 8) {
+                    Button(action: {
+                        let newDist = max(0.0, distance - 0.1)
+                        connectivityManager.updateCardio(exerciseIndex: exIndex, setIndex: selectedSetIdx, distance: newDist, duration: durationSec)
+                    }) {
+                        Image(systemName: "minus")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(width: 24, height: 24)
+                            .background(Color.white.opacity(0.1))
+                            .clipShape(Circle())
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
                     Text(String(format: "%.1f km", distance))
-                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
+                        .frame(minWidth: 48, alignment: .center)
+                    
+                    Button(action: {
+                        let newDist = distance + 0.1
+                        connectivityManager.updateCardio(exerciseIndex: exIndex, setIndex: selectedSetIdx, distance: newDist, duration: durationSec)
+                    }) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(width: 24, height: 24)
+                            .background(Color.white.opacity(0.1))
+                            .clipShape(Circle())
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
-                .frame(minWidth: 44)
-                
-                Button(action: {
-                    let newDist = distance + 0.1
-                    connectivityManager.updateCardio(exerciseIndex: exIndex, setIndex: selectedSetIdx, distance: newDist, duration: durationSec)
-                }) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(width: 22, height: 22)
-                        .background(Color.white.opacity(0.1))
-                        .clipShape(Circle())
-                }
-                .buttonStyle(PlainButtonStyle())
+                .padding(3)
+                .background(Color.white.opacity(0.04))
+                .cornerRadius(14)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                )
             }
-            .padding(4)
-            .background(Color.white.opacity(0.04))
-            .cornerRadius(14)
-            .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
-            )
 
-            Spacer(minLength: 0)
-
-            // Stepper de Tempo Compacto (Estilo Pill)
-            HStack(spacing: 4) {
-                Button(action: {
-                    let newDur = max(0, durationMin - 1)
-                    connectivityManager.updateCardio(exerciseIndex: exIndex, setIndex: selectedSetIdx, distance: distance, duration: newDur * 60)
-                }) {
-                    Image(systemName: "minus")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(width: 22, height: 22)
-                        .background(Color.white.opacity(0.1))
-                        .clipShape(Circle())
-                }
-                .buttonStyle(PlainButtonStyle())
+            // Stepper de Duração (Largura Total)
+            HStack {
+                Text("DURAÇÃO")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundColor(.gray)
                 
-                VStack(spacing: -1) {
-                    Text("MIN")
-                        .font(.system(size: 7))
-                        .foregroundColor(.gray)
-                    Text("\(durationMin) m")
-                        .font(.system(size: 10, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
-                }
-                .frame(minWidth: 40)
+                Spacer()
                 
-                Button(action: {
-                    let newDur = durationMin + 1
-                    connectivityManager.updateCardio(exerciseIndex: exIndex, setIndex: selectedSetIdx, distance: distance, duration: newDur * 60)
-                }) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 9, weight: .bold))
+                HStack(spacing: 8) {
+                    Button(action: {
+                        let newDur = max(0, durationMin - 1)
+                        connectivityManager.updateCardio(exerciseIndex: exIndex, setIndex: selectedSetIdx, distance: distance, duration: newDur * 60)
+                    }) {
+                        Image(systemName: "minus")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(width: 24, height: 24)
+                            .background(Color.white.opacity(0.1))
+                            .clipShape(Circle())
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    Text("\(durationMin) min")
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
-                        .frame(width: 22, height: 22)
-                        .background(Color.white.opacity(0.1))
-                        .clipShape(Circle())
+                        .frame(minWidth: 48, alignment: .center)
+                    
+                    Button(action: {
+                        let newDur = durationMin + 1
+                        connectivityManager.updateCardio(exerciseIndex: exIndex, setIndex: selectedSetIdx, distance: distance, duration: newDur * 60)
+                    }) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(width: 24, height: 24)
+                            .background(Color.white.opacity(0.1))
+                            .clipShape(Circle())
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
-                .buttonStyle(PlainButtonStyle())
+                .padding(3)
+                .background(Color.white.opacity(0.04))
+                .cornerRadius(14)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                )
             }
-            .padding(4)
-            .background(Color.white.opacity(0.04))
-            .cornerRadius(14)
-            .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
-            )
         }
     }
 
@@ -256,94 +260,47 @@ struct ActiveWorkoutView: View {
         let failureRep = selectedSetIdx < exercise.failureReps.count ? exercise.failureReps[selectedSetIdx] : nil
 
         return VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
-                // Stepper de Carga (Estilo Pill)
-                HStack(spacing: 4) {
+            // Linha da Carga
+            HStack {
+                Text("CARGA")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundColor(.gray)
+                
+                Spacer()
+                
+                HStack(spacing: 8) {
                     Button(action: {
                         let newW = max(0.0, exercise.weight - 0.5)
                         connectivityManager.updateExerciseWeightReps(exerciseIndex: exIndex, weight: newW, reps: exercise.reps)
                     }) {
                         Image(systemName: "minus")
-                            .font(.system(size: 9, weight: .bold))
+                            .font(.system(size: 10, weight: .bold))
                             .foregroundColor(.white)
-                            .frame(width: 22, height: 22)
+                            .frame(width: 24, height: 24)
                             .background(Color.white.opacity(0.1))
                             .clipShape(Circle())
                     }
                     .buttonStyle(PlainButtonStyle())
                     
-                    VStack(spacing: -1) {
-                        Text("CARGA")
-                            .font(.system(size: 7))
-                            .foregroundColor(.gray)
-                        Text(String(format: "%.1f kg", exercise.weight))
-                            .font(.system(size: 10, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
-                    }
-                    .frame(minWidth: 44)
+                    Text(String(format: "%.1f kg", exercise.weight))
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
+                        .frame(minWidth: 48, alignment: .center)
                     
                     Button(action: {
                         let newW = exercise.weight + 0.5
                         connectivityManager.updateExerciseWeightReps(exerciseIndex: exIndex, weight: newW, reps: exercise.reps)
                     }) {
                         Image(systemName: "plus")
-                            .font(.system(size: 9, weight: .bold))
+                            .font(.system(size: 10, weight: .bold))
                             .foregroundColor(.white)
-                            .frame(width: 22, height: 22)
+                            .frame(width: 24, height: 24)
                             .background(Color.white.opacity(0.1))
                             .clipShape(Circle())
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
-                .padding(4)
-                .background(Color.white.opacity(0.04))
-                .cornerRadius(14)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                )
-
-                Spacer(minLength: 0)
-
-                // Stepper de Repetições (Estilo Pill)
-                HStack(spacing: 4) {
-                    Button(action: {
-                        let newR = max(1, exercise.reps - 1)
-                        connectivityManager.updateExerciseWeightReps(exerciseIndex: exIndex, weight: exercise.weight, reps: newR)
-                    }) {
-                        Image(systemName: "minus")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundColor(.white)
-                            .frame(width: 22, height: 22)
-                            .background(Color.white.opacity(0.1))
-                            .clipShape(Circle())
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    
-                    VStack(spacing: -1) {
-                        Text(exercise.measurementType == "time" ? "TEMPO" : "REPS")
-                            .font(.system(size: 7))
-                            .foregroundColor(.gray)
-                        Text(exercise.measurementType == "time" ? "\(exercise.reps)s" : "\(exercise.reps)")
-                            .font(.system(size: 10, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
-                    }
-                    .frame(minWidth: 40)
-                    
-                    Button(action: {
-                        let newR = exercise.reps + 1
-                        connectivityManager.updateExerciseWeightReps(exerciseIndex: exIndex, weight: exercise.weight, reps: newR)
-                    }) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundColor(.white)
-                            .frame(width: 22, height: 22)
-                            .background(Color.white.opacity(0.1))
-                            .clipShape(Circle())
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-                .padding(4)
+                .padding(3)
                 .background(Color.white.opacity(0.04))
                 .cornerRadius(14)
                 .overlay(
@@ -352,20 +309,69 @@ struct ActiveWorkoutView: View {
                 )
             }
 
-            // Botão Falha Muscular + Mini Stepper de Repetições de Falha
+            // Linha de Repetições
+            HStack {
+                Text(exercise.measurementType == "time" ? "TEMPO" : "REPS")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundColor(.gray)
+                
+                Spacer()
+                
+                HStack(spacing: 8) {
+                    Button(action: {
+                        let newR = max(1, exercise.reps - 1)
+                        connectivityManager.updateExerciseWeightReps(exerciseIndex: exIndex, weight: exercise.weight, reps: newR)
+                    }) {
+                        Image(systemName: "minus")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(width: 24, height: 24)
+                            .background(Color.white.opacity(0.1))
+                            .clipShape(Circle())
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    Text(exercise.measurementType == "time" ? "\(exercise.reps)s" : "\(exercise.reps)")
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
+                        .frame(minWidth: 48, alignment: .center)
+                    
+                    Button(action: {
+                        let newR = exercise.reps + 1
+                        connectivityManager.updateExerciseWeightReps(exerciseIndex: exIndex, weight: exercise.weight, reps: newR)
+                    }) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(width: 24, height: 24)
+                            .background(Color.white.opacity(0.1))
+                            .clipShape(Circle())
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+                .padding(3)
+                .background(Color.white.opacity(0.04))
+                .cornerRadius(14)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                )
+            }
+
+            // Linha de Falha Muscular
             HStack(spacing: 6) {
                 Button(action: {
                     connectivityManager.updateFailure(exerciseIndex: exIndex, setIndex: selectedSetIdx, isFailure: !isFailure, failureRep: failureRep)
                 }) {
-                    HStack(spacing: 3) {
+                    HStack(spacing: 4) {
                         Image(systemName: isFailure ? "xmark.octagon.fill" : "xmark.octagon")
                             .font(.system(size: 9))
-                        Text(isFailure ? "Falhou" : "Falha")
+                        Text(isFailure ? "Falhou" : "Registrar Falha")
                             .font(.system(size: 9, weight: .bold))
                     }
                     .foregroundColor(isFailure ? .red : .gray)
-                    .padding(.vertical, 5)
-                    .padding(.horizontal, 8)
+                    .padding(.vertical, 6)
+                    .padding(.horizontal, 10)
                     .background(isFailure ? Color.red.opacity(0.12) : Color.white.opacity(0.04))
                     .cornerRadius(10)
                     .overlay(
@@ -406,8 +412,8 @@ struct ActiveWorkoutView: View {
                         }
                         .buttonStyle(PlainButtonStyle())
                     }
-                    .padding(.vertical, 3)
-                    .padding(.horizontal, 4)
+                    .padding(.vertical, 4)
+                    .padding(.horizontal, 6)
                     .background(Color.red.opacity(0.08))
                     .cornerRadius(8)
                 }
@@ -545,52 +551,53 @@ struct ActiveWorkoutView: View {
     var body: some View {
         VStack(spacing: 0) {
             if let activeWorkout = connectivityManager.activeWorkout {
-                // Cabeçalho: tempo + botões de controle
-                headerView(activeWorkout: activeWorkout)
-
-                // Timer de descanso inline
                 if let restTimer = activeWorkout.restTimer {
                     RestTimerView(restTimer: restTimer)
                 } else {
-                    // Lista de exercícios
-                    List {
-                        Section(header: Text(activeWorkout.name).font(.system(size: 9, weight: .bold)).foregroundColor(.orange)) {
-                            ForEach(0..<activeWorkout.exercises.count, id: \.self) { exIndex in
-                                exerciseRowView(activeWorkout: activeWorkout, exIndex: exIndex)
-                            }
-                        }
+                    VStack(spacing: 0) {
+                        // Cabeçalho: tempo + botões de controle (só visível no treino ativo)
+                        headerView(activeWorkout: activeWorkout)
 
-                        Section {
-                            Button(action: {
-                                connectivityManager.completeWorkout()
-                            }) {
-                                HStack {
-                                    Spacer()
-                                    Image(systemName: "checkmark.seal.fill")
-                                        .font(.system(size: 10))
-                                    Text("Finalizar Treino")
-                                        .font(.system(size: 11, weight: .bold))
-                                        .foregroundColor(.green)
-                                    Spacer()
+                        // Lista de exercícios
+                        List {
+                            Section(header: Text(activeWorkout.name).font(.system(size: 9, weight: .bold)).foregroundColor(.orange)) {
+                                ForEach(0..<activeWorkout.exercises.count, id: \.self) { exIndex in
+                                    exerciseRowView(activeWorkout: activeWorkout, exIndex: exIndex)
                                 }
                             }
 
-                            Button(action: {
-                                showingCancelAlert = true
-                            }) {
-                                HStack {
-                                    Spacer()
-                                    Image(systemName: "trash.fill")
-                                        .font(.system(size: 10))
-                                    Text("Cancelar Treino")
-                                        .font(.system(size: 11, weight: .semibold))
-                                        .foregroundColor(.red)
-                                    Spacer()
+                            Section {
+                                Button(action: {
+                                    connectivityManager.completeWorkout()
+                                }) {
+                                    HStack {
+                                        Spacer()
+                                        Image(systemName: "checkmark.seal.fill")
+                                            .font(.system(size: 10))
+                                        Text("Finalizar Treino")
+                                            .font(.system(size: 11, weight: .bold))
+                                            .foregroundColor(.green)
+                                        Spacer()
+                                    }
+                                }
+
+                                Button(action: {
+                                    showingCancelAlert = true
+                                }) {
+                                    HStack {
+                                        Spacer()
+                                        Image(systemName: "trash.fill")
+                                            .font(.system(size: 10))
+                                        Text("Cancelar Treino")
+                                            .font(.system(size: 11, weight: .semibold))
+                                            .foregroundColor(.red)
+                                        Spacer()
+                                    }
                                 }
                             }
                         }
+                        .listStyle(.carousel)
                     }
-                    .listStyle(.carousel)
                 }
 
             } else {
