@@ -1002,6 +1002,40 @@ class PrsTab extends StatelessWidget {
   final Color accentColor;
   const PrsTab({Key? key, required this.accentColor}) : super(key: key);
 
+  void _showDeletePrDialog(BuildContext context, TrackerProvider provider, String exerciseId, String exerciseName) {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: const Color(0xff1c1c1e),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: Colors.white.withOpacity(0.08)),
+        ),
+        title: const Text("Excluir Recorde?", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: Text("Deseja realmente excluir o recorde pessoal de '$exerciseName'?", style: const TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text("Cancelar", style: TextStyle(color: Colors.white38)),
+          ),
+          TextButton(
+            onPressed: () {
+              provider.deletePersonalRecord(exerciseId);
+              Navigator.pop(dialogCtx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text("Recorde de '$exerciseName' excluído."),
+                  backgroundColor: Colors.redAccent,
+                ),
+              );
+            },
+            child: const Text("Excluir", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<TrackerProvider>(context);
@@ -1021,6 +1055,7 @@ class PrsTab extends StatelessWidget {
         orElse: () => LibraryExercise(id: '', name: 'Exercício Deletado', muscle: '', measurementType: 'reps'),
       );
       prItems.add({
+        'exerciseId': exId,
         'exerciseName': ex.name,
         'muscle': ex.muscle,
         'measurementType': ex.measurementType,
@@ -1080,28 +1115,40 @@ class PrsTab extends StatelessWidget {
                             ],
                           ),
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: accentColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: accentColor.withOpacity(0.25)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                isCardio
-                                    ? "${item['weight'].toStringAsFixed(1)} km"
-                                    : "${item['weight'].toStringAsFixed(1).replaceAll('.0', '')} kg",
-                                style: TextStyle(color: accentColor, fontWeight: FontWeight.w900, fontSize: 14),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: accentColor.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: accentColor.withOpacity(0.25)),
                               ),
-                              Text(
-                                isCardio ? "${item['reps']} min" : "${item['reps']} reps",
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    isCardio
+                                        ? "${item['weight'].toStringAsFixed(1)} km"
+                                        : "${item['weight'].toStringAsFixed(1).replaceAll('.0', '')} kg",
+                                    style: TextStyle(color: accentColor, fontWeight: FontWeight.w900, fontSize: 14),
+                                  ),
+                                  Text(
+                                    isCardio ? "${item['reps']} min" : "${item['reps']} reps",
+                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                              onPressed: () {
+                                _showDeletePrDialog(context, provider, item['exerciseId'], item['exerciseName']);
+                              },
+                            ),
+                          ],
                         ),
                       ],
                     ),

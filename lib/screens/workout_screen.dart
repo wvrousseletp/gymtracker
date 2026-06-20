@@ -588,35 +588,65 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                               style: TextStyle(color: Colors.white38, fontStyle: FontStyle.italic),
                             ),
                           )
-                        : ListView.builder(
-                            itemCount: filteredList.length,
-                            itemBuilder: (context, index) {
-                              final ex = filteredList[index];
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 8),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.02),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.white.withOpacity(0.04)),
-                                ),
-                                child: ListTile(
-                                  title: Text(
-                                    ex.name,
-                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                                  ),
-                                  subtitle: Text(
-                                    ex.muscle,
-                                    style: TextStyle(color: accentColor.withOpacity(0.7), fontSize: 12),
-                                  ),
-                                  trailing: const Icon(Icons.play_arrow_rounded, color: Colors.white54),
-                                  onTap: () {
-                                    Navigator.pop(context); // fecha modal
-                                    provider.startSingleExercise(ex); 
-                                  },
-                                ),
-                              );
-                            },
-                          ),
+                        : () {
+                            // Agrupar por músculo
+                            final Map<String, List<LibraryExercise>> grouped = {};
+                            for (final ex in filteredList) {
+                              grouped.putIfAbsent(ex.muscle, () => []).add(ex);
+                            }
+                            final sortedMuscles = grouped.keys.toList()
+                              ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+
+                            return ListView.builder(
+                              itemCount: sortedMuscles.length,
+                              itemBuilder: (context, mIdx) {
+                                final muscle = sortedMuscles[mIdx];
+                                final exs = grouped[muscle]!;
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 16, bottom: 8, left: 4),
+                                      child: Text(
+                                        muscle.toUpperCase(),
+                                        style: TextStyle(
+                                          color: accentColor,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: 1.2,
+                                        ),
+                                      ),
+                                    ),
+                                    ...exs.map((ex) {
+                                      return Container(
+                                        margin: const EdgeInsets.only(bottom: 8),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.02),
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(color: Colors.white.withOpacity(0.04)),
+                                        ),
+                                        child: ListTile(
+                                          title: Text(
+                                            ex.name,
+                                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                          ),
+                                          subtitle: Text(
+                                            ex.measurementType == 'time' ? 'Isometria' : 'Repetições',
+                                            style: const TextStyle(color: Colors.white38, fontSize: 11),
+                                          ),
+                                          trailing: const Icon(Icons.play_arrow_rounded, color: Colors.white54),
+                                          onTap: () {
+                                            Navigator.pop(context); // fecha modal
+                                            provider.startSingleExercise(ex);
+                                          },
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ],
+                                );
+                              },
+                            );
+                          }(),
                   ),
                 ],
               ),

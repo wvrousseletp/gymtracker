@@ -722,6 +722,15 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
   }
 
   void _addExercisePicker(List<LibraryExercise> library) {
+    final accentColor = ThemeUtils.getColor(widget.provider.currentProfile.colorAccent);
+    // Agrupar por músculo
+    final Map<String, List<LibraryExercise>> grouped = {};
+    for (final ex in library) {
+      grouped.putIfAbsent(ex.muscle, () => []).add(ex);
+    }
+    final sortedMuscles = grouped.keys.toList()
+      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+
     showDialog(
       context: context,
       builder: (dialogCtx) => AlertDialog(
@@ -735,52 +744,73 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
           width: double.maxFinite,
           child: ListView.builder(
             shrinkWrap: true,
-            itemCount: library.length,
-            itemBuilder: (context, index) {
-              final ex = library[index];
-              return ListTile(
-                title: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        ex.name,
-                        style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
-                        overflow: TextOverflow.ellipsis,
+            itemCount: sortedMuscles.length,
+            itemBuilder: (context, mIdx) {
+              final muscle = sortedMuscles[mIdx];
+              final exs = grouped[muscle]!;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12, bottom: 6, left: 4),
+                    child: Text(
+                      muscle.toUpperCase(),
+                      style: TextStyle(
+                        color: accentColor,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.0,
                       ),
                     ),
-                    if (ex.executionType != null && ex.executionType!.isNotEmpty) ...[
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.blueAccent.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          ex.executionType!,
-                          style: const TextStyle(color: Colors.blueAccent, fontSize: 9, fontWeight: FontWeight.bold),
-                        ),
+                  ),
+                  ...exs.map((ex) {
+                    return ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+                      title: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              ex.name,
+                              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (ex.executionType != null && ex.executionType!.isNotEmpty) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.blueAccent.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                ex.executionType!,
+                                style: const TextStyle(color: Colors.blueAccent, fontSize: 9, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
-                    ],
-                  ],
-                ),
-                subtitle: Text(
-                  "${ex.muscle} • ${ex.measurementType == 'time' ? 'Isometria' : 'Repetições'}",
-                  style: const TextStyle(color: Colors.white38, fontSize: 12),
-                ),
-                onTap: () {
-                  setState(() {
-                    _exercises.add(RoutineExercise(
-                      id: "e-${const Uuid().v4()}",
-                      exerciseId: ex.id,
-                      sets: 3,
-                      reps: ex.measurementType == 'time' ? 45 : 10,
-                      rest: int.tryParse(_restController.text.trim()) ?? 60,
-                      weight: 0,
-                    ));
-                  });
-                  Navigator.pop(dialogCtx);
-                },
+                      subtitle: Text(
+                        ex.measurementType == 'time' ? 'Isometria' : 'Repetições',
+                        style: const TextStyle(color: Colors.white38, fontSize: 11),
+                      ),
+                      onTap: () {
+                        setState(() {
+                          _exercises.add(RoutineExercise(
+                            id: "e-${const Uuid().v4()}",
+                            exerciseId: ex.id,
+                            sets: 3,
+                            reps: ex.measurementType == 'time' ? 45 : 10,
+                            rest: int.tryParse(_restController.text.trim()) ?? 60,
+                            weight: 0,
+                          ));
+                        });
+                        Navigator.pop(dialogCtx);
+                      },
+                    );
+                  }).toList(),
+                ],
               );
             },
           ),
@@ -827,6 +857,14 @@ class _LibraryTabState extends State<LibraryTab> {
     // Organizar biblioteca em ordem alfabética de nome
     final sortedExs = List<LibraryExercise>.from(filteredExs)
       ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+
+    // Agrupar por músculo
+    final Map<String, List<LibraryExercise>> groupedExs = {};
+    for (final ex in sortedExs) {
+      groupedExs.putIfAbsent(ex.muscle, () => []).add(ex);
+    }
+    final sortedMuscles = groupedExs.keys.toList()
+      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -894,96 +932,112 @@ class _LibraryTabState extends State<LibraryTab> {
                   )
                 : ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    itemCount: sortedExs.length,
-                    itemBuilder: (context, index) {
-                      final ex = sortedExs[index];
-                      // Exercícios iniciais (lib-1 a lib-15) são protegidos contra exclusão
-                      final isSystem = ex.id.startsWith("lib-") && int.parse(ex.id.substring(4)) <= 15;
-
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        child: GlassCard(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                          borderColor: Colors.white.withOpacity(0.04),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                    itemCount: sortedMuscles.length,
+                    itemBuilder: (context, mIdx) {
+                      final muscle = sortedMuscles[mIdx];
+                      final exs = groupedExs[muscle]!;
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(top: 16, bottom: 8, left: 4),
+                            child: Text(
+                              muscle.toUpperCase(),
+                              style: TextStyle(
+                                color: widget.accentColor,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                          ),
+                          ...exs.map((ex) {
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              child: GlassCard(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                borderColor: Colors.white.withOpacity(0.04),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Text(
+                                                ex.name,
+                                                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
+                                              ),
+                                              if (ex.measurementType == 'time') ...[
+                                                const SizedBox(width: 6),
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.amber.withOpacity(0.15),
+                                                    borderRadius: BorderRadius.circular(4),
+                                                  ),
+                                                  child: const Text(
+                                                    "Isometria",
+                                                    style: TextStyle(color: Colors.amber, fontSize: 9, fontWeight: FontWeight.bold),
+                                                  ),
+                                                ),
+                                              ],
+                                              if (ex.executionType != null && ex.executionType!.isNotEmpty) ...[
+                                                const SizedBox(width: 6),
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.blueAccent.withOpacity(0.15),
+                                                    borderRadius: BorderRadius.circular(4),
+                                                  ),
+                                                  child: Text(
+                                                    ex.executionType!,
+                                                    style: const TextStyle(color: Colors.blueAccent, fontSize: 9, fontWeight: FontWeight.bold),
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            "${ex.muscle} • ${ex.measurementType == 'time' ? 'Isometria' : 'Repetições'}",
+                                            style: const TextStyle(color: Colors.white38, fontSize: 11),
+                                          ),
+                                          if (ex.notes != null && ex.notes!.trim().isNotEmpty) ...[
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              ex.notes!,
+                                              style: const TextStyle(color: Colors.white24, fontSize: 10, fontStyle: FontStyle.italic),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
                                     Row(
+                                      mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Text(
-                                          ex.name,
-                                          style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
+                                        IconButton(
+                                          icon: const Icon(Icons.edit_outlined, color: Colors.white70, size: 18),
+                                          onPressed: () {
+                                            _openAddExerciseDialog(context, provider, existing: ex);
+                                          },
                                         ),
-                                        if (ex.measurementType == 'time') ...[
-                                          const SizedBox(width: 6),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color: Colors.amber.withOpacity(0.15),
-                                              borderRadius: BorderRadius.circular(4),
-                                            ),
-                                            child: const Text(
-                                              "Isometria",
-                                              style: TextStyle(color: Colors.amber, fontSize: 9, fontWeight: FontWeight.bold),
-                                            ),
-                                          ),
-                                        ],
-                                        if (ex.executionType != null && ex.executionType!.isNotEmpty) ...[
-                                          const SizedBox(width: 6),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color: Colors.blueAccent.withOpacity(0.15),
-                                              borderRadius: BorderRadius.circular(4),
-                                            ),
-                                            child: Text(
-                                              ex.executionType!,
-                                              style: const TextStyle(color: Colors.blueAccent, fontSize: 9, fontWeight: FontWeight.bold),
-                                            ),
-                                          ),
-                                        ],
+                                        IconButton(
+                                          icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
+                                          onPressed: () {
+                                            _confirmDeleteExercise(context, provider, ex);
+                                          },
+                                        ),
                                       ],
                                     ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      "${ex.muscle} • ${ex.measurementType == 'time' ? 'Isometria' : 'Repetições'}",
-                                      style: const TextStyle(color: Colors.white38, fontSize: 11),
-                                    ),
-                                    if (ex.notes != null && ex.notes!.trim().isNotEmpty) ...[
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        ex.notes!,
-                                        style: const TextStyle(color: Colors.white24, fontSize: 10, fontStyle: FontStyle.italic),
-                                      ),
-                                    ],
                                   ],
                                 ),
                               ),
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.edit_outlined, color: Colors.white70, size: 18),
-                                    onPressed: () {
-                                      _openAddExerciseDialog(context, provider, existing: ex);
-                                    },
-                                  ),
-                                  if (!isSystem)
-                                    IconButton(
-                                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
-                                      onPressed: () {
-                                        _confirmDeleteExercise(context, provider, ex);
-                                      },
-                                    ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
+                            );
+                          }).toList(),
+                        ],
                       );
                     },
                   ),

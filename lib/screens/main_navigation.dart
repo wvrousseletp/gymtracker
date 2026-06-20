@@ -78,29 +78,14 @@ class _MainNavigationState extends State<MainNavigation> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "LOS MOOSCLES",
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w900,
-                              color: accentColor,
-                              letterSpacing: 1.5,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          const Text(
-                            "Shapeup Tracker",
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                        ],
+                      const Text(
+                        "Los Mooscles",
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          letterSpacing: 0.5,
+                        ),
                       ),
                       
                       // Seletor de Perfil
