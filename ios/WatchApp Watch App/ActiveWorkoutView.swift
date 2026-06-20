@@ -1,4 +1,7 @@
 import SwiftUI
+#if canImport(WatchKit)
+import WatchKit
+#endif
 
 struct ActiveWorkoutView: View {
     @ObservedObject var connectivityManager = WatchConnectivityManager.shared
@@ -430,6 +433,14 @@ struct ActiveWorkoutView: View {
                             let failureRep = activeSetIdx < exercise.failureReps.count ? exercise.failureReps[activeSetIdx] : nil
                             let pc = activeSetIdx < exercise.performedCardios.count ? exercise.performedCardios[activeSetIdx] : nil
                             
+                            #if canImport(WatchKit)
+                            if !isCompleted {
+                                WKInterfaceDevice.current().play(.success)
+                            } else {
+                                WKInterfaceDevice.current().play(.click)
+                            }
+                            #endif
+
                             connectivityManager.toggleSet(
                                 exerciseIndex: exIndex,
                                 setIndex: activeSetIdx,

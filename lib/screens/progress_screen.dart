@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:fl_chart/fl_chart.dart';
 import '../providers/tracker_provider.dart';
 import '../models/workout_log.dart';
 import '../models/medidas.dart';
@@ -998,9 +999,17 @@ class _ManualWorkoutLogSheetState extends State<ManualWorkoutLogSheet> {
 // ==========================================
 // 2. PRs (RECORDES PESSOAIS) TAB
 // ==========================================
-class PrsTab extends StatelessWidget {
+class PrsTab extends StatefulWidget {
   final Color accentColor;
   const PrsTab({Key? key, required this.accentColor}) : super(key: key);
+
+  @override
+  State<PrsTab> createState() => _PrsTabState();
+}
+
+class _PrsTabState extends State<PrsTab> {
+  String? _selectedExerciseId;
+  bool _showVolume = false; // false = 1RM, true = Volume
 
   void _showDeletePrDialog(BuildContext context, TrackerProvider provider, String exerciseId, String exerciseName) {
     showDialog(
@@ -1031,6 +1040,195 @@ class PrsTab extends StatelessWidget {
             },
             child: const Text("Excluir", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
           ),
+        ],
+      ),
+    );
+  }
+
+  String _formatPrDate(String isoString) {
+    try {
+      final date = DateTime.parse(isoString).toLocal();
+      return "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}";
+    } catch (e) {
+      return isoString;
+    }
+  }
+
+  Widget _buildTabButton(String label, bool active) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _showVolume = (label == "Volume");
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: active ? widget.accentColor.withOpacity(0.15) : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: active ? widget.accentColor : Colors.white.withOpacity(0.08),
+            width: 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: active ? widget.accentColor : Colors.white54,
+            fontSize: 9,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChartCard(
+    BuildContext context, 
+    List<LibraryExercise> strengthExercises, 
+    List<Map<String, dynamic>> chartData, 
+    List<FlSpot> spots
+  ) {
+    final selectedEx = strengthExercises.firstWhere(
+      (e) => e.id == _selectedExerciseId,
+      orElse: () => LibraryExercise(id: '', name: '', muscle: '', measurementType: 'reps'),
+    );
+
+    return GlassCard(
+      borderColor: Colors.white.withOpacity(0.04),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "ANÁLISE DE EVOLUÇÃO",
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              Row(
+                children: [
+                  _buildTabButton("1RM", !_showVolume),
+                  const SizedBox(width: 4),
+                  _buildTabButton("Volume", _showVolume),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.03),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.white.withOpacity(0.08)),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: _selectedExerciseId,
+                dropdownColor: const Color(0xff1c1c1e),
+                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                icon: const Icon(Icons.arrow_drop_down, color: Colors.white54),
+                isExpanded: true,
+                onChanged: (val) {
+                  setState(() {
+                    _selectedExerciseId = val;
+                  });
+                },
+                items: strengthExercises.map((ex) => DropdownMenuItem<String>(
+                  value: ex.id,
+                  child: Text(ex.name),
+                )).toList(),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          if (spots.isEmpty)
+            Container(
+              height: 130,
+              alignment: Alignment.center,
+              child: Text(
+                "Sem histórico registrado para '${selectedEx.name}'",
+                style: const TextStyle(color: Colors.white38, fontSize: 11, fontStyle: FontStyle.italic),
+              ),
+            )
+          else
+            Column(
+              children: [
+                SizedBox(
+                  height: 130,
+                  child: LineChart(
+                    LineChartData(
+                      lineTouchData: LineTouchData(
+                        touchTooltipData: LineTouchTooltipData(
+                          tooltipBgColor: const Color(0xff2c2c2e),
+                          getTooltipItems: (touchedSpots) {
+                            return touchedSpots.map((spot) {
+                              final dataPoint = chartData[spot.x.toInt()];
+                              final date = dataPoint['date'] as DateTime;
+                              final val = spot.y.toStringAsFixed(1);
+                              final suffix = _showVolume ? " kg" : " kg (1RM)";
+                              return LineTooltipItem(
+                                "${date.day}/${date.month}\n$val$suffix",
+                                const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 9),
+                              );
+                            }).toList();
+                          },
+                        ),
+                      ),
+                      gridData: const FlGridData(show: false),
+                      titlesData: const FlTitlesData(
+                        leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      ),
+                      borderData: FlBorderData(show: false),
+                      lineBarsData: [
+                        LineChartBarData(
+                          spots: spots,
+                          isCurved: true,
+                          color: widget.accentColor,
+                          barWidth: 3,
+                          isStrokeCapRound: true,
+                          dotData: const FlDotData(show: true),
+                          belowBarData: BarAreaData(
+                            show: true,
+                            color: widget.accentColor.withOpacity(0.12),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "Antigo",
+                      style: TextStyle(color: Colors.white38, fontSize: 8, fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      _showVolume ? "Evolução do Volume Total" : "Evolução da Força Máxima (1RM)",
+                      style: TextStyle(color: widget.accentColor.withOpacity(0.8), fontSize: 9, fontWeight: FontWeight.bold),
+                    ),
+                    const Text(
+                      "Recente",
+                      style: TextStyle(color: Colors.white38, fontSize: 8, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ],
+            ),
         ],
       ),
     );
@@ -1069,103 +1267,154 @@ class PrsTab extends StatelessWidget {
     // Ordenar PRs por nome do exercício
     prItems.sort((a, b) => a['exerciseName'].toLowerCase().compareTo(b['exerciseName'].toLowerCase()));
 
+    // Filtrar exercícios de força da biblioteca
+    final strengthExercises = state.library.where((e) => !e.muscle.toLowerCase().contains('cardio')).toList();
+
+    if (_selectedExerciseId == null && strengthExercises.isNotEmpty) {
+      _selectedExerciseId = strengthExercises.first.id;
+    }
+
+    final selectedEx = _selectedExerciseId != null
+        ? strengthExercises.firstWhere((e) => e.id == _selectedExerciseId, orElse: () => strengthExercises.first)
+        : null;
+
+    final chartData = <Map<String, dynamic>>[];
+    final List<FlSpot> spots = [];
+
+    if (selectedEx != null) {
+      final chronologicalHistory = state.history.reversed.toList();
+      for (final log in chronologicalHistory) {
+        final logExs = log.exercises.where((e) => e.name == selectedEx.name);
+        for (final ex in logExs) {
+          if (ex.completedSets > 0 && ex.reps > 0 && ex.weight > 0) {
+            final double oneRepMax = ex.weight / (1.0278 - (0.0278 * ex.reps));
+            final double totalVolume = ex.weight * ex.reps * ex.completedSets;
+            
+            chartData.add({
+              'date': DateTime.tryParse(log.date) ?? DateTime.now(),
+              '1rm': oneRepMax,
+              'volume': totalVolume,
+            });
+          }
+        }
+      }
+
+      for (int i = 0; i < chartData.length; i++) {
+        final double val = _showVolume ? chartData[i]['volume'] : chartData[i]['1rm'];
+        spots.add(FlSpot(i.toDouble(), val));
+      }
+    }
+
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: prItems.isEmpty
-          ? const Center(
-              child: Text(
-                "Nenhum recorde pessoal registrado ainda.",
-                style: TextStyle(color: Colors.white38, fontStyle: FontStyle.italic),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          if (strengthExercises.isNotEmpty) ...[
+            _buildChartCard(context, strengthExercises, chartData, spots),
+            const SizedBox(height: 16),
+          ],
+          
+          const Padding(
+            padding: EdgeInsets.only(left: 4, bottom: 8),
+            child: Text(
+              "SEUS RECORDES PESSOAIS",
+              style: TextStyle(
+                color: Colors.white54,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.0,
+              ),
+            ),
+          ),
+          
+          if (prItems.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 32),
+              child: Center(
+                child: Text(
+                  "Nenhum recorde pessoal registrado ainda.",
+                  style: TextStyle(color: Colors.white38, fontStyle: FontStyle.italic),
+                ),
               ),
             )
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: prItems.length,
-              itemBuilder: (context, index) {
-                final item = prItems[index];
-                final isCardio = item['muscle'].toLowerCase().contains('cardio');
-                final dateStr = _formatPrDate(item['date']);
+          else
+            ...prItems.map((item) {
+              final isCardio = item['muscle'].toLowerCase().contains('cardio');
+              final dateStr = _formatPrDate(item['date']);
 
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: GlassCard(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    borderColor: Colors.white.withOpacity(0.04),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item['exerciseName'],
-                                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                "${item['muscle']} • Conquistado em ${item['routine']}",
-                                style: const TextStyle(color: Colors.white38, fontSize: 10),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                "Data: $dateStr",
-                                style: const TextStyle(color: Colors.white24, fontSize: 9),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: GlassCard(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  borderColor: Colors.white.withOpacity(0.04),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: accentColor.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: accentColor.withOpacity(0.25)),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(
-                                    isCardio
-                                        ? "${item['weight'].toStringAsFixed(1)} km"
-                                        : "${item['weight'].toStringAsFixed(1).replaceAll('.0', '')} kg",
-                                    style: TextStyle(color: accentColor, fontWeight: FontWeight.w900, fontSize: 14),
-                                  ),
-                                  Text(
-                                    isCardio ? "${item['reps']} min" : "${item['reps']} reps",
-                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10),
-                                  ),
-                                ],
-                              ),
+                            Text(
+                              item['exerciseName'],
+                              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
                             ),
-                            const SizedBox(width: 8),
-                            IconButton(
-                              icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
-                              onPressed: () {
-                                _showDeletePrDialog(context, provider, item['exerciseId'], item['exerciseName']);
-                              },
+                            const SizedBox(height: 2),
+                            Text(
+                              "${item['muscle']} • Conquistado em ${item['routine']}",
+                              style: const TextStyle(color: Colors.white38, fontSize: 10),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              "Data: $dateStr",
+                              style: const TextStyle(color: Colors.white24, fontSize: 9),
                             ),
                           ],
                         ),
-                      ],
-                    ),
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: widget.accentColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: widget.accentColor.withOpacity(0.25)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  isCardio
+                                      ? "${item['weight'].toStringAsFixed(1)} km"
+                                      : "${item['weight'].toStringAsFixed(1).replaceAll('.0', '')} kg",
+                                  style: TextStyle(color: widget.accentColor, fontWeight: FontWeight.w900, fontSize: 14),
+                                ),
+                                Text(
+                                  isCardio ? "${item['reps']} min" : "${item['reps']} reps",
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                            onPressed: () {
+                              _showDeletePrDialog(context, provider, item['exerciseId'], item['exerciseName']);
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                );
-              },
-            ),
+                ),
+              );
+            }).toList(),
+        ],
+      ),
     );
-  }
-
-  String _formatPrDate(String isoString) {
-    try {
-      final date = DateTime.parse(isoString).toLocal();
-      return "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}";
-    } catch (e) {
-      return isoString;
-    }
   }
 }
 
