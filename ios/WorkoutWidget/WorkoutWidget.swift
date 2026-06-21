@@ -33,50 +33,74 @@ struct TodayRoutineProvider: TimelineProvider {
 }
 
 struct TodayRoutineWidgetView: View {
+    @Environment(\.widgetFamily) var family
     var entry: TodayRoutineProvider.Entry
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Image(systemName: "calendar")
-                    .font(.system(size: 11))
-                    .foregroundColor(.orange)
-                Text("TREINO DE HOJE")
-                    .font(.system(size: 8, weight: .black))
-                    .foregroundColor(.orange.opacity(0.8))
-                Spacer()
-            }
-            
-            Text(entry.routineName)
-                .font(.system(size: 12, weight: .bold))
-                .foregroundColor(.white)
-                .lineLimit(1)
-            
-            if entry.exerciseCount > 0 {
+        switch family {
+        case .accessoryRectangular:
+            VStack(alignment: .leading, spacing: 1) {
+                HStack(spacing: 4) {
+                    Image(systemName: "figure.walk")
+                        .font(.system(size: 10))
+                        .foregroundColor(.orange)
+                    Text("HOJE")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundColor(.orange)
+                }
+                Text(entry.routineName)
+                    .font(.system(size: 12, weight: .black))
+                    .lineLimit(1)
                 Text("\(entry.exerciseCount) Exercícios")
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(.orange)
-                
-                VStack(alignment: .leading, spacing: 2) {
-                    ForEach(entry.exercises.prefix(3), id: \.self) { ex in
-                        Text("• \(ex)")
-                            .font(.system(size: 9))
-                            .foregroundColor(.gray)
-                            .lineLimit(1)
-                    }
-                }
-            } else {
-                Spacer()
-                Text("Dia de descanso!")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(.gray)
-                Spacer()
+                    .foregroundColor(.secondary)
             }
-            Spacer(minLength: 0)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        case .accessoryInline:
+            Text("Treino: \(entry.routineName)")
+        default:
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Image(systemName: "calendar")
+                        .font(.system(size: 11))
+                        .foregroundColor(.orange)
+                    Text("TREINO DE HOJE")
+                        .font(.system(size: 8, weight: .black))
+                        .foregroundColor(.orange.opacity(0.8))
+                    Spacer()
+                }
+                
+                Text(entry.routineName)
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+                
+                if entry.exerciseCount > 0 {
+                    Text("\(entry.exerciseCount) Exercícios")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.orange)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        ForEach(entry.exercises.prefix(3), id: \.self) { ex in
+                            Text("• \(ex)")
+                                .font(.system(size: 9))
+                                .foregroundColor(.gray)
+                                .lineLimit(1)
+                        }
+                    }
+                } else {
+                    Spacer()
+                    Text("Dia de descanso!")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.gray)
+                    Spacer()
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color(red: 0.05, green: 0.05, blue: 0.05))
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(red: 0.05, green: 0.05, blue: 0.05))
     }
 }
 
@@ -89,7 +113,7 @@ struct TodayRoutineWidget: Widget {
         }
         .configurationDisplayName("Treino de Hoje")
         .description("Acompanhe seu treino planejado para o dia.")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies([.systemSmall, .systemMedium, .accessoryRectangular, .accessoryInline])
     }
 }
 
@@ -123,57 +147,71 @@ struct WaterIntakeProvider: TimelineProvider {
 }
 
 struct WaterIntakeWidgetView: View {
+    @Environment(\.widgetFamily) var family
     var entry: WaterIntakeProvider.Entry
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
+        let percent = entry.targetMl > 0 ? Double(entry.currentMl) / Double(entry.targetMl) : 0.0
+        
+        switch family {
+        case .accessoryCircular:
+            Gauge(value: percent) {
                 Image(systemName: "drop.fill")
-                    .font(.system(size: 11))
-                    .foregroundColor(.blue)
-                Text("ÁGUA")
-                    .font(.system(size: 8, weight: .black))
-                    .foregroundColor(.blue.opacity(0.8))
-                Spacer()
+            } currentValueLabel: {
+                Text(String(format: "%.0f%%", percent * 100))
+                    .font(.system(size: 8, weight: .bold))
             }
-            
-            Spacer()
-            
-            let percent = entry.targetMl > 0 ? Double(entry.currentMl) / Double(entry.targetMl) : 0.0
-            
-            HStack(alignment: .bottom) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("\(entry.currentMl) ml")
-                        .font(.system(size: 16, weight: .black, design: .rounded))
+            .gaugeStyle(.accessoryCircular)
+        case .accessoryInline:
+            Text("Água: \(entry.currentMl)ml")
+        default:
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Image(systemName: "drop.fill")
+                        .font(.system(size: 11))
                         .foregroundColor(.blue)
-                    Text("Meta: \(entry.targetMl) ml")
-                        .font(.system(size: 8))
-                        .foregroundColor(.gray)
+                    Text("ÁGUA")
+                        .font(.system(size: 8, weight: .black))
+                        .foregroundColor(.blue.opacity(0.8))
+                    Spacer()
                 }
+                
                 Spacer()
                 
-                Text(String(format: "%.0f%%", percent * 100))
-                    .font(.system(size: 12, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
-            }
-            
-            // Progress Bar
-            GeometryReader { geometry in
-                ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(Color.blue.opacity(0.15))
-                        .frame(height: 6)
+                HStack(alignment: .bottom) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("\(entry.currentMl) ml")
+                            .font(.system(size: 16, weight: .black, design: .rounded))
+                            .foregroundColor(.blue)
+                        Text("Meta: \(entry.targetMl) ml")
+                            .font(.system(size: 8))
+                            .foregroundColor(.gray)
+                    }
+                    Spacer()
                     
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(Color.blue)
-                        .frame(width: min(geometry.size.width * CGFloat(percent), geometry.size.width), height: 6)
+                    Text(String(format: "%.0f%%", percent * 100))
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
                 }
+                
+                // Progress Bar
+                GeometryReader { geometry in
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(Color.blue.opacity(0.15))
+                            .frame(height: 6)
+                        
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(Color.blue)
+                            .frame(width: min(geometry.size.width * CGFloat(percent), geometry.size.width), height: 6)
+                    }
+                }
+                .frame(height: 6)
             }
-            .frame(height: 6)
+            .padding(12)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color(red: 0.05, green: 0.05, blue: 0.05))
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(red: 0.05, green: 0.05, blue: 0.05))
     }
 }
 
@@ -186,6 +224,6 @@ struct WaterIntakeWidget: Widget {
         }
         .configurationDisplayName("Ingestão de Água")
         .description("Monitore seu consumo de água diário.")
-        .supportedFamilies([.systemSmall])
+        .supportedFamilies([.systemSmall, .accessoryCircular, .accessoryInline])
     }
 }

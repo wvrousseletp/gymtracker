@@ -204,6 +204,25 @@ class WatchService {
         }
         break;
 
+      case 'syncOfflineWorkout':
+        final Map<String, dynamic> workoutData = Map<String, dynamic>.from(call.arguments as Map);
+        try {
+          final log = WorkoutLog.fromJson(workoutData);
+          _provider!.addManualWorkoutLog(log);
+          print("[WatchService] Synced offline workout from watch: ${log.name}");
+        } catch (e) {
+          print("[WatchService] Erro ao processar treino offline: $e");
+        }
+        break;
+
+      case 'changeExercise':
+        final int exerciseIndex = call.arguments as int;
+        _provider!.setCurrentExerciseIndex(exerciseIndex);
+        if (_provider!.state?.activeWorkout != null) {
+          sendActiveWorkout(_provider!.state!.activeWorkout!);
+        }
+        break;
+
       default:
         break;
     }

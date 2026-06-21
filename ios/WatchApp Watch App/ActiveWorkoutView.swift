@@ -343,27 +343,58 @@ struct ActiveWorkoutView: View {
                 let isCardio = exercise.muscle.lowercased().contains("cardio")
                 
                 VStack(alignment: .leading, spacing: 6) {
-                    // Exercise Info Header
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(exercise.name)
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundColor(.orange)
-                            .multilineTextAlignment(.leading)
+                    // Exercise Info Header with Navigation Chevrons
+                    HStack(alignment: .center) {
+                        Button(action: {
+                            connectivityManager.changeExercise(to: exIndex - 1)
+                        }) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(.orange)
+                        }
+                        .disabled(exIndex == 0)
+                        .opacity(exIndex == 0 ? 0.2 : 1.0)
+                        .buttonStyle(PlainButtonStyle())
+                        .frame(width: 24, height: 24)
                         
-                        HStack(spacing: 4) {
-                            Text(exercise.muscle)
-                                .font(.system(size: 8, weight: .semibold))
-                                .foregroundColor(.gray)
+                        Spacer()
+                        
+                        VStack(alignment: .center, spacing: 2) {
+                            Text(exercise.name)
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(.orange)
+                                .multilineTextAlignment(.center)
+                                .lineLimit(2)
                             
-                            if let exec = exercise.executionType, !exec.isEmpty {
-                                Text("•")
-                                    .font(.system(size: 8))
+                            HStack(spacing: 4) {
+                                Text(exercise.muscle)
+                                    .font(.system(size: 8, weight: .semibold))
                                     .foregroundColor(.gray)
-                                Text(exec)
-                                    .font(.system(size: 8))
-                                    .foregroundColor(.blue)
+                                
+                                if let exec = exercise.executionType, !exec.isEmpty {
+                                    Text("•")
+                                        .font(.system(size: 8))
+                                        .foregroundColor(.gray)
+                                    Text(exec)
+                                        .font(.system(size: 8))
+                                        .foregroundColor(.blue)
+                                }
                             }
                         }
+                        
+                        Spacer()
+                        
+                        Button(action: {
+                            connectivityManager.changeExercise(to: exIndex + 1)
+                        }) {
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(.orange)
+                        }
+                        .disabled(exIndex + 1 >= activeWorkout.exercises.count)
+                        .opacity(exIndex + 1 >= activeWorkout.exercises.count ? 0.2 : 1.0)
+                        .buttonStyle(PlainButtonStyle())
+                        .frame(width: 24, height: 24)
                     }
                     .padding(.horizontal, 4)
                     

@@ -281,6 +281,14 @@ import WidgetKit
         }
       case "requestSync":
         self.methodChannel?.invokeMethod("sessionActivated", arguments: nil)
+      case "syncOfflineWorkout":
+        if let workoutData = data["workoutData"] as? [String: Any] {
+          self.methodChannel?.invokeMethod("syncOfflineWorkout", arguments: workoutData)
+        }
+      case "changeExercise":
+        if let exerciseIndex = data["exerciseIndex"] as? Int {
+          self.methodChannel?.invokeMethod("changeExercise", arguments: exerciseIndex)
+        }
       default:
         break
       }

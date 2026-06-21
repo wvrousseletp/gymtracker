@@ -58,6 +58,21 @@ struct WorkoutSelectionView: View {
                         .padding()
                     } else {
                         List {
+                            if !connectivityManager.isReachable {
+                                Section {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "wifi.slash")
+                                            .font(.system(size: 10, weight: .bold))
+                                            .foregroundColor(.yellow)
+                                        Text("Modo Offline Ativo")
+                                            .font(.system(size: 10, weight: .bold))
+                                            .foregroundColor(.yellow)
+                                    }
+                                    .frame(maxWidth: .infinity, alignment: .center)
+                                    .padding(.vertical, 2)
+                                }
+                            }
+
                             // Seção 0: Treino Adiado em Andamento
                             if let activeWorkout = connectivityManager.activeWorkout, activeWorkout.postponed {
                                 Section(header: Text("Treino Adiado").font(.system(size: 10, weight: .bold)).foregroundColor(.yellow)) {
