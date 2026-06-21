@@ -872,6 +872,7 @@ class TrackerProvider extends ChangeNotifier {
 
     // Atualiza Recordes Pessoais (PRs)
     final Map<String, PersonalRecord> newPrs = Map.from(_state!.prs);
+    final List<String> prExerciseNames = [];
     active.exercises.forEach((ex) {
       final done = ex.setsState.where((s) => s).length;
       if (done == 0) return;
@@ -908,8 +909,14 @@ class TrackerProvider extends ChangeNotifier {
           date: DateTime.now().toUtc().toIso8601String(),
           routineName: active.name,
         );
+        prExerciseNames.add(ex.name);
       }
     });
+
+    // Envia celebração de PR para o Apple Watch
+    if (prExerciseNames.isNotEmpty) {
+      WatchService.instance.sendPrCelebration(prExerciseNames);
+    }
 
     _state = PlannerState(
       library: _state!.library,
@@ -923,6 +930,7 @@ class TrackerProvider extends ChangeNotifier {
       diet: _state!.diet,
     );
 
+    _updateStreak();
     saveState();
     notifyListeners();
   }
@@ -985,8 +993,86 @@ class TrackerProvider extends ChangeNotifier {
       activeWorkout: _state!.activeWorkout,
       diet: _state!.diet,
     );
+    _updateStreak();
     saveState();
     notifyListeners();
+  }
+
+  // --- STREAK TRACKING ---
+  void _updateStreak() {
+    if (_state == null) return;
+
+    final now = DateTime.now();
+    final history = _state!.history;
+
+    // Semana ISO: segunda (1) até domingo (7)
+    // Obtém o início da semana atual (segunda-feira)
+    DateTime startOfWeek(DateTime d) {
+      final weekday = d.weekday; // 1=Mon, 7=Sun
+      return DateTime(d.year, d.month, d.day - (weekday - 1));
+    }
+
+    final thisWeekStart = startOfWeek(now);
+
+    // Conta treinos nesta semana
+    int currentWeekCount = 0;
+    final Set<String> datesThisWeek = {};
+    for (final log in history) {
+      try {
+        final logDate = DateTime.parse(log.date).toLocal();
+        if (!logDate.isBefore(thisWeekStart)) {
+          final dayKey = '${logDate.year}-${logDate.month}-${logDate.day}';
+          datesThisWeek.add(dayKey);
+          currentWeekCount++;
+        }
+      } catch (_) {}
+    }
+
+    // Conta semanas consecutivas (incluindo semana atual se houver treino)
+    int consecutiveWeeks = 0;
+    final Set<String> weeksWithWorkout = {};
+    for (final log in history) {
+      try {
+        final logDate = DateTime.parse(log.date).toLocal();
+        final ws = startOfWeek(logDate);
+        final weekKey = '${ws.year}-${ws.month}-${ws.day}';
+        weeksWithWorkout.add(weekKey);
+      } catch (_) {}
+    }
+
+    // Conta semanas consecutivas para trás a partir de agora
+    DateTime checkWeek = thisWeekStart;
+    while (true) {
+      final key = '${checkWeek.year}-${checkWeek.month}-${checkWeek.day}';
+      if (weeksWithWorkout.contains(key)) {
+        consecutiveWeeks++;
+        checkWeek = checkWeek.subtract(const Duration(days: 7));
+      } else {
+        break;
+      }
+    }
+
+    final lastDate = history.isNotEmpty ? history.first.date : '';
+    final newStreak = WorkoutStreak(
+      currentWeekCount: currentWeekCount,
+      consecutiveWeeks: consecutiveWeeks,
+      lastWorkoutDate: lastDate,
+    );
+
+    _state = PlannerState(
+      library: _state!.library,
+      routines: _state!.routines,
+      planner: _state!.planner,
+      history: _state!.history,
+      prs: _state!.prs,
+      medidas: _state!.medidas,
+      settings: _state!.settings,
+      activeWorkout: _state!.activeWorkout,
+      diet: _state!.diet,
+      streak: newStreak,
+    );
+
+    WatchService.instance.sendStreak(newStreak);
   }
 
   // --- WEEKLY PLANNER ACTIONS ---

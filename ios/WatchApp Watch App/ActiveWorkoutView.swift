@@ -3,6 +3,60 @@ import SwiftUI
 import WatchKit
 #endif
 
+struct PRCelebrationBanner: View {
+    let exerciseNames: [String]
+    @State private var glowOpacity: Double = 0.3
+
+    var body: some View {
+        VStack(spacing: 4) {
+            Image(systemName: "trophy.fill")
+                .font(.system(size: 20, weight: .bold))
+                .foregroundColor(.yellow)
+                .shadow(color: .yellow.opacity(0.8), radius: 6)
+                .scaleEffect(glowOpacity > 0.5 ? 1.1 : 1.0)
+
+            Text("NOVO RECORDE!")
+                .font(.system(size: 11, weight: .black, design: .rounded))
+                .foregroundColor(.yellow)
+
+            if let first = exerciseNames.first {
+                Text(first)
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundColor(.yellow.opacity(0.8))
+                    .lineLimit(1)
+                if exerciseNames.count > 1 {
+                    Text("+\(exerciseNames.count - 1) mais")
+                        .font(.system(size: 8))
+                        .foregroundColor(.yellow.opacity(0.6))
+                }
+            }
+        }
+        .padding(.vertical, 10)
+        .padding(.horizontal, 14)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Color.black.opacity(0.88))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(
+                            LinearGradient(
+                                colors: [Color.yellow.opacity(0.9), Color.orange.opacity(0.6)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1.5
+                        )
+                )
+        )
+        .shadow(color: .yellow.opacity(glowOpacity), radius: 12)
+        .onAppear {
+            withAnimation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true)) {
+                glowOpacity = 0.9
+            }
+        }
+    }
+}
+
 struct ActiveWorkoutView: View {
     @ObservedObject var connectivityManager = WatchConnectivityManager.shared
     @ObservedObject var workoutManager = WorkoutManager.shared
@@ -701,6 +755,22 @@ struct ActiveWorkoutView: View {
                 secondaryButton: .cancel(Text("Não"))
             )
         }
+        .overlay(
+            Group {
+                if !connectivityManager.prExerciseNames.isEmpty {
+                    VStack {
+                        PRCelebrationBanner(exerciseNames: connectivityManager.prExerciseNames)
+                            .transition(.asymmetric(
+                                insertion: .move(edge: .top).combined(with: .opacity),
+                                removal: .opacity
+                            ))
+                        Spacer()
+                    }
+                    .padding(.top, 4)
+                    .animation(.spring(response: 0.4, dampingFraction: 0.7), value: connectivityManager.prExerciseNames)
+                }
+            }
+        )
         .onAppear {
             connectivityManager.requestSync()
             updateStopwatch()

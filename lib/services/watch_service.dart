@@ -320,4 +320,20 @@ class WatchService {
       print("[WatchService] Erro ao sincronizar widgets: $e");
     }
   }
+
+  Future<void> sendPrCelebration(List<String> exerciseNames) async {
+    try {
+      await _channel.invokeMethod('prCelebration', exerciseNames);
+    } on PlatformException catch (e) {
+      print("[WatchService] Erro ao enviar celebração de PR: $e");
+    }
+  }
+
+  Future<void> sendStreak(WorkoutStreak streak) async {
+    try {
+      await _channel.invokeMethod('updateStreak', streak.toJson());
+    } on PlatformException catch (e) {
+      print("[WatchService] Erro ao enviar streak: $e");
+    }
+  }
 }

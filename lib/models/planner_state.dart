@@ -4,6 +4,30 @@ import 'workout_log.dart';
 import 'medidas.dart';
 import 'diet.dart';
 
+class WorkoutStreak {
+  final int currentWeekCount;   // Treinos feitos na semana atual
+  final int consecutiveWeeks;   // Semanas consecutivas com pelo menos 1 treino
+  final String lastWorkoutDate; // ISO8601
+
+  WorkoutStreak({
+    required this.currentWeekCount,
+    required this.consecutiveWeeks,
+    required this.lastWorkoutDate,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'currentWeekCount': currentWeekCount,
+    'consecutiveWeeks': consecutiveWeeks,
+    'lastWorkoutDate': lastWorkoutDate,
+  };
+
+  factory WorkoutStreak.fromJson(Map<String, dynamic> json) => WorkoutStreak(
+    currentWeekCount: (json['currentWeekCount'] as num?)?.toInt() ?? 0,
+    consecutiveWeeks: (json['consecutiveWeeks'] as num?)?.toInt() ?? 0,
+    lastWorkoutDate: json['lastWorkoutDate'] ?? '',
+  );
+}
+
 class SettingsState {
   final bool sound;
   final bool vibration;
@@ -149,6 +173,8 @@ class ActiveWorkoutState {
 }
 
 class PlannerState {
+  static WorkoutStreak? currentStreak;
+
   final List<LibraryExercise> library;
   final List<Routine> routines;
   final Map<String, List<String>> planner; // Dia -> lista de strings de ID/Prefixo
@@ -158,6 +184,7 @@ class PlannerState {
   final SettingsState settings;
   final ActiveWorkoutState? activeWorkout;
   final DietState diet;
+  final WorkoutStreak streak;
 
   PlannerState({
     required this.library,
@@ -169,7 +196,10 @@ class PlannerState {
     required this.settings,
     this.activeWorkout,
     required this.diet,
-  });
+    WorkoutStreak? streak,
+  }) : streak = streak ?? PlannerState.currentStreak ?? WorkoutStreak(currentWeekCount: 0, consecutiveWeeks: 0, lastWorkoutDate: '') {
+    PlannerState.currentStreak = this.streak;
+  }
 
   Map<String, dynamic> toJson() => {
     'library': library.map((e) => e.toJson()).toList(),
@@ -181,6 +211,7 @@ class PlannerState {
     'settings': settings.toJson(),
     'activeWorkout': activeWorkout?.toJson(),
     'diet': diet.toJson(),
+    'streak': streak.toJson(),
   };
 
   factory PlannerState.fromJson(Map<String, dynamic> json) {
@@ -232,6 +263,9 @@ class PlannerState {
               fasting: FastingState(history: []),
               abstinence: [],
             ),
+      streak: json['streak'] != null
+          ? WorkoutStreak.fromJson(Map<String, dynamic>.from(json['streak']))
+          : WorkoutStreak(currentWeekCount: 0, consecutiveWeeks: 0, lastWorkoutDate: ''),
     );
   }
 }

@@ -22,14 +22,17 @@ import WidgetKit
   ) -> Bool {
     GeneratedPluginRegistrant.register(with: self)
     
-    let controller : FlutterViewController = window?.rootViewController as! FlutterViewController
-    methodChannel = FlutterMethodChannel(name: "com.vicente.losmooscles/watch",
-                                              binaryMessenger: controller.binaryMessenger)
+    let result = super.application(application, didFinishLaunchingWithOptions: launchOptions)
     
-    methodChannel?.setMethodCallHandler({
-      [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
-      self?.handleFlutterCall(call, result: result)
-    })
+    if let controller = window?.rootViewController as? FlutterViewController {
+      methodChannel = FlutterMethodChannel(name: "com.vicente.losmooscles/watch",
+                                                binaryMessenger: controller.binaryMessenger)
+      
+      methodChannel?.setMethodCallHandler({
+        [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
+        self?.handleFlutterCall(call, result: result)
+      })
+    }
 
     if WCSession.isSupported() {
       session = WCSession.default
@@ -38,7 +41,7 @@ import WidgetKit
       applicationContextCache = session?.applicationContext ?? [:]
     }
 
-    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    return result
   }
 
   private func sendToWatch(_ key: String, json: String?, clearActive: Bool = false) {
@@ -160,6 +163,54 @@ import WidgetKit
       } else {
         result(FlutterError(code: "INVALID_ARGUMENT", message: "Expected dictionary for widget data", details: nil))
       }
+
+    case "prCelebration":
+      // Forward a PR celebration to the Apple Watch
+      if let exerciseNames = call.arguments as? [String] {
+        let msg: [String: Any] = [
+          "action": "prCelebration",
+          "exerciseNames": exerciseNames
+        ]
+        if session.isReachable {
+          session.sendMessage(msg, replyHandler: nil) { [weak self] error in
+            print("[AppDelegate] Error sending prCelebration: \(error.localizedDescription)")
+            self?.session?.transferUserInfo(msg)
+          }
+        } else {
+          session.transferUserInfo(msg)
+        }
+        result(nil)
+      } else {
+        result(nil)
+      }
+
+    case "updateStreak":
+      // Forward streak update to the Apple Watch
+      if let streakArgs = call.arguments as? [String: Any],
+         let streakData = try? JSONSerialization.data(withJSONObject: streakArgs),
+         let streakJson = String(data: streakData, encoding: .utf8) {
+        // Persist in application context for offline access
+        applicationContextCache["streak"] = streakJson
+        do {
+          try session.updateApplicationContext(applicationContextCache)
+        } catch {
+          print("[AppDelegate] Error updating application context for streak: \(error.localizedDescription)")
+        }
+        // Also send real-time if reachable
+        let msg: [String: Any] = ["action": "updateStreak", "streak": streakJson]
+        if session.isReachable {
+          session.sendMessage(msg, replyHandler: nil) { [weak self] error in
+            print("[AppDelegate] Error sending streak: \(error.localizedDescription)")
+            self?.session?.transferUserInfo(msg)
+          }
+        } else {
+          session.transferUserInfo(msg)
+        }
+        result(nil)
+      } else {
+        result(nil)
+      }
+
     default:
       result(FlutterMethodNotImplemented)
     }

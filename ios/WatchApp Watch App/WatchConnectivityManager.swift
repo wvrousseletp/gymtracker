@@ -1,6 +1,9 @@
 import Foundation
 import WatchConnectivity
 import Combine
+#if os(watchOS)
+import WatchKit
+#endif
 
 class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     static let shared = WatchConnectivityManager()
@@ -10,6 +13,9 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     @Published var planner: [String: [String]] = [:]
     @Published var isReachable = false
     @Published var isLocalWorkout = false
+    @Published var streak: WatchStreak = WatchStreak(currentWeekCount: 0, consecutiveWeeks: 0, lastWorkoutDate: "")
+    /// Lista de exercícios com PR recém-batido – resetada após exibição da celebração
+    @Published var prExerciseNames: [String] = []
 
     @Published var activeWorkout: WatchActiveWorkoutState? {
         didSet {
@@ -51,6 +57,13 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         if let savedData = defaults.data(forKey: "local_workout_state"),
            let active = try? JSONDecoder().decode(WatchActiveWorkoutState.self, from: savedData) {
             self.activeWorkout = active
+        }
+        
+        // Carrega streak em cache
+        if let streakJson = defaults.string(forKey: "cached_streak"),
+           let jsonData = streakJson.data(using: .utf8),
+           let decoded = try? JSONDecoder().decode(WatchStreak.self, from: jsonData) {
+            self.streak = decoded
         }
         
         if WCSession.isSupported() {
@@ -214,6 +227,35 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                     if !self.isLocalWorkout {
                         self.activeWorkout = nil
                     }
+
+                case "prCelebration":
+                    // Dispara háptico de celebração de PR e exibe o banner
+                    let names = data["exerciseNames"] as? [String] ?? []
+                    if !names.isEmpty {
+                        self.prExerciseNames = names
+                        #if os(watchOS)
+                        WKInterfaceDevice.current().play(.success)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            WKInterfaceDevice.current().play(.success)
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                            WKInterfaceDevice.current().play(.notification)
+                        }
+                        #endif
+                        // Reseta após 4 segundos para limpar o banner
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
+                            self.prExerciseNames = []
+                        }
+                    }
+
+                case "updateStreak":
+                    if let streakJson = data["streak"] as? String,
+                       let jsonData = streakJson.data(using: .utf8),
+                       let decoded = try? JSONDecoder().decode(WatchStreak.self, from: jsonData) {
+                        self.streak = decoded
+                        UserDefaults.standard.set(streakJson, forKey: "cached_streak")
+                    }
+
                 default:
                     break
                 }
@@ -1202,5 +1244,30 @@ struct WatchActiveExercise: Codable, Identifiable {
         } else {
             failureReps = Array(repeating: nil, count: setsState.count)
         }
+    }
+}
+
+// MARK: - Streak Model
+
+struct WatchStreak: Codable {
+    let currentWeekCount: Int
+    let consecutiveWeeks: Int
+    let lastWorkoutDate: String
+
+    enum CodingKeys: String, CodingKey {
+        case currentWeekCount, consecutiveWeeks, lastWorkoutDate
+    }
+
+    init(currentWeekCount: Int, consecutiveWeeks: Int, lastWorkoutDate: String) {
+        self.currentWeekCount = currentWeekCount
+        self.consecutiveWeeks = consecutiveWeeks
+        self.lastWorkoutDate = lastWorkoutDate
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        currentWeekCount = (try? container.decode(Int.self, forKey: .currentWeekCount)) ?? 0
+        consecutiveWeeks = (try? container.decode(Int.self, forKey: .consecutiveWeeks)) ?? 0
+        lastWorkoutDate = (try? container.decode(String.self, forKey: .lastWorkoutDate)) ?? ""
     }
 }
