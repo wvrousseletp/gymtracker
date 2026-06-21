@@ -3,7 +3,7 @@ import SwiftUI
 struct WorkoutSelectionView: View {
     @ObservedObject var connectivityManager = WatchConnectivityManager.shared
 
-    private func getTodayPlannedRoutines() -> [WatchRoutine] {
+    private var todayPlannedRoutines: [WatchRoutine] {
         let calendar = Calendar.current
         let weekday = calendar.component(.weekday, from: Date())
         let todayKey: String
@@ -118,7 +118,6 @@ struct WorkoutSelectionView: View {
                                 }
 
                                 // Seção 0.1: Treinos Planejados para Hoje
-                                let todayPlannedRoutines = getTodayPlannedRoutines()
                                 if !todayPlannedRoutines.isEmpty {
                                     Section(header: Text("Treinos de Hoje").font(.system(size: 10, weight: .bold)).foregroundColor(.green)) {
                                         ForEach(todayPlannedRoutines) { routine in

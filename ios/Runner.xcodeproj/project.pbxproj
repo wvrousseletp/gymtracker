@@ -31,6 +31,7 @@
 		D39999992FE20CC4008A94B1 /* WatchConnectivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A94F1 /* WatchConnectivityManager.swift */; };
 		D39999992FE20CC4008A94B2 /* WorkoutSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A94F2 /* WorkoutSelectionView.swift */; };
 		D39999992FE20CC4008A94B3 /* ActiveWorkoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A94F3 /* ActiveWorkoutView.swift */; };
+		D39999992FE20CC4008A94B9 /* WeeklyStatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A94F9 /* WeeklyStatsView.swift */; };
 		D39999992FE20CC4008A9500 /* WorkoutManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A9501 /* WorkoutManager.swift */; };
 		D39999992FE20CC4008A94B4 /* RestTimerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A94F4 /* RestTimerView.swift */; };
 /* End PBXBuildFile section */
@@ -149,6 +150,7 @@
 		D39999992FE20CC4008A94F1 /* WatchConnectivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchConnectivityManager.swift; sourceTree = "<group>"; };
 		D39999992FE20CC4008A94F2 /* WorkoutSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutSelectionView.swift; sourceTree = "<group>"; };
 		D39999992FE20CC4008A94F3 /* ActiveWorkoutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveWorkoutView.swift; sourceTree = "<group>"; };
+		D39999992FE20CC4008A94F9 /* WeeklyStatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyStatsView.swift; sourceTree = "<group>"; };
 		D39999992FE20CC4008A9501 /* WorkoutManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutManager.swift; sourceTree = "<group>"; };
 		D39999992FE20CC4008A94F4 /* RestTimerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestTimerView.swift; sourceTree = "<group>"; };
 		D4A6FF054925EBF1FC36E777 /* Pods-RunnerTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.release.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.release.xcconfig"; sourceTree = "<group>"; };
@@ -308,6 +310,7 @@
 				D39999992FE20CC4008A94F1 /* WatchConnectivityManager.swift */,
 				D39999992FE20CC4008A94F2 /* WorkoutSelectionView.swift */,
 				D39999992FE20CC4008A94F3 /* ActiveWorkoutView.swift */,
+				D39999992FE20CC4008A94F9 /* WeeklyStatsView.swift */,
 				D39999992FE20CC4008A9501 /* WorkoutManager.swift */,
 				D39999992FE20CC4008A94F4 /* RestTimerView.swift */,
 				D316F3242FE20CC7008A94F4 /* Assets.xcassets */,
@@ -698,6 +701,7 @@
 				D39999992FE20CC4008A94B1 /* WatchConnectivityManager.swift in Sources */,
 				D39999992FE20CC4008A94B2 /* WorkoutSelectionView.swift in Sources */,
 				D39999992FE20CC4008A94B3 /* ActiveWorkoutView.swift in Sources */,
+				D39999992FE20CC4008A94B9 /* WeeklyStatsView.swift in Sources */,
 				D39999992FE20CC4008A9500 /* WorkoutManager.swift in Sources */,
 				D39999992FE20CC4008A94B4 /* RestTimerView.swift in Sources */,
 			);
