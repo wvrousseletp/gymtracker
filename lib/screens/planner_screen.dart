@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/tracker_provider.dart';
 import '../models/exercise.dart';
+import '../models/planner_state.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/profile_avatar.dart';
 
@@ -28,6 +29,263 @@ class _PlannerScreenState extends State<PlannerScreen> {
     }
   }
 
+  Widget _buildWeeklyStreakHeader(
+    BuildContext context,
+    TrackerProvider provider,
+    PlannerState state,
+    Color accentColor,
+  ) {
+    final streak = state.streak;
+    
+    // Formatar data do último treino
+    String lastWorkoutStr = "Nenhum";
+    if (streak.lastWorkoutDate.isNotEmpty) {
+      try {
+        final dt = DateTime.parse(streak.lastWorkoutDate).toLocal();
+        final diff = DateTime.now().difference(dt);
+        if (diff.inDays == 0) {
+          lastWorkoutStr = "Hoje";
+        } else if (diff.inDays == 1) {
+          lastWorkoutStr = "Ontem";
+        } else {
+          lastWorkoutStr = "Há ${diff.inDays} dias";
+        }
+      } catch (_) {
+        lastWorkoutStr = "Recente";
+      }
+    }
+
+    return GlassCard(
+      padding: const EdgeInsets.all(16),
+      borderColor: Colors.orangeAccent.withOpacity(0.15),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.local_fire_department_rounded, color: Colors.orangeAccent, size: 24),
+              const SizedBox(width: 8),
+              const Text(
+                "Consistência Semanal",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.orangeAccent.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.star, color: Colors.orangeAccent, size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      "${streak.consecutiveWeeks} ${streak.consecutiveWeeks == 1 ? 'semana' : 'semanas'}",
+                      style: const TextStyle(
+                        color: Colors.orangeAccent,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Indicador de treinos na semana
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Frequência Semanal:",
+                style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+              Text(
+                "${streak.currentWeekCount} ${streak.currentWeekCount == 1 ? 'treino' : 'treinos'}",
+                style: const TextStyle(color: Colors.greenAccent, fontSize: 13, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // 7 círculos representando os treinos realizados
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(7, (dayIndex) {
+              final filled = dayIndex < streak.currentWeekCount;
+              return Container(
+                width: 32,
+                height: 32,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: filled ? Colors.green.withOpacity(0.2) : Colors.white.withOpacity(0.04),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: filled ? Colors.greenAccent : Colors.white.withOpacity(0.12),
+                    width: 1.5,
+                  ),
+                ),
+                child: Icon(
+                  filled ? Icons.check : Icons.circle,
+                  color: filled ? Colors.greenAccent : Colors.white24,
+                  size: filled ? 16 : 8,
+                ),
+              );
+            }),
+          ),
+          const SizedBox(height: 12),
+          // Último treino realizado
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Último treino:",
+                style: TextStyle(color: Colors.white38, fontSize: 12),
+              ),
+              Text(
+                lastWorkoutStr,
+                style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlannedVolumeHeader(
+    BuildContext context,
+    TrackerProvider provider,
+    PlannerState state,
+    Color accentColor,
+  ) {
+    // Calcular volume planejado por grupo muscular
+    final Map<String, int> volumeMap = {};
+    
+    for (final day in state.planner.keys) {
+      final items = state.planner[day] ?? [];
+      for (final rawItem in items) {
+        if (rawItem.startsWith('routine:')) {
+          final routineId = rawItem.substring(8);
+          final routine = state.routines.where((r) => r.id == routineId).firstOrNull;
+          if (routine != null) {
+            for (final re in routine.exercises) {
+              final libEx = state.library.where((e) => e.id == re.exerciseId).firstOrNull;
+              if (libEx != null) {
+                final muscle = libEx.muscle;
+                volumeMap[muscle] = (volumeMap[muscle] ?? 0) + re.sets.toInt();
+              }
+            }
+          }
+        } else if (rawItem.startsWith('exercise:')) {
+          final parts = rawItem.split(':');
+          if (parts.length >= 3) {
+            final exId = parts[1];
+            final quantity = int.tryParse(parts[2]) ?? 3;
+            final libEx = state.library.where((e) => e.id == exId).firstOrNull;
+            if (libEx != null) {
+              final muscle = libEx.muscle;
+              volumeMap[muscle] = (volumeMap[muscle] ?? 0) + quantity;
+            }
+          }
+        } else if (rawItem.isNotEmpty) {
+          final routine = state.routines.where((r) => r.id == rawItem).firstOrNull;
+          if (routine != null) {
+            for (final re in routine.exercises) {
+              final libEx = state.library.where((e) => e.id == re.exerciseId).firstOrNull;
+              if (libEx != null) {
+                final muscle = libEx.muscle;
+                volumeMap[muscle] = (volumeMap[muscle] ?? 0) + re.sets.toInt();
+              }
+            }
+          }
+        }
+      }
+    }
+
+    final sortedEntries = volumeMap.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value)); // Mostrar grupos com maior volume primeiro
+
+    return GlassCard(
+      padding: const EdgeInsets.all(16),
+      borderColor: accentColor.withOpacity(0.15),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.bar_chart_rounded, color: accentColor, size: 24),
+              const SizedBox(width: 8),
+              const Text(
+                "Volume de Treino Planejado",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (sortedEntries.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Center(
+                child: Text(
+                  "Nenhum treino planejado na semana.",
+                  style: TextStyle(color: Colors.white38, fontStyle: FontStyle.italic, fontSize: 13),
+                ),
+              ),
+            )
+          else
+            Table(
+              columnWidths: const {
+                0: FlexColumnWidth(2),
+                1: FlexColumnWidth(1),
+              },
+              children: sortedEntries.map((entry) {
+                final isCardio = entry.key.toLowerCase().contains('cardio');
+                final unit = isCardio ? 'min' : 'séries';
+                return TableRow(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Text(
+                        entry.key,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Text(
+                        "${entry.value} $unit",
+                        textAlign: TextAlign.end,
+                        style: TextStyle(
+                          color: accentColor,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }).toList(),
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<TrackerProvider>(context);
@@ -41,72 +299,97 @@ class _PlannerScreenState extends State<PlannerScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: ListView.builder(
+      body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        itemCount: _daysOfWeek.length,
-        itemBuilder: (context, index) {
-          final day = _daysOfWeek[index];
-          final items = state.planner[day] ?? [];
+        children: [
+          // 1. Consistência Semanal
+          _buildWeeklyStreakHeader(context, provider, state, accentColor),
+          const SizedBox(height: 16),
 
-          return Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            child: GlassCard(
-              padding: const EdgeInsets.all(16),
-              borderColor: Colors.white.withOpacity(0.06),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Cabeçalho do dia
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        _getDayNamePt(day),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
+          // 2. Volume de Treino Planejado
+          _buildPlannedVolumeHeader(context, provider, state, accentColor),
+          const SizedBox(height: 24),
+
+          // Seção Cronograma Semanal
+          Row(
+            children: const [
+              Icon(Icons.calendar_month, color: Colors.white70, size: 20),
+              SizedBox(width: 8),
+              Text(
+                "Cronograma Semanal",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Dias da semana
+          ..._daysOfWeek.map((day) {
+            final items = state.planner[day] ?? [];
+            return Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              child: GlassCard(
+                padding: const EdgeInsets.all(16),
+                borderColor: Colors.white.withOpacity(0.06),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Cabeçalho do dia
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          _getDayNamePt(day),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.add_box_outlined, color: accentColor, size: 22),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        onPressed: () {
-                          provider.addPlannerItem(day);
+                        IconButton(
+                          icon: Icon(Icons.add_box_outlined, color: accentColor, size: 22),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: () {
+                            provider.addPlannerItem(day);
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+
+                    if (items.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        child: Text(
+                          "Nenhum treino agendado",
+                          style: TextStyle(
+                            color: Colors.white30,
+                            fontSize: 13,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      )
+                    else
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: items.length,
+                        itemBuilder: (context, idx) {
+                          final rawItem = items[idx];
+                          return _buildPlannerItemRow(context, provider, day, idx, rawItem, accentColor);
                         },
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-
-                  if (items.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                      child: Text(
-                        "Nenhum treino agendado",
-                        style: TextStyle(
-                          color: Colors.white30,
-                          fontSize: 13,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    )
-                  else
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: items.length,
-                      itemBuilder: (context, idx) {
-                        final rawItem = items[idx];
-                        return _buildPlannerItemRow(context, provider, day, idx, rawItem, accentColor);
-                      },
-                    ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          );
-        },
+            );
+          }).toList(),
+        ],
       ),
     );
   }

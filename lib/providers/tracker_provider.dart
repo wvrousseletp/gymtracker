@@ -1367,6 +1367,27 @@ class TrackerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateMeasurement(BodyMeasurement record) {
+    if (_state == null) return;
+    final index = _state!.medidas.indexWhere((m) => m.id == record.id);
+    if (index == -1) return;
+    final List<BodyMeasurement> list = List.from(_state!.medidas);
+    list[index] = record;
+    _state = PlannerState(
+      library: _state!.library,
+      routines: _state!.routines,
+      planner: _state!.planner,
+      history: _state!.history,
+      prs: _state!.prs,
+      medidas: list,
+      settings: _state!.settings,
+      activeWorkout: _state!.activeWorkout,
+      diet: _state!.diet,
+    );
+    saveState();
+    notifyListeners();
+  }
+
   // --- SETTINGS OPERATIONS ---
   void updateSettings(bool sound, bool vibration, int prepSeconds) {
     if (_state == null) return;

@@ -1479,13 +1479,27 @@ class _MedidasTabState extends State<MedidasTab> {
                               _formatMedidaDate(m.date),
                               style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14),
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 16),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                              onPressed: () {
-                                provider.deleteMeasurement(m.id);
-                              },
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: Icon(Icons.edit_outlined, color: widget.accentColor, size: 16),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  onPressed: () {
+                                    _openEditMeasurementDialog(context, provider, m);
+                                  },
+                                ),
+                                const SizedBox(width: 12),
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 16),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  onPressed: () {
+                                    provider.deleteMeasurement(m.id);
+                                  },
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -1504,6 +1518,7 @@ class _MedidasTabState extends State<MedidasTab> {
                             _buildMeasurementCell("Ombros", "${m.ombros} cm"),
                             _buildMeasurementCell("Peito", "${m.peito} cm"),
                             _buildMeasurementCell("Cintura", "${m.cintura} cm"),
+                            _buildMeasurementCell("Abdômen", "${m.abdomen} cm"),
                             _buildMeasurementCell("Quadril", "${m.quadril} cm"),
                             _buildMeasurementCell("Braço Dir/Esq", "${m.bracoDir}/${m.bracoEsq} cm"),
                             _buildMeasurementCell("Coxa Dir/Esq", "${m.coxaDir}/${m.coxaEsq} cm"),
@@ -1550,6 +1565,7 @@ class _MedidasTabState extends State<MedidasTab> {
     final shouldersCtrl = TextEditingController();
     final chestCtrl = TextEditingController();
     final waistCtrl = TextEditingController();
+    final abdomenCtrl = TextEditingController();
     final hipsCtrl = TextEditingController();
     final bEsqCtrl = TextEditingController();
     final bDirCtrl = TextEditingController();
@@ -1581,6 +1597,7 @@ class _MedidasTabState extends State<MedidasTab> {
                 _buildFormInput("Ombros (cm)", shouldersCtrl),
                 _buildFormInput("Peito (cm)", chestCtrl),
                 _buildFormInput("Cintura (cm)", waistCtrl),
+                _buildFormInput("Abdômen (cm)", abdomenCtrl),
                 _buildFormInput("Quadril (cm)", hipsCtrl),
                 Row(
                   children: [
@@ -1623,6 +1640,7 @@ class _MedidasTabState extends State<MedidasTab> {
                 ombros: double.tryParse(shouldersCtrl.text.trim()) ?? 0.0,
                 peito: double.tryParse(chestCtrl.text.trim()) ?? 0.0,
                 cintura: double.tryParse(waistCtrl.text.trim()) ?? 0.0,
+                abdomen: double.tryParse(abdomenCtrl.text.trim()) ?? 0.0,
                 quadril: double.tryParse(hipsCtrl.text.trim()) ?? 0.0,
                 bracoEsq: double.tryParse(bEsqCtrl.text.trim()) ?? 0.0,
                 bracoDir: double.tryParse(bDirCtrl.text.trim()) ?? 0.0,
@@ -1636,6 +1654,111 @@ class _MedidasTabState extends State<MedidasTab> {
               setState(() {});
             },
             child: Text("Registrar", style: TextStyle(color: widget.accentColor, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _openEditMeasurementDialog(BuildContext context, TrackerProvider provider, BodyMeasurement measurement) {
+    String valStr(double val) => val == 0.0 ? "" : val.toString();
+
+    final weightCtrl = TextEditingController(text: valStr(measurement.peso));
+    final fatCtrl = TextEditingController(text: valStr(measurement.gordura));
+    final neckCtrl = TextEditingController(text: valStr(measurement.pescoco));
+    final shouldersCtrl = TextEditingController(text: valStr(measurement.ombros));
+    final chestCtrl = TextEditingController(text: valStr(measurement.peito));
+    final waistCtrl = TextEditingController(text: valStr(measurement.cintura));
+    final abdomenCtrl = TextEditingController(text: valStr(measurement.abdomen));
+    final hipsCtrl = TextEditingController(text: valStr(measurement.quadril));
+    final bEsqCtrl = TextEditingController(text: valStr(measurement.bracoEsq));
+    final bDirCtrl = TextEditingController(text: valStr(measurement.bracoDir));
+    final cEsqCtrl = TextEditingController(text: valStr(measurement.coxaEsq));
+    final cDirCtrl = TextEditingController(text: valStr(measurement.coxaDir));
+    final pEsqCtrl = TextEditingController(text: valStr(measurement.panturrilhaEsq));
+    final pDirCtrl = TextEditingController(text: valStr(measurement.panturrilhaDir));
+
+    final dateCtrl = TextEditingController(text: measurement.date);
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: const Color(0xff1c1c1e),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: Colors.white.withOpacity(0.08)),
+        ),
+        title: const Text("Editar Medidas", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildFormInput("Data (AAAA-MM-DD)", dateCtrl),
+                _buildFormInput("Peso (kg)", weightCtrl),
+                _buildFormInput("Gordura (%)", fatCtrl),
+                _buildFormInput("Pescoço (cm)", neckCtrl),
+                _buildFormInput("Ombros (cm)", shouldersCtrl),
+                _buildFormInput("Peito (cm)", chestCtrl),
+                _buildFormInput("Cintura (cm)", waistCtrl),
+                _buildFormInput("Abdômen (cm)", abdomenCtrl),
+                _buildFormInput("Quadril (cm)", hipsCtrl),
+                Row(
+                  children: [
+                    Expanded(child: _buildFormInput("Braço Esq (cm)", bEsqCtrl)),
+                    const SizedBox(width: 8),
+                    Expanded(child: _buildFormInput("Braço Dir (cm)", bDirCtrl)),
+                  ],
+                ),
+                Row(
+                  children: [
+                    Expanded(child: _buildFormInput("Coxa Esq (cm)", cEsqCtrl)),
+                    const SizedBox(width: 8),
+                    Expanded(child: _buildFormInput("Coxa Dir (cm)", cDirCtrl)),
+                  ],
+                ),
+                Row(
+                  children: [
+                    Expanded(child: _buildFormInput("Pant. Esq (cm)", pEsqCtrl)),
+                    const SizedBox(width: 8),
+                    Expanded(child: _buildFormInput("Pant. Dir (cm)", pDirCtrl)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text("Cancelar", style: TextStyle(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () {
+              final m = BodyMeasurement(
+                id: measurement.id,
+                date: dateCtrl.text.trim().isNotEmpty ? dateCtrl.text.trim() : measurement.date,
+                peso: double.tryParse(weightCtrl.text.trim()) ?? 0.0,
+                gordura: double.tryParse(fatCtrl.text.trim()) ?? 0.0,
+                pescoco: double.tryParse(neckCtrl.text.trim()) ?? 0.0,
+                ombros: double.tryParse(shouldersCtrl.text.trim()) ?? 0.0,
+                peito: double.tryParse(chestCtrl.text.trim()) ?? 0.0,
+                cintura: double.tryParse(waistCtrl.text.trim()) ?? 0.0,
+                abdomen: double.tryParse(abdomenCtrl.text.trim()) ?? 0.0,
+                quadril: double.tryParse(hipsCtrl.text.trim()) ?? 0.0,
+                bracoEsq: double.tryParse(bEsqCtrl.text.trim()) ?? 0.0,
+                bracoDir: double.tryParse(bDirCtrl.text.trim()) ?? 0.0,
+                coxaEsq: double.tryParse(cEsqCtrl.text.trim()) ?? 0.0,
+                coxaDir: double.tryParse(cDirCtrl.text.trim()) ?? 0.0,
+                panturrilhaEsq: double.tryParse(pEsqCtrl.text.trim()) ?? 0.0,
+                panturrilhaDir: double.tryParse(pDirCtrl.text.trim()) ?? 0.0,
+              );
+              provider.updateMeasurement(m);
+              Navigator.pop(dialogCtx);
+              setState(() {});
+            },
+            child: Text("Salvar", style: TextStyle(color: widget.accentColor, fontWeight: FontWeight.bold)),
           ),
         ],
       ),

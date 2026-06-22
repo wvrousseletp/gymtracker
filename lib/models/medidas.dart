@@ -7,6 +7,7 @@ class BodyMeasurement {
   final double ombros;
   final double peito;
   final double cintura;
+  final double abdomen; // New measurement
   final double quadril;
   final double bracoEsq;
   final double bracoDir;
@@ -24,6 +25,7 @@ class BodyMeasurement {
     required this.ombros,
     required this.peito,
     required this.cintura,
+    required this.abdomen,
     required this.quadril,
     required this.bracoEsq,
     required this.bracoDir,
@@ -42,6 +44,7 @@ class BodyMeasurement {
     'ombros': ombros,
     'peito': peito,
     'cintura': cintura,
+    'abdomen': abdomen,
     'quadril': quadril,
     'braco_esq': bracoEsq,
     'braco_dir': bracoDir,
@@ -60,6 +63,7 @@ class BodyMeasurement {
     ombros: (json['ombros'] as num?)?.toDouble() ?? 0.0,
     peito: (json['peito'] as num?)?.toDouble() ?? 0.0,
     cintura: (json['cintura'] as num?)?.toDouble() ?? 0.0,
+    abdomen: (json['abdomen'] as num?)?.toDouble() ?? 0.0,
     quadril: (json['quadril'] as num?)?.toDouble() ?? 0.0,
     bracoEsq: (json['braco_esq'] as num?)?.toDouble() ?? 0.0,
     bracoDir: (json['braco_dir'] as num?)?.toDouble() ?? 0.0,
