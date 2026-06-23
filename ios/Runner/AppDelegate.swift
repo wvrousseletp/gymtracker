@@ -372,10 +372,19 @@ import WidgetKit
           self.methodChannel?.invokeMethod("startSingleExercise", arguments: exerciseId)
         }
       case "completeWorkout":
+        // Stop Live Activity immediately – don't wait for Flutter roundtrip
+        self.clearRestTimerNotification()
+        self.stopLiveActivity()
         self.methodChannel?.invokeMethod("completeWorkout", arguments: nil)
       case "cancelWorkout":
+        // Stop Live Activity immediately – don't wait for Flutter roundtrip
+        self.clearRestTimerNotification()
+        self.stopLiveActivity()
         self.methodChannel?.invokeMethod("cancelWorkout", arguments: nil)
       case "postponeWorkout":
+        // Stop Live Activity immediately – don't wait for Flutter roundtrip
+        self.clearRestTimerNotification()
+        self.stopLiveActivity()
         self.methodChannel?.invokeMethod("postponeWorkout", arguments: nil)
       case "resumeWorkout":
         self.methodChannel?.invokeMethod("resumeWorkout", arguments: nil)
@@ -581,12 +590,43 @@ import WidgetKit
   private func stopLiveActivity() {
     #if canImport(ActivityKit)
     guard #available(iOS 16.1, *) else { return }
-    guard let activity = workoutActivity as? Activity<WorkoutWidgetAttributes> else { return }
-    
+
+    // Collect all activities to end (de-duplicate via id)
+    var activitiesToEnd: [Activity<WorkoutWidgetAttributes>] = []
+    if let activity = workoutActivity as? Activity<WorkoutWidgetAttributes> {
+        activitiesToEnd.append(activity)
+    }
+    for activity in Activity<WorkoutWidgetAttributes>.activities {
+        if !activitiesToEnd.contains(where: { $0.id == activity.id }) {
+            activitiesToEnd.append(activity)
+        }
+    }
+    workoutActivity = nil
+
+    guard !activitiesToEnd.isEmpty else {
+        print("[AppDelegate] No Live Activities to stop")
+        return
+    }
+
+    // Request a background-task grace period so the async end() calls
+    // complete even if the user immediately backgrounds the app.
+    var bgTaskID: UIBackgroundTaskIdentifier = .invalid
+    bgTaskID = UIApplication.shared.beginBackgroundTask(withName: "StopLiveActivity") {
+        // Expiry handler – called if the system is about to terminate us;
+        // end the background task to avoid being killed.
+        UIApplication.shared.endBackgroundTask(bgTaskID)
+    }
+
     Task {
-        await activity.end(dismissalPolicy: .immediate)
-        workoutActivity = nil
-        print("Successfully stopped Live Activity")
+        await withTaskGroup(of: Void.self) { group in
+            for activity in activitiesToEnd {
+                group.addTask {
+                    await activity.end(dismissalPolicy: .immediate)
+                }
+            }
+        }
+        print("[AppDelegate] Successfully stopped all Live Activities (\(activitiesToEnd.count))")
+        UIApplication.shared.endBackgroundTask(bgTaskID)
     }
     #endif
   }

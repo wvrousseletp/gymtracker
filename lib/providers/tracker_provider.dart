@@ -68,6 +68,12 @@ class TrackerProvider extends ChangeNotifier {
     WatchService.instance.init(this);
     _isLoading = false;
     notifyListeners();
+    // Reconcile: if there is no active workout saved, clean up any zombie
+    // Live Activities or Watch sessions left over from a crashed previous session.
+    if (_state?.activeWorkout == null) {
+      RestTimerService.instance.clear();
+      WatchService.instance.sendActiveWorkoutCleared();
+    }
   }
 
   // --- PROFILE MANAGEMENT ---
@@ -717,6 +723,8 @@ class TrackerProvider extends ChangeNotifier {
 
   void discardActiveWorkout() {
     if (_state == null) return;
+    // Stop any running rest timer immediately before clearing workout state.
+    RestTimerService.instance.clear();
     _state = PlannerState(
       library: _state!.library,
       routines: _state!.routines,
@@ -734,6 +742,8 @@ class TrackerProvider extends ChangeNotifier {
 
   void postponeActiveWorkout() {
     if (_state == null || _state!.activeWorkout == null) return;
+    // Stop any running rest timer so native side clears the rest-timer widget.
+    RestTimerService.instance.clear();
     final active = _state!.activeWorkout!;
     final updated = active.copyWith(
       paused: true,
@@ -803,6 +813,8 @@ class TrackerProvider extends ChangeNotifier {
 
   void finishWorkout(int duration, int rpeValue, String notes) {
     if (_state == null || _state!.activeWorkout == null) return;
+    // Stop any running rest timer before processing the finish.
+    RestTimerService.instance.clear();
 
     final active = _state!.activeWorkout!;
     int totalSets = 0;
