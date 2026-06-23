@@ -108,7 +108,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
                 style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600),
               ),
               Text(
-                "${streak.currentWeekCount} ${streak.currentWeekCount == 1 ? 'treino' : 'treinos'}",
+                "${streak.currentWeekCount} ${streak.currentWeekCount == 1 ? 'dia' : 'dias'}",
                 style: const TextStyle(color: Colors.greenAccent, fontSize: 13, fontWeight: FontWeight.bold),
               ),
             ],

@@ -983,8 +983,7 @@ class TrackerProvider extends ChangeNotifier {
 
     final thisWeekStart = startOfWeek(now);
 
-    // Conta treinos nesta semana
-    int currentWeekCount = 0;
+    // Conta dias de treinos nesta semana
     final Set<String> datesThisWeek = {};
     for (final log in history) {
       try {
@@ -992,10 +991,10 @@ class TrackerProvider extends ChangeNotifier {
         if (!logDate.isBefore(thisWeekStart)) {
           final dayKey = '${logDate.year}-${logDate.month}-${logDate.day}';
           datesThisWeek.add(dayKey);
-          currentWeekCount++;
         }
       } catch (_) {}
     }
+    int currentWeekCount = datesThisWeek.length;
 
     // Conta semanas consecutivas (incluindo semana atual se houver treino)
     int consecutiveWeeks = 0;

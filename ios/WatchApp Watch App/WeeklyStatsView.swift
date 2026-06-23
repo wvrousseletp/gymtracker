@@ -98,7 +98,7 @@ struct WeeklyStatsView: View {
                             .font(.system(size: 10, weight: .semibold))
                             .foregroundColor(.white)
                         Spacer()
-                        Text("\(streak.currentWeekCount) treino\(streak.currentWeekCount == 1 ? "" : "s")")
+                        Text("\(streak.currentWeekCount) dia\(streak.currentWeekCount == 1 ? "" : "s")")
                             .font(.system(size: 10, weight: .bold, design: .rounded))
                             .foregroundColor(.green)
                     }
