@@ -59,7 +59,7 @@ struct PRCelebrationBanner: View {
 
 struct ActiveWorkoutView: View {
     @ObservedObject var connectivityManager = WatchConnectivityManager.shared
-    @ObservedObject var workoutManager = WatchWorkoutManager.shared // wait, is it WatchWorkoutManager or WorkoutManager? Let's check original! Ah, original has WorkoutManager.shared on line 62. So let's keep WorkoutManager.shared!
+    @ObservedObject var workoutManager = WorkoutManager.shared
     
     enum CrownFocusedField: Hashable {
         case weight
