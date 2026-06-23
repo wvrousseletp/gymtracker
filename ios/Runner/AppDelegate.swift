@@ -55,6 +55,20 @@ import WidgetKit
     return result
   }
 
+  override func application(
+    _ app: UIApplication,
+    open url: URL,
+    options: [UIApplication.OpenURLOptionsKey : Any] = [:]
+  ) -> Bool {
+    if url.scheme == "losmooscles", url.host == "skipRest" {
+      DispatchQueue.main.async { [weak self] in
+        self?.methodChannel?.invokeMethod("skipRestTimer", arguments: nil)
+      }
+      return true
+    }
+    return super.application(app, open: url, options: options)
+  }
+
   private func sendToWatch(_ key: String, json: String?, clearActive: Bool = false) {
     guard let session = session else { return }
     

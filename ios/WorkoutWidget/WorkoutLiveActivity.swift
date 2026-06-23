@@ -106,6 +106,19 @@ struct WorkoutLiveActivity: Widget {
                             }
                         }
                         
+                        Link(destination: URL(string: "losmooscles://skipRest")!) {
+                            HStack(spacing: 3) {
+                                Image(systemName: "forward.fill")
+                                Text("Pular")
+                            }
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(accent.opacity(0.35))
+                            .cornerRadius(12)
+                        }
+                        
                         Spacer()
                         
                         // Next exercise info
@@ -190,6 +203,17 @@ struct WorkoutLiveActivity: Widget {
                                     .foregroundColor(.white)
                                     .monospacedDigit()
                             }
+                            
+                            Link(destination: URL(string: "losmooscles://skipRest")!) {
+                                Text("Pular")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(accent.opacity(0.35))
+                                    .cornerRadius(8)
+                            }
+                            
                             Spacer()
                             VStack(alignment: .trailing, spacing: 1) {
                                 Text(context.state.exerciseName)

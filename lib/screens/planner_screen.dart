@@ -244,40 +244,66 @@ class _PlannerScreenState extends State<PlannerScreen> {
               ),
             )
           else
-            Table(
-              columnWidths: const {
-                0: FlexColumnWidth(2),
-                1: FlexColumnWidth(1),
-              },
+            Column(
               children: sortedEntries.map((entry) {
                 final isCardio = entry.key.toLowerCase().contains('cardio');
                 final unit = isCardio ? 'min' : 'séries';
-                return TableRow(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                      child: Text(
-                        entry.key,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
+                final maxVolume = sortedEntries.isNotEmpty ? sortedEntries.first.value : 1;
+                final fraction = maxVolume > 0 ? entry.value / maxVolume : 0.0;
+                
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            entry.key,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            "${entry.value} $unit",
+                            style: TextStyle(
+                              color: accentColor,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 5),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(3),
+                        child: Container(
+                          height: 5,
+                          width: double.infinity,
+                          color: Colors.white.withOpacity(0.05),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: FractionallySizedBox(
+                              widthFactor: fraction,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      accentColor.withOpacity(0.35),
+                                      accentColor,
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                      child: Text(
-                        "${entry.value} $unit",
-                        textAlign: TextAlign.end,
-                        style: TextStyle(
-                          color: accentColor,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 );
               }).toList(),
             ),

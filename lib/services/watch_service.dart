@@ -34,6 +34,10 @@ class WatchService {
     if (_provider == null) return;
 
     switch (call.method) {
+      case 'skipRestTimer':
+        _provider!.clearRestTimer();
+        break;
+
       case 'startWorkout':
         final String routineId = call.arguments as String;
         final routine = _provider!.state?.routines.firstWhere((r) => r.id == routineId);

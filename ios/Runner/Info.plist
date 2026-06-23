@@ -53,5 +53,18 @@
 	<string>Este aplicativo precisa salvar seus treinos e dados de exercícios no aplicativo Saúde para manter seu histórico de atividades atualizado.</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.vicente.losmooscles</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>losmooscles</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

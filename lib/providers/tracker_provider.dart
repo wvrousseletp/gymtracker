@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/profile.dart';
@@ -403,6 +404,9 @@ class TrackerProvider extends ChangeNotifier {
 
   void completeSet(int exIndex, int setIndex, bool isDone, {double? distance, int? duration, bool isFailure = false, int? failureRep}) {
     if (_state == null || _state!.activeWorkout == null) return;
+    
+    // Tactile haptic feedback when completing a set
+    HapticFeedback.lightImpact();
 
     final active = _state!.activeWorkout!;
     final exercises = List<ActiveExercise>.from(active.exercises);
