@@ -824,18 +824,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
     // Sync initial timer state from service (in case user navigated back during rest)
     _syncFromService();
 
-    // Se o treino acabou de começar, vamos disparar o tempo de PREPARO inicial no provedor!
-    if (_workoutDurationNotifier.value == 0 && widget.activeWorkout.exercises.isNotEmpty) {
-      final firstEx = widget.activeWorkout.exercises[0];
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        widget.provider.startRestTimer(
-          widget.provider.state!.settings.prepSeconds,
-          firstEx.name,
-          1,
-          true,
-        );
-      });
-    }
+
   }
 
   @override
@@ -940,16 +929,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
       _timerActive = false;
     });
 
-    if (_timerIsPrep) {
-      widget.provider.clearRestTimer();
-    } else {
-      widget.provider.startRestTimer(
-        settings?.prepSeconds ?? 5,
-        _timerNextExName,
-        _timerNextSetNum,
-        true,
-      );
-    }
+    widget.provider.clearRestTimer();
   }
 
   @override

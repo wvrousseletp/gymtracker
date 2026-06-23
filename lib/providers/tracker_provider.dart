@@ -515,8 +515,6 @@ class TrackerProvider extends ChangeNotifier {
     );
 
     saveState();
-    notifyListeners();
-
     if (computedRestTimer != null) {
       RestTimerService.instance.start(
         endTimeMs: computedRestTimer.endTime,
@@ -528,6 +526,7 @@ class TrackerProvider extends ChangeNotifier {
     } else {
       RestTimerService.instance.clear();
     }
+    notifyListeners();
   }
 
   void startRestTimer(int seconds, String nextExName, int nextSetNum, bool isPrep) {
@@ -560,8 +559,6 @@ class TrackerProvider extends ChangeNotifier {
     );
 
     saveState();
-    notifyListeners();
-
     // Sync global RestTimerService (survives navigation)
     RestTimerService.instance.start(
       endTimeMs: endTime,
@@ -570,6 +567,7 @@ class TrackerProvider extends ChangeNotifier {
       exName: nextExName,
       setNum: nextSetNum,
     );
+    notifyListeners();
   }
 
   void clearRestTimer() {
@@ -593,10 +591,9 @@ class TrackerProvider extends ChangeNotifier {
     );
 
     saveState();
-    notifyListeners();
-
     // Sync global RestTimerService
     RestTimerService.instance.clear();
+    notifyListeners();
   }
 
   void updateExerciseWeightReps(int exIndex, double weight, int reps) {
