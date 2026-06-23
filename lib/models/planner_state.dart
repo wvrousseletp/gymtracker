@@ -124,6 +124,8 @@ class ActiveWorkoutState {
   final bool paused;
   final WatchRestTimer? restTimer;
   final bool postponed;
+  final int heartRate;
+  final int activeCalories;
 
   ActiveWorkoutState({
     required this.name,
@@ -137,7 +139,41 @@ class ActiveWorkoutState {
     this.paused = false,
     this.restTimer,
     this.postponed = false,
+    this.heartRate = 0,
+    this.activeCalories = 0,
   });
+
+  ActiveWorkoutState copyWith({
+    String? name,
+    int? startTime,
+    List<ActiveExercise>? exercises,
+    int? currentExerciseIndex,
+    int? elapsedSeconds,
+    WorkoutRecovery? recovery,
+    bool? isWarmup,
+    int? warmupDurationSeconds,
+    bool? paused,
+    WatchRestTimer? restTimer,
+    bool? postponed,
+    int? heartRate,
+    int? activeCalories,
+  }) {
+    return ActiveWorkoutState(
+      name: name ?? this.name,
+      startTime: startTime ?? this.startTime,
+      exercises: exercises ?? this.exercises,
+      currentExerciseIndex: currentExerciseIndex ?? this.currentExerciseIndex,
+      elapsedSeconds: elapsedSeconds ?? this.elapsedSeconds,
+      recovery: recovery ?? this.recovery,
+      isWarmup: isWarmup ?? this.isWarmup,
+      warmupDurationSeconds: warmupDurationSeconds ?? this.warmupDurationSeconds,
+      paused: paused ?? this.paused,
+      restTimer: restTimer ?? this.restTimer,
+      postponed: postponed ?? this.postponed,
+      heartRate: heartRate ?? this.heartRate,
+      activeCalories: activeCalories ?? this.activeCalories,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
     'name': name,
@@ -151,6 +187,8 @@ class ActiveWorkoutState {
     'paused': paused,
     'restTimer': restTimer?.toJson(),
     'postponed': postponed,
+    'heartRate': heartRate,
+    'activeCalories': activeCalories,
   };
 
   factory ActiveWorkoutState.fromJson(Map<String, dynamic> json) => ActiveWorkoutState(
@@ -169,6 +207,8 @@ class ActiveWorkoutState {
     paused: json['paused'] ?? false,
     restTimer: json['restTimer'] != null ? WatchRestTimer.fromJson(json['restTimer']) : null,
     postponed: json['postponed'] ?? false,
+    heartRate: (json['heartRate'] as num?)?.toInt() ?? 0,
+    activeCalories: (json['activeCalories'] as num?)?.toInt() ?? 0,
   );
 }
 

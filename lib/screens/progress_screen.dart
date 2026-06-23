@@ -173,6 +173,20 @@ class _HistoryTabState extends State<HistoryTab> {
                                     "Volume: ${log.totalWeight.toStringAsFixed(0)}kg",
                                     style: TextStyle(color: widget.accentColor.withOpacity(0.8), fontSize: 11, fontWeight: FontWeight.bold),
                                   ),
+                                  if (log.avgHeartRate != null) ...[
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      "❤️ ${log.avgHeartRate} bpm",
+                                      style: const TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
+                                  if (log.activeCalories != null) ...[
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      "🔥 ${log.activeCalories} kcal",
+                                      style: const TextStyle(color: Colors.orangeAccent, fontSize: 11, fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
                                 ],
                               ),
                             ],
@@ -191,6 +205,23 @@ class _HistoryTabState extends State<HistoryTab> {
                               _buildMetricItem("Sono", (log.recovery?.sleepOk ?? "ok").toUpperCase()),
                             ],
                           ),
+                          if (log.avgHeartRate != null || log.activeCalories != null) ...[
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                if (log.avgHeartRate != null)
+                                  _buildMetricItem("Média Cardíaca", "${log.avgHeartRate} bpm")
+                                else
+                                  const SizedBox(width: 80),
+                                if (log.activeCalories != null)
+                                  _buildMetricItem("Calorias Ativas", "${log.activeCalories} kcal")
+                                else
+                                  const SizedBox(width: 80),
+                                const SizedBox(width: 80), // Alinhador para manter 3 colunas
+                              ],
+                            ),
+                          ],
                           if (log.recovery != null && log.recovery!.pain.isNotEmpty) ...[
                             const SizedBox(height: 10),
                             Row(
@@ -1184,7 +1215,21 @@ class _PrsTabState extends State<PrsTab> {
                           },
                         ),
                       ),
-                      gridData: const FlGridData(show: false),
+                      gridData: FlGridData(
+                        show: true,
+                        drawVerticalLine: true,
+                        drawHorizontalLine: true,
+                        getDrawingHorizontalLine: (value) => FlLine(
+                          color: Colors.white.withOpacity(0.03),
+                          strokeWidth: 1,
+                          dashArray: [5, 5],
+                        ),
+                        getDrawingVerticalLine: (value) => FlLine(
+                          color: Colors.white.withOpacity(0.03),
+                          strokeWidth: 1,
+                          dashArray: [5, 5],
+                        ),
+                      ),
                       titlesData: const FlTitlesData(
                         leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                         rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -1197,12 +1242,32 @@ class _PrsTabState extends State<PrsTab> {
                           spots: spots,
                           isCurved: true,
                           color: widget.accentColor,
-                          barWidth: 3,
+                          barWidth: 4,
                           isStrokeCapRound: true,
-                          dotData: const FlDotData(show: true),
+                          shadow: Shadow(
+                            color: widget.accentColor.withOpacity(0.4),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                          dotData: FlDotData(
+                            show: true,
+                            getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                              radius: 3.5,
+                              color: widget.accentColor,
+                              strokeColor: Colors.white,
+                              strokeWidth: 1.5,
+                            ),
+                          ),
                           belowBarData: BarAreaData(
                             show: true,
-                            color: widget.accentColor.withOpacity(0.12),
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                widget.accentColor.withOpacity(0.22),
+                                widget.accentColor.withOpacity(0.0),
+                              ],
+                            ),
                           ),
                         ),
                       ],

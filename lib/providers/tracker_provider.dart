@@ -474,16 +474,9 @@ class TrackerProvider extends ChangeNotifier {
       computedRestTimer = null;
     }
 
-    final updatedWorkout = ActiveWorkoutState(
-      name: active.name,
-      startTime: active.startTime,
+    final updatedWorkout = active.copyWith(
       exercises: exercises,
       currentExerciseIndex: computedExIndex,
-      elapsedSeconds: active.elapsedSeconds,
-      recovery: active.recovery,
-      isWarmup: active.isWarmup,
-      warmupDurationSeconds: active.warmupDurationSeconds,
-      paused: active.paused,
       restTimer: computedRestTimer,
     );
 
@@ -516,16 +509,7 @@ class TrackerProvider extends ChangeNotifier {
       isPrep: isPrep,
     );
 
-    final updatedWorkout = ActiveWorkoutState(
-      name: active.name,
-      startTime: active.startTime,
-      exercises: active.exercises,
-      currentExerciseIndex: active.currentExerciseIndex,
-      elapsedSeconds: active.elapsedSeconds,
-      recovery: active.recovery,
-      isWarmup: active.isWarmup,
-      warmupDurationSeconds: active.warmupDurationSeconds,
-      paused: active.paused,
+    final updatedWorkout = active.copyWith(
       restTimer: restTimer,
     );
 
@@ -558,16 +542,7 @@ class TrackerProvider extends ChangeNotifier {
     if (_state == null || _state!.activeWorkout == null) return;
     final active = _state!.activeWorkout!;
 
-    final updatedWorkout = ActiveWorkoutState(
-      name: active.name,
-      startTime: active.startTime,
-      exercises: active.exercises,
-      currentExerciseIndex: active.currentExerciseIndex,
-      elapsedSeconds: active.elapsedSeconds,
-      recovery: active.recovery,
-      isWarmup: active.isWarmup,
-      warmupDurationSeconds: active.warmupDurationSeconds,
-      paused: active.paused,
+    final updatedWorkout = active.copyWith(
       restTimer: null,
     );
 
@@ -612,17 +587,8 @@ class TrackerProvider extends ChangeNotifier {
       failureReport: ex.failureReport,
     );
 
-    final updatedWorkout = ActiveWorkoutState(
-      name: active.name,
-      startTime: active.startTime,
+    final updatedWorkout = active.copyWith(
       exercises: exercises,
-      currentExerciseIndex: active.currentExerciseIndex,
-      elapsedSeconds: active.elapsedSeconds,
-      recovery: active.recovery,
-      isWarmup: active.isWarmup,
-      warmupDurationSeconds: active.warmupDurationSeconds,
-      paused: active.paused,
-      restTimer: active.restTimer,
     );
 
     _state = PlannerState(
@@ -645,16 +611,9 @@ class TrackerProvider extends ChangeNotifier {
     if (_state == null || _state!.activeWorkout == null) return;
     final active = _state!.activeWorkout!;
 
-    final updatedWorkout = ActiveWorkoutState(
-      name: active.name,
-      startTime: active.startTime,
-      exercises: active.exercises,
-      currentExerciseIndex: active.currentExerciseIndex,
+    final updatedWorkout = active.copyWith(
       elapsedSeconds: isWarmupTimer ? active.elapsedSeconds : seconds,
-      recovery: active.recovery,
-      isWarmup: active.isWarmup,
       warmupDurationSeconds: isWarmupTimer ? seconds : active.warmupDurationSeconds,
-      paused: active.paused,
     );
 
     _state = PlannerState(
@@ -680,16 +639,8 @@ class TrackerProvider extends ChangeNotifier {
     if (_state == null || _state!.activeWorkout == null) return;
     final active = _state!.activeWorkout!;
 
-    final updatedWorkout = ActiveWorkoutState(
-      name: active.name,
-      startTime: active.startTime,
-      exercises: active.exercises,
+    final updatedWorkout = active.copyWith(
       currentExerciseIndex: index,
-      elapsedSeconds: active.elapsedSeconds,
-      recovery: active.recovery,
-      isWarmup: active.isWarmup,
-      warmupDurationSeconds: active.warmupDurationSeconds,
-      paused: active.paused,
     );
 
     _state = PlannerState(
@@ -711,15 +662,7 @@ class TrackerProvider extends ChangeNotifier {
     if (_state == null || _state!.activeWorkout == null) return;
     final active = _state!.activeWorkout!;
 
-    final updatedWorkout = ActiveWorkoutState(
-      name: active.name,
-      startTime: active.startTime,
-      exercises: active.exercises,
-      currentExerciseIndex: active.currentExerciseIndex,
-      elapsedSeconds: active.elapsedSeconds,
-      recovery: active.recovery,
-      isWarmup: active.isWarmup,
-      warmupDurationSeconds: active.warmupDurationSeconds,
+    final updatedWorkout = active.copyWith(
       paused: isPaused,
     );
 
@@ -761,17 +704,8 @@ class TrackerProvider extends ChangeNotifier {
   void postponeActiveWorkout() {
     if (_state == null || _state!.activeWorkout == null) return;
     final active = _state!.activeWorkout!;
-    final updated = ActiveWorkoutState(
-      name: active.name,
-      startTime: active.startTime,
-      exercises: active.exercises,
-      currentExerciseIndex: active.currentExerciseIndex,
-      elapsedSeconds: active.elapsedSeconds,
-      recovery: active.recovery,
-      isWarmup: active.isWarmup,
-      warmupDurationSeconds: active.warmupDurationSeconds,
+    final updated = active.copyWith(
       paused: true,
-      restTimer: active.restTimer,
       postponed: true,
     );
     _state = PlannerState(
@@ -792,17 +726,9 @@ class TrackerProvider extends ChangeNotifier {
   void resumeActiveWorkout() {
     if (_state == null || _state!.activeWorkout == null) return;
     final active = _state!.activeWorkout!;
-    final updated = ActiveWorkoutState(
-      name: active.name,
+    final updated = active.copyWith(
       startTime: DateTime.now().millisecondsSinceEpoch - (active.elapsedSeconds * 1000),
-      exercises: active.exercises,
-      currentExerciseIndex: active.currentExerciseIndex,
-      elapsedSeconds: active.elapsedSeconds,
-      recovery: active.recovery,
-      isWarmup: active.isWarmup,
-      warmupDurationSeconds: active.warmupDurationSeconds,
       paused: false,
-      restTimer: active.restTimer,
       postponed: false,
     );
     _state = PlannerState(
@@ -817,6 +743,30 @@ class TrackerProvider extends ChangeNotifier {
       diet: _state!.diet,
     );
     saveState();
+    notifyListeners();
+  }
+
+  void updateHealthMetrics(int heartRate, int activeCalories) {
+    if (_state == null || _state!.activeWorkout == null) return;
+    final active = _state!.activeWorkout!;
+
+    final updatedWorkout = active.copyWith(
+      heartRate: heartRate,
+      activeCalories: activeCalories,
+    );
+
+    _state = PlannerState(
+      library: _state!.library,
+      routines: _state!.routines,
+      planner: _state!.planner,
+      history: _state!.history,
+      prs: _state!.prs,
+      medidas: _state!.medidas,
+      settings: _state!.settings,
+      activeWorkout: updatedWorkout,
+      diet: _state!.diet,
+    );
+
     notifyListeners();
   }
 
@@ -883,6 +833,8 @@ class TrackerProvider extends ChangeNotifier {
       recovery: active.recovery,
       exercises: exercisesSummary,
       warmupDurationSeconds: active.warmupDurationSeconds,
+      avgHeartRate: active.heartRate > 0 ? active.heartRate : null,
+      activeCalories: active.activeCalories > 0 ? active.activeCalories : null,
     );
 
     final List<WorkoutLog> newHistory = List.from(_state!.history)..insert(0, log);

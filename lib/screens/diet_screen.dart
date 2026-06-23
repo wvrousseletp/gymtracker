@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/tracker_provider.dart';
@@ -430,19 +431,8 @@ class AguaTab extends StatelessWidget {
                     border: Border.all(color: Colors.white.withOpacity(0.12), width: 3),
                   ),
                 ),
-                // Água preenchida proporcionalmente
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 500),
-                  width: 134,
-                  height: 194 * waterProgress,
-                  decoration: BoxDecoration(
-                    color: const Color(0xff0a84ff).withOpacity(0.55),
-                    borderRadius: BorderRadius.vertical(
-                      bottom: const Radius.circular(16),
-                      top: Radius.circular(waterProgress >= 0.98 ? 8 : 4),
-                    ),
-                  ),
-                ),
+                // Água preenchida proporcionalmente (WaveCupWidget animado)
+                WaveCupWidget(progress: waterProgress),
                 // Texto central
                 Positioned.fill(
                   child: Align(
@@ -1183,5 +1173,119 @@ class _JejumTabState extends State<JejumTab> {
       return "${d.inHours}h ${d.inMinutes.remainder(60)}m";
     }
     return "${d.inMinutes}m";
+  }
+}
+
+// ==========================================
+// WAVE CUP WIDGET & PAINTER
+// ==========================================
+class WaveCupWidget extends StatefulWidget {
+  final double progress;
+  const WaveCupWidget({Key? key, required this.progress}) : super(key: key);
+
+  @override
+  State<WaveCupWidget> createState() => _WaveCupWidgetState();
+}
+
+class _WaveCupWidgetState extends State<WaveCupWidget> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return CustomPaint(
+          size: const Size(134, 194),
+          painter: WavePainter(
+            progress: widget.progress,
+            waveValue: _controller.value,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class WavePainter extends CustomPainter {
+  final double progress;
+  final double waveValue;
+
+  WavePainter({required this.progress, required this.waveValue});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (progress <= 0.0) return;
+
+    final paint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.bottomCenter,
+        end: Alignment.topCenter,
+        colors: [
+          const Color(0xff0a84ff).withOpacity(0.75),
+          const Color(0xff30a2ff).withOpacity(0.50),
+        ],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
+      ..style = PaintingStyle.fill;
+
+    final path = Path();
+    
+    // Altura base da água baseada no progresso
+    final baseHeight = size.height * (1.0 - progress);
+    
+    // Desenhar a onda senoidal superior da água
+    path.moveTo(0, size.height);
+    path.lineTo(0, baseHeight);
+
+    // Frequência e amplitude da onda
+    const waveFrequency = 1.8 * 3.14159;
+    final waveAmplitude = progress > 0.0 && progress < 1.0 ? 4.5 : 0.0;
+
+    for (double x = 0; x <= size.width; x++) {
+      final y = baseHeight + 
+          waveAmplitude * 
+          math.sin((x / size.width) * waveFrequency + (waveValue * 2 * math.pi));
+      path.lineTo(x, y);
+    }
+    
+    path.lineTo(size.width, size.height);
+    path.close();
+
+    // Recortar no formato arredondado inferior do copo
+    final clipPath = Path()
+      ..addRRect(
+        RRect.fromRectAndCorners(
+          Rect.fromLTWH(0, 0, size.width, size.height),
+          bottomLeft: const Radius.circular(16),
+          bottomRight: const Radius.circular(16),
+          topLeft: Radius.circular(progress >= 0.98 ? 8 : 4),
+          topRight: Radius.circular(progress >= 0.98 ? 8 : 4),
+        ),
+      );
+
+    canvas.save();
+    canvas.clipPath(clipPath);
+    canvas.drawPath(path, paint);
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant WavePainter oldDelegate) {
+    return oldDelegate.progress != progress || oldDelegate.waveValue != waveValue;
   }
 }

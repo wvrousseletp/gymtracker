@@ -445,6 +445,14 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         sendToiPhone(["action": "requestSync"])
     }
 
+    func sendHealthMetrics(heartRate: Double, calories: Double) {
+        sendToiPhone([
+            "action": "updateHealthMetrics",
+            "heartRate": heartRate,
+            "activeCalories": calories
+        ])
+    }
+
     private func sendToiPhone(_ message: [String: Any]) {
         guard let session = session else { return }
         if session.isReachable {

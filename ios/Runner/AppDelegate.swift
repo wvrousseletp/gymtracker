@@ -393,6 +393,14 @@ import WidgetKit
         if let exerciseIndex = data["exerciseIndex"] as? Int {
           self.methodChannel?.invokeMethod("changeExercise", arguments: exerciseIndex)
         }
+      case "updateHealthMetrics":
+        if let heartRate = data["heartRate"] as? Double,
+           let calories = data["activeCalories"] as? Double {
+          self.methodChannel?.invokeMethod("updateHealthMetrics", arguments: [
+            "heartRate": Int(heartRate),
+            "activeCalories": Int(calories)
+          ])
+        }
       default:
         break
       }

@@ -164,6 +164,9 @@ extension WorkoutManager: HKLiveWorkoutBuilderDelegate {
                         }
                     }
                 }
+                
+                // Envia as métricas em tempo real para o iPhone
+                WatchConnectivityManager.shared.sendHealthMetrics(heartRate: self.heartRate, calories: self.activeCalories)
             }
         }
     }

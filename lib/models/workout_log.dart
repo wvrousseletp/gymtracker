@@ -97,6 +97,8 @@ class WorkoutLog {
   final WorkoutRecovery? recovery;
   final List<LogExercise> exercises;
   final int warmupDurationSeconds;
+  final int? avgHeartRate;
+  final int? activeCalories;
 
   WorkoutLog({
     required this.id,
@@ -111,6 +113,8 @@ class WorkoutLog {
     this.recovery,
     required this.exercises,
     this.warmupDurationSeconds = 0,
+    this.avgHeartRate,
+    this.activeCalories,
   });
 
   Map<String, dynamic> toJson() => {
@@ -126,6 +130,8 @@ class WorkoutLog {
     'recovery': recovery?.toJson(),
     'exercises': exercises.map((e) => e.toJson()).toList(),
     'warmupDurationSeconds': warmupDurationSeconds,
+    'avgHeartRate': avgHeartRate,
+    'activeCalories': activeCalories,
   };
 
   factory WorkoutLog.fromJson(Map<String, dynamic> json) => WorkoutLog(
@@ -143,5 +149,7 @@ class WorkoutLog {
         ? (json['exercises'] as List).map((e) => LogExercise.fromJson(e)).toList()
         : [],
     warmupDurationSeconds: (json['warmupDurationSeconds'] as num?)?.toInt() ?? 0,
+    avgHeartRate: (json['avgHeartRate'] as num?)?.toInt(),
+    activeCalories: (json['activeCalories'] as num?)?.toInt(),
   );
 }

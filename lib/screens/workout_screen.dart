@@ -990,6 +990,30 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
                               );
                             },
                           ),
+                          if (workout.heartRate > 0 || workout.activeCalories > 0) ...[
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                if (workout.heartRate > 0) ...[
+                                  const Icon(Icons.favorite, color: Colors.redAccent, size: 12),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    "${workout.heartRate} bpm",
+                                    style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(width: 12),
+                                ],
+                                if (workout.activeCalories > 0) ...[
+                                  const Icon(Icons.local_fire_department, color: Colors.orangeAccent, size: 12),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    "${workout.activeCalories} kcal",
+                                    style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ],
                         ],
                       ),
                     ),

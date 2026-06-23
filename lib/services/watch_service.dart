@@ -230,6 +230,12 @@ class WatchService {
         }
         break;
 
+      case 'updateHealthMetrics':
+        final int heartRate = call.arguments['heartRate'] as int;
+        final int activeCalories = call.arguments['activeCalories'] as int;
+        _provider!.updateHealthMetrics(heartRate, activeCalories);
+        break;
+
       case 'navigateToWorkout':
         // Called by native iOS when user taps the rest timer notification
         onNavigateToWorkout?.call();
