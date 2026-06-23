@@ -105,7 +105,9 @@ struct WeeklyStatsView: View {
 
                     HStack(spacing: 5) {
                         ForEach(0..<7, id: \.self) { dayIndex in
-                            let filled = dayIndex < streak.currentWeekCount
+                            let filled = streak.weekdaysTrained.isEmpty
+                                ? (dayIndex < streak.currentWeekCount)
+                                : streak.weekdaysTrained.contains(dayIndex + 1)
                             Circle()
                                 .fill(filled ? Color.green : Color.white.opacity(0.12))
                                 .frame(width: 8, height: 8)

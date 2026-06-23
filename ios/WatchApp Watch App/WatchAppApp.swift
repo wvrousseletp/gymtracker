@@ -9,13 +9,12 @@ import SwiftUI
 
 @main
 struct WatchApp_Watch_AppApp: App {
-    init() {
-        WorkoutManager.shared.requestAuthorization()
-    }
-
     var body: some Scene {
         WindowGroup {
             WorkoutSelectionView()
+                .onAppear {
+                    WorkoutManager.shared.requestAuthorization()
+                }
         }
     }
 }

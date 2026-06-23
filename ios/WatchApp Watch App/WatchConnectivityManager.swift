@@ -904,12 +904,6 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                 "action": "syncOfflineWorkout",
                 "workoutData": workout
             ]
-            
-            if session.isReachable {
-                session.sendMessage(message, replyHandler: nil, errorHandler: { error in
-                    print("[WatchConnectivityManager] sendMessage failed, relying on transferUserInfo: \(error.localizedDescription)")
-                })
-            }
             session.transferUserInfo(message)
         }
         
@@ -1261,15 +1255,19 @@ struct WatchStreak: Codable {
     let currentWeekCount: Int
     let consecutiveWeeks: Int
     let lastWorkoutDate: String
+    let weekdaysTrained: [Int]
+    let completedTodayRoutines: [String]
 
     enum CodingKeys: String, CodingKey {
-        case currentWeekCount, consecutiveWeeks, lastWorkoutDate
+        case currentWeekCount, consecutiveWeeks, lastWorkoutDate, weekdaysTrained, completedTodayRoutines
     }
 
-    init(currentWeekCount: Int, consecutiveWeeks: Int, lastWorkoutDate: String) {
+    init(currentWeekCount: Int, consecutiveWeeks: Int, lastWorkoutDate: String, weekdaysTrained: [Int] = [], completedTodayRoutines: [String] = []) {
         self.currentWeekCount = currentWeekCount
         self.consecutiveWeeks = consecutiveWeeks
         self.lastWorkoutDate = lastWorkoutDate
+        self.weekdaysTrained = weekdaysTrained
+        self.completedTodayRoutines = completedTodayRoutines
     }
 
     init(from decoder: Decoder) throws {
@@ -1277,5 +1275,7 @@ struct WatchStreak: Codable {
         currentWeekCount = (try? container.decode(Int.self, forKey: .currentWeekCount)) ?? 0
         consecutiveWeeks = (try? container.decode(Int.self, forKey: .consecutiveWeeks)) ?? 0
         lastWorkoutDate = (try? container.decode(String.self, forKey: .lastWorkoutDate)) ?? ""
+        weekdaysTrained = (try? container.decode([Int].self, forKey: .weekdaysTrained)) ?? []
+        completedTodayRoutines = (try? container.decode([String].self, forKey: .completedTodayRoutines)) ?? []
     }
 }

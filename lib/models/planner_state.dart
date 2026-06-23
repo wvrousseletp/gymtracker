@@ -8,23 +8,31 @@ class WorkoutStreak {
   final int currentWeekCount;   // Treinos feitos na semana atual
   final int consecutiveWeeks;   // Semanas consecutivas com pelo menos 1 treino
   final String lastWorkoutDate; // ISO8601
+  final List<int> weekdaysTrained; // Dias da semana treinados (1 = Segunda, 7 = Domingo)
+  final List<String> completedTodayRoutines; // Rotinas concluídas hoje
 
   WorkoutStreak({
     required this.currentWeekCount,
     required this.consecutiveWeeks,
     required this.lastWorkoutDate,
+    this.weekdaysTrained = const [],
+    this.completedTodayRoutines = const [],
   });
 
   Map<String, dynamic> toJson() => {
     'currentWeekCount': currentWeekCount,
     'consecutiveWeeks': consecutiveWeeks,
     'lastWorkoutDate': lastWorkoutDate,
+    'weekdaysTrained': weekdaysTrained,
+    'completedTodayRoutines': completedTodayRoutines,
   };
 
   factory WorkoutStreak.fromJson(Map<String, dynamic> json) => WorkoutStreak(
     currentWeekCount: (json['currentWeekCount'] as num?)?.toInt() ?? 0,
     consecutiveWeeks: (json['consecutiveWeeks'] as num?)?.toInt() ?? 0,
     lastWorkoutDate: json['lastWorkoutDate'] ?? '',
+    weekdaysTrained: (json['weekdaysTrained'] as List?)?.map((e) => (e as num).toInt()).toList() ?? const [],
+    completedTodayRoutines: (json['completedTodayRoutines'] as List?)?.map((e) => e.toString()).toList() ?? const [],
   );
 }
 

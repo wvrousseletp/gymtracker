@@ -231,8 +231,8 @@ class WatchService {
         break;
 
       case 'updateHealthMetrics':
-        final int heartRate = call.arguments['heartRate'] as int;
-        final int activeCalories = call.arguments['activeCalories'] as int;
+        final int heartRate = (call.arguments['heartRate'] as num).toInt();
+        final int activeCalories = (call.arguments['activeCalories'] as num).toInt();
         _provider!.updateHealthMetrics(heartRate, activeCalories);
         break;
 

@@ -118,7 +118,9 @@ class _PlannerScreenState extends State<PlannerScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: List.generate(7, (dayIndex) {
-              final filled = dayIndex < streak.currentWeekCount;
+              final filled = streak.weekdaysTrained.isNotEmpty
+                  ? streak.weekdaysTrained.contains(dayIndex + 1)
+                  : dayIndex < streak.currentWeekCount;
               return Container(
                 width: 32,
                 height: 32,

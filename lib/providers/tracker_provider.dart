@@ -13,6 +13,28 @@ import '../models/planner_state.dart';
 import '../services/watch_service.dart';
 import '../services/rest_timer_service.dart';
 
+DateTime parseUtcDate(String dateStr) {
+  if (dateStr.isEmpty) return DateTime.now();
+  try {
+    DateTime parsed = DateTime.parse(dateStr);
+    if (!parsed.isUtc && !dateStr.contains('Z') && !dateStr.contains('+') && !dateStr.contains('-')) {
+      parsed = DateTime.utc(
+        parsed.year,
+        parsed.month,
+        parsed.day,
+        parsed.hour,
+        parsed.minute,
+        parsed.second,
+        parsed.millisecond,
+        parsed.microsecond,
+      );
+    }
+    return parsed.toLocal();
+  } catch (_) {
+    return DateTime.now();
+  }
+}
+
 class TrackerProvider extends ChangeNotifier {
   List<Profile> _profiles = [];
   String _currentUserId = 'vicente';
@@ -494,6 +516,18 @@ class TrackerProvider extends ChangeNotifier {
 
     saveState();
     notifyListeners();
+
+    if (computedRestTimer != null) {
+      RestTimerService.instance.start(
+        endTimeMs: computedRestTimer.endTime,
+        seconds: computedRestTimer.totalSeconds,
+        prep: computedRestTimer.isPrep,
+        exName: computedRestTimer.nextExerciseName,
+        setNum: computedRestTimer.nextSetNum,
+      );
+    } else {
+      RestTimerService.instance.clear();
+    }
   }
 
   void startRestTimer(int seconds, String nextExName, int nextSetNum, bool isPrep) {
@@ -906,6 +940,9 @@ class TrackerProvider extends ChangeNotifier {
 
   void addManualWorkoutLog(WorkoutLog log) {
     if (_state == null) return;
+    if (_state!.history.any((l) => l.id == log.id)) {
+      return;
+    }
     final List<WorkoutLog> newHistory = List.from(_state!.history)..insert(0, log);
 
     // Atualiza Recordes Pessoais (PRs)
@@ -983,25 +1020,25 @@ class TrackerProvider extends ChangeNotifier {
 
     final thisWeekStart = startOfWeek(now);
 
-    // Conta dias de treinos nesta semana
-    final Set<String> datesThisWeek = {};
+    // Conta dias únicos de treinos nesta semana e identifica os dias exatos
+    final Set<int> weekdaysTrainedSet = {};
     for (final log in history) {
       try {
-        final logDate = DateTime.parse(log.date).toLocal();
+        final logDate = parseUtcDate(log.date);
         if (!logDate.isBefore(thisWeekStart)) {
-          final dayKey = '${logDate.year}-${logDate.month}-${logDate.day}';
-          datesThisWeek.add(dayKey);
+          weekdaysTrainedSet.add(logDate.weekday);
         }
       } catch (_) {}
     }
-    int currentWeekCount = datesThisWeek.length;
+    final List<int> weekdaysTrained = weekdaysTrainedSet.toList()..sort();
+    int currentWeekCount = weekdaysTrained.length;
 
     // Conta semanas consecutivas (incluindo semana atual se houver treino)
     int consecutiveWeeks = 0;
     final Set<String> weeksWithWorkout = {};
     for (final log in history) {
       try {
-        final logDate = DateTime.parse(log.date).toLocal();
+        final logDate = parseUtcDate(log.date);
         final ws = startOfWeek(logDate);
         final weekKey = '${ws.year}-${ws.month}-${ws.day}';
         weeksWithWorkout.add(weekKey);
@@ -1020,11 +1057,30 @@ class TrackerProvider extends ChangeNotifier {
       }
     }
 
+    // Identifica rotinas concluídas hoje
+    final Set<String> completedTodayRoutinesSet = {};
+    final nowLocal = DateTime.now();
+    for (final log in history) {
+      try {
+        final logDate = parseUtcDate(log.date);
+        if (logDate.year == nowLocal.year &&
+            logDate.month == nowLocal.month &&
+            logDate.day == nowLocal.day) {
+          if (log.name.isNotEmpty) {
+            completedTodayRoutinesSet.add(log.name);
+          }
+        }
+      } catch (_) {}
+    }
+    final List<String> completedTodayRoutines = completedTodayRoutinesSet.toList();
+
     final lastDate = history.isNotEmpty ? history.first.date : '';
     final newStreak = WorkoutStreak(
       currentWeekCount: currentWeekCount,
       consecutiveWeeks: consecutiveWeeks,
       lastWorkoutDate: lastDate,
+      weekdaysTrained: weekdaysTrained,
+      completedTodayRoutines: completedTodayRoutines,
     );
 
     _state = PlannerState(
