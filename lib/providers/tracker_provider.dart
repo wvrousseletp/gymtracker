@@ -10,6 +10,7 @@ import '../models/medidas.dart';
 import '../models/diet.dart';
 import '../models/planner_state.dart';
 import '../services/watch_service.dart';
+import '../services/rest_timer_service.dart';
 
 class TrackerProvider extends ChangeNotifier {
   List<Profile> _profiles = [];
@@ -538,6 +539,15 @@ class TrackerProvider extends ChangeNotifier {
 
     saveState();
     notifyListeners();
+
+    // Sync global RestTimerService (survives navigation)
+    RestTimerService.instance.start(
+      endTimeMs: endTime,
+      seconds: seconds,
+      prep: isPrep,
+      exName: nextExName,
+      setNum: nextSetNum,
+    );
   }
 
   void clearRestTimer() {
@@ -571,6 +581,9 @@ class TrackerProvider extends ChangeNotifier {
 
     saveState();
     notifyListeners();
+
+    // Sync global RestTimerService
+    RestTimerService.instance.clear();
   }
 
   void updateExerciseWeightReps(int exIndex, double weight, int reps) {

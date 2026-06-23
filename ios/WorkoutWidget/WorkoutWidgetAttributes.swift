@@ -7,6 +7,10 @@ struct WorkoutWidgetAttributes: ActivityAttributes {
         var currentSetInfo: String
         var isPaused: Bool
         var elapsedSeconds: Int
+        // Rest timer fields (nil = no active rest)
+        var restTimerEndDate: Date?
+        var restTimerTotalSeconds: Int
+        var restIsPrep: Bool
     }
     
     var workoutName: String

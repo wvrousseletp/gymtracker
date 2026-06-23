@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/tracker_provider.dart';
+import '../services/watch_service.dart';
 import '../widgets/profile_avatar.dart';
 import 'workout_screen.dart';
 import 'planner_screen.dart';
@@ -27,6 +28,21 @@ class _MainNavigationState extends State<MainNavigation> {
     ProgressScreen(),
     DietScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // When native sends 'navigateToWorkout' (rest timer notification tapped), go to Workout tab
+    WatchService.instance.onNavigateToWorkout = () {
+      if (mounted) setState(() => _currentIndex = 0);
+    };
+  }
+
+  @override
+  void dispose() {
+    WatchService.instance.onNavigateToWorkout = null;
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

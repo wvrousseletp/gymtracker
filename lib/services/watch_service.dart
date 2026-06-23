@@ -13,6 +13,9 @@ class WatchService {
   final MethodChannel _channel = const MethodChannel('com.vicente.losmooscles/watch');
   TrackerProvider? _provider;
 
+  /// Called when native side sends 'navigateToWorkout' (e.g. user tapped rest timer notification)
+  VoidCallback? onNavigateToWorkout;
+
   void init(TrackerProvider provider) {
     _provider = provider;
     _channel.setMethodCallHandler(_handleMethodCall);
@@ -221,6 +224,11 @@ class WatchService {
         if (_provider!.state?.activeWorkout != null) {
           sendActiveWorkout(_provider!.state!.activeWorkout!);
         }
+        break;
+
+      case 'navigateToWorkout':
+        // Called by native iOS when user taps the rest timer notification
+        onNavigateToWorkout?.call();
         break;
 
       default:

@@ -1,6 +1,7 @@
 import UIKit
 import Flutter
 import WatchConnectivity
+import UserNotifications
 #if canImport(ActivityKit)
 import ActivityKit
 #endif
@@ -40,6 +41,16 @@ import WidgetKit
       session?.activate()
       applicationContextCache = session?.applicationContext ?? [:]
     }
+
+    // Request notification permission for rest timer alerts
+    UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+      if let error = error {
+        print("[AppDelegate] Notification permission error: \(error.localizedDescription)")
+      } else {
+        print("[AppDelegate] Notification permission granted: \(granted)")
+      }
+    }
+    UNUserNotificationCenter.current().delegate = self
 
     return result
   }
@@ -132,7 +143,35 @@ import WidgetKit
       }
     case "clearActiveWorkout", "workoutFinished", "workoutCancelled":
       sendToWatch("activeWorkout", json: nil, clearActive: true)
+      self.clearRestTimerNotification()
       self.stopLiveActivity()
+      result(nil)
+
+    case "startRestTimer":
+      if let args = call.arguments as? [String: Any],
+         let endTimeMs = args["endTime"] as? Double,
+         let totalSeconds = args["totalSeconds"] as? Int,
+         let isPrep = args["isPrep"] as? Bool,
+         let nextExName = args["nextExName"] as? String {
+        self.updateLiveActivityRestTimer(
+          endTimeMs: endTimeMs,
+          totalSeconds: totalSeconds,
+          isPrep: isPrep,
+          nextExName: nextExName
+        )
+        self.scheduleRestTimerNotification(
+          seconds: max(1, Int((endTimeMs / 1000.0) - Date().timeIntervalSince1970)),
+          isPrep: isPrep,
+          nextExName: nextExName
+        )
+        result(nil)
+      } else {
+        result(FlutterError(code: "INVALID_ARGUMENT", message: "Expected {endTime, totalSeconds, isPrep, nextExName}", details: nil))
+      }
+
+    case "clearRestTimer":
+      self.clearRestTimerNotification()
+      self.clearLiveActivityRestTimer()
       result(nil)
     case "updateWidgetData":
       if let args = call.arguments as? [String: Any] {
@@ -346,6 +385,44 @@ import WidgetKit
     }
   }
 
+  // MARK: - Rest Timer Notifications
+
+  private let restTimerNotificationId = "com.vicente.losmooscles.restTimer"
+
+  private func scheduleRestTimerNotification(seconds: Int, isPrep: Bool, nextExName: String) {
+    // Cancel any previous rest timer notification
+    UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [restTimerNotificationId])
+
+    guard seconds > 0 else { return }
+
+    let content = UNMutableNotificationContent()
+    content.title = isPrep ? "✅ Hora de começar!" : "💪 Descanso concluído!"
+    content.body = isPrep
+      ? "Prepare-se para: \(nextExName)"
+      : "Próximo: \(nextExName) — bora!"
+    content.sound = UNNotificationSound.default
+    // Time-sensitive so it shows even in Focus mode (entitlement already set)
+    if #available(iOS 15.0, *) {
+      content.interruptionLevel = .timeSensitive
+    }
+
+    let trigger = UNTimeIntervalNotificationTrigger(timeInterval: TimeInterval(seconds), repeats: false)
+    let request = UNNotificationRequest(
+      identifier: restTimerNotificationId,
+      content: content,
+      trigger: trigger
+    )
+    UNUserNotificationCenter.current().add(request) { error in
+      if let error = error {
+        print("[AppDelegate] Failed to schedule rest timer notification: \(error.localizedDescription)")
+      }
+    }
+  }
+
+  private func clearRestTimerNotification() {
+    UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [restTimerNotificationId])
+  }
+
   // MARK: - Live Activity Management
   
   private func updateLiveActivity(workoutJson: String) {
@@ -392,12 +469,25 @@ import WidgetKit
         stopLiveActivity()
         return
     }
-    
+
+    // Preserve any active rest timer state when updating workout info
+    var restEndDate: Date? = nil
+    var restTotalSeconds: Int = 0
+    var restIsPrep: Bool = false
+    if let activity = workoutActivity as? Activity<WorkoutWidgetAttributes> {
+        restEndDate = activity.contentState.restTimerEndDate
+        restTotalSeconds = activity.contentState.restTimerTotalSeconds
+        restIsPrep = activity.contentState.restIsPrep
+    }
+
     let contentState = WorkoutWidgetAttributes.ContentState(
         exerciseName: exerciseName,
         currentSetInfo: setInfo,
         isPaused: isPaused,
-        elapsedSeconds: elapsedSeconds
+        elapsedSeconds: elapsedSeconds,
+        restTimerEndDate: restEndDate,
+        restTimerTotalSeconds: restTotalSeconds,
+        restIsPrep: restIsPrep
     )
     
     if let activity = workoutActivity as? Activity<WorkoutWidgetAttributes> {
@@ -421,6 +511,51 @@ import WidgetKit
     #endif
   }
 
+  private func updateLiveActivityRestTimer(endTimeMs: Double, totalSeconds: Int, isPrep: Bool, nextExName: String) {
+    #if canImport(ActivityKit)
+    guard #available(iOS 16.1, *) else { return }
+    guard let activity = workoutActivity as? Activity<WorkoutWidgetAttributes> else { return }
+
+    let endDate = Date(timeIntervalSince1970: endTimeMs / 1000.0)
+    let current = activity.contentState
+    let updated = WorkoutWidgetAttributes.ContentState(
+        exerciseName: current.exerciseName,
+        currentSetInfo: nextExName.isEmpty ? current.currentSetInfo : nextExName,
+        isPaused: current.isPaused,
+        elapsedSeconds: current.elapsedSeconds,
+        restTimerEndDate: endDate,
+        restTimerTotalSeconds: totalSeconds,
+        restIsPrep: isPrep
+    )
+    Task {
+        await activity.update(using: updated)
+        print("[AppDelegate] Live Activity rest timer updated: \(endDate), isPrep=\(isPrep)")
+    }
+    #endif
+  }
+
+  private func clearLiveActivityRestTimer() {
+    #if canImport(ActivityKit)
+    guard #available(iOS 16.1, *) else { return }
+    guard let activity = workoutActivity as? Activity<WorkoutWidgetAttributes> else { return }
+
+    let current = activity.contentState
+    let updated = WorkoutWidgetAttributes.ContentState(
+        exerciseName: current.exerciseName,
+        currentSetInfo: current.currentSetInfo,
+        isPaused: current.isPaused,
+        elapsedSeconds: current.elapsedSeconds,
+        restTimerEndDate: nil,
+        restTimerTotalSeconds: 0,
+        restIsPrep: false
+    )
+    Task {
+        await activity.update(using: updated)
+        print("[AppDelegate] Live Activity rest timer cleared")
+    }
+    #endif
+  }
+
   private func stopLiveActivity() {
     #if canImport(ActivityKit)
     guard #available(iOS 16.1, *) else { return }
@@ -434,3 +569,41 @@ import WidgetKit
     #endif
   }
 }
+
+// MARK: - UNUserNotificationCenterDelegate
+extension AppDelegate {
+  // Show notification banner even when app is in foreground
+  override func userNotificationCenter(
+    _ center: UNUserNotificationCenter,
+    willPresent notification: UNNotification,
+    withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+  ) {
+    if notification.request.identifier == "com.vicente.losmooscles.restTimer" {
+      if #available(iOS 14.0, *) {
+        completionHandler([.banner, .sound])
+      } else {
+        completionHandler([.alert, .sound])
+      }
+    } else {
+      super.userNotificationCenter(center, willPresent: notification, withCompletionHandler: completionHandler)
+    }
+  }
+
+  // Open the app to the workout screen when the notification is tapped
+  override func userNotificationCenter(
+    _ center: UNUserNotificationCenter,
+    didReceive response: UNNotificationResponse,
+    withCompletionHandler completionHandler: @escaping () -> Void
+  ) {
+    if response.notification.request.identifier == "com.vicente.losmooscles.restTimer" {
+      // Tell Flutter to navigate to workout tab
+      DispatchQueue.main.async { [weak self] in
+        self?.methodChannel?.invokeMethod("navigateToWorkout", arguments: nil)
+      }
+      completionHandler()
+    } else {
+      super.userNotificationCenter(center, didReceive: response, withCompletionHandler: completionHandler)
+    }
+  }
+}
+

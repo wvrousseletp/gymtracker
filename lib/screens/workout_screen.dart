@@ -10,6 +10,7 @@ import '../models/workout_log.dart';
 import '../models/planner_state.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/profile_avatar.dart';
+import '../services/rest_timer_service.dart';
 
 class WorkoutScreen extends StatefulWidget {
   const WorkoutScreen({Key? key}) : super(key: key);
@@ -788,14 +789,19 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
   Timer? _stopwatchTimer;
   late final ValueNotifier<int> _workoutDurationNotifier;
 
-  // Estados dos Timers de Descanso/Preparo do painel
-  Timer? _countdownTimer;
-  late final ValueNotifier<int> _countdownSecondsNotifier;
-  int _countdownTotalSeconds = 0;
+  // ─── Rest/Prep timer – driven by RestTimerService (global singleton) ───
+  // We only keep local UI state here; the actual countdown runs in the service.
+  // _countdownSecondsNotifier mirrors RestTimerService.secondsRemaining so the
+  // circular ring and text update each second, but the timer keeps running even
+  // when this widget is not mounted (user navigated to another tab).
   bool _timerActive = false;
   bool _timerIsPrep = false;
-  String _timerNextExName = "";
+  String _timerNextExName = '';
   int _timerNextSetNum = 0;
+  int _countdownTotalSeconds = 0;
+
+  // Track last endTime to avoid re-registering the same timer
+  int _lastEndTime = 0;
 
   // Controladores de páginas para exercícios
   int _currentExIdx = 0;
@@ -805,13 +811,18 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
     super.initState();
     _currentExIdx = widget.activeWorkout.currentExerciseIndex;
     _workoutDurationNotifier = ValueNotifier<int>(widget.activeWorkout.elapsedSeconds);
-    _countdownSecondsNotifier = ValueNotifier<int>(0);
-    
+
     // Iniciar cronômetro do treino
     _startStopwatch();
 
     // Ouvir alterações do provedor para sincronizar timer de descanso e exercício atual
     widget.provider.addListener(_onProviderChange);
+
+    // Listen to RestTimerService for tick sounds (the service itself handles the countdown)
+    RestTimerService.instance.secondsRemaining.addListener(_onRestTimerTick);
+
+    // Sync initial timer state from service (in case user navigated back during rest)
+    _syncFromService();
 
     // Se o treino acabou de começar, vamos disparar o tempo de PREPARO inicial no provedor!
     if (_workoutDurationNotifier.value == 0 && widget.activeWorkout.exercises.isNotEmpty) {
@@ -830,10 +841,9 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
   @override
   void dispose() {
     widget.provider.removeListener(_onProviderChange);
+    RestTimerService.instance.secondsRemaining.removeListener(_onRestTimerTick);
     _stopwatchTimer?.cancel();
-    _countdownTimer?.cancel();
     _workoutDurationNotifier.dispose();
-    _countdownSecondsNotifier.dispose();
     super.dispose();
   }
 
@@ -847,94 +857,97 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
     });
   }
 
+  /// Called every second by RestTimerService – play tick sound if near end.
+  void _onRestTimerTick() {
+    if (!mounted) return;
+    final remaining = RestTimerService.instance.secondsRemaining.value;
+    final settings = widget.provider.state?.settings;
+    if (settings?.sound == true && remaining <= 3 && remaining > 0) {
+      SystemSound.play(SystemSoundType.click);
+    }
+  }
+
+  /// Sync local UI state from the global RestTimerService.
+  void _syncFromService() {
+    final svc = RestTimerService.instance;
+    final active = svc.isActive.value;
+    if (active != _timerActive ||
+        svc.isPrep.value != _timerIsPrep ||
+        svc.nextExName.value != _timerNextExName ||
+        svc.nextSetNum.value != _timerNextSetNum ||
+        svc.totalSeconds.value != _countdownTotalSeconds) {
+      if (mounted) {
+        setState(() {
+          _timerActive = active;
+          _timerIsPrep = svc.isPrep.value;
+          _timerNextExName = svc.nextExName.value;
+          _timerNextSetNum = svc.nextSetNum.value;
+          _countdownTotalSeconds = svc.totalSeconds.value;
+        });
+      }
+    }
+  }
+
   void _onProviderChange() {
     if (!mounted) return;
     final active = widget.provider.state?.activeWorkout;
     if (active == null) return;
-    
+
     if (active.currentExerciseIndex != _currentExIdx) {
       setState(() {
         _currentExIdx = active.currentExerciseIndex;
       });
     }
 
-    final timer = active.restTimer;
-    if (timer == null) {
+    final timerState = active.restTimer;
+    if (timerState == null) {
       if (_timerActive) {
-        _countdownTimer?.cancel();
         setState(() {
           _timerActive = false;
         });
       }
     } else {
-      final remaining = ((timer.endTime - DateTime.now().millisecondsSinceEpoch) / 1000).round();
-      if (!_timerActive || 
-          _countdownTotalSeconds != timer.totalSeconds || 
-          _timerIsPrep != timer.isPrep || 
-          _timerNextExName != timer.nextExerciseName || 
-          _timerNextSetNum != timer.nextSetNum) {
-        _countdownTimer?.cancel();
-        setState(() {
-          _timerActive = true;
-          _timerIsPrep = timer.isPrep;
-          _countdownTotalSeconds = timer.totalSeconds;
-          _timerNextExName = timer.nextExerciseName;
-          _timerNextSetNum = timer.nextSetNum;
-        });
-        _countdownSecondsNotifier.value = remaining > 0 ? remaining : 0;
-        if (remaining > 0) {
-          _startCountdownTimerFromState(timer.endTime);
-        } else {
-          _handleTimerCompleted();
-        }
+      // A new timer started in the provider – register its completion callback
+      // only if the endTime changed (avoid duplicate registrations).
+      if (_lastEndTime != timerState.endTime) {
+        _lastEndTime = timerState.endTime;
+        // The RestTimerService was already started by TrackerProvider.startRestTimer().
+        // We just update local UI state and attach the completion callback.
+        RestTimerService.instance.onTimerCompleted = _handleTimerCompleted;
       }
+      final svc = RestTimerService.instance;
+      setState(() {
+        _timerActive = svc.isActive.value;
+        _timerIsPrep = svc.isPrep.value;
+        _countdownTotalSeconds = svc.totalSeconds.value;
+        _timerNextExName = svc.nextExName.value;
+        _timerNextSetNum = svc.nextSetNum.value;
+      });
     }
-  }
-
-  void _startCountdownTimerFromState(int endTime) {
-    _countdownTimer?.cancel();
-    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      final now = DateTime.now().millisecondsSinceEpoch;
-      final remaining = ((endTime - now) / 1000).round();
-      
-      if (remaining > 0) {
-        _countdownSecondsNotifier.value = remaining;
-        
-        final settings = widget.provider.state!.settings;
-        if (settings.sound) {
-          if (remaining <= 3 && remaining > 0) {
-            SystemSound.play(SystemSoundType.click);
-          }
-        }
-      } else {
-        _countdownSecondsNotifier.value = 0;
-        _countdownTimer?.cancel();
-        _handleTimerCompleted();
-      }
-    });
   }
 
   void _handleTimerCompleted() {
-    final settings = widget.provider.state!.settings;
-    if (settings.vibration) {
+    if (!mounted) return;
+    final settings = widget.provider.state?.settings;
+    if (settings?.vibration == true) {
       HapticFeedback.vibrate();
     }
-    if (settings.sound) {
+    if (settings?.sound == true) {
       SystemSound.play(SystemSoundType.click);
     }
+
+    setState(() {
+      _timerActive = false;
+    });
 
     if (_timerIsPrep) {
       widget.provider.clearRestTimer();
     } else {
       widget.provider.startRestTimer(
-        settings.prepSeconds, 
-        _timerNextExName, 
-        _timerNextSetNum, 
-        true
+        settings?.prepSeconds ?? 5,
+        _timerNextExName,
+        _timerNextSetNum,
+        true,
       );
     }
   }
@@ -1112,7 +1125,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
 
                         // Relógio
                         ValueListenableBuilder<int>(
-                          valueListenable: _countdownSecondsNotifier,
+                          valueListenable: RestTimerService.instance.secondsRemaining,
                           builder: (context, remaining, child) {
                             return Stack(
                               alignment: Alignment.center,
@@ -1146,7 +1159,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
                           width: 140,
                           child: ElevatedButton(
                             onPressed: () {
-                              _countdownTimer?.cancel();
+                              // RestTimerService is cleared via clearRestTimer() or startRestTimer() below
                               if (_timerIsPrep) {
                                 widget.provider.clearRestTimer();
                               } else {
