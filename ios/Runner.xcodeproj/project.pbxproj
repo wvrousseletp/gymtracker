@@ -1137,7 +1137,7 @@
 				PRODUCT_NAME = "Los Mooscles";
 				PROVISIONING_PROFILE_SPECIFIER = "Los Mooscles Watch App Store Profile";
 				SDKROOT = watchos;
-				SKIP_INSTALL = YES;
+				SKIP_INSTALL = NO;
 				SUPPORTED_PLATFORMS = "watchos watchsimulator";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -1187,7 +1187,7 @@
 				PRODUCT_NAME = "Los Mooscles";
 				PROVISIONING_PROFILE_SPECIFIER = "Los Mooscles Watch App Store Profile";
 				SDKROOT = watchos;
-				SKIP_INSTALL = YES;
+				SKIP_INSTALL = NO;
 				SUPPORTED_PLATFORMS = "watchos watchsimulator";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -1235,7 +1235,7 @@
 				PRODUCT_NAME = "Los Mooscles";
 				PROVISIONING_PROFILE_SPECIFIER = "Los Mooscles Watch App Store Profile";
 				SDKROOT = watchos;
-				SKIP_INSTALL = YES;
+				SKIP_INSTALL = NO;
 				SUPPORTED_PLATFORMS = "watchos watchsimulator";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
