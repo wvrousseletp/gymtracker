@@ -106,6 +106,20 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             if session.isReachable {
                 self.requestSync()
                 self.syncOfflineWorkouts()
+
+                // If we have an in-progress local workout, push its full state to the
+                // iPhone so it can mirror the progress and take over control.
+                if self.isLocalWorkout, let active = self.activeWorkout,
+                   let data = try? JSONEncoder().encode(active),
+                   let json = String(data: data, encoding: .utf8) {
+                    print("[WCM] Reconnected with local workout '\(active.name)' — pushing state to iPhone")
+                    session.transferUserInfo([
+                        "action": "updateActiveWorkout",
+                        "activeWorkout": json
+                    ])
+                    // Hand control back to iPhone; it will confirm by sending back activeWorkout
+                    self.isLocalWorkout = false
+                }
             }
         }
     }
@@ -457,7 +471,13 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         guard let session = session else { return }
         if session.isReachable {
             session.sendMessage(message, replyHandler: nil) { error in
-                print("Error sending message to iPhone: \(error.localizedDescription)")
+                // sendMessage failed (e.g. iOS app was backgrounded/suspended).
+                // Fall back to guaranteed-delivery transferUserInfo so the action
+                // is not silently lost.
+                print("[WCM] sendMessage failed (\(error.localizedDescription)) – retrying via transferUserInfo")
+                DispatchQueue.global().async {
+                    session.transferUserInfo(message)
+                }
             }
         } else {
             session.transferUserInfo(message)
@@ -634,6 +654,18 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             restTimer: restTimer,
             postponed: active.postponed
         )
+
+        // Mirror the updated state to iPhone via transferUserInfo so the iOS side
+        // stays in sync even while we're in local/offline mode.
+        if let updatedActive = activeWorkout,
+           let data = try? JSONEncoder().encode(updatedActive),
+           let json = String(data: data, encoding: .utf8),
+           let sess = session {
+            sess.transferUserInfo([
+                "action": "updateActiveWorkout",
+                "activeWorkout": json
+            ])
+        }
     }
 
     private func updateExerciseWeightRepsLocal(exerciseIndex: Int, weight: Double, reps: Int) {

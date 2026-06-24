@@ -241,10 +241,28 @@ class WatchService {
         onNavigateToWorkout?.call();
         break;
 
+
+      case 'updateActiveWorkoutFromWatch':
+        // The Watch pushed its in-progress workout state to iOS.
+        // Apply it so the iOS side can mirror/reconcile the workout.
+        final String workoutJson = call.arguments as String;
+        try {
+          final Map<String, dynamic> watchData = Map<String, dynamic>.from(
+              json.decode(workoutJson) as Map);
+          _provider!.applyActiveWorkoutFromWatch(watchData);
+          if (_provider!.state?.activeWorkout != null) {
+            sendActiveWorkout(_provider!.state!.activeWorkout!);
+          }
+        } catch (e) {
+          print('[WatchService] Error applying active workout from Watch: $e');
+        }
+        break;
+
       default:
         break;
     }
   }
+
 
 
   Future<void> sendRoutines(List<Routine> routines) async {

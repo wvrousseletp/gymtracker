@@ -13,9 +13,18 @@ import WidgetKit
 @objc class AppDelegate: FlutterAppDelegate, WCSessionDelegate {
   
   private var session: WCSession?
-  private var methodChannel: FlutterMethodChannel?
+  private var methodChannel: FlutterMethodChannel? {
+    didSet {
+      // Deliver any actions that arrived before Flutter engine was ready
+      if methodChannel != nil {
+        flushPendingWatchActions()
+      }
+    }
+  }
   private var applicationContextCache: [String: Any] = [:]
   private var workoutActivity: Any? = nil
+  /// Actions from Watch that arrived before the Flutter method channel was initialised.
+  private var pendingWatchActions: [[String: Any]] = []
 
   override func application(
     _ application: UIApplication,
@@ -307,7 +316,7 @@ import WidgetKit
       switch action {
       case "startWorkout":
         if let routineId = data["routineId"] as? String {
-          self.methodChannel?.invokeMethod("startWorkout", arguments: routineId)
+          self.invokeOrQueue(method: "startWorkout", arguments: routineId)
         }
       case "toggleSet":
         if let exerciseIndex = data["exerciseIndex"] as? Int,
@@ -393,14 +402,20 @@ import WidgetKit
           self.methodChannel?.invokeMethod("togglePause", arguments: paused)
         }
       case "requestSync":
-        self.methodChannel?.invokeMethod("sessionActivated", arguments: nil)
+        self.invokeOrQueue(method: "sessionActivated", arguments: nil)
       case "syncOfflineWorkout":
         if let workoutData = data["workoutData"] as? [String: Any] {
-          self.methodChannel?.invokeMethod("syncOfflineWorkout", arguments: workoutData)
+          self.invokeOrQueue(method: "syncOfflineWorkout", arguments: workoutData)
         }
       case "changeExercise":
         if let exerciseIndex = data["exerciseIndex"] as? Int {
           self.methodChannel?.invokeMethod("changeExercise", arguments: exerciseIndex)
+        }
+      case "updateActiveWorkout":
+        // Watch is pushing its current in-progress workout state (e.g. after reconnect
+        // or while in offline/local mode). Forward it to Flutter so iOS can reconcile.
+        if let workoutJson = data["activeWorkout"] as? String {
+          self.invokeOrQueue(method: "updateActiveWorkoutFromWatch", arguments: workoutJson)
         }
       case "updateHealthMetrics":
         if let heartRate = data["heartRate"] as? Double,
@@ -412,6 +427,31 @@ import WidgetKit
         }
       default:
         break
+      }
+    }
+  }
+
+  // MARK: - Pending Watch Actions Queue
+
+  /// Invoke a method on the Flutter channel, queuing it if the channel is not yet ready.
+  private func invokeOrQueue(method: String, arguments: Any?) {
+    if let ch = methodChannel {
+      ch.invokeMethod(method, arguments: arguments)
+    } else {
+      pendingWatchActions.append(["method": method, "arguments": arguments as Any])
+    }
+  }
+
+  /// Re-dispatch all actions that were queued while the Flutter engine was not ready.
+  private func flushPendingWatchActions() {
+    guard !pendingWatchActions.isEmpty, let ch = methodChannel else { return }
+    let toFlush = pendingWatchActions
+    pendingWatchActions = []
+    print("[AppDelegate] Flushing \(toFlush.count) pending Watch action(s) to Flutter")
+    for item in toFlush {
+      if let method = item["method"] as? String {
+        let args = item["arguments"]
+        ch.invokeMethod(method, arguments: args is NSNull ? nil : args)
       }
     }
   }

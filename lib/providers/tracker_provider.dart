@@ -720,8 +720,108 @@ class TrackerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Reconcile iOS state with a workout state pushed from the Apple Watch.
+  ///
+  /// Called when the Watch transitions from offline (local) to connected mode
+  /// and pushes its in-progress [watchData] JSON (WatchActiveWorkoutState schema).
+  /// The Watch JSON uses the same field names as [ActiveWorkoutState.toJson] so
+  /// we can deserialise it directly.
+  void applyActiveWorkoutFromWatch(Map<String, dynamic> watchData) {
+    if (_state == null) return;
+
+    final current = _state!.activeWorkout;
+
+    if (current == null) {
+      // iOS has no active workout — create one from the Watch state.
+      try {
+        final fromWatch = ActiveWorkoutState.fromJson(watchData);
+        _state = PlannerState(
+          library: _state!.library,
+          routines: _state!.routines,
+          planner: _state!.planner,
+          history: _state!.history,
+          prs: _state!.prs,
+          medidas: _state!.medidas,
+          settings: _state!.settings,
+          activeWorkout: fromWatch,
+          diet: _state!.diet,
+        );
+        print('[TrackerProvider] applyActiveWorkoutFromWatch: created new active workout from Watch state (${fromWatch.name})');
+        saveState();
+        notifyListeners();
+      } catch (e) {
+        print('[TrackerProvider] applyActiveWorkoutFromWatch: failed to parse Watch state — $e');
+      }
+      return;
+    }
+
+    // iOS already has an active workout — merge more-advanced sets from the Watch.
+    // We take the union of completed sets so neither side loses data.
+    try {
+      final watchExercises = watchData['exercises'] as List?;
+      if (watchExercises == null || watchExercises.length != current.exercises.length) return;
+
+      final merged = List<ActiveExercise>.from(current.exercises);
+      for (int i = 0; i < merged.length; i++) {
+        final wEx = Map<String, dynamic>.from(watchExercises[i] as Map);
+        final ios = merged[i];
+
+        final wSets = (wEx['setsState'] as List?)?.map((e) => e as bool).toList() ?? ios.setsState;
+        // Union: a set is done if *either* Watch or iOS marked it done
+        final mergedSets = List<bool>.generate(
+          ios.setsState.length,
+          (j) => (j < wSets.length ? wSets[j] : false) || ios.setsState[j],
+        );
+
+        final wCardios = wEx['performedCardios'] as List?;
+        final mergedCardios = List<PerformedCardio?>.from(ios.performedCardios);
+        if (wCardios != null) {
+          for (int j = 0; j < mergedCardios.length && j < wCardios.length; j++) {
+            if (mergedCardios[j] == null && wCardios[j] != null) {
+              mergedCardios[j] = PerformedCardio.fromJson(
+                  Map<String, dynamic>.from(wCardios[j] as Map));
+            }
+          }
+        }
+
+        merged[i] = ActiveExercise(
+          id: ios.id,
+          name: ios.name,
+          muscle: ios.muscle,
+          executionType: ios.executionType,
+          measurementType: ios.measurementType,
+          sets: ios.sets,
+          reps: ios.reps,
+          rest: ios.rest,
+          weight: ios.weight,
+          setsState: mergedSets,
+          performedCardios: mergedCardios,
+          failureReport: ios.failureReport,
+          failureReps: ios.failureReps,
+        );
+      }
+
+      _state = PlannerState(
+        library: _state!.library,
+        routines: _state!.routines,
+        planner: _state!.planner,
+        history: _state!.history,
+        prs: _state!.prs,
+        medidas: _state!.medidas,
+        settings: _state!.settings,
+        activeWorkout: current.copyWith(exercises: merged),
+        diet: _state!.diet,
+      );
+      print('[TrackerProvider] applyActiveWorkoutFromWatch: merged Watch sets into iOS state');
+      saveState();
+      notifyListeners();
+    } catch (e) {
+      print('[TrackerProvider] applyActiveWorkoutFromWatch: merge failed — $e');
+    }
+  }
 
   void discardActiveWorkout() {
+
     if (_state == null) return;
     // Stop any running rest timer immediately before clearing workout state.
     RestTimerService.instance.clear();
