@@ -98,16 +98,37 @@ class TrackerProvider extends ChangeNotifier {
         ];
       }
     } else {
-      _profiles = [
-        Profile(
-          id: uid,
-          name: FirebaseAuth.instance.currentUser?.displayName ?? 'Usuário',
-          avatar: '🏋️',
-          colorAccent: 'Branco',
-          password: '',
-          hasPassword: false,
-        )
-      ];
+      // Tenta obter o perfil da nuvem primeiro antes do fallback local
+      final cloudProfile = await checkProfileExistsInCloud(uid);
+      if (cloudProfile != null) {
+        try {
+          final profile = Profile.fromJson(cloudProfile);
+          _profiles = [profile];
+          await saveProfilesConfig();
+        } catch (_) {
+          _profiles = [
+            Profile(
+              id: uid,
+              name: FirebaseAuth.instance.currentUser?.displayName ?? 'Usuário',
+              avatar: '🏋️',
+              colorAccent: 'Branco',
+              password: '',
+              hasPassword: false,
+            )
+          ];
+        }
+      } else {
+        _profiles = [
+          Profile(
+            id: uid,
+            name: FirebaseAuth.instance.currentUser?.displayName ?? 'Usuário',
+            avatar: '🏋️',
+            colorAccent: 'Branco',
+            password: '',
+            hasPassword: false,
+          )
+        ];
+      }
     }
 
     await loadCurrentState();

@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
 import '../providers/tracker_provider.dart';
 import '../widgets/profile_avatar.dart';
@@ -94,6 +95,63 @@ class _LoginScreenState extends State<LoginScreen> {
         } else {
           _errorMessage = "Erro na autenticação: ${e.message}";
         }
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = "Erro de conexão: $e";
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _signInWithGoogle() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final googleSignIn = GoogleSignIn();
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+      if (googleUser == null) {
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final userCredential = await _auth.signInWithCredential(credential);
+      final user = userCredential.user;
+
+      if (user != null) {
+        final provider = Provider.of<TrackerProvider>(context, listen: false);
+        final cloudProfile = await provider.checkProfileExistsInCloud(user.uid);
+        if (cloudProfile == null) {
+          // Cria um novo perfil na nuvem se não existir
+          await provider.createCloudProfile(
+            user.uid,
+            user.displayName ?? "Usuário Google",
+            "🏋️",
+            "Azul", // Cor padrão para Google
+          );
+        } else {
+          await provider.initializeUser(user.uid);
+        }
+      }
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        _errorMessage = "Erro no Google: ${e.message}";
       });
     } catch (e) {
       setState(() {
@@ -399,6 +457,40 @@ class _LoginScreenState extends State<LoginScreen> {
                                             letterSpacing: 1.0,
                                           ),
                                         ),
+                                ),
+                                const SizedBox(height: 16),
+                                Row(
+                                  children: [
+                                    Expanded(child: Divider(color: Colors.white.withOpacity(0.08), thickness: 1)),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                                      child: Text(
+                                        "ou",
+                                        style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 13),
+                                      ),
+                                    ),
+                                    Expanded(child: Divider(color: Colors.white.withOpacity(0.08), thickness: 1)),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                OutlinedButton.icon(
+                                  onPressed: _isLoading ? null : _signInWithGoogle,
+                                  icon: const Icon(Icons.g_mobiledata, color: Colors.white, size: 28),
+                                  label: const Text(
+                                    "Entrar com o Google",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    side: BorderSide(color: Colors.white.withOpacity(0.08), width: 1.5),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),

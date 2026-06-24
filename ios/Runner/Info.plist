@@ -65,6 +65,15 @@
 				<string>losmooscles</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<!-- TODO: Substituir pelo seu REVERSED_CLIENT_ID obtido do GoogleService-Info.plist -->
+				<string>com.googleusercontent.apps.973584151756-placeholder</string>
+			</array>
+		</dict>
 	</array>
 </dict>
 </plist>
