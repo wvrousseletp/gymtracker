@@ -785,10 +785,11 @@ struct ActiveWorkoutView: View {
     // MARK: - Main Body
 
     var body: some View {
-        VStack(spacing: 0) {
+        Group {
             if let activeWorkout = connectivityManager.activeWorkout {
                 if let restTimer = activeWorkout.restTimer {
                     RestTimerView(restTimer: restTimer)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     TabView {
                         currentExercisePageView(activeWorkout: activeWorkout)

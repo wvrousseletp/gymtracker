@@ -1233,70 +1233,22 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
 
               if (isCardio) {
                 // RENDERIZAR SESSÃO DE CARDIO
+                // _CardioSetRow is a StatefulWidget that owns its TextEditingControllers
+                // so they are NOT recreated on every rebuild (which would lose text/focus).
                 final pc = ex.performedCardios[setIdx];
-                final distController = TextEditingController(text: pc?.distanceKm.toString() ?? "");
-                final durController = TextEditingController(text: pc != null ? (pc.durationSeconds ~/ 60).toString() : "");
-
-                return Container(
-                  margin: const EdgeInsets.symmetric(vertical: 6),
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(isDone ? 0.05 : 0.01),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: isDone ? Colors.blue.withOpacity(0.35) : Colors.white.withOpacity(0.06)),
-                  ),
-                  child: Row(
-                    children: [
-                      Text(
-                        "Sessão ${setIdx + 1}",
-                        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(width: 12),
-
-                      // Input Km
-                      Expanded(
-                        child: TextField(
-                          controller: distController,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          style: const TextStyle(color: Colors.white, fontSize: 12),
-                          decoration: _activeInputDeco("Km"),
-                          onChanged: (val) {
-                            final dist = double.tryParse(val) ?? 0.0;
-                            final dur = int.tryParse(durController.text.trim()) ?? 0;
-                            widget.provider.completeSet(exIdx, setIdx, isDone, distance: dist, duration: dur * 60);
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-
-                      // Input Minutos
-                      Expanded(
-                        child: TextField(
-                          controller: durController,
-                          keyboardType: TextInputType.number,
-                          style: const TextStyle(color: Colors.white, fontSize: 12),
-                          decoration: _activeInputDeco("Minutos"),
-                          onChanged: (val) {
-                            final dist = double.tryParse(distController.text.trim()) ?? 0.0;
-                            final dur = int.tryParse(val) ?? 0;
-                            widget.provider.completeSet(exIdx, setIdx, isDone, distance: dist, duration: dur * 60);
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-
-                      // Checkbox Concluir
-                      Checkbox(
-                        value: isDone,
-                        activeColor: Colors.blueAccent,
-                        onChanged: (val) {
-                          final dist = double.tryParse(distController.text.trim()) ?? 0.0;
-                          final dur = int.tryParse(durController.text.trim()) ?? 0;
-                          widget.provider.completeSet(exIdx, setIdx, val ?? false, distance: dist, duration: dur * 60);
-                        },
-                      ),
-                    ],
-                  ),
+                return _CardioSetRow(
+                  key: ValueKey('cardio_${exIdx}_$setIdx'),
+                  setIndex: setIdx,
+                  isDone: isDone,
+                  initialDistance: pc?.distanceKm,
+                  initialMinutes: pc != null ? pc.durationSeconds ~/ 60 : null,
+                  onChanged: (dist, durMinutes, done) {
+                    widget.provider.completeSet(
+                      exIdx, setIdx, done,
+                      distance: dist,
+                      duration: durMinutes * 60,
+                    );
+                  },
                 );
               } else {
                 // RENDERIZAR SÉRIE DE MUSCULAÇÃO / ISOMETRIA
@@ -1602,5 +1554,168 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
       return "${twoDigits(hours)}:${twoDigits(minutes)}:${twoDigits(seconds)}";
     }
     return "${twoDigits(minutes)}:${twoDigits(seconds)}";
+  }
+}
+
+// ---------------------------------------------------------------------------
+// _CardioSetRow — StatefulWidget that owns its TextEditingControllers so they
+// survive rebuilds and don't lose text/focus while the user is typing.
+// ---------------------------------------------------------------------------
+class _CardioSetRow extends StatefulWidget {
+  final int setIndex;
+  final bool isDone;
+  final double? initialDistance;
+  final int? initialMinutes;
+  /// (distance km, duration minutes, isDone)
+  final void Function(double dist, int durMinutes, bool done) onChanged;
+
+  const _CardioSetRow({
+    super.key,
+    required this.setIndex,
+    required this.isDone,
+    this.initialDistance,
+    this.initialMinutes,
+    required this.onChanged,
+  });
+
+  @override
+  State<_CardioSetRow> createState() => _CardioSetRowState();
+}
+
+class _CardioSetRowState extends State<_CardioSetRow> {
+  late final TextEditingController _distCtrl;
+  late final TextEditingController _durCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _distCtrl = TextEditingController(
+      text: widget.initialDistance != null
+          ? widget.initialDistance!.toStringAsFixed(
+              widget.initialDistance! == widget.initialDistance!.truncateToDouble() ? 0 : 1)
+          : '',
+    );
+    _durCtrl = TextEditingController(
+      text: widget.initialMinutes != null ? widget.initialMinutes.toString() : '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _distCtrl.dispose();
+    _durCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDone = widget.isDone;
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(isDone ? 0.05 : 0.01),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDone
+              ? Colors.blue.withOpacity(0.35)
+              : Colors.white.withOpacity(0.06),
+        ),
+      ),
+      child: Row(
+        children: [
+          Text(
+            'Sessão ${widget.setIndex + 1}',
+            style: const TextStyle(
+                color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(width: 12),
+
+          // Input Km
+          Expanded(
+            child: TextField(
+              controller: _distCtrl,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              style: const TextStyle(color: Colors.white, fontSize: 12),
+              decoration: InputDecoration(
+                labelText: 'Km',
+                labelStyle: const TextStyle(color: Colors.white38, fontSize: 11),
+                filled: true,
+                fillColor: Colors.white.withOpacity(0.04),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Colors.blueAccent),
+                ),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                isDense: true,
+              ),
+              onChanged: (val) {
+                final dist = double.tryParse(val) ?? 0.0;
+                final dur = int.tryParse(_durCtrl.text.trim()) ?? 0;
+                widget.onChanged(dist, dur, isDone);
+              },
+            ),
+          ),
+          const SizedBox(width: 8),
+
+          // Input Minutos
+          Expanded(
+            child: TextField(
+              controller: _durCtrl,
+              keyboardType: TextInputType.number,
+              style: const TextStyle(color: Colors.white, fontSize: 12),
+              decoration: InputDecoration(
+                labelText: 'Minutos',
+                labelStyle: const TextStyle(color: Colors.white38, fontSize: 11),
+                filled: true,
+                fillColor: Colors.white.withOpacity(0.04),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Colors.blueAccent),
+                ),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                isDense: true,
+              ),
+              onChanged: (val) {
+                final dist = double.tryParse(_distCtrl.text.trim()) ?? 0.0;
+                final dur = int.tryParse(val) ?? 0;
+                widget.onChanged(dist, dur, isDone);
+              },
+            ),
+          ),
+          const SizedBox(width: 12),
+
+          // Checkbox Concluir
+          Checkbox(
+            value: isDone,
+            activeColor: Colors.blueAccent,
+            onChanged: (val) {
+              final dist = double.tryParse(_distCtrl.text.trim()) ?? 0.0;
+              final dur = int.tryParse(_durCtrl.text.trim()) ?? 0;
+              widget.onChanged(dist, dur, val ?? false);
+            },
+          ),
+        ],
+      ),
+    );
   }
 }

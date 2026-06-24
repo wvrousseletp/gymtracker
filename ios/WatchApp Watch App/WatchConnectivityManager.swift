@@ -403,6 +403,20 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         if isLocalWorkout {
             skipRestLocal()
         } else {
+            // Immediately clear the local rest timer so the Watch UI transitions
+            // away from RestTimerView without waiting for the iPhone to respond.
+            if let active = activeWorkout {
+                activeWorkout = WatchActiveWorkoutState(
+                    name: active.name,
+                    startTime: active.startTime,
+                    exercises: active.exercises,
+                    currentExerciseIndex: active.currentExerciseIndex,
+                    elapsedSeconds: active.elapsedSeconds,
+                    paused: active.paused,
+                    restTimer: nil,
+                    postponed: active.postponed
+                )
+            }
             sendToiPhone(["action": "skipRest"])
         }
     }
