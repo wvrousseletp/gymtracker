@@ -213,16 +213,13 @@ class TrackerProvider extends ChangeNotifier {
       );
       await saveProfilesConfig();
       
-      // Update in Firebase as well
-      try {
-        final docRef = FirebaseFirestore.instance.collection('users').doc(id);
-        await docRef.update({
-          'profile': _profiles[idx].toJson(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-      } catch (e) {
+      // Update in Firebase as well (non-blocking)
+      FirebaseFirestore.instance.collection('users').doc(id).update({
+        'profile': _profiles[idx].toJson(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }).catchError((e) {
         debugPrint('[Firebase] Erro ao atualizar perfil na nuvem: $e');
-      }
+      });
       notifyListeners();
     }
   }
