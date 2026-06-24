@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/profile.dart';
 import '../models/exercise.dart';
 import '../models/routine.dart';
@@ -49,7 +50,7 @@ class TrackerProvider extends ChangeNotifier {
   Profile get currentProfile => _profiles.firstWhere(
         (p) => p.id == _currentUserId,
         orElse: () => Profile(
-          id: 'vicente',
+          id: _currentUserId,
           name: 'Vicente',
           avatar: '🏋️',
           colorAccent: 'Branco',
@@ -63,68 +64,94 @@ class TrackerProvider extends ChangeNotifier {
   }
 
   Future<void> _init() async {
-    await loadProfiles();
-    await loadCurrentState();
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      await initializeUser(user.uid);
+    } else {
+      _isLoading = false;
+      notifyListeners();
+    }
     WatchService.instance.init(this);
-    _isLoading = false;
+  }
+
+  Future<void> initializeUser(String uid) async {
+    _isLoading = true;
+    _currentUserId = uid;
     notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    final profileRaw = prefs.getString('los_mooscles_profile_$uid');
+    if (profileRaw != null) {
+      try {
+        final profile = Profile.fromJson(json.decode(profileRaw));
+        _profiles = [profile];
+      } catch (e) {
+        _profiles = [
+          Profile(
+            id: uid,
+            name: FirebaseAuth.instance.currentUser?.displayName ?? 'Usuário',
+            avatar: '🏋️',
+            colorAccent: 'Branco',
+            password: '',
+            hasPassword: false,
+          )
+        ];
+      }
+    } else {
+      _profiles = [
+        Profile(
+          id: uid,
+          name: FirebaseAuth.instance.currentUser?.displayName ?? 'Usuário',
+          avatar: '🏋️',
+          colorAccent: 'Branco',
+          password: '',
+          hasPassword: false,
+        )
+      ];
+    }
+
+    await loadCurrentState();
+
     // Reconcile: if there is no active workout saved, clean up any zombie
     // Live Activities or Watch sessions left over from a crashed previous session.
     if (_state?.activeWorkout == null) {
       RestTimerService.instance.clear();
       WatchService.instance.sendActiveWorkoutCleared();
     }
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  Future<void> logout() async {
+    _isLoading = true;
+    notifyListeners();
+
+    _state = null;
+    _profiles = [];
+    _currentUserId = 'vicente';
+
+    await FirebaseAuth.instance.signOut();
+
+    _isLoading = false;
+    notifyListeners();
   }
 
   // --- PROFILE MANAGEMENT ---
   Future<void> loadProfiles() async {
-    final prefs = await SharedPreferences.getInstance();
-    final profilesRaw = prefs.getString('los_mooscles_profiles_config');
-    
-    if (profilesRaw != null) {
-      try {
-        final parsed = json.decode(profilesRaw);
-        if (parsed['profiles'] != null) {
-          _profiles = (parsed['profiles'] as List)
-              .map((p) => Profile.fromJson(p))
-              .toList();
-        }
-        _currentUserId = parsed['currentUserId'] ?? 'vicente';
-      } catch (e) {
-        _profiles = _getDefaultProfiles();
-        _currentUserId = 'vicente';
-      }
-    } else {
-      _profiles = _getDefaultProfiles();
-      _currentUserId = 'vicente';
-    }
-    
-    if (_profiles.isEmpty) {
-      _profiles = _getDefaultProfiles();
-    }
+    // Deprecated for multi-profile local load. Scoped by initializeUser.
   }
 
   Future<void> saveProfilesConfig() async {
     final prefs = await SharedPreferences.getInstance();
-    final config = {
-      'profiles': _profiles.map((p) => p.toJson()).toList(),
-      'currentUserId': _currentUserId,
-    };
-    await prefs.setString('los_mooscles_profiles_config', json.encode(config));
+    if (_profiles.isNotEmpty) {
+      final profile = _profiles.firstWhere((p) => p.id == _currentUserId);
+      await prefs.setString('los_mooscles_profile_$_currentUserId', json.encode(profile.toJson()));
+    }
   }
 
   Future<bool> switchProfile(String profileId, String password) async {
-    final target = _profiles.firstWhere((p) => p.id == profileId);
-    if (target.hasPassword && target.password != password) {
-      return false; // Senha incorreta
-    }
-    _currentUserId = profileId;
-    await saveProfilesConfig();
-    _isLoading = true;
-    notifyListeners();
-    await loadCurrentState();
-    _isLoading = false;
-    notifyListeners();
+    // Deprecated
     return true;
   }
 
@@ -133,21 +160,23 @@ class TrackerProvider extends ChangeNotifier {
   }
 
   Future<void> createProfile(String name, String avatar, String color, String password) async {
-    final id = generateProfileId(name);
+    // Deprecated in favor of Auth register
+  }
+
+  Future<void> createCloudProfile(String uid, String name, String avatar, String color) async {
     final newProfile = Profile(
-      id: id,
+      id: uid,
       name: name,
       avatar: avatar,
       colorAccent: color,
-      password: password,
-      hasPassword: password.isNotEmpty,
+      password: '',
+      hasPassword: false,
     );
-    _profiles.add(newProfile);
-    _currentUserId = id;
+    _profiles = [newProfile];
+    _currentUserId = uid;
     await saveProfilesConfig();
     _state = _getDefaultState();
-    await saveState(); // This will trigger syncStateWithFirebase which uploads the profile config
-    notifyListeners();
+    await saveState();
   }
 
   Future<void> updateProfile(String id, String name, String avatar, String color, String password) async {
@@ -178,20 +207,7 @@ class TrackerProvider extends ChangeNotifier {
   }
 
   Future<void> deleteProfile(String id) async {
-    if (_profiles.length <= 1 || _currentUserId == id) return;
-    _profiles.removeWhere((p) => p.id == id);
-    await saveProfilesConfig();
-    
-    // Deleta do Firebase se necessário
-    try {
-      FirebaseFirestore.instance
-          .collection('users')
-          .doc(id)
-          .delete();
-    } catch (e) {
-      // Ignora erro se estiver offline ou sem Firebase
-    }
-    notifyListeners();
+    // Deprecated
   }
 
   // --- STATE PERSISTENCE (SHAPED STATE) ---

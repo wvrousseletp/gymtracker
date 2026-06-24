@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'firebase_options.dart';
 import 'providers/tracker_provider.dart';
 import 'screens/main_navigation.dart';
+import 'screens/login_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,12 +35,33 @@ class MyApp extends StatelessWidget {
         colorScheme: const ColorScheme.dark(
           primary: Colors.white,
           background: Colors.black,
-          surface: Color(0xff1c1c1e),
+          surface: const Color(0xff1c1c1e),
         ),
         textTheme: GoogleFonts.robotoTextTheme(ThemeData.dark().textTheme),
         useMaterial3: true,
       ),
-      home: const MainNavigation(),
+      home: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(
+                child: CircularProgressIndicator(),
+              ),
+            );
+          }
+          if (snapshot.hasData && snapshot.data != null) {
+            final provider = Provider.of<TrackerProvider>(context, listen: false);
+            if (provider.currentUserId != snapshot.data!.uid) {
+              Future.microtask(() {
+                provider.initializeUser(snapshot.data!.uid);
+              });
+            }
+            return const MainNavigation();
+          }
+          return const LoginScreen();
+        },
+      ),
     );
   }
 }
