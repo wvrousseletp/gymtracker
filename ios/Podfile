@@ -47,6 +47,16 @@ post_install do |installer|
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
       config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+      
+      if config.build_settings['OTHER_CFLAGS'].is_a?(Array)
+        config.build_settings['OTHER_CFLAGS'] << '-Wno-error=non-modular-include-in-framework-module'
+        config.build_settings['OTHER_CFLAGS'] << '-Wno-non-modular-include-in-framework-module'
+      elsif config.build_settings['OTHER_CFLAGS'].is_a?(String)
+        config.build_settings['OTHER_CFLAGS'] += ' -Wno-error=non-modular-include-in-framework-module -Wno-non-modular-include-in-framework-module'
+      else
+        config.build_settings['OTHER_CFLAGS'] = ['$(inherited)', '-Wno-error=non-modular-include-in-framework-module', '-Wno-non-modular-include-in-framework-module']
+      end
+
       existing_flags = config.build_settings['WARNING_CFLAGS']
       if existing_flags.is_a?(Array)
         config.build_settings['WARNING_CFLAGS'] << '-Wno-missing-template-arg-list-after-template-kw'
