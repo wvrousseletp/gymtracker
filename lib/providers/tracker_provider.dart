@@ -133,6 +133,23 @@ class TrackerProvider extends ChangeNotifier {
 
     await loadCurrentState();
 
+    // Migração de dados locais antigos de 'vicente' para o Google UID
+    if (_state == null || _state!.history.isEmpty) {
+      final oldStateRaw = prefs.getString('shapeup_tracker_state_vicente');
+      if (oldStateRaw != null) {
+        try {
+          final oldState = PlannerState.fromJson(json.decode(oldStateRaw));
+          if (oldState.history.isNotEmpty || oldState.routines.isNotEmpty) {
+            _state = oldState;
+            await saveState();
+            debugPrint('[Migration] Dados locais de "vicente" migrados com sucesso para o Google UID: $uid');
+          }
+        } catch (e) {
+          debugPrint('[Migration] Erro ao tentar migrar dados locais antigos: $e');
+        }
+      }
+    }
+
     // Reconcile: if there is no active workout saved, clean up any zombie
     // Live Activities or Watch sessions left over from a crashed previous session.
     if (_state?.activeWorkout == null) {
