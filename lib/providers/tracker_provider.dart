@@ -249,19 +249,22 @@ class TrackerProvider extends ChangeNotifier {
   Future<void> loadCurrentState() async {
     final prefs = await SharedPreferences.getInstance();
     final stateRaw = prefs.getString('shapeup_tracker_state_$_currentUserId');
+    bool forceDownload = false;
     
     if (stateRaw != null) {
       try {
         _state = PlannerState.fromJson(json.decode(stateRaw));
       } catch (e) {
         _state = _getDefaultState();
+        forceDownload = true;
       }
     } else {
       _state = _getDefaultState();
+      forceDownload = true;
     }
     
     // Tenta sincronizar com o Firebase
-    syncStateWithFirebase();
+    syncStateWithFirebase(forceDownload: forceDownload);
   }
 
   Future<void> saveState() async {
@@ -349,7 +352,7 @@ class TrackerProvider extends ChangeNotifier {
   }
 
   // --- FIREBASE SYNC ---
-  Future<void> syncStateWithFirebase() async {
+  Future<void> syncStateWithFirebase({bool forceDownload = false}) async {
     if (_state == null) return;
     
     try {
@@ -361,7 +364,26 @@ class TrackerProvider extends ChangeNotifier {
         if (data != null && data['jsonState'] != null) {
           final remoteState = PlannerState.fromJson(json.decode(data['jsonState']));
           
-          if (_state!.history.length >= remoteState.history.length) {
+          if (forceDownload) {
+            _state = remoteState;
+            notifyListeners();
+            // Salva localmente
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString(
+              'shapeup_tracker_state_$_currentUserId', 
+              json.encode(_state!.toJson())
+            );
+            
+            // Também sincroniza as informações de perfil localmente se vierem da nuvem
+            if (data['profile'] != null) {
+              final remoteProfile = Profile.fromJson(data['profile']);
+              final idx = _profiles.indexWhere((p) => p.id == remoteProfile.id);
+              if (idx != -1) {
+                _profiles[idx] = remoteProfile;
+                await saveProfilesConfig();
+              }
+            }
+          } else if (_state!.history.length >= remoteState.history.length) {
             await docRef.set({
               'jsonState': json.encode(_state!.toJson()),
               'profile': currentProfile.toJson(),
