@@ -1,8 +1,6 @@
-import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/profile.dart';
 import '../models/exercise.dart';
@@ -13,32 +11,18 @@ import '../models/diet.dart';
 import '../models/planner_state.dart';
 import '../services/watch_service.dart';
 import '../services/rest_timer_service.dart';
+import '../services/state_persistence_service.dart';
+import '../services/firebase_sync_service.dart';
+import '../utils/date_utils.dart';
 
-DateTime parseUtcDate(String dateStr) {
-  if (dateStr.isEmpty) return DateTime.now();
-  try {
-    DateTime parsed = DateTime.parse(dateStr);
-    if (!parsed.isUtc && !dateStr.contains('Z') && !dateStr.contains('+') && !dateStr.contains('-')) {
-      parsed = DateTime.utc(
-        parsed.year,
-        parsed.month,
-        parsed.day,
-        parsed.hour,
-        parsed.minute,
-        parsed.second,
-        parsed.millisecond,
-        parsed.microsecond,
-      );
-    }
-    return parsed.toLocal();
-  } catch (_) {
-    return DateTime.now();
-  }
-}
+export '../utils/date_utils.dart';
 
 class TrackerProvider extends ChangeNotifier {
+  final StatePersistenceService _persistence = StatePersistenceService();
+  final FirebaseSyncService _firebaseSync = FirebaseSyncService();
+
   List<Profile> _profiles = [];
-  String _currentUserId = 'vicente';
+  String _currentUserId = '';
   PlannerState? _state;
   bool _isLoading = true;
 
@@ -51,16 +35,20 @@ class TrackerProvider extends ChangeNotifier {
         (p) => p.id == _currentUserId,
         orElse: () => Profile(
           id: _currentUserId,
-          name: 'Vicente',
+          name: 'Usuário',
           avatar: '🏋️',
           colorAccent: 'Branco',
-          password: '',
-          hasPassword: false,
         ),
       );
 
   TrackerProvider() {
     _init();
+  }
+
+  @override
+  void dispose() {
+    _firebaseSync.dispose();
+    super.dispose();
   }
 
   Future<void> _init() async {
@@ -79,79 +67,45 @@ class TrackerProvider extends ChangeNotifier {
     _currentUserId = uid;
     notifyListeners();
 
-    final prefs = await SharedPreferences.getInstance();
-    final profileRaw = prefs.getString('los_mooscles_profile_$uid');
+    final profileRaw = await _persistence.loadProfileJson(uid);
     if (profileRaw != null) {
       try {
-        final profile = Profile.fromJson(json.decode(profileRaw));
-        _profiles = [profile];
+        _profiles = [_persistence.decodeProfile(profileRaw)];
       } catch (e) {
-        _profiles = [
-          Profile(
-            id: uid,
-            name: FirebaseAuth.instance.currentUser?.displayName ?? 'Usuário',
-            avatar: '🏋️',
-            colorAccent: 'Branco',
-            password: '',
-            hasPassword: false,
-          )
-        ];
+        _profiles = [_defaultProfile(uid)];
       }
     } else {
-      // Tenta obter o perfil da nuvem primeiro antes do fallback local
       final cloudProfile = await checkProfileExistsInCloud(uid);
       if (cloudProfile != null) {
         try {
-          final profile = Profile.fromJson(cloudProfile);
-          _profiles = [profile];
+          _profiles = [Profile.fromJson(cloudProfile)];
           await saveProfilesConfig();
         } catch (_) {
-          _profiles = [
-            Profile(
-              id: uid,
-              name: FirebaseAuth.instance.currentUser?.displayName ?? 'Usuário',
-              avatar: '🏋️',
-              colorAccent: 'Branco',
-              password: '',
-              hasPassword: false,
-            )
-          ];
+          _profiles = [_defaultProfile(uid)];
         }
       } else {
-        _profiles = [
-          Profile(
-            id: uid,
-            name: FirebaseAuth.instance.currentUser?.displayName ?? 'Usuário',
-            avatar: '🏋️',
-            colorAccent: 'Branco',
-            password: '',
-            hasPassword: false,
-          )
-        ];
+        _profiles = [_defaultProfile(uid)];
       }
     }
 
     await loadCurrentState();
 
-    // Migração de dados locais antigos de 'vicente' para o Google UID
     if (_state == null || _state!.history.isEmpty) {
-      final oldStateRaw = prefs.getString('shapeup_tracker_state_vicente');
+      final oldStateRaw = await _persistence.loadLegacyVicenteStateJson();
       if (oldStateRaw != null) {
         try {
-          final oldState = PlannerState.fromJson(json.decode(oldStateRaw));
+          final oldState = _persistence.decodeState(oldStateRaw);
           if (oldState.history.isNotEmpty || oldState.routines.isNotEmpty) {
             _state = oldState;
-            await saveState();
-            debugPrint('[Migration] Dados locais de "vicente" migrados com sucesso para o Google UID: $uid');
+            await saveState(immediateSync: true);
+            debugPrint('[Migration] Dados locais de "vicente" migrados para o Google UID: $uid');
           }
         } catch (e) {
-          debugPrint('[Migration] Erro ao tentar migrar dados locais antigos: $e');
+          debugPrint('[Migration] Erro ao migrar dados locais antigos: $e');
         }
       }
     }
 
-    // Reconcile: if there is no active workout saved, clean up any zombie
-    // Live Activities or Watch sessions left over from a crashed previous session.
     if (_state?.activeWorkout == null) {
       RestTimerService.instance.clear();
       WatchService.instance.sendActiveWorkoutCleared();
@@ -161,13 +115,20 @@ class TrackerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Profile _defaultProfile(String uid) => Profile(
+        id: uid,
+        name: FirebaseAuth.instance.currentUser?.displayName ?? 'Usuário',
+        avatar: '🏋️',
+        colorAccent: 'Branco',
+      );
+
   Future<void> logout() async {
     _isLoading = true;
     notifyListeners();
 
     _state = null;
     _profiles = [];
-    _currentUserId = 'vicente';
+    _currentUserId = '';
 
     await FirebaseAuth.instance.signOut();
 
@@ -175,30 +136,13 @@ class TrackerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // --- PROFILE MANAGEMENT ---
-  Future<void> loadProfiles() async {
-    // Deprecated for multi-profile local load. Scoped by initializeUser.
-  }
-
   Future<void> saveProfilesConfig() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (_profiles.isNotEmpty) {
-      final profile = _profiles.firstWhere((p) => p.id == _currentUserId);
-      await prefs.setString('los_mooscles_profile_$_currentUserId', json.encode(profile.toJson()));
-    }
-  }
-
-  Future<bool> switchProfile(String profileId, String password) async {
-    // Deprecated
-    return true;
-  }
-
-  String generateProfileId(String name) {
-    return name.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '_').replaceAll(RegExp(r'[^a-z0-9_]'), '');
-  }
-
-  Future<void> createProfile(String name, String avatar, String color, String password) async {
-    // Deprecated in favor of Auth register
+    if (_profiles.isEmpty) return;
+    final profile = _profiles.firstWhere((p) => p.id == _currentUserId);
+    await _persistence.saveProfileJson(
+      _currentUserId,
+      _persistence.encodeProfile(profile),
+    );
   }
 
   Future<void> createCloudProfile(String uid, String name, String avatar, String color) async {
@@ -207,53 +151,36 @@ class TrackerProvider extends ChangeNotifier {
       name: name,
       avatar: avatar,
       colorAccent: color,
-      password: '',
-      hasPassword: false,
     );
     _profiles = [newProfile];
     _currentUserId = uid;
     await saveProfilesConfig();
     _state = _getDefaultState();
-    await saveState();
+    await saveState(immediateSync: true);
   }
 
-  Future<void> updateProfile(String id, String name, String avatar, String color, String password) async {
+  Future<void> updateProfile(String id, String name, String avatar, String color) async {
     final idx = _profiles.indexWhere((p) => p.id == id);
-    if (idx != -1) {
-      _profiles[idx] = Profile(
-        id: id,
-        name: name,
-        avatar: avatar,
-        colorAccent: color,
-        password: password,
-        hasPassword: password.isNotEmpty,
-      );
-      await saveProfilesConfig();
-      
-      // Update in Firebase as well (non-blocking)
-      FirebaseFirestore.instance.collection('users').doc(id).update({
-        'profile': _profiles[idx].toJson(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      }).catchError((e) {
-        debugPrint('[Firebase] Erro ao atualizar perfil na nuvem: $e');
-      });
-      notifyListeners();
-    }
+    if (idx == -1) return;
+
+    _profiles[idx] = Profile(
+      id: id,
+      name: name,
+      avatar: avatar,
+      colorAccent: color,
+    );
+    await saveProfilesConfig();
+    unawaited(_firebaseSync.updateCloudProfile(id, _profiles[idx]));
+    notifyListeners();
   }
 
-  Future<void> deleteProfile(String id) async {
-    // Deprecated
-  }
-
-  // --- STATE PERSISTENCE (SHAPED STATE) ---
   Future<void> loadCurrentState() async {
-    final prefs = await SharedPreferences.getInstance();
-    final stateRaw = prefs.getString('shapeup_tracker_state_$_currentUserId');
-    bool forceDownload = false;
-    
+    final stateRaw = await _persistence.loadStateJson(_currentUserId);
+    var forceDownload = false;
+
     if (stateRaw != null) {
       try {
-        _state = PlannerState.fromJson(json.decode(stateRaw));
+        _state = _persistence.decodeState(stateRaw);
       } catch (e) {
         _state = _getDefaultState();
         forceDownload = true;
@@ -262,20 +189,18 @@ class TrackerProvider extends ChangeNotifier {
       _state = _getDefaultState();
       forceDownload = true;
     }
-    
-    // Tenta sincronizar com o Firebase
-    syncStateWithFirebase(forceDownload: forceDownload);
+
+    await _syncWithFirebase(forceDownload: forceDownload);
   }
 
-  Future<void> saveState() async {
-    if (_state == null) return;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      'shapeup_tracker_state_$_currentUserId', 
-      json.encode(_state!.toJson())
+  Future<void> saveState({bool immediateSync = false}) async {
+    if (_state == null || _currentUserId.isEmpty) return;
+
+    await _persistence.saveStateJson(
+      _currentUserId,
+      _persistence.encodeState(_state!),
     );
-    
-    // Sincroniza com o Apple Watch via Bluetooth
+
     WatchService.instance.sendRoutines(_state!.routines);
     WatchService.instance.sendLibrary(_state!.library);
     WatchService.instance.sendPlanner(_state!.planner);
@@ -284,144 +209,59 @@ class TrackerProvider extends ChangeNotifier {
     } else {
       WatchService.instance.sendActiveWorkoutCleared();
     }
-    
-    // Sincroniza widgets locais do iOS
     WatchService.instance.syncWidgetData();
-    
-    // Sincroniza em segundo plano
-    syncStateWithFirebase();
-  }
 
-  // --- FIREBASE CLOUD MANAGEMENT ---
-  Future<Map<String, dynamic>?> checkProfileExistsInCloud(String profileId) async {
-    try {
-      final doc = await FirebaseFirestore.instance.collection('users').doc(profileId).get();
-      if (doc.exists) {
-        final data = doc.data();
-        if (data != null && data['profile'] != null) {
-          return Map<String, dynamic>.from(data['profile']);
-        }
-      }
-      return null;
-    } catch (e) {
-      return null;
+    if (immediateSync) {
+      await _firebaseSync.flushSync(
+        userId: _currentUserId,
+        state: _state!,
+        profile: currentProfile,
+      );
+    } else {
+      _firebaseSync.scheduleSync(
+        userId: _currentUserId,
+        state: _state!,
+        profile: currentProfile,
+      );
     }
   }
 
-  Future<bool> importProfileFromCloud(String profileId, String password) async {
-    try {
-      final docRef = FirebaseFirestore.instance.collection('users').doc(profileId);
-      final docSnap = await docRef.get();
-      if (!docSnap.exists) return false;
-      
-      final data = docSnap.data();
-      if (data == null) return false;
-      
-      // Checa a senha do perfil remoto
-      if (data['profile'] != null) {
-        final remoteProfile = Profile.fromJson(data['profile']);
-        
-        if (remoteProfile.hasPassword && remoteProfile.password != password) {
-          return false; // Senha incorreta
-        }
-        
-        // Adiciona à lista local se não existir
-        if (!_profiles.any((p) => p.id == remoteProfile.id)) {
-          _profiles.add(remoteProfile);
-        }
-        _currentUserId = remoteProfile.id;
+  Future<Map<String, dynamic>?> checkProfileExistsInCloud(String profileId) {
+    return _firebaseSync.fetchCloudProfile(profileId);
+  }
+
+  Future<void> _syncWithFirebase({required bool forceDownload}) async {
+    if (_state == null || _currentUserId.isEmpty) return;
+
+    final result = await _firebaseSync.sync(
+      userId: _currentUserId,
+      localState: _state!,
+      profile: currentProfile,
+      forceDownload: forceDownload,
+      onRemoteApplied: _applyRemoteState,
+    );
+
+    if (result != null && result != _state) {
+      _state = result;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _applyRemoteState(PlannerState remoteState, Profile? remoteProfile) async {
+    _state = remoteState;
+    await _persistence.saveStateJson(
+      _currentUserId,
+      _persistence.encodeState(remoteState),
+    );
+
+    if (remoteProfile != null) {
+      final idx = _profiles.indexWhere((p) => p.id == remoteProfile.id);
+      if (idx != -1) {
+        _profiles[idx] = remoteProfile;
         await saveProfilesConfig();
-        
-        // Carrega o estado e salva localmente
-        if (data['jsonState'] != null) {
-          _state = PlannerState.fromJson(json.decode(data['jsonState']));
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString(
-            'shapeup_tracker_state_$_currentUserId', 
-            json.encode(_state!.toJson())
-          );
-        }
-        notifyListeners();
-        return true;
       }
-      return false;
-    } catch (e) {
-      debugPrint('[Firebase] Erro ao importar perfil: $e');
-      return false;
     }
-  }
-
-  // --- FIREBASE SYNC ---
-  Future<void> syncStateWithFirebase({bool forceDownload = false}) async {
-    if (_state == null) return;
-    
-    try {
-      final docRef = FirebaseFirestore.instance.collection('users').doc(_currentUserId);
-      final docSnap = await docRef.get();
-      
-      if (docSnap.exists) {
-        final data = docSnap.data();
-        if (data != null && data['jsonState'] != null) {
-          final remoteState = PlannerState.fromJson(json.decode(data['jsonState']));
-          
-          if (forceDownload) {
-            _state = remoteState;
-            notifyListeners();
-            // Salva localmente
-            final prefs = await SharedPreferences.getInstance();
-            await prefs.setString(
-              'shapeup_tracker_state_$_currentUserId', 
-              json.encode(_state!.toJson())
-            );
-            
-            // Também sincroniza as informações de perfil localmente se vierem da nuvem
-            if (data['profile'] != null) {
-              final remoteProfile = Profile.fromJson(data['profile']);
-              final idx = _profiles.indexWhere((p) => p.id == remoteProfile.id);
-              if (idx != -1) {
-                _profiles[idx] = remoteProfile;
-                await saveProfilesConfig();
-              }
-            }
-          } else if (_state!.history.length >= remoteState.history.length) {
-            await docRef.set({
-              'jsonState': json.encode(_state!.toJson()),
-              'profile': currentProfile.toJson(),
-              'updatedAt': FieldValue.serverTimestamp(),
-            });
-          } else {
-            _state = remoteState;
-            notifyListeners();
-            // Salva localmente
-            final prefs = await SharedPreferences.getInstance();
-            await prefs.setString(
-              'shapeup_tracker_state_$_currentUserId', 
-              json.encode(_state!.toJson())
-            );
-            
-            // Também sincroniza as informações de perfil localmente se vierem da nuvem
-            if (data['profile'] != null) {
-              final remoteProfile = Profile.fromJson(data['profile']);
-              final idx = _profiles.indexWhere((p) => p.id == remoteProfile.id);
-              if (idx != -1) {
-                _profiles[idx] = remoteProfile;
-                await saveProfilesConfig();
-              }
-            }
-          }
-        }
-      } else {
-        // Envia dados locais se não houver dados remotos
-        await docRef.set({
-          'jsonState': json.encode(_state!.toJson()),
-          'profile': currentProfile.toJson(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-      }
-    } catch (e) {
-      // Ignora falhas de conexão de rede ou Firebase não configurado
-      debugPrint('[Firebase] Erro de sincronização: $e');
-    }
+    notifyListeners();
   }
 
   // --- WORKOUT OPERATIONS ---
@@ -466,17 +306,7 @@ class TrackerProvider extends ChangeNotifier {
       warmupDurationSeconds: 0,
     );
 
-    _state = PlannerState(
-      library: _state!.library,
-      routines: _state!.routines,
-      planner: _state!.planner,
-      history: _state!.history,
-      prs: _state!.prs,
-      medidas: _state!.medidas,
-      settings: _state!.settings,
-      activeWorkout: activeWorkout,
-      diet: _state!.diet,
-    );
+    _state = _state!.copyWith(activeWorkout: activeWorkout);
 
     saveState();
     notifyListeners();
@@ -581,17 +411,7 @@ class TrackerProvider extends ChangeNotifier {
       restTimer: computedRestTimer,
     );
 
-    _state = PlannerState(
-      library: _state!.library,
-      routines: _state!.routines,
-      planner: _state!.planner,
-      history: _state!.history,
-      prs: _state!.prs,
-      medidas: _state!.medidas,
-      settings: _state!.settings,
-      activeWorkout: updatedWorkout,
-      diet: _state!.diet,
-    );
+    _state = _state!.copyWith(activeWorkout: updatedWorkout);
 
     saveState();
     if (computedRestTimer != null) {
@@ -625,17 +445,7 @@ class TrackerProvider extends ChangeNotifier {
       restTimer: restTimer,
     );
 
-    _state = PlannerState(
-      library: _state!.library,
-      routines: _state!.routines,
-      planner: _state!.planner,
-      history: _state!.history,
-      prs: _state!.prs,
-      medidas: _state!.medidas,
-      settings: _state!.settings,
-      activeWorkout: updatedWorkout,
-      diet: _state!.diet,
-    );
+    _state = _state!.copyWith(activeWorkout: updatedWorkout);
 
     saveState();
     // Sync global RestTimerService (survives navigation)
@@ -657,17 +467,7 @@ class TrackerProvider extends ChangeNotifier {
       restTimer: null,
     );
 
-    _state = PlannerState(
-      library: _state!.library,
-      routines: _state!.routines,
-      planner: _state!.planner,
-      history: _state!.history,
-      prs: _state!.prs,
-      medidas: _state!.medidas,
-      settings: _state!.settings,
-      activeWorkout: updatedWorkout,
-      diet: _state!.diet,
-    );
+    _state = _state!.copyWith(activeWorkout: updatedWorkout);
 
     saveState();
     // Sync global RestTimerService
@@ -701,17 +501,7 @@ class TrackerProvider extends ChangeNotifier {
       exercises: exercises,
     );
 
-    _state = PlannerState(
-      library: _state!.library,
-      routines: _state!.routines,
-      planner: _state!.planner,
-      history: _state!.history,
-      prs: _state!.prs,
-      medidas: _state!.medidas,
-      settings: _state!.settings,
-      activeWorkout: updatedWorkout,
-      diet: _state!.diet,
-    );
+    _state = _state!.copyWith(activeWorkout: updatedWorkout);
 
     saveState();
     notifyListeners();
@@ -726,17 +516,7 @@ class TrackerProvider extends ChangeNotifier {
       warmupDurationSeconds: isWarmupTimer ? seconds : active.warmupDurationSeconds,
     );
 
-    _state = PlannerState(
-      library: _state!.library,
-      routines: _state!.routines,
-      planner: _state!.planner,
-      history: _state!.history,
-      prs: _state!.prs,
-      medidas: _state!.medidas,
-      settings: _state!.settings,
-      activeWorkout: updatedWorkout,
-      diet: _state!.diet,
-    );
+    _state = _state!.copyWith(activeWorkout: updatedWorkout);
     // notifyListeners(); // Otimizado: evita reconstrução de todo o app a cada segundo.
 
     // Sincroniza com o Apple Watch a cada 5 segundos para manter timer atualizado no relógio
@@ -753,17 +533,7 @@ class TrackerProvider extends ChangeNotifier {
       currentExerciseIndex: index,
     );
 
-    _state = PlannerState(
-      library: _state!.library,
-      routines: _state!.routines,
-      planner: _state!.planner,
-      history: _state!.history,
-      prs: _state!.prs,
-      medidas: _state!.medidas,
-      settings: _state!.settings,
-      activeWorkout: updatedWorkout,
-      diet: _state!.diet,
-    );
+    _state = _state!.copyWith(activeWorkout: updatedWorkout);
     saveState();
     notifyListeners();
   }
@@ -776,17 +546,7 @@ class TrackerProvider extends ChangeNotifier {
       paused: isPaused,
     );
 
-    _state = PlannerState(
-      library: _state!.library,
-      routines: _state!.routines,
-      planner: _state!.planner,
-      history: _state!.history,
-      prs: _state!.prs,
-      medidas: _state!.medidas,
-      settings: _state!.settings,
-      activeWorkout: updatedWorkout,
-      diet: _state!.diet,
-    );
+    _state = _state!.copyWith(activeWorkout: updatedWorkout);
     // Notifica o Apple Watch imediatamente sobre pausa/retomada
     WatchService.instance.sendActiveWorkout(updatedWorkout);
     saveState();
@@ -808,22 +568,12 @@ class TrackerProvider extends ChangeNotifier {
       // iOS has no active workout — create one from the Watch state.
       try {
         final fromWatch = ActiveWorkoutState.fromJson(watchData);
-        _state = PlannerState(
-          library: _state!.library,
-          routines: _state!.routines,
-          planner: _state!.planner,
-          history: _state!.history,
-          prs: _state!.prs,
-          medidas: _state!.medidas,
-          settings: _state!.settings,
-          activeWorkout: fromWatch,
-          diet: _state!.diet,
-        );
-        print('[TrackerProvider] applyActiveWorkoutFromWatch: created new active workout from Watch state (${fromWatch.name})');
+        _state = _state!.copyWith(activeWorkout: fromWatch);
+        debugPrint('[TrackerProvider] applyActiveWorkoutFromWatch: created new active workout from Watch state (${fromWatch.name})');
         saveState();
         notifyListeners();
       } catch (e) {
-        print('[TrackerProvider] applyActiveWorkoutFromWatch: failed to parse Watch state — $e');
+        debugPrint('[TrackerProvider] applyActiveWorkoutFromWatch: failed to parse Watch state — $e');
       }
       return;
     }
@@ -874,22 +624,12 @@ class TrackerProvider extends ChangeNotifier {
         );
       }
 
-      _state = PlannerState(
-        library: _state!.library,
-        routines: _state!.routines,
-        planner: _state!.planner,
-        history: _state!.history,
-        prs: _state!.prs,
-        medidas: _state!.medidas,
-        settings: _state!.settings,
-        activeWorkout: current.copyWith(exercises: merged),
-        diet: _state!.diet,
-      );
-      print('[TrackerProvider] applyActiveWorkoutFromWatch: merged Watch sets into iOS state');
+      _state = _state!.copyWith(activeWorkout: current.copyWith(exercises: merged));
+      debugPrint('[TrackerProvider] applyActiveWorkoutFromWatch: merged Watch sets into iOS state');
       saveState();
       notifyListeners();
     } catch (e) {
-      print('[TrackerProvider] applyActiveWorkoutFromWatch: merge failed — $e');
+      debugPrint('[TrackerProvider] applyActiveWorkoutFromWatch: merge failed — $e');
     }
   }
 
@@ -898,17 +638,7 @@ class TrackerProvider extends ChangeNotifier {
     if (_state == null) return;
     // Stop any running rest timer immediately before clearing workout state.
     RestTimerService.instance.clear();
-    _state = PlannerState(
-      library: _state!.library,
-      routines: _state!.routines,
-      planner: _state!.planner,
-      history: _state!.history,
-      prs: _state!.prs,
-      medidas: _state!.medidas,
-      settings: _state!.settings,
-      activeWorkout: null,
-      diet: _state!.diet,
-    );
+    _state = _state!.copyWith(clearActiveWorkout: true);
     saveState();
     notifyListeners();
   }
@@ -922,17 +652,7 @@ class TrackerProvider extends ChangeNotifier {
       paused: true,
       postponed: true,
     );
-    _state = PlannerState(
-      library: _state!.library,
-      routines: _state!.routines,
-      planner: _state!.planner,
-      history: _state!.history,
-      prs: _state!.prs,
-      medidas: _state!.medidas,
-      settings: _state!.settings,
-      activeWorkout: updated,
-      diet: _state!.diet,
-    );
+    _state = _state!.copyWith(activeWorkout: updated);
     saveState();
     notifyListeners();
   }
@@ -945,17 +665,7 @@ class TrackerProvider extends ChangeNotifier {
       paused: false,
       postponed: false,
     );
-    _state = PlannerState(
-      library: _state!.library,
-      routines: _state!.routines,
-      planner: _state!.planner,
-      history: _state!.history,
-      prs: _state!.prs,
-      medidas: _state!.medidas,
-      settings: _state!.settings,
-      activeWorkout: updated,
-      diet: _state!.diet,
-    );
+    _state = _state!.copyWith(activeWorkout: updated);
     saveState();
     notifyListeners();
   }
@@ -969,17 +679,7 @@ class TrackerProvider extends ChangeNotifier {
       activeCalories: activeCalories,
     );
 
-    _state = PlannerState(
-      library: _state!.library,
-      routines: _state!.routines,
-      planner: _state!.planner,
-      history: _state!.history,
-      prs: _state!.prs,
-      medidas: _state!.medidas,
-      settings: _state!.settings,
-      activeWorkout: updatedWorkout,
-      diet: _state!.diet,
-    );
+    _state = _state!.copyWith(activeWorkout: updatedWorkout);
 
     notifyListeners();
   }
@@ -1103,20 +803,10 @@ class TrackerProvider extends ChangeNotifier {
       WatchService.instance.sendPrCelebration(prExerciseNames);
     }
 
-    _state = PlannerState(
-      library: _state!.library,
-      routines: _state!.routines,
-      planner: _state!.planner,
-      history: newHistory,
-      prs: newPrs,
-      medidas: _state!.medidas,
-      settings: _state!.settings,
-      activeWorkout: null,
-      diet: _state!.diet,
-    );
+    _state = _state!.copyWith(history: newHistory, prs: newPrs, clearActiveWorkout: true);
 
     _updateStreak();
-    saveState();
+    saveState(immediateSync: true);
     notifyListeners();
   }
 
@@ -1170,17 +860,7 @@ class TrackerProvider extends ChangeNotifier {
       }
     }
 
-    _state = PlannerState(
-      library: _state!.library,
-      routines: _state!.routines,
-      planner: _state!.planner,
-      history: newHistory,
-      prs: newPrs,
-      medidas: _state!.medidas,
-      settings: _state!.settings,
-      activeWorkout: _state!.activeWorkout,
-      diet: _state!.diet,
-    );
+    _state = _state!.copyWith(history: newHistory, prs: newPrs);
     _updateStreak();
     saveState();
     notifyListeners();
@@ -1265,18 +945,7 @@ class TrackerProvider extends ChangeNotifier {
       completedTodayRoutines: completedTodayRoutines,
     );
 
-    _state = PlannerState(
-      library: _state!.library,
-      routines: _state!.routines,
-      planner: _state!.planner,
-      history: _state!.history,
-      prs: _state!.prs,
-      medidas: _state!.medidas,
-      settings: _state!.settings,
-      activeWorkout: _state!.activeWorkout,
-      diet: _state!.diet,
-      streak: newStreak,
-    );
+    _state = _state!.copyWith(streak: newStreak);
 
     WatchService.instance.sendStreak(newStreak);
   }
@@ -1286,17 +955,7 @@ class TrackerProvider extends ChangeNotifier {
     if (_state == null) return;
     final planner = Map<String, List<String>>.from(_state!.planner);
     planner[day] = List<String>.from(planner[day] ?? [])..add("");
-    _state = PlannerState(
-      library: _state!.library,
-      routines: _state!.routines,
-      planner: planner,
-      history: _state!.history,
-      prs: _state!.prs,
-      medidas: _state!.medidas,
-      settings: _state!.settings,
-      activeWorkout: _state!.activeWorkout,
-      diet: _state!.diet,
-    );
+    _state = _state!.copyWith(planner: planner);
     saveState();
     notifyListeners();
   }
@@ -1307,17 +966,7 @@ class TrackerProvider extends ChangeNotifier {
     planner[day] = List<String>.from(planner[day] ?? []);
     planner[day]![index] = value;
     
-    _state = PlannerState(
-      library: _state!.library,
-      routines: _state!.routines,
-      planner: planner,
-      history: _state!.history,
-      prs: _state!.prs,
-      medidas: _state!.medidas,
-      settings: _state!.settings,
-      activeWorkout: _state!.activeWorkout,
-      diet: _state!.diet,
-    );
+    _state = _state!.copyWith(planner: planner);
     saveState();
     notifyListeners();
   }
@@ -1334,17 +983,7 @@ class TrackerProvider extends ChangeNotifier {
     planner[day]![index] = planner[day]![targetIndex];
     planner[day]![targetIndex] = temp;
 
-    _state = PlannerState(
-      library: _state!.library,
-      routines: _state!.routines,
-      planner: planner,
-      history: _state!.history,
-      prs: _state!.prs,
-      medidas: _state!.medidas,
-      settings: _state!.settings,
-      activeWorkout: _state!.activeWorkout,
-      diet: _state!.diet,
-    );
+    _state = _state!.copyWith(planner: planner);
     saveState();
     notifyListeners();
   }
@@ -1353,17 +992,7 @@ class TrackerProvider extends ChangeNotifier {
     if (_state == null) return;
     final planner = Map<String, List<String>>.from(_state!.planner);
     planner[day] = List<String>.from(planner[day] ?? [])..removeAt(index);
-    _state = PlannerState(
-      library: _state!.library,
-      routines: _state!.routines,
-      planner: planner,
-      history: _state!.history,
-      prs: _state!.prs,
-      medidas: _state!.medidas,
-      settings: _state!.settings,
-      activeWorkout: _state!.activeWorkout,
-      diet: _state!.diet,
-    );
+    _state = _state!.copyWith(planner: planner);
     saveState();
     notifyListeners();
   }
@@ -1372,17 +1001,7 @@ class TrackerProvider extends ChangeNotifier {
     if (_state == null) return;
     final Map<String, PersonalRecord> newPrs = Map.from(_state!.prs);
     newPrs.remove(exerciseId);
-    _state = PlannerState(
-      library: _state!.library,
-      routines: _state!.routines,
-      planner: _state!.planner,
-      history: _state!.history,
-      prs: newPrs,
-      medidas: _state!.medidas,
-      settings: _state!.settings,
-      activeWorkout: _state!.activeWorkout,
-      diet: _state!.diet,
-    );
+    _state = _state!.copyWith(prs: newPrs);
     saveState();
     notifyListeners();
   }
@@ -1399,17 +1018,7 @@ class TrackerProvider extends ChangeNotifier {
       executionType: executionType,
     );
     final library = List<LibraryExercise>.from(_state!.library)..add(newEx);
-    _state = PlannerState(
-      library: library,
-      routines: _state!.routines,
-      planner: _state!.planner,
-      history: _state!.history,
-      prs: _state!.prs,
-      medidas: _state!.medidas,
-      settings: _state!.settings,
-      activeWorkout: _state!.activeWorkout,
-      diet: _state!.diet,
-    );
+    _state = _state!.copyWith(library: library);
     saveState();
     notifyListeners();
   }
@@ -1427,17 +1036,7 @@ class TrackerProvider extends ChangeNotifier {
         notes: notes,
         executionType: executionType,
       );
-      _state = PlannerState(
-        library: library,
-        routines: _state!.routines,
-        planner: _state!.planner,
-        history: _state!.history,
-        prs: _state!.prs,
-        medidas: _state!.medidas,
-        settings: _state!.settings,
-        activeWorkout: _state!.activeWorkout,
-        diet: _state!.diet,
-      );
+      _state = _state!.copyWith(library: library);
       saveState();
       notifyListeners();
     }
@@ -1463,17 +1062,7 @@ class TrackerProvider extends ChangeNotifier {
       );
     }).toList();
 
-    _state = PlannerState(
-      library: library,
-      routines: routines,
-      planner: planner,
-      history: _state!.history,
-      prs: _state!.prs,
-      medidas: _state!.medidas,
-      settings: _state!.settings,
-      activeWorkout: _state!.activeWorkout,
-      diet: _state!.diet,
-    );
+    _state = _state!.copyWith(library: library, routines: routines, planner: planner);
     saveState();
     notifyListeners();
   }
@@ -1488,17 +1077,7 @@ class TrackerProvider extends ChangeNotifier {
       exercises: exercises,
     );
     final routines = List<Routine>.from(_state!.routines)..add(r);
-    _state = PlannerState(
-      library: _state!.library,
-      routines: routines,
-      planner: _state!.planner,
-      history: _state!.history,
-      prs: _state!.prs,
-      medidas: _state!.medidas,
-      settings: _state!.settings,
-      activeWorkout: _state!.activeWorkout,
-      diet: _state!.diet,
-    );
+    _state = _state!.copyWith(routines: routines);
     saveState();
     notifyListeners();
   }
@@ -1513,17 +1092,7 @@ class TrackerProvider extends ChangeNotifier {
       planner[k] = v.where((item) => item != 'routine:$id' && item != id).toList();
     });
 
-    _state = PlannerState(
-      library: _state!.library,
-      routines: routines,
-      planner: planner,
-      history: _state!.history,
-      prs: _state!.prs,
-      medidas: _state!.medidas,
-      settings: _state!.settings,
-      activeWorkout: _state!.activeWorkout,
-      diet: _state!.diet,
-    );
+    _state = _state!.copyWith(routines: routines, planner: planner);
     saveState();
     notifyListeners();
   }
@@ -1540,17 +1109,7 @@ class TrackerProvider extends ChangeNotifier {
       list.add(record);
     }
 
-    _state = PlannerState(
-      library: _state!.library,
-      routines: _state!.routines,
-      planner: _state!.planner,
-      history: _state!.history,
-      prs: _state!.prs,
-      medidas: list,
-      settings: _state!.settings,
-      activeWorkout: _state!.activeWorkout,
-      diet: _state!.diet,
-    );
+    _state = _state!.copyWith(medidas: list);
     saveState();
     notifyListeners();
   }
@@ -1558,17 +1117,7 @@ class TrackerProvider extends ChangeNotifier {
   void deleteMeasurement(String id) {
     if (_state == null) return;
     final list = List<BodyMeasurement>.from(_state!.medidas)..removeWhere((m) => m.id == id);
-    _state = PlannerState(
-      library: _state!.library,
-      routines: _state!.routines,
-      planner: _state!.planner,
-      history: _state!.history,
-      prs: _state!.prs,
-      medidas: list,
-      settings: _state!.settings,
-      activeWorkout: _state!.activeWorkout,
-      diet: _state!.diet,
-    );
+    _state = _state!.copyWith(medidas: list);
     saveState();
     notifyListeners();
   }
@@ -1579,17 +1128,7 @@ class TrackerProvider extends ChangeNotifier {
     if (index == -1) return;
     final List<BodyMeasurement> list = List.from(_state!.medidas);
     list[index] = record;
-    _state = PlannerState(
-      library: _state!.library,
-      routines: _state!.routines,
-      planner: _state!.planner,
-      history: _state!.history,
-      prs: _state!.prs,
-      medidas: list,
-      settings: _state!.settings,
-      activeWorkout: _state!.activeWorkout,
-      diet: _state!.diet,
-    );
+    _state = _state!.copyWith(medidas: list);
     saveState();
     notifyListeners();
   }
@@ -1602,17 +1141,7 @@ class TrackerProvider extends ChangeNotifier {
       vibration: vibration,
       prepSeconds: prepSeconds,
     );
-    _state = PlannerState(
-      library: _state!.library,
-      routines: _state!.routines,
-      planner: _state!.planner,
-      history: _state!.history,
-      prs: _state!.prs,
-      medidas: _state!.medidas,
-      settings: newSettings,
-      activeWorkout: _state!.activeWorkout,
-      diet: _state!.diet,
-    );
+    _state = _state!.copyWith(settings: newSettings);
     saveState();
     notifyListeners();
   }
@@ -1633,17 +1162,7 @@ class TrackerProvider extends ChangeNotifier {
       abstinence: currentDiet.abstinence,
     );
 
-    _state = PlannerState(
-      library: _state!.library,
-      routines: _state!.routines,
-      planner: _state!.planner,
-      history: _state!.history,
-      prs: _state!.prs,
-      medidas: _state!.medidas,
-      settings: _state!.settings,
-      activeWorkout: _state!.activeWorkout,
-      diet: newDiet,
-    );
+    _state = _state!.copyWith(diet: newDiet);
     saveState();
     notifyListeners();
   }
@@ -1674,17 +1193,7 @@ class TrackerProvider extends ChangeNotifier {
       abstinence: currentDiet.abstinence,
     );
 
-    _state = PlannerState(
-      library: _state!.library,
-      routines: _state!.routines,
-      planner: _state!.planner,
-      history: _state!.history,
-      prs: _state!.prs,
-      medidas: _state!.medidas,
-      settings: _state!.settings,
-      activeWorkout: _state!.activeWorkout,
-      diet: newDiet,
-    );
+    _state = _state!.copyWith(diet: newDiet);
     saveState();
     notifyListeners();
   }
@@ -1706,17 +1215,7 @@ class TrackerProvider extends ChangeNotifier {
       abstinence: currentDiet.abstinence,
     );
 
-    _state = PlannerState(
-      library: _state!.library,
-      routines: _state!.routines,
-      planner: _state!.planner,
-      history: _state!.history,
-      prs: _state!.prs,
-      medidas: _state!.medidas,
-      settings: _state!.settings,
-      activeWorkout: _state!.activeWorkout,
-      diet: newDiet,
-    );
+    _state = _state!.copyWith(diet: newDiet);
     saveState();
     notifyListeners();
   }
@@ -1746,17 +1245,7 @@ class TrackerProvider extends ChangeNotifier {
       abstinence: currentDiet.abstinence,
     );
 
-    _state = PlannerState(
-      library: _state!.library,
-      routines: _state!.routines,
-      planner: _state!.planner,
-      history: _state!.history,
-      prs: _state!.prs,
-      medidas: _state!.medidas,
-      settings: _state!.settings,
-      activeWorkout: _state!.activeWorkout,
-      diet: newDiet,
-    );
+    _state = _state!.copyWith(diet: newDiet);
     saveState();
     notifyListeners();
   }
@@ -1792,17 +1281,7 @@ class TrackerProvider extends ChangeNotifier {
       abstinence: currentDiet.abstinence,
     );
 
-    _state = PlannerState(
-      library: _state!.library,
-      routines: _state!.routines,
-      planner: _state!.planner,
-      history: _state!.history,
-      prs: _state!.prs,
-      medidas: _state!.medidas,
-      settings: _state!.settings,
-      activeWorkout: _state!.activeWorkout,
-      diet: newDiet,
-    );
+    _state = _state!.copyWith(diet: newDiet);
     saveState();
     notifyListeners();
   }
@@ -1821,17 +1300,7 @@ class TrackerProvider extends ChangeNotifier {
       fasting: currentDiet.fasting,
       abstinence: currentDiet.abstinence,
     );
-    _state = PlannerState(
-      library: _state!.library,
-      routines: _state!.routines,
-      planner: _state!.planner,
-      history: _state!.history,
-      prs: _state!.prs,
-      medidas: _state!.medidas,
-      settings: _state!.settings,
-      activeWorkout: _state!.activeWorkout,
-      diet: newDiet,
-    );
+    _state = _state!.copyWith(diet: newDiet);
     saveState();
     notifyListeners();
   }
@@ -1857,17 +1326,7 @@ class TrackerProvider extends ChangeNotifier {
       fasting: currentDiet.fasting,
       abstinence: list,
     );
-    _state = PlannerState(
-      library: _state!.library,
-      routines: _state!.routines,
-      planner: _state!.planner,
-      history: _state!.history,
-      prs: _state!.prs,
-      medidas: _state!.medidas,
-      settings: _state!.settings,
-      activeWorkout: _state!.activeWorkout,
-      diet: newDiet,
-    );
+    _state = _state!.copyWith(diet: newDiet);
     saveState();
     notifyListeners();
   }
@@ -1897,17 +1356,7 @@ class TrackerProvider extends ChangeNotifier {
       fasting: currentDiet.fasting,
       abstinence: list,
     );
-    _state = PlannerState(
-      library: _state!.library,
-      routines: _state!.routines,
-      planner: _state!.planner,
-      history: _state!.history,
-      prs: _state!.prs,
-      medidas: _state!.medidas,
-      settings: _state!.settings,
-      activeWorkout: _state!.activeWorkout,
-      diet: newDiet,
-    );
+    _state = _state!.copyWith(diet: newDiet);
     saveState();
     notifyListeners();
   }
@@ -1927,17 +1376,7 @@ class TrackerProvider extends ChangeNotifier {
       fasting: currentDiet.fasting,
       abstinence: list,
     );
-    _state = PlannerState(
-      library: _state!.library,
-      routines: _state!.routines,
-      planner: _state!.planner,
-      history: _state!.history,
-      prs: _state!.prs,
-      medidas: _state!.medidas,
-      settings: _state!.settings,
-      activeWorkout: _state!.activeWorkout,
-      diet: newDiet,
-    );
+    _state = _state!.copyWith(diet: newDiet);
     saveState();
     notifyListeners();
   }
@@ -1984,13 +1423,5 @@ class TrackerProvider extends ChangeNotifier {
       "sab": [],
       "dom": []
     };
-  }
-
-  List<Profile> _getDefaultProfiles() {
-    return [
-      Profile(id: "vicente", name: "Vicente", password: "", colorAccent: "Branco", avatar: "🏋️", hasPassword: false),
-      Profile(id: "davi", name: "Davi", password: "", colorAccent: "Azul", avatar: "⚡", hasPassword: false),
-      Profile(id: "ana", name: "Ana", password: "", colorAccent: "Vermelho", avatar: "✨", hasPassword: false),
-    ];
   }
 }

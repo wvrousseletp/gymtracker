@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/tracker_provider.dart';
+import '../models/profile.dart';
 import '../services/watch_service.dart';
 import '../widgets/profile_avatar.dart';
 import 'workout_screen.dart';
@@ -46,8 +47,8 @@ class _MainNavigationState extends State<MainNavigation> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<TrackerProvider>(context);
-    if (provider.isLoading) {
+    final isLoading = context.select<TrackerProvider, bool>((p) => p.isLoading);
+    if (isLoading) {
       return const Scaffold(
         backgroundColor: Colors.black,
         body: Center(
@@ -56,7 +57,9 @@ class _MainNavigationState extends State<MainNavigation> {
       );
     }
 
-    final activeProfile = provider.currentProfile;
+    final activeProfile = context.select<TrackerProvider, Profile>(
+      (p) => p.currentProfile,
+    );
     final accentColor = ThemeUtils.getColor(activeProfile.colorAccent);
 
     return Scaffold(

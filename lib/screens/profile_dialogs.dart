@@ -61,7 +61,6 @@ class _ProfileManagerSheetState extends State<ProfileManagerSheet> {
         name,
         _selectedAvatar,
         _selectedColor,
-        "",
       );
 
       setState(() {
@@ -90,9 +89,9 @@ class _ProfileManagerSheetState extends State<ProfileManagerSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<TrackerProvider>(context);
-    final activeProfile = provider.currentProfile;
+    final activeProfile = context.select<TrackerProvider, Profile>((p) => p.currentProfile);
     final accentColor = ThemeUtils.getColor(activeProfile.colorAccent);
+    final provider = Provider.of<TrackerProvider>(context, listen: false);
     final user = FirebaseAuth.instance.currentUser;
 
     if (!_isEditing && _nameController.text.isEmpty) {

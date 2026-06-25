@@ -31,8 +31,9 @@ class _DietScreenState extends State<DietScreen> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<TrackerProvider>(context);
-    final accentColor = ThemeUtils.getColor(provider.currentProfile.colorAccent);
+    final accentColor = context.select<TrackerProvider, Color>(
+      (p) => ThemeUtils.getColor(p.currentProfile.colorAccent),
+    );
 
     return Scaffold(
       backgroundColor: Colors.transparent,

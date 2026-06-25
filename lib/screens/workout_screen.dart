@@ -64,8 +64,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<TrackerProvider>(context);
-    final state = provider.state;
+    final state = context.select<TrackerProvider, PlannerState?>((p) => p.state);
 
     if (state == null) {
       return const Center(child: CircularProgressIndicator(color: Colors.white));
@@ -75,8 +74,10 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
     // Alternar visualização com base na presença de um treino ativo
     if (activeWorkout != null && !activeWorkout.postponed) {
+      final provider = Provider.of<TrackerProvider>(context, listen: false);
       return ActiveWorkoutView(activeWorkout: activeWorkout, provider: provider);
     } else {
+      final provider = Provider.of<TrackerProvider>(context, listen: false);
       return _buildIdleView(context, provider);
     }
   }
@@ -86,7 +87,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     final todayKey = _getTodayKey();
     final todayLabel = _getTodayLabel();
     final plannedRoutineIds = state.planner[todayKey] ?? [];
-    final accentColor = ThemeUtils.getColor(provider.currentProfile.colorAccent);
+    final accentColor = context.select<TrackerProvider, Color>(
+      (p) => ThemeUtils.getColor(p.currentProfile.colorAccent),
+    );
 
     // Mapear IDs do planejador para as rotinas reais do usuário
     final List<Routine> plannedRoutines = plannedRoutineIds.map((item) {

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import '../models/routine.dart';
 import '../models/exercise.dart';
@@ -198,7 +199,7 @@ class WatchService {
         break;
 
       case 'sessionActivated':
-        print("[WatchService] Native session activated, syncing state...");
+        debugPrint("[WatchService] Native session activated, syncing state...");
         if (_provider != null) {
           sendRoutines(_provider!.state?.routines ?? []);
           sendLibrary(_provider!.state?.library ?? []);
@@ -216,9 +217,9 @@ class WatchService {
         try {
           final log = WorkoutLog.fromJson(workoutData);
           _provider!.addManualWorkoutLog(log);
-          print("[WatchService] Synced offline workout from watch: ${log.name}");
+          debugPrint("[WatchService] Synced offline workout from watch: ${log.name}");
         } catch (e) {
-          print("[WatchService] Erro ao processar treino offline: $e");
+          debugPrint("[WatchService] Erro ao processar treino offline: $e");
         }
         break;
 
@@ -254,7 +255,7 @@ class WatchService {
             sendActiveWorkout(_provider!.state!.activeWorkout!);
           }
         } catch (e) {
-          print('[WatchService] Error applying active workout from Watch: $e');
+          debugPrint('[WatchService] Error applying active workout from Watch: $e');
         }
         break;
 
@@ -270,7 +271,7 @@ class WatchService {
       final List<Map<String, dynamic>> routinesJson = routines.map((r) => r.toJson()).toList();
       await _channel.invokeMethod('updateRoutines', json.encode(routinesJson));
     } on PlatformException catch (e) {
-      print("[WatchService] Erro ao enviar rotinas: $e");
+      debugPrint("[WatchService] Erro ao enviar rotinas: $e");
     }
   }
 
@@ -279,7 +280,7 @@ class WatchService {
       final List<Map<String, dynamic>> libraryJson = library.map((e) => e.toJson()).toList();
       await _channel.invokeMethod('updateLibrary', json.encode(libraryJson));
     } on PlatformException catch (e) {
-      print("[WatchService] Erro ao enviar biblioteca: $e");
+      debugPrint("[WatchService] Erro ao enviar biblioteca: $e");
     }
   }
 
@@ -287,7 +288,7 @@ class WatchService {
     try {
       await _channel.invokeMethod('updateActiveWorkout', json.encode(activeWorkout.toJson()));
     } on PlatformException catch (e) {
-      print("[WatchService] Erro ao enviar treino ativo: $e");
+      debugPrint("[WatchService] Erro ao enviar treino ativo: $e");
     }
   }
 
@@ -295,7 +296,7 @@ class WatchService {
     try {
       await _channel.invokeMethod('clearActiveWorkout');
     } on PlatformException catch (e) {
-      print("[WatchService] Erro ao limpar treino ativo no watch: $e");
+      debugPrint("[WatchService] Erro ao limpar treino ativo no watch: $e");
     }
   }
 
@@ -303,7 +304,7 @@ class WatchService {
     try {
       await _channel.invokeMethod('updatePlanner', json.encode(planner));
     } on PlatformException catch (e) {
-      print("[WatchService] Erro ao enviar planner: $e");
+      debugPrint("[WatchService] Erro ao enviar planner: $e");
     }
   }
 
@@ -353,7 +354,7 @@ class WatchService {
         'waterIntakeTarget': waterIntakeTarget,
       });
     } on PlatformException catch (e) {
-      print("[WatchService] Erro ao sincronizar widgets: $e");
+      debugPrint("[WatchService] Erro ao sincronizar widgets: $e");
     }
   }
 
@@ -361,7 +362,7 @@ class WatchService {
     try {
       await _channel.invokeMethod('prCelebration', exerciseNames);
     } on PlatformException catch (e) {
-      print("[WatchService] Erro ao enviar celebração de PR: $e");
+      debugPrint("[WatchService] Erro ao enviar celebração de PR: $e");
     }
   }
 
@@ -369,7 +370,7 @@ class WatchService {
     try {
       await _channel.invokeMethod('updateStreak', streak.toJson());
     } on PlatformException catch (e) {
-      print("[WatchService] Erro ao enviar streak: $e");
+      debugPrint("[WatchService] Erro ao enviar streak: $e");
     }
   }
 }

@@ -316,14 +316,15 @@ class _PlannerScreenState extends State<PlannerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<TrackerProvider>(context);
-    final state = provider.state;
+    final state = context.select<TrackerProvider, PlannerState?>((p) => p.state);
+    final accentColor = context.select<TrackerProvider, Color>(
+      (p) => ThemeUtils.getColor(p.currentProfile.colorAccent),
+    );
+    final provider = Provider.of<TrackerProvider>(context, listen: false);
 
     if (state == null) {
       return const Center(child: CircularProgressIndicator(color: Colors.white));
     }
-
-    final accentColor = ThemeUtils.getColor(provider.currentProfile.colorAccent);
 
     return Scaffold(
       backgroundColor: Colors.transparent,

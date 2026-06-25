@@ -113,7 +113,7 @@ class RestTimerService {
       });
     } on PlatformException catch (e) {
       // Non-fatal – Dynamic Island just won't show rest timer on this device
-      print('[RestTimerService] startRestTimer channel error: $e');
+      debugPrint('[RestTimerService] startRestTimer channel error: $e');
     }
   }
 
@@ -121,7 +121,7 @@ class RestTimerService {
     try {
       await _channel.invokeMethod('clearRestTimer');
     } on PlatformException catch (e) {
-      print('[RestTimerService] clearRestTimer channel error: $e');
+      debugPrint('[RestTimerService] clearRestTimer channel error: $e');
     }
   }
 }

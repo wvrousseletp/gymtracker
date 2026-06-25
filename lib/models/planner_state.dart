@@ -221,8 +221,6 @@ class ActiveWorkoutState {
 }
 
 class PlannerState {
-  static WorkoutStreak? currentStreak;
-
   final List<LibraryExercise> library;
   final List<Routine> routines;
   final Map<String, List<String>> planner; // Dia -> lista de strings de ID/Prefixo
@@ -245,8 +243,38 @@ class PlannerState {
     this.activeWorkout,
     required this.diet,
     WorkoutStreak? streak,
-  }) : streak = streak ?? PlannerState.currentStreak ?? WorkoutStreak(currentWeekCount: 0, consecutiveWeeks: 0, lastWorkoutDate: '') {
-    PlannerState.currentStreak = this.streak;
+  }) : streak = streak ??
+            WorkoutStreak(
+              currentWeekCount: 0,
+              consecutiveWeeks: 0,
+              lastWorkoutDate: '',
+            );
+
+  PlannerState copyWith({
+    List<LibraryExercise>? library,
+    List<Routine>? routines,
+    Map<String, List<String>>? planner,
+    List<WorkoutLog>? history,
+    Map<String, PersonalRecord>? prs,
+    List<BodyMeasurement>? medidas,
+    SettingsState? settings,
+    ActiveWorkoutState? activeWorkout,
+    bool clearActiveWorkout = false,
+    DietState? diet,
+    WorkoutStreak? streak,
+  }) {
+    return PlannerState(
+      library: library ?? this.library,
+      routines: routines ?? this.routines,
+      planner: planner ?? this.planner,
+      history: history ?? this.history,
+      prs: prs ?? this.prs,
+      medidas: medidas ?? this.medidas,
+      settings: settings ?? this.settings,
+      activeWorkout: clearActiveWorkout ? null : (activeWorkout ?? this.activeWorkout),
+      diet: diet ?? this.diet,
+      streak: streak ?? this.streak,
+    );
   }
 
   Map<String, dynamic> toJson() => {
