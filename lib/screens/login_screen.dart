@@ -4,10 +4,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
 import '../providers/tracker_provider.dart';
-import '../widgets/profile_avatar.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+  const LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -44,6 +43,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
       final userCredential = await _auth.signInWithCredential(credential);
       final user = userCredential.user;
+
+      if (!mounted) return;
 
       if (user != null) {
         final provider = Provider.of<TrackerProvider>(context, listen: false);

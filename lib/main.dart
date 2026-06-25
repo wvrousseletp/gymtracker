@@ -22,7 +22,7 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +35,7 @@ class MyApp extends StatelessWidget {
         colorScheme: const ColorScheme.dark(
           primary: Colors.white,
           background: Colors.black,
-          surface: const Color(0xff1c1c1e),
+          surface: Color(0xff1c1c1e),
         ),
         textTheme: GoogleFonts.robotoTextTheme(ThemeData.dark().textTheme),
         useMaterial3: true,

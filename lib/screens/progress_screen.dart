@@ -9,7 +9,7 @@ import '../widgets/glass_card.dart';
 import '../widgets/profile_avatar.dart';
 
 class ProgressScreen extends StatefulWidget {
-  const ProgressScreen({Key? key}) : super(key: key);
+  const ProgressScreen({super.key});
 
   @override
   State<ProgressScreen> createState() => _ProgressScreenState();
@@ -70,7 +70,7 @@ class _ProgressScreenState extends State<ProgressScreen> with SingleTickerProvid
 // ==========================================
 class HistoryTab extends StatefulWidget {
   final Color accentColor;
-  const HistoryTab({Key? key, required this.accentColor}) : super(key: key);
+  const HistoryTab({super.key, required this.accentColor});
 
   @override
   State<HistoryTab> createState() => _HistoryTabState();
@@ -448,7 +448,7 @@ class _HistoryTabState extends State<HistoryTab> {
 // ==========================================
 class ManualWorkoutLogSheet extends StatefulWidget {
   final TrackerProvider provider;
-  const ManualWorkoutLogSheet({Key? key, required this.provider}) : super(key: key);
+  const ManualWorkoutLogSheet({super.key, required this.provider});
 
   @override
   State<ManualWorkoutLogSheet> createState() => _ManualWorkoutLogSheetState();
@@ -506,6 +506,7 @@ class _ManualWorkoutLogSheetState extends State<ManualWorkoutLogSheet> {
       ),
     );
     if (pickedDate != null) {
+      if (!mounted) return;
       final pickedTime = await showTimePicker(
         context: context,
         initialTime: TimeOfDay.fromDateTime(_selectedDate),
@@ -1033,7 +1034,7 @@ class _ManualWorkoutLogSheetState extends State<ManualWorkoutLogSheet> {
 // ==========================================
 class PrsTab extends StatefulWidget {
   final Color accentColor;
-  const PrsTab({Key? key, required this.accentColor}) : super(key: key);
+  const PrsTab({super.key, required this.accentColor});
 
   @override
   State<PrsTab> createState() => _PrsTabState();
@@ -1477,7 +1478,7 @@ class _PrsTabState extends State<PrsTab> {
                   ),
                 ),
               );
-            }).toList(),
+            }),
         ],
       ),
     );
@@ -1489,7 +1490,7 @@ class _PrsTabState extends State<PrsTab> {
 // ==========================================
 class MedidasTab extends StatefulWidget {
   final Color accentColor;
-  const MedidasTab({Key? key, required this.accentColor}) : super(key: key);
+  const MedidasTab({super.key, required this.accentColor});
 
   @override
   State<MedidasTab> createState() => _MedidasTabState();

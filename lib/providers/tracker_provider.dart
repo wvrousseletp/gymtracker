@@ -758,9 +758,9 @@ class TrackerProvider extends ChangeNotifier {
     // Atualiza Recordes Pessoais (PRs)
     final Map<String, PersonalRecord> newPrs = Map.from(_state!.prs);
     final List<String> prExerciseNames = [];
-    active.exercises.forEach((ex) {
+    for (var ex in active.exercises) {
       final done = ex.setsState.where((s) => s).length;
-      if (done == 0) return;
+      if (done == 0) continue;
 
       final isCardio = ex.muscle.toLowerCase().contains('cardio');
       double prWeight = ex.weight;
@@ -770,21 +770,21 @@ class TrackerProvider extends ChangeNotifier {
         final completedList = ex.performedCardios.where((c) => c != null).toList();
         if (completedList.isNotEmpty) {
           var maxCardio = completedList[0]!;
-          completedList.forEach((p) {
+          for (var p in completedList) {
             if (p!.distanceKm > maxCardio.distanceKm) {
               maxCardio = p;
             }
-          });
+          }
           prWeight = maxCardio.distanceKm;
           prReps = maxCardio.durationSeconds ~/ 60;
         } else {
-          return; // Sem cardio feito
+          continue; // Sem cardio feito
         }
       }
 
       // Procura ID correspondente na biblioteca
       final libEx = _state!.library.firstWhere((l) => l.name == ex.name, orElse: () => LibraryExercise(id: '', name: '', muscle: '', measurementType: ''));
-      if (libEx.id.isEmpty) return;
+      if (libEx.id.isEmpty) continue;
 
       final currentPr = newPrs[libEx.id];
       if (currentPr == null || prWeight > currentPr.weight || (prWeight == currentPr.weight && prReps > currentPr.reps)) {
@@ -796,7 +796,7 @@ class TrackerProvider extends ChangeNotifier {
         );
         prExerciseNames.add(ex.name);
       }
-    });
+    }
 
     // Envia celebração de PR para o Apple Watch
     if (prExerciseNames.isNotEmpty) {

@@ -13,7 +13,7 @@ import '../widgets/profile_avatar.dart';
 import '../services/rest_timer_service.dart';
 
 class WorkoutScreen extends StatefulWidget {
-  const WorkoutScreen({Key? key}) : super(key: key);
+  const WorkoutScreen({super.key});
 
   @override
   State<WorkoutScreen> createState() => _WorkoutScreenState();
@@ -645,7 +645,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                           },
                                         ),
                                       );
-                                    }).toList(),
+                                    }),
                                   ],
                                 );
                               },
@@ -779,10 +779,10 @@ class ActiveWorkoutView extends StatefulWidget {
   final TrackerProvider provider;
 
   const ActiveWorkoutView({
-    Key? key,
+    super.key,
     required this.activeWorkout,
     required this.provider,
-  }) : super(key: key);
+  });
 
   @override
   State<ActiveWorkoutView> createState() => _ActiveWorkoutViewState();
@@ -1414,18 +1414,6 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
     );
   }
 
-  InputDecoration _activeInputDeco(String hint) {
-    return InputDecoration(
-      filled: true,
-      fillColor: Colors.white.withOpacity(0.05),
-      hintText: hint,
-      hintStyle: const TextStyle(color: Colors.white30, fontSize: 11),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      isDense: true,
-    );
-  }
-
   // A sincronização de timers de descanso e do índice de exercício ativo
   // agora é tratada de forma centralizada pelo provedor e seu ouvinte.
 
@@ -1483,12 +1471,12 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text("Leve (1)", style: TextStyle(color: Colors.white30, fontSize: 10)),
+                      const Text("Leve (1)", style: TextStyle(color: Colors.white30, fontSize: 10)),
                       Text(
                         "Esforço: ${rpeVal.toInt()}/10",
                         style: TextStyle(color: accentColor, fontWeight: FontWeight.bold, fontSize: 13),
                       ),
-                      Text("Máximo (10)", style: TextStyle(color: Colors.white30, fontSize: 10)),
+                      const Text("Máximo (10)", style: TextStyle(color: Colors.white30, fontSize: 10)),
                     ],
                   ),
                   Slider(

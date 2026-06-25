@@ -8,7 +8,7 @@ import '../widgets/profile_avatar.dart';
 import '../models/diet.dart';
 
 class DietScreen extends StatefulWidget {
-  const DietScreen({Key? key}) : super(key: key);
+  const DietScreen({super.key});
 
   @override
   State<DietScreen> createState() => _DietScreenState();
@@ -69,7 +69,7 @@ class _DietScreenState extends State<DietScreen> with SingleTickerProviderStateM
 // ==========================================
 class RefeicoesTab extends StatelessWidget {
   final Color accentColor;
-  const RefeicoesTab({Key? key, required this.accentColor}) : super(key: key);
+  const RefeicoesTab({super.key, required this.accentColor});
 
   @override
   Widget build(BuildContext context) {
@@ -398,7 +398,7 @@ class RefeicoesTab extends StatelessWidget {
 // ==========================================
 class AguaTab extends StatelessWidget {
   final Color accentColor;
-  const AguaTab({Key? key, required this.accentColor}) : super(key: key);
+  const AguaTab({super.key, required this.accentColor});
 
   @override
   Widget build(BuildContext context) {
@@ -515,7 +515,7 @@ class AguaTab extends StatelessWidget {
 // ==========================================
 class JejumTab extends StatefulWidget {
   final Color accentColor;
-  const JejumTab({Key? key, required this.accentColor}) : super(key: key);
+  const JejumTab({super.key, required this.accentColor});
 
   @override
   State<JejumTab> createState() => _JejumTabState();
@@ -1182,7 +1182,7 @@ class _JejumTabState extends State<JejumTab> {
 // ==========================================
 class WaveCupWidget extends StatefulWidget {
   final double progress;
-  const WaveCupWidget({Key? key, required this.progress}) : super(key: key);
+  const WaveCupWidget({super.key, required this.progress});
 
   @override
   State<WaveCupWidget> createState() => _WaveCupWidgetState();

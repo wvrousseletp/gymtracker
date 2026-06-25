@@ -11,7 +11,7 @@ class CircularProgressTimer extends StatelessWidget {
   final String skipLabel;
 
   const CircularProgressTimer({
-    Key? key,
+    super.key,
     required this.totalSeconds,
     required this.elapsedSeconds,
     required this.progressColor,
@@ -19,7 +19,7 @@ class CircularProgressTimer extends StatelessWidget {
     required this.subtext,
     this.onSkip,
     this.skipLabel = "Pular",
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

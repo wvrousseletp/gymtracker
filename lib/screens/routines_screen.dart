@@ -9,7 +9,7 @@ import '../widgets/glass_card.dart';
 import '../widgets/profile_avatar.dart';
 
 class RoutinesScreen extends StatefulWidget {
-  const RoutinesScreen({Key? key}) : super(key: key);
+  const RoutinesScreen({super.key});
 
   @override
   State<RoutinesScreen> createState() => _RoutinesScreenState();
@@ -68,7 +68,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> with SingleTickerProvid
 // ==========================================
 class RoutinesTab extends StatelessWidget {
   final Color accentColor;
-  const RoutinesTab({Key? key, required this.accentColor}) : super(key: key);
+  const RoutinesTab({super.key, required this.accentColor});
 
   @override
   Widget build(BuildContext context) {
@@ -332,7 +332,7 @@ class RoutineFormSheet extends StatefulWidget {
   final TrackerProvider provider;
   final Routine? existing;
 
-  const RoutineFormSheet({Key? key, required this.provider, this.existing}) : super(key: key);
+  const RoutineFormSheet({super.key, required this.provider, this.existing});
 
   @override
   State<RoutineFormSheet> createState() => _RoutineFormSheetState();
@@ -810,7 +810,7 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                         Navigator.pop(dialogCtx);
                       },
                     );
-                  }).toList(),
+                  }),
                 ],
               );
             },
@@ -826,7 +826,7 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
 // ==========================================
 class LibraryTab extends StatefulWidget {
   final Color accentColor;
-  const LibraryTab({Key? key, required this.accentColor}) : super(key: key);
+  const LibraryTab({super.key, required this.accentColor});
 
   @override
   State<LibraryTab> createState() => _LibraryTabState();
@@ -837,8 +837,10 @@ class _LibraryTabState extends State<LibraryTab> {
 
   List<String> _getMusclesList(List<LibraryExercise> library) {
     final set = <String>{};
-    library.forEach((e) => set.add(e.muscle));
-    return ["todos", ...set.toList()];
+    for (var e in library) {
+      set.add(e.muscle);
+    }
+    return ["todos", ...set];
   }
 
   @override
@@ -1037,7 +1039,7 @@ class _LibraryTabState extends State<LibraryTab> {
                                 ),
                               ),
                             );
-                          }).toList(),
+                          }),
                         ],
                       );
                     },

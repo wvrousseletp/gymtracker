@@ -37,12 +37,12 @@ class ProfileAvatar extends StatelessWidget {
   final double fontSize;
 
   const ProfileAvatar({
-    Key? key,
+    super.key,
     required this.avatar,
     required this.colorName,
     this.size = 40.0,
     this.fontSize = 20.0,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

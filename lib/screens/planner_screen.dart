@@ -7,7 +7,7 @@ import '../widgets/glass_card.dart';
 import '../widgets/profile_avatar.dart';
 
 class PlannerScreen extends StatefulWidget {
-  const PlannerScreen({Key? key}) : super(key: key);
+  const PlannerScreen({super.key});
 
   @override
   State<PlannerScreen> createState() => _PlannerScreenState();
@@ -340,8 +340,8 @@ class _PlannerScreenState extends State<PlannerScreen> {
           const SizedBox(height: 24),
 
           // Seção Cronograma Semanal
-          Row(
-            children: const [
+          const Row(
+            children: [
               Icon(Icons.calendar_month, color: Colors.white70, size: 20),
               SizedBox(width: 8),
               Text(
@@ -417,7 +417,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
                 ),
               ),
             );
-          }).toList(),
+          }),
         ],
       ),
     );

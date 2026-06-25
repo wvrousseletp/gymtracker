@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -16,7 +15,7 @@ void showProfileManagerDialog(BuildContext context) {
 }
 
 class ProfileManagerSheet extends StatefulWidget {
-  const ProfileManagerSheet({Key? key}) : super(key: key);
+  const ProfileManagerSheet({super.key});
 
   @override
   State<ProfileManagerSheet> createState() => _ProfileManagerSheetState();
@@ -67,13 +66,15 @@ class _ProfileManagerSheetState extends State<ProfileManagerSheet> {
         _isEditing = false;
       });
       
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Perfil atualizado com sucesso!"),
+          content: Text("Perfil updated com sucesso!"),
           backgroundColor: Colors.green,
         ),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Erro ao salvar alterações: $e"),
@@ -219,7 +220,7 @@ class _ProfileManagerSheetState extends State<ProfileManagerSheet> {
                 children: [
                   const Text(
                     "Editar Perfil",
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
                       color: Colors.white,

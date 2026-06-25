@@ -13,7 +13,7 @@ import 'diet_screen.dart';
 import 'profile_dialogs.dart';
 
 class MainNavigation extends StatefulWidget {
-  const MainNavigation({Key? key}) : super(key: key);
+  const MainNavigation({super.key});
 
   @override
   State<MainNavigation> createState() => _MainNavigationState();
@@ -274,11 +274,11 @@ class FadeIndexedStack extends StatefulWidget {
   final Duration duration;
 
   const FadeIndexedStack({
-    Key? key,
+    super.key,
     required this.index,
     required this.children,
     this.duration = const Duration(milliseconds: 200),
-  }) : super(key: key);
+  });
 
   @override
   State<FadeIndexedStack> createState() => _FadeIndexedStackState();
