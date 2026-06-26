@@ -167,7 +167,14 @@ class WatchService {
         final active = _provider!.state?.activeWorkout;
         if (active != null) {
           final duration = active.elapsedSeconds;
-          _provider!.finishWorkout(duration, 5, 'Treino concluído via Apple Watch');
+          final args = call.arguments;
+          int rpe = 7;
+          String notes = 'Treino concluído via Apple Watch';
+          if (args is Map) {
+            rpe = (args['rpe'] as num?)?.toInt() ?? rpe;
+            notes = args['notes'] as String? ?? notes;
+          }
+          _provider!.finishWorkout(duration, rpe, notes);
           _channel.invokeMethod('workoutFinished');
         }
         break;
@@ -218,6 +225,10 @@ class WatchService {
           final log = WorkoutLog.fromJson(workoutData);
           _provider!.addManualWorkoutLog(log);
           debugPrint("[WatchService] Synced offline workout from watch: ${log.name}");
+          final workoutId = workoutData['id'] as String?;
+          if (workoutId != null && workoutId.isNotEmpty) {
+            await _channel.invokeMethod('ackOfflineWorkout', workoutId);
+          }
         } catch (e) {
           debugPrint("[WatchService] Erro ao processar treino offline: $e");
         }

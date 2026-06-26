@@ -7,6 +7,7 @@ struct RestTimerView: View {
     let restTimer: WatchRestTimer
     @ObservedObject var connectivityManager = WatchConnectivityManager.shared
     @State private var timeRemaining: Int = 0
+    @State private var didAutoSkip = false
     @State private var timer = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
     
     @State private var pulseScale: CGFloat = 1.0
@@ -116,6 +117,11 @@ struct RestTimerView: View {
             }
         }
         .onAppear {
+            didAutoSkip = false
+            updateTimeRemaining()
+        }
+        .onChange(of: restTimer.endTime) { _ in
+            didAutoSkip = false
             updateTimeRemaining()
         }
         .onReceive(timer) { _ in
@@ -130,11 +136,13 @@ struct RestTimerView: View {
         
         if remaining != timeRemaining {
             timeRemaining = remaining
-            if remaining == 0 {
+            if remaining == 0 && !didAutoSkip {
+                didAutoSkip = true
                 #if canImport(WatchKit)
                 WKInterfaceDevice.current().play(.success)
                 WKInterfaceDevice.current().play(.click)
                 #endif
+                connectivityManager.skipRest()
             }
         }
     }

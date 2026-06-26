@@ -1,6 +1,7 @@
 import Foundation
 import HealthKit
 import Combine
+import os.log
 
 class WorkoutManager: NSObject, ObservableObject {
     static let shared = WorkoutManager()
@@ -13,6 +14,8 @@ class WorkoutManager: NSObject, ObservableObject {
     
     var session: HKWorkoutSession?
     var builder: HKLiveWorkoutBuilder?
+    private var lastHealthSync = Date.distantPast
+    private let healthSyncInterval: TimeInterval = 5
     
     private override init() {
         super.init()
@@ -34,9 +37,9 @@ class WorkoutManager: NSObject, ObservableObject {
         
         healthStore.requestAuthorization(toShare: typesToShare, read: typesToRead) { success, error in
             if success {
-                print("HealthKit authorized successfully")
+                WatchLogger.health.info("HealthKit authorized successfully")
             } else if let error = error {
-                print("HealthKit authorization failed: \(error.localizedDescription)")
+                WatchLogger.health.error("HealthKit authorization failed: \(error.localizedDescription)")
             }
         }
     }
@@ -165,8 +168,12 @@ extension WorkoutManager: HKLiveWorkoutBuilderDelegate {
                     }
                 }
                 
-                // Envia as métricas em tempo real para o iPhone
-                WatchConnectivityManager.shared.sendHealthMetrics(heartRate: self.heartRate, calories: self.activeCalories)
+                // Envia métricas em tempo real para o iPhone (debounced)
+                let now = Date()
+                if now.timeIntervalSince(self.lastHealthSync) >= self.healthSyncInterval {
+                    self.lastHealthSync = now
+                    WatchConnectivityManager.shared.sendHealthMetrics(heartRate: self.heartRate, calories: self.activeCalories)
+                }
             }
         }
     }

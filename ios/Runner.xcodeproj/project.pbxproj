@@ -35,6 +35,10 @@
 		D39999992FE20CC4008A94B4 /* RestTimerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A94F4 /* RestTimerView.swift */; };
 		D39999992FE20CC4008A94B9 /* WeeklyStatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A94F9 /* WeeklyStatsView.swift */; };
 		D39999992FE20CC4008A9500 /* WorkoutManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A9501 /* WorkoutManager.swift */; };
+		D39999992FE20CC4008A95D1 /* WatchModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A95C1 /* WatchModels.swift */; };
+		D39999992FE20CC4008A95D2 /* WatchLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A95C2 /* WatchLogger.swift */; };
+		D39999992FE20CC4008A95D3 /* WatchPlannerHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A95C3 /* WatchPlannerHelper.swift */; };
+		D39999992FE20CC4008A95D4 /* FinishWorkoutSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A95C4 /* FinishWorkoutSheet.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -154,6 +158,10 @@
 		D39999992FE20CC4008A94F4 /* RestTimerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestTimerView.swift; sourceTree = "<group>"; };
 		D39999992FE20CC4008A94F9 /* WeeklyStatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyStatsView.swift; sourceTree = "<group>"; };
 		D39999992FE20CC4008A9501 /* WorkoutManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutManager.swift; sourceTree = "<group>"; };
+		D39999992FE20CC4008A95C1 /* WatchModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchModels.swift; sourceTree = "<group>"; };
+		D39999992FE20CC4008A95C2 /* WatchLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchLogger.swift; sourceTree = "<group>"; };
+		D39999992FE20CC4008A95C3 /* WatchPlannerHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchPlannerHelper.swift; sourceTree = "<group>"; };
+		D39999992FE20CC4008A95C4 /* FinishWorkoutSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinishWorkoutSheet.swift; sourceTree = "<group>"; };
 		D4A6FF054925EBF1FC36E777 /* Pods-RunnerTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.release.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.release.xcconfig"; sourceTree = "<group>"; };
 		FE1A75646B124E09E7C2FF93 /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -297,6 +305,10 @@
 			children = (
 				D316F3202FE20CC4008A94F4 /* WatchAppApp.swift */,
 				D39999992FE20CC4008A94F1 /* WatchConnectivityManager.swift */,
+				D39999992FE20CC4008A95C1 /* WatchModels.swift */,
+				D39999992FE20CC4008A95C2 /* WatchLogger.swift */,
+				D39999992FE20CC4008A95C3 /* WatchPlannerHelper.swift */,
+				D39999992FE20CC4008A95C4 /* FinishWorkoutSheet.swift */,
 				D39999992FE20CC4008A94F2 /* WorkoutSelectionView.swift */,
 				D39999992FE20CC4008A94F3 /* ActiveWorkoutView.swift */,
 				D39999992FE20CC4008A94F9 /* WeeklyStatsView.swift */,
@@ -707,6 +719,10 @@
 			files = (
 				D316F3212FE20CC4008A94F4 /* WatchAppApp.swift in Sources */,
 				D39999992FE20CC4008A94B1 /* WatchConnectivityManager.swift in Sources */,
+				D39999992FE20CC4008A95D1 /* WatchModels.swift in Sources */,
+				D39999992FE20CC4008A95D2 /* WatchLogger.swift in Sources */,
+				D39999992FE20CC4008A95D3 /* WatchPlannerHelper.swift in Sources */,
+				D39999992FE20CC4008A95D4 /* FinishWorkoutSheet.swift in Sources */,
 				D39999992FE20CC4008A94B2 /* WorkoutSelectionView.swift in Sources */,
 				D39999992FE20CC4008A94B3 /* ActiveWorkoutView.swift in Sources */,
 				D39999992FE20CC4008A94B9 /* WeeklyStatsView.swift in Sources */,

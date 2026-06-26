@@ -29,6 +29,20 @@ struct WeeklyStatsView: View {
         return "Recente"
     }
 
+    private var todayIsoWeekday: Int {
+        let appleWeekday = Calendar.current.component(.weekday, from: Date())
+        return appleWeekday == 1 ? 7 : appleWeekday - 1
+    }
+
+    private let weekdayLabels = ["S", "T", "Q", "Q", "S", "S", "D"]
+
+    private func isDayTrained(isoWeekday: Int) -> Bool {
+        if !streak.weekdaysTrained.isEmpty {
+            return streak.weekdaysTrained.contains(isoWeekday)
+        }
+        return isoWeekday <= streak.currentWeekCount
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 12) {
@@ -105,16 +119,24 @@ struct WeeklyStatsView: View {
 
                     HStack(spacing: 5) {
                         ForEach(0..<7, id: \.self) { dayIndex in
-                            let filled = streak.weekdaysTrained.isEmpty
-                                ? (dayIndex < streak.currentWeekCount)
-                                : streak.weekdaysTrained.contains(dayIndex + 1)
-                            Circle()
-                                .fill(filled ? Color.green : Color.white.opacity(0.12))
-                                .frame(width: 8, height: 8)
-                                .overlay(
-                                    Circle()
-                                        .stroke(filled ? Color.green.opacity(0.4) : Color.clear, lineWidth: 1)
-                                )
+                            let isoWeekday = dayIndex + 1
+                            let filled = isDayTrained(isoWeekday: isoWeekday)
+                            let isToday = isoWeekday == todayIsoWeekday
+                            VStack(spacing: 2) {
+                                Circle()
+                                    .fill(filled ? Color.green : Color.white.opacity(0.12))
+                                    .frame(width: 8, height: 8)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(
+                                                isToday ? Color.orange : (filled ? Color.green.opacity(0.4) : Color.clear),
+                                                lineWidth: isToday ? 1.5 : 1
+                                            )
+                                    )
+                                Text(weekdayLabels[dayIndex])
+                                    .font(.system(size: 6, weight: isToday ? .bold : .regular))
+                                    .foregroundColor(isToday ? .orange : .gray)
+                            }
                         }
                         Spacer()
                     }

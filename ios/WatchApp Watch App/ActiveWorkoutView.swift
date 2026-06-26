@@ -70,6 +70,7 @@ struct ActiveWorkoutView: View {
     @Environment(\.isLuminanceReduced) var isLuminanceReduced
     
     @State private var showingCancelAlert = false
+    @State private var showingFinishSheet = false
     @State private var elapsedSeconds: Int = 0
     @State private var selectedSetIndexMap: [String: Int] = [:] // exerciseId -> selectedSetIndex
     let stopwatchTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -732,7 +733,7 @@ struct ActiveWorkoutView: View {
 
                     // Finalizar Treino
                     Button(action: {
-                        connectivityManager.completeWorkout()
+                        showingFinishSheet = true
                     }) {
                         HStack {
                             Image(systemName: "checkmark.seal.fill")
@@ -823,6 +824,11 @@ struct ActiveWorkoutView: View {
                 },
                 secondaryButton: .cancel(Text("Não"))
             )
+        }
+        .sheet(isPresented: $showingFinishSheet) {
+            FinishWorkoutSheet(isPresented: $showingFinishSheet) { rpe, notes in
+                connectivityManager.completeWorkout(rpe: rpe, notes: notes)
+            }
         }
         .overlay(
             Group {

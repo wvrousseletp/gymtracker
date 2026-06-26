@@ -3,28 +3,19 @@ import SwiftUI
 struct WorkoutSelectionView: View {
     @ObservedObject var connectivityManager = WatchConnectivityManager.shared
 
-    private var todayPlannedRoutines: [WatchRoutine] {
-        let calendar = Calendar.current
-        let weekday = calendar.component(.weekday, from: Date())
-        let todayKey: String
-        switch weekday {
-        case 1: todayKey = "dom"
-        case 2: todayKey = "seg"
-        case 3: todayKey = "ter"
-        case 4: todayKey = "qua"
-        case 5: todayKey = "qui"
-        case 6: todayKey = "sex"
-        case 7: todayKey = "sab"
-        default: todayKey = "seg"
-        }
-        
-        guard let plannedIds = connectivityManager.planner[todayKey] else {
-            return []
-        }
-        
-        return connectivityManager.routines.filter { routine in
-            plannedIds.contains(routine.id) || plannedIds.contains("routine:\(routine.id)")
-        }
+    private var todayPlannedItems: [PlannedWatchItem] {
+        WatchPlannerHelper.resolveTodayPlannedItems(
+            routines: connectivityManager.routines,
+            library: connectivityManager.library,
+            planner: connectivityManager.planner
+        )
+    }
+
+    private var filteredLibrary: [WatchLibraryExercise] {
+        WatchPlannerHelper.filteredLibraryForWatch(
+            library: connectivityManager.library,
+            planner: connectivityManager.planner
+        )
     }
 
     var body: some View {
@@ -118,12 +109,21 @@ struct WorkoutSelectionView: View {
                                 }
 
                                 // Seção 0.1: Treinos Planejados para Hoje
-                                if !todayPlannedRoutines.isEmpty {
+                                if !todayPlannedItems.isEmpty {
                                     Section(header: Text("Treinos de Hoje").font(.system(size: 10, weight: .bold)).foregroundColor(.green)) {
-                                        ForEach(todayPlannedRoutines) { routine in
-                                            let isCompleted = connectivityManager.streak.completedTodayRoutines.contains(routine.name)
+                                        ForEach(todayPlannedItems) { item in
+                                            let isCompleted = connectivityManager.streak.completedTodayRoutines.contains(item.title)
                                             Button(action: {
-                                                connectivityManager.startWorkout(routineId: routine.id)
+                                                switch item.kind {
+                                                case .routine:
+                                                    if let routineId = item.routineId {
+                                                        connectivityManager.startWorkout(routineId: routineId)
+                                                    }
+                                                case .singleExercise:
+                                                    if let exerciseId = item.exerciseId {
+                                                        connectivityManager.startSingleExercise(exerciseId: exerciseId)
+                                                    }
+                                                }
                                             }) {
                                                 HStack(spacing: 8) {
                                                     ZStack {
@@ -136,11 +136,11 @@ struct WorkoutSelectionView: View {
                                                     }
                                                     
                                                     VStack(alignment: .leading, spacing: 1) {
-                                                        Text(routine.name)
+                                                        Text(item.title)
                                                             .font(.system(size: 12, weight: .bold))
                                                             .foregroundColor(isCompleted ? .gray : .white)
                                                             .strikethrough(isCompleted, color: .gray)
-                                                        Text(isCompleted ? "Treino concluído hoje" : "\(routine.exercises.count) exercícios")
+                                                        Text(isCompleted ? "Treino concluído hoje" : item.subtitle)
                                                             .font(.system(size: 9))
                                                             .foregroundColor(isCompleted ? .green.opacity(0.8) : .gray)
                                                     }
@@ -210,9 +210,9 @@ struct WorkoutSelectionView: View {
                                 }
                                 
                                 // Seção 2: Exercícios Avulsos
-                                if !connectivityManager.library.isEmpty {
+                                if !filteredLibrary.isEmpty {
                                     Section(header: Text("Exercícios Avulsos").font(.system(size: 10, weight: .bold)).foregroundColor(.blue)) {
-                                        ForEach(connectivityManager.library) { exercise in
+                                        ForEach(filteredLibrary) { exercise in
                                             Button(action: {
                                                 connectivityManager.startSingleExercise(exerciseId: exercise.id)
                                             }) {

@@ -25,6 +25,8 @@ class TrackerProvider extends ChangeNotifier {
   String _currentUserId = '';
   PlannerState? _state;
   bool _isLoading = true;
+  DateTime? _lastHealthMetricsNotify;
+  static const Duration _healthMetricsNotifyInterval = Duration(seconds: 5);
 
   List<Profile> get profiles => _profiles;
   String get currentUserId => _currentUserId;
@@ -681,7 +683,12 @@ class TrackerProvider extends ChangeNotifier {
 
     _state = _state!.copyWith(activeWorkout: updatedWorkout);
 
-    notifyListeners();
+    final now = DateTime.now();
+    if (_lastHealthMetricsNotify == null ||
+        now.difference(_lastHealthMetricsNotify!) >= _healthMetricsNotifyInterval) {
+      _lastHealthMetricsNotify = now;
+      notifyListeners();
+    }
   }
 
   void finishWorkout(int duration, int rpeValue, String notes) {

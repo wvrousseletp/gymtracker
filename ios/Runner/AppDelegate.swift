@@ -273,6 +273,25 @@ import WidgetKit
         result(nil)
       }
 
+    case "ackOfflineWorkout":
+      if let workoutId = call.arguments as? String {
+        let msg: [String: Any] = [
+          "action": "offlineWorkoutAck",
+          "workoutId": workoutId
+        ]
+        if session.isReachable {
+          session.sendMessage(msg, replyHandler: nil) { [weak self] error in
+            print("[AppDelegate] Error sending offlineWorkoutAck: \(error.localizedDescription)")
+            self?.session?.transferUserInfo(msg)
+          }
+        } else {
+          session.transferUserInfo(msg)
+        }
+        result(nil)
+      } else {
+        result(FlutterError(code: "INVALID_ARGUMENT", message: "Expected workoutId string", details: nil))
+      }
+
     default:
       result(FlutterMethodNotImplemented)
     }
@@ -384,7 +403,17 @@ import WidgetKit
         // Stop Live Activity immediately – don't wait for Flutter roundtrip
         self.clearRestTimerNotification()
         self.stopLiveActivity()
-        self.methodChannel?.invokeMethod("completeWorkout", arguments: nil)
+        var completeArgs: [String: Any] = [:]
+        if let rpe = data["rpe"] as? Int {
+          completeArgs["rpe"] = rpe
+        }
+        if let notes = data["notes"] as? String {
+          completeArgs["notes"] = notes
+        }
+        self.methodChannel?.invokeMethod(
+          "completeWorkout",
+          arguments: completeArgs.isEmpty ? nil : completeArgs
+        )
       case "cancelWorkout":
         // Stop Live Activity immediately – don't wait for Flutter roundtrip
         self.clearRestTimerNotification()
