@@ -194,13 +194,16 @@ class _HistoryTabState extends State<HistoryTab> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          _openAddManualLogDialog(context, provider);
-        },
-        backgroundColor: widget.accentColor,
-        mini: true,
-        child: const Icon(Icons.add_task, color: Colors.black),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 80.0),
+        child: FloatingActionButton(
+          onPressed: () {
+            _openAddManualLogDialog(context, provider);
+          },
+          backgroundColor: widget.accentColor,
+          mini: true,
+          child: const Icon(Icons.add_task, color: Colors.black),
+        ),
       ),
       body: monthGroups.isEmpty
           ? const Center(
@@ -210,7 +213,7 @@ class _HistoryTabState extends State<HistoryTab> {
               ),
             )
           : ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 100),
               itemCount: monthGroups.length,
               itemBuilder: (context, groupIndex) {
                 final group = monthGroups[groupIndex];
@@ -1543,7 +1546,7 @@ class _PrsTabState extends State<PrsTab> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 100),
         children: [
           if (strengthExercises.isNotEmpty) ...[
             _buildChartCard(context, strengthExercises, chartData, spots),
@@ -1679,13 +1682,16 @@ class _MedidasTabState extends State<MedidasTab> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          _openAddMeasurementDialog(context, provider);
-        },
-        backgroundColor: widget.accentColor,
-        mini: true,
-        child: const Icon(Icons.add, color: Colors.black),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 80.0),
+        child: FloatingActionButton(
+          onPressed: () {
+            _openAddMeasurementDialog(context, provider);
+          },
+          backgroundColor: widget.accentColor,
+          mini: true,
+          child: const Icon(Icons.add, color: Colors.black),
+        ),
       ),
       body: measurements.isEmpty
           ? const Center(
@@ -1695,7 +1701,7 @@ class _MedidasTabState extends State<MedidasTab> {
               ),
             )
           : ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 100),
               itemCount: measurements.length,
               itemBuilder: (context, index) {
                 final m = measurements[index];

@@ -126,7 +126,7 @@ struct ActiveWorkoutView: View {
                             Image(systemName: "minus")
                                 .font(.system(size: 10, weight: .bold))
                                 .foregroundColor(.white)
-                                .frame(width: 24, height: 24)
+                                .frame(width: 32, height: 32)
                                 .background(Color.white.opacity(0.1))
                                 .clipShape(Circle())
                         }
@@ -144,7 +144,7 @@ struct ActiveWorkoutView: View {
                             Image(systemName: "plus")
                                 .font(.system(size: 10, weight: .bold))
                                 .foregroundColor(.white)
-                                .frame(width: 24, height: 24)
+                                .frame(width: 32, height: 32)
                                 .background(Color.white.opacity(0.1))
                                 .clipShape(Circle())
                         }
@@ -176,7 +176,7 @@ struct ActiveWorkoutView: View {
                             Image(systemName: "minus")
                                 .font(.system(size: 10, weight: .bold))
                                 .foregroundColor(.white)
-                                .frame(width: 24, height: 24)
+                                .frame(width: 32, height: 32)
                                 .background(Color.white.opacity(0.1))
                                 .clipShape(Circle())
                         }
@@ -194,7 +194,7 @@ struct ActiveWorkoutView: View {
                             Image(systemName: "plus")
                                 .font(.system(size: 10, weight: .bold))
                                 .foregroundColor(.white)
-                                .frame(width: 24, height: 24)
+                                .frame(width: 32, height: 32)
                                 .background(Color.white.opacity(0.1))
                                 .clipShape(Circle())
                         }
@@ -279,7 +279,7 @@ struct ActiveWorkoutView: View {
                                 Image(systemName: "minus")
                                     .font(.system(size: 10, weight: .bold))
                                     .foregroundColor(.white)
-                                    .frame(width: 24, height: 24)
+                                    .frame(width: 32, height: 32)
                                     .background(Color.white.opacity(0.1))
                                     .clipShape(Circle())
                             }
@@ -297,7 +297,7 @@ struct ActiveWorkoutView: View {
                                 Image(systemName: "plus")
                                     .font(.system(size: 10, weight: .bold))
                                     .foregroundColor(.white)
-                                    .frame(width: 24, height: 24)
+                                    .frame(width: 32, height: 32)
                                     .background(Color.white.opacity(0.1))
                                     .clipShape(Circle())
                             }
@@ -335,7 +335,7 @@ struct ActiveWorkoutView: View {
                                 Image(systemName: "minus")
                                     .font(.system(size: 10, weight: .bold))
                                     .foregroundColor(.white)
-                                    .frame(width: 24, height: 24)
+                                    .frame(width: 32, height: 32)
                                     .background(Color.white.opacity(0.1))
                                     .clipShape(Circle())
                             }
@@ -353,7 +353,7 @@ struct ActiveWorkoutView: View {
                                 Image(systemName: "plus")
                                     .font(.system(size: 10, weight: .bold))
                                     .foregroundColor(.white)
-                                    .frame(width: 24, height: 24)
+                                    .frame(width: 32, height: 32)
                                     .background(Color.white.opacity(0.1))
                                     .clipShape(Circle())
                             }
@@ -422,7 +422,7 @@ struct ActiveWorkoutView: View {
                                         Image(systemName: "minus")
                                             .font(.system(size: 10, weight: .bold))
                                             .foregroundColor(.red)
-                                            .frame(width: 24, height: 24)
+                                            .frame(width: 32, height: 32)
                                             .background(Color.red.opacity(0.1))
                                             .clipShape(Circle())
                                     }
@@ -441,7 +441,7 @@ struct ActiveWorkoutView: View {
                                         Image(systemName: "plus")
                                             .font(.system(size: 10, weight: .bold))
                                             .foregroundColor(.red)
-                                            .frame(width: 24, height: 24)
+                                            .frame(width: 32, height: 32)
                                             .background(Color.red.opacity(0.1))
                                             .clipShape(Circle())
                                     }
@@ -485,7 +485,7 @@ struct ActiveWorkoutView: View {
                         .disabled(exIndex == 0)
                         .opacity(exIndex == 0 ? 0.2 : 1.0)
                         .buttonStyle(PlainButtonStyle())
-                        .frame(width: 24, height: 24)
+                        .frame(width: 32, height: 32)
                         
                         Spacer()
                         
@@ -524,7 +524,7 @@ struct ActiveWorkoutView: View {
                         .disabled(exIndex + 1 >= activeWorkout.exercises.count)
                         .opacity(exIndex + 1 >= activeWorkout.exercises.count ? 0.2 : 1.0)
                         .buttonStyle(PlainButtonStyle())
-                        .frame(width: 24, height: 24)
+                        .frame(width: 32, height: 32)
                     }
                     .padding(.horizontal, 4)
                     

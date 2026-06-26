@@ -83,13 +83,16 @@ class RoutinesTab extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          _openRoutineForm(context, provider, null);
-        },
-        backgroundColor: accentColor,
-        mini: true,
-        child: const Icon(Icons.add, color: Colors.black),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 80.0),
+        child: FloatingActionButton(
+          onPressed: () {
+            _openRoutineForm(context, provider, null);
+          },
+          backgroundColor: accentColor,
+          mini: true,
+          child: const Icon(Icons.add, color: Colors.black),
+        ),
       ),
       body: routines.isEmpty
           ? const Center(
@@ -100,7 +103,7 @@ class RoutinesTab extends StatelessWidget {
               ),
             )
           : ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 100),
               itemCount: routines.length,
               itemBuilder: (context, index) {
                 final routine = routines[index];

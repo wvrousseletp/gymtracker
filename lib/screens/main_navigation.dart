@@ -147,12 +147,9 @@ class _MainNavigationState extends State<MainNavigation> {
 
                 // Tela Principal Ativa
                 Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 96), // Espaço para a dock flutuante
-                    child: FadeIndexedStack(
-                      index: _currentIndex,
-                      children: _screens,
-                    ),
+                  child: FadeIndexedStack(
+                    index: _currentIndex,
+                    children: _screens,
                   ),
                 ),
               ],

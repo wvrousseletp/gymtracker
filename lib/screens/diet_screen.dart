@@ -93,16 +93,19 @@ class RefeicoesTab extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          _openAddMealDialog(context, provider);
-        },
-        backgroundColor: accentColor,
-        mini: true,
-        child: const Icon(Icons.add, color: Colors.black),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 80.0),
+        child: FloatingActionButton(
+          onPressed: () {
+            _openAddMealDialog(context, provider);
+          },
+          backgroundColor: accentColor,
+          mini: true,
+          child: const Icon(Icons.add, color: Colors.black),
+        ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 100),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -414,7 +417,7 @@ class AguaTab extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.only(left: 24, right: 24, top: 24, bottom: 100),
         child: Column(
           children: [
             const SizedBox(height: 16),
@@ -683,7 +686,7 @@ class _JejumTabState extends State<JejumTab> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 100),
         child: Column(
           children: [
             if (active != null) ...[

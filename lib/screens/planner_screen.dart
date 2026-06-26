@@ -329,7 +329,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 100),
         children: [
           // 1. Consistência Semanal
           _buildWeeklyStreakHeader(context, provider, state, accentColor),
