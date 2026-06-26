@@ -58,6 +58,21 @@ struct TodayRoutineWidgetView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         case .accessoryInline:
             Text("Treino: \(entry.routineName)")
+        case .accessoryCircular:
+            Gauge(value: entry.exerciseCount > 0 ? 0.5 : 0.0) {
+                Image(systemName: "figure.walk")
+                    .foregroundColor(.orange)
+            } currentValueLabel: {
+                Text("\(entry.exerciseCount)")
+                    .font(.system(size: 10, weight: .bold))
+            }
+            .gaugeStyle(.accessoryCircular)
+        case .accessoryCorner:
+            Image(systemName: "figure.walk")
+                .foregroundColor(.orange)
+                .widgetLabel {
+                    Text(entry.routineName)
+                }
         default:
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
@@ -113,7 +128,14 @@ struct TodayRoutineWidget: Widget {
         }
         .configurationDisplayName("Treino de Hoje")
         .description("Acompanhe seu treino planejado para o dia.")
-        .supportedFamilies([.systemSmall, .systemMedium, .accessoryRectangular, .accessoryInline])
+        .supportedFamilies([
+            .systemSmall,
+            .systemMedium,
+            .accessoryRectangular,
+            .accessoryInline,
+            .accessoryCircular,
+            .accessoryCorner
+        ])
     }
 }
 

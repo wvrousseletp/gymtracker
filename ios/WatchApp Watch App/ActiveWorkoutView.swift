@@ -378,6 +378,13 @@ struct ActiveWorkoutView: View {
 
                 VStack(alignment: .leading, spacing: 6) {
                     Button(action: {
+                        #if canImport(WatchKit)
+                        if !isFailure {
+                            WKInterfaceDevice.current().play(.directionDown)
+                        } else {
+                            WKInterfaceDevice.current().play(.click)
+                        }
+                        #endif
                         connectivityManager.updateFailure(exerciseIndex: exIndex, setIndex: selectedSetIdx, isFailure: !isFailure, failureRep: failureRep)
                     }) {
                         HStack(spacing: 4) {
@@ -590,7 +597,11 @@ struct ActiveWorkoutView: View {
                             
                             #if canImport(WatchKit)
                             if !isCompleted {
-                                WKInterfaceDevice.current().play(.success)
+                                if isFailure {
+                                    WKInterfaceDevice.current().play(.directionDown)
+                                } else {
+                                    WKInterfaceDevice.current().play(.directionUp)
+                                }
                             } else {
                                 WKInterfaceDevice.current().play(.click)
                             }
@@ -644,9 +655,15 @@ struct ActiveWorkoutView: View {
                         .font(.system(size: 8, weight: .bold, design: .rounded))
                         .foregroundColor(.gray)
                     
-                    Text(formatDuration(elapsedSeconds))
-                        .font(.system(size: 26, weight: .black, design: .rounded))
-                        .foregroundColor(activeWorkout.paused ? .orange : .green)
+                    if isLuminanceReduced {
+                        Text(formatDuration(elapsedSeconds))
+                            .font(.system(size: 26, weight: .bold, design: .rounded))
+                            .foregroundColor(.gray)
+                    } else {
+                        Text(formatDuration(elapsedSeconds))
+                            .font(.system(size: 26, weight: .black, design: .rounded))
+                            .foregroundColor(activeWorkout.paused ? .orange : .green)
+                    }
                 }
                 .padding(.vertical, 4)
                 
@@ -852,7 +869,24 @@ struct ActiveWorkoutView: View {
             crownFocus = .reps
         }
         .onReceive(stopwatchTimer) { _ in
-            updateStopwatch()
+            if !isLuminanceReduced {
+                updateStopwatch()
+            }
+        }
+        .onChange(of: isLuminanceReduced) { reduced in
+            if !reduced {
+                updateStopwatch()
+            }
+        }
+        .onChange(of: connectivityManager.prExerciseNames) { names in
+            if !names.isEmpty {
+                #if canImport(WatchKit)
+                WKInterfaceDevice.current().play(.retry)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                    WKInterfaceDevice.current().play(.success)
+                }
+                #endif
+            }
         }
     }
 

@@ -12,6 +12,7 @@ struct RestTimerView: View {
     
     @State private var pulseScale: CGFloat = 1.0
     @State private var pulseOpacity: Double = 0.5
+    @Environment(\.isLuminanceReduced) var isLuminanceReduced
 
     private var themeColor: Color {
         restTimer.isPrep ? Color.yellow : Color.orange
@@ -20,20 +21,24 @@ struct RestTimerView: View {
     var body: some View {
         ZStack {
             // Ambient pulsing radial gradient background
-            RadialGradient(
-                colors: [themeColor.opacity(0.18), Color.black],
-                center: .center,
-                startRadius: 5,
-                endRadius: 90
-            )
-            .ignoresSafeArea()
-            .scaleEffect(pulseScale)
-            .opacity(pulseOpacity)
-            .onAppear {
-                withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
-                    pulseScale = 1.15
-                    pulseOpacity = 0.75
+            if !isLuminanceReduced {
+                RadialGradient(
+                    colors: [themeColor.opacity(0.18), Color.black],
+                    center: .center,
+                    startRadius: 5,
+                    endRadius: 90
+                )
+                .ignoresSafeArea()
+                .scaleEffect(pulseScale)
+                .opacity(pulseOpacity)
+                .onAppear {
+                    withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
+                        pulseScale = 1.15
+                        pulseOpacity = 0.75
+                    }
                 }
+            } else {
+                Color.black.ignoresSafeArea()
             }
 
             VStack(spacing: 3) {
@@ -70,22 +75,27 @@ struct RestTimerView: View {
 
                 // Cronômetro Circular Moderno com Efeito Glow
                 ZStack {
-                    Circle()
-                        .stroke(lineWidth: 2.5)
-                        .opacity(0.08)
-                        .foregroundColor(.white)
+                    if !isLuminanceReduced {
+                        Circle()
+                            .stroke(lineWidth: 2.5)
+                            .opacity(0.08)
+                            .foregroundColor(.white)
 
-                    Circle()
-                        .trim(from: 0.0, to: restTimer.totalSeconds > 0 ? CGFloat(timeRemaining) / CGFloat(restTimer.totalSeconds) : 0)
-                        .stroke(style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
-                        .foregroundColor(themeColor)
-                        .rotationEffect(Angle(degrees: 270.0))
-                        .shadow(color: themeColor.opacity(0.6), radius: 3)
+                        Circle()
+                            .trim(from: 0.0, to: restTimer.totalSeconds > 0 ? CGFloat(timeRemaining) / CGFloat(restTimer.totalSeconds) : 0)
+                            .stroke(style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
+                            .foregroundColor(themeColor)
+                            .rotationEffect(Angle(degrees: 270.0))
+                            .shadow(color: themeColor.opacity(0.6), radius: 3)
+                    } else {
+                        Circle()
+                            .stroke(themeColor.opacity(0.3), lineWidth: 1.5)
+                    }
 
                     VStack(spacing: -3) {
                         Text("\(timeRemaining)")
-                            .font(.system(size: 20, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
+                            .font(.system(size: 20, weight: isLuminanceReduced ? .bold : .black, design: .rounded))
+                            .foregroundColor(isLuminanceReduced ? .gray : .white)
                         Text("seg")
                             .font(.system(size: 7, weight: .semibold))
                             .foregroundColor(.gray)
@@ -125,7 +135,14 @@ struct RestTimerView: View {
             updateTimeRemaining()
         }
         .onReceive(timer) { _ in
-            updateTimeRemaining()
+            if !isLuminanceReduced {
+                updateTimeRemaining()
+            }
+        }
+        .onChange(of: isLuminanceReduced) { reduced in
+            if !reduced {
+                updateTimeRemaining()
+            }
         }
     }
 
