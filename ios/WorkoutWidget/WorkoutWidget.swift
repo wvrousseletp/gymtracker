@@ -67,12 +67,14 @@ struct TodayRoutineWidgetView: View {
                     .font(.system(size: 10, weight: .bold))
             }
             .gaugeStyle(.accessoryCircular)
+        #if os(watchOS)
         case .accessoryCorner:
             Image(systemName: "figure.walk")
                 .foregroundColor(.orange)
                 .widgetLabel {
                     Text(entry.routineName)
                 }
+        #endif
         default:
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
@@ -128,14 +130,24 @@ struct TodayRoutineWidget: Widget {
         }
         .configurationDisplayName("Treino de Hoje")
         .description("Acompanhe seu treino planejado para o dia.")
-        .supportedFamilies([
-            .systemSmall,
-            .systemMedium,
-            .accessoryRectangular,
-            .accessoryInline,
-            .accessoryCircular,
-            .accessoryCorner
-        ])
+        .supportedFamilies({
+            #if os(watchOS)
+            return [
+                .accessoryRectangular,
+                .accessoryInline,
+                .accessoryCircular,
+                .accessoryCorner
+            ]
+            #else
+            return [
+                .systemSmall,
+                .systemMedium,
+                .accessoryRectangular,
+                .accessoryInline,
+                .accessoryCircular
+            ]
+            #endif
+        }())
     }
 }
 
