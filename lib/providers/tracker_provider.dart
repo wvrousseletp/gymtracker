@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -26,6 +27,7 @@ class TrackerProvider extends ChangeNotifier {
   PlannerState? _state;
   bool _isLoading = true;
   DateTime? _lastHealthMetricsNotify;
+  bool _historyLoaded = false;
   static const Duration _healthMetricsNotifyInterval = Duration(seconds: 5);
 
   List<Profile> get profiles => _profiles;
@@ -67,6 +69,7 @@ class TrackerProvider extends ChangeNotifier {
   Future<void> initializeUser(String uid) async {
     _isLoading = true;
     _currentUserId = uid;
+    _historyLoaded = false;
     notifyListeners();
 
     final profileRaw = await _persistence.loadProfileJson(uid);
@@ -131,6 +134,7 @@ class TrackerProvider extends ChangeNotifier {
     _state = null;
     _profiles = [];
     _currentUserId = '';
+    _historyLoaded = false;
 
     await FirebaseAuth.instance.signOut();
 
@@ -814,6 +818,7 @@ class TrackerProvider extends ChangeNotifier {
 
     _updateStreak();
     saveState(immediateSync: true);
+    unawaited(_firebaseSync.syncWorkoutLog(_currentUserId, log));
     notifyListeners();
   }
 
@@ -870,6 +875,35 @@ class TrackerProvider extends ChangeNotifier {
     _state = _state!.copyWith(history: newHistory, prs: newPrs);
     _updateStreak();
     saveState();
+    unawaited(_firebaseSync.syncWorkoutLog(_currentUserId, log));
+    notifyListeners();
+  }
+
+  Future<List<WorkoutLog>> loadWorkoutHistory() async {
+    if (_state == null || _currentUserId.isEmpty) return [];
+    if (_historyLoaded) return _state!.history;
+    
+    final rawHistory = await _persistence.loadWorkoutsHistoryJson(_currentUserId);
+    if (rawHistory != null) {
+      try {
+        final List decoded = json.decode(rawHistory);
+        final loadedHistory = decoded.map((h) => WorkoutLog.fromJson(h)).toList();
+        _state!.history.clear();
+        _state!.history.addAll(loadedHistory);
+      } catch (e) {
+        debugPrint('[TrackerProvider] Error loading workouts history: $e');
+      }
+    }
+    _historyLoaded = true;
+    notifyListeners();
+    return _state!.history;
+  }
+
+  void deleteWorkoutLog(String id) {
+    if (_state == null) return;
+    _state!.history.removeWhere((h) => h.id == id);
+    saveState();
+    unawaited(_firebaseSync.deleteWorkoutLog(_currentUserId, id));
     notifyListeners();
   }
 
@@ -1086,6 +1120,7 @@ class TrackerProvider extends ChangeNotifier {
     final routines = List<Routine>.from(_state!.routines)..add(r);
     _state = _state!.copyWith(routines: routines);
     saveState();
+    unawaited(_firebaseSync.syncRoutine(_currentUserId, r));
     notifyListeners();
   }
 
@@ -1101,6 +1136,7 @@ class TrackerProvider extends ChangeNotifier {
 
     _state = _state!.copyWith(routines: routines, planner: planner);
     saveState();
+    unawaited(_firebaseSync.deleteRoutine(_currentUserId, id));
     notifyListeners();
   }
 

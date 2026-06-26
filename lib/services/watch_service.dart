@@ -14,6 +14,11 @@ class WatchService {
   final MethodChannel _channel = const MethodChannel('com.vicente.losmooscles/watch');
   TrackerProvider? _provider;
 
+  String? _lastSentRoutinesJson;
+  String? _lastSentLibraryJson;
+  String? _lastSentPlannerJson;
+  String? _lastSentActiveWorkoutJson;
+
   /// Called when native side sends 'navigateToWorkout' (e.g. user tapped rest timer notification)
   VoidCallback? onNavigateToWorkout;
 
@@ -280,7 +285,10 @@ class WatchService {
   Future<void> sendRoutines(List<Routine> routines) async {
     try {
       final List<Map<String, dynamic>> routinesJson = routines.map((r) => r.toJson()).toList();
-      await _channel.invokeMethod('updateRoutines', json.encode(routinesJson));
+      final serialized = json.encode(routinesJson);
+      if (serialized == _lastSentRoutinesJson) return;
+      _lastSentRoutinesJson = serialized;
+      await _channel.invokeMethod('updateRoutines', serialized);
     } on PlatformException catch (e) {
       debugPrint("[WatchService] Erro ao enviar rotinas: $e");
     }
@@ -289,7 +297,10 @@ class WatchService {
   Future<void> sendLibrary(List<LibraryExercise> library) async {
     try {
       final List<Map<String, dynamic>> libraryJson = library.map((e) => e.toJson()).toList();
-      await _channel.invokeMethod('updateLibrary', json.encode(libraryJson));
+      final serialized = json.encode(libraryJson);
+      if (serialized == _lastSentLibraryJson) return;
+      _lastSentLibraryJson = serialized;
+      await _channel.invokeMethod('updateLibrary', serialized);
     } on PlatformException catch (e) {
       debugPrint("[WatchService] Erro ao enviar biblioteca: $e");
     }
@@ -297,7 +308,19 @@ class WatchService {
 
   Future<void> sendActiveWorkout(ActiveWorkoutState activeWorkout) async {
     try {
-      await _channel.invokeMethod('updateActiveWorkout', json.encode(activeWorkout.toJson()));
+      final jsonMap = activeWorkout.toJson();
+      final structureMap = Map<String, dynamic>.from(jsonMap)
+        ..remove('elapsedSeconds')
+        ..remove('warmupDurationSeconds')
+        ..remove('heartRate')
+        ..remove('activeCalories');
+      final serializedStructure = json.encode(structureMap);
+
+      if (serializedStructure == _lastSentActiveWorkoutJson) {
+        return; // Skip if identical structure
+      }
+      _lastSentActiveWorkoutJson = serializedStructure;
+      await _channel.invokeMethod('updateActiveWorkout', json.encode(jsonMap));
     } on PlatformException catch (e) {
       debugPrint("[WatchService] Erro ao enviar treino ativo: $e");
     }
@@ -305,6 +328,7 @@ class WatchService {
 
   Future<void> sendActiveWorkoutCleared() async {
     try {
+      _lastSentActiveWorkoutJson = null;
       await _channel.invokeMethod('clearActiveWorkout');
     } on PlatformException catch (e) {
       debugPrint("[WatchService] Erro ao limpar treino ativo no watch: $e");
@@ -313,7 +337,10 @@ class WatchService {
 
   Future<void> sendPlanner(Map<String, List<String>> planner) async {
     try {
-      await _channel.invokeMethod('updatePlanner', json.encode(planner));
+      final serialized = json.encode(planner);
+      if (serialized == _lastSentPlannerJson) return;
+      _lastSentPlannerJson = serialized;
+      await _channel.invokeMethod('updatePlanner', serialized);
     } on PlatformException catch (e) {
       debugPrint("[WatchService] Erro ao enviar planner: $e");
     }

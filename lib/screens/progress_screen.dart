@@ -76,19 +76,121 @@ class HistoryTab extends StatefulWidget {
   State<HistoryTab> createState() => _HistoryTabState();
 }
 
+class MonthGroup {
+  final String key;
+  final String name;
+  final List<WorkoutLog> logs;
+
+  MonthGroup({required this.key, required this.name, required this.logs});
+}
+
 class _HistoryTabState extends State<HistoryTab> {
   final Set<String> _expandedLogIds = {};
+  final Set<String> _expandedMonths = {};
+  bool _loadingHistory = false;
+  bool _monthsInitialized = false;
+
+  static const Map<int, String> _monthNames = {
+    1: 'Janeiro',
+    2: 'Fevereiro',
+    3: 'Março',
+    4: 'Abril',
+    5: 'Maio',
+    6: 'Junho',
+    7: 'Julho',
+    8: 'Agosto',
+    9: 'Setembro',
+    10: 'Outubro',
+    11: 'Novembro',
+    12: 'Dezembro',
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadHistory();
+    });
+  }
+
+  Future<void> _loadHistory() async {
+    setState(() {
+      _loadingHistory = true;
+    });
+    final provider = Provider.of<TrackerProvider>(context, listen: false);
+    await provider.loadWorkoutHistory();
+    if (mounted) {
+      setState(() {
+        _loadingHistory = false;
+      });
+      _initializeExpandedMonths(provider.state?.history ?? []);
+    }
+  }
+
+  void _initializeExpandedMonths(List<WorkoutLog> history) {
+    if (_monthsInitialized || history.isEmpty) return;
+    final sortedHistory = List<WorkoutLog>.from(history)
+      ..sort((a, b) {
+        final ad = DateTime.tryParse(a.date) ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final bd = DateTime.tryParse(b.date) ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return bd.compareTo(ad);
+      });
+    if (sortedHistory.isNotEmpty) {
+      final firstLog = sortedHistory.first;
+      final date = DateTime.tryParse(firstLog.date)?.toLocal() ?? DateTime.now();
+      final mostRecentKey = "${date.year}-${date.month.toString().padLeft(2, '0')}";
+      _expandedMonths.add(mostRecentKey);
+      _monthsInitialized = true;
+    }
+  }
+
+  List<MonthGroup> _groupHistory(List<WorkoutLog> history) {
+    final Map<String, List<WorkoutLog>> grouped = {};
+    final sortedHistory = List<WorkoutLog>.from(history)
+      ..sort((a, b) {
+        final ad = DateTime.tryParse(a.date) ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final bd = DateTime.tryParse(b.date) ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return bd.compareTo(ad);
+      });
+
+    for (final log in sortedHistory) {
+      final date = DateTime.tryParse(log.date)?.toLocal() ?? DateTime.now();
+      final key = "${date.year}-${date.month.toString().padLeft(2, '0')}";
+      grouped.putIfAbsent(key, () => []).add(log);
+    }
+
+    final List<MonthGroup> groups = [];
+    grouped.forEach((key, logs) {
+      final parts = key.split('-');
+      final year = int.parse(parts[0]);
+      final month = int.parse(parts[1]);
+      final monthName = _monthNames[month] ?? '';
+      groups.add(MonthGroup(
+        key: key,
+        name: "$monthName de $year",
+        logs: logs,
+      ));
+    });
+
+    // Sort chronologically descending
+    groups.sort((a, b) => b.key.compareTo(a.key));
+    return groups;
+  }
 
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<TrackerProvider>(context);
     final state = provider.state;
 
-    if (state == null) {
+    if (state == null || _loadingHistory) {
       return const Center(child: CircularProgressIndicator(color: Colors.white));
     }
 
     final history = state.history;
+    if (!_monthsInitialized && history.isNotEmpty) {
+      _initializeExpandedMonths(history);
+    }
+    final monthGroups = _groupHistory(history);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -100,7 +202,7 @@ class _HistoryTabState extends State<HistoryTab> {
         mini: true,
         child: const Icon(Icons.add_task, color: Colors.black),
       ),
-      body: history.isEmpty
+      body: monthGroups.isEmpty
           ? const Center(
               child: Text(
                 "Nenhum treino no diário ainda.",
@@ -109,271 +211,341 @@ class _HistoryTabState extends State<HistoryTab> {
             )
           : ListView.builder(
               padding: const EdgeInsets.all(16),
-              itemCount: history.length,
-              itemBuilder: (context, index) {
-                final log = history[index];
-                final isExpanded = _expandedLogIds.contains(log.id);
+              itemCount: monthGroups.length,
+              itemBuilder: (context, groupIndex) {
+                final group = monthGroups[groupIndex];
+                final isMonthExpanded = _expandedMonths.contains(group.key);
 
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: GlassCard(
-                    padding: const EdgeInsets.all(16),
-                    borderColor: Colors.white.withOpacity(0.04),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Cabeçalho básico (título e data)
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              if (isExpanded) {
-                                _expandedLogIds.remove(log.id);
-                              } else {
-                                _expandedLogIds.add(log.id);
-                              }
-                            });
-                          },
-                          behavior: HitTestBehavior.opaque,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      log.name,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w800,
-                                      ),
-                                    ),
-                                  ),
-                                  Icon(
-                                    isExpanded ? Icons.expand_less : Icons.expand_more,
-                                    color: Colors.white54,
-                                    size: 20,
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  Text(
-                                    _formatLogDate(log.date),
-                                    style: const TextStyle(color: Colors.white38, fontSize: 11),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    "${(log.duration ~/ 60)} min",
-                                    style: const TextStyle(color: Colors.white38, fontSize: 11),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    "Volume: ${log.totalWeight.toStringAsFixed(0)}kg",
-                                    style: TextStyle(color: widget.accentColor.withOpacity(0.8), fontSize: 11, fontWeight: FontWeight.bold),
-                                  ),
-                                  if (log.avgHeartRate != null) ...[
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      "❤️ ${log.avgHeartRate} bpm",
-                                      style: const TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold),
-                                    ),
-                                  ],
-                                  if (log.activeCalories != null) ...[
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      "🔥 ${log.activeCalories} kcal",
-                                      style: const TextStyle(color: Colors.orangeAccent, fontSize: 11, fontWeight: FontWeight.bold),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ],
-                          ),
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Cabeçalho do Mês
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          if (isMonthExpanded) {
+                            _expandedMonths.remove(group.key);
+                          } else {
+                            _expandedMonths.add(group.key);
+                          }
+                        });
+                      },
+                      behavior: HitTestBehavior.opaque,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                        margin: const EdgeInsets.only(top: 8, bottom: 8),
+                        decoration: BoxDecoration(
+                          border: Border(bottom: BorderSide(color: Colors.white.withOpacity(0.05))),
                         ),
-
-                        // Detalhes expandidos
-                        if (isExpanded) ...[
-                          const Divider(color: Colors.white10, height: 20),
-                          // Métricas gerais (RPE, Sono, Dores, etc.)
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              _buildMetricItem("Esforço (RPE)", "${log.rpe}/10"),
-                              _buildMetricItem("Séries Concl.", "${log.completedSets}/${log.totalSets}"),
-                              _buildMetricItem("Sono", (log.recovery?.sleepOk ?? "ok").toUpperCase()),
-                            ],
-                          ),
-                          if (log.avgHeartRate != null || log.activeCalories != null) ...[
-                            const SizedBox(height: 12),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                if (log.avgHeartRate != null)
-                                  _buildMetricItem("Média Cardíaca", "${log.avgHeartRate} bpm")
-                                else
-                                  const SizedBox(width: 80),
-                                if (log.activeCalories != null)
-                                  _buildMetricItem("Calorias Ativas", "${log.activeCalories} kcal")
-                                else
-                                  const SizedBox(width: 80),
-                                const SizedBox(width: 80), // Alinhador para manter 3 colunas
-                              ],
-                            ),
-                          ],
-                          if (log.recovery != null && log.recovery!.pain.isNotEmpty) ...[
-                            const SizedBox(height: 10),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
                             Row(
                               children: [
-                                const Text("Dores: ", style: TextStyle(color: Colors.white38, fontSize: 11)),
-                                Wrap(
-                                  spacing: 4,
-                                  children: log.recovery!.pain.map((p) => Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: Colors.redAccent.withOpacity(0.12),
-                                      borderRadius: BorderRadius.circular(4),
+                                Text(
+                                  group.name,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: widget.accentColor.withOpacity(0.12),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Text(
+                                    "${group.logs.length} ${group.logs.length == 1 ? 'treino' : 'treinos'}",
+                                    style: TextStyle(
+                                      color: widget.accentColor,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
                                     ),
-                                    child: Text(
-                                      p,
-                                      style: const TextStyle(color: Colors.redAccent, fontSize: 9, fontWeight: FontWeight.bold),
-                                    ),
-                                  )).toList(),
+                                  ),
                                 ),
                               ],
                             ),
+                            Icon(
+                              isMonthExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                              color: Colors.white54,
+                              size: 20,
+                            ),
                           ],
-                          const SizedBox(height: 12),
+                        ),
+                      ),
+                    ),
 
-                          // Lista de exercícios concluídos
-                          const Text(
-                            "Exercícios Executados:",
-                            style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w700),
-                          ),
-                          const SizedBox(height: 6),
-                          Column(
-                            children: log.exercises.map((ex) {
-                              final isCardio = ex.muscle.toLowerCase().contains('cardio');
-                              final done = ex.completedSets;
-                              
-                              String subtitle = "";
-                              if (isCardio) {
-                                final doneCardios = (ex.performedCardios ?? []).where((c) => c != null).toList();
-                                if (doneCardios.isNotEmpty) {
-                                  subtitle = doneCardios.map((c) => "${c!.distanceKm.toStringAsFixed(1)}km em ${c.durationSeconds ~/ 60}m").join(', ');
-                                } else {
-                                  subtitle = "${ex.weight}km em ${ex.reps}min";
-                                }
-                              } else {
-                                subtitle = "${ex.sets} séries x ${ex.reps} reps @ ${ex.weight.toStringAsFixed(1).replaceAll('.0', '')}kg";
-                              }
+                    if (isMonthExpanded) ...[
+                      ...group.logs.map((log) {
+                        final isExpanded = _expandedLogIds.contains(log.id);
 
-                              final failedSets = <String>[];
-                              if (ex.failureReport != null) {
-                                for (int i = 0; i < ex.failureReport!.length; i++) {
-                                  if (ex.failureReport![i]) {
-                                    final rep = (ex.failureReps != null && ex.failureReps!.length > i) ? ex.failureReps![i] : null;
-                                    failedSets.add("S${i+1}${rep != null ? ' (Rep $rep)' : ''}");
-                                  }
-                                }
-                              }
-
-                              return Container(
-                                margin: const EdgeInsets.symmetric(vertical: 4),
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.02),
-                                  borderRadius: BorderRadius.circular(8),
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          child: GlassCard(
+                            padding: const EdgeInsets.all(16),
+                            borderColor: Colors.white.withOpacity(0.04),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Cabeçalho básico (título e data)
+                                GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      if (isExpanded) {
+                                        _expandedLogIds.remove(log.id);
+                                      } else {
+                                        _expandedLogIds.add(log.id);
+                                      }
+                                    });
+                                  },
+                                  behavior: HitTestBehavior.opaque,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              log.name,
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w800,
+                                              ),
+                                            ),
+                                          ),
+                                          Icon(
+                                            isExpanded ? Icons.expand_less : Icons.expand_more,
+                                            color: Colors.white54,
+                                            size: 20,
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          Text(
+                                            _formatLogDate(log.date),
+                                            style: const TextStyle(color: Colors.white38, fontSize: 11),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            "${(log.duration ~/ 60)} min",
+                                            style: const TextStyle(color: Colors.white38, fontSize: 11),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            "Volume: ${log.totalWeight.toStringAsFixed(0)}kg",
+                                            style: TextStyle(color: widget.accentColor.withOpacity(0.8), fontSize: 11, fontWeight: FontWeight.bold),
+                                          ),
+                                          if (log.avgHeartRate != null) ...[
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              "❤️ ${log.avgHeartRate} bpm",
+                                              style: const TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold),
+                                            ),
+                                          ],
+                                          if (log.activeCalories != null) ...[
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              "🔥 ${log.activeCalories} kcal",
+                                              style: const TextStyle(color: Colors.orangeAccent, fontSize: 11, fontWeight: FontWeight.bold),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Expanded(
+
+                                // Detalhes expandidos
+                                if (isExpanded) ...[
+                                  const Divider(color: Colors.white10, height: 20),
+                                  // Métricas gerais (RPE, Sono, Dores, etc.)
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      _buildMetricItem("Esforço (RPE)", "${log.rpe}/10"),
+                                      _buildMetricItem("Séries Concl.", "${log.completedSets}/${log.totalSets}"),
+                                      _buildMetricItem("Sono", (log.recovery?.sleepOk ?? "ok").toUpperCase()),
+                                    ],
+                                  ),
+                                  if (log.avgHeartRate != null || log.activeCalories != null) ...[
+                                    const SizedBox(height: 12),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        if (log.avgHeartRate != null)
+                                          _buildMetricItem("Média Cardíaca", "${log.avgHeartRate} bpm")
+                                        else
+                                          const SizedBox(width: 80),
+                                        if (log.activeCalories != null)
+                                          _buildMetricItem("Calorias Ativas", "${log.activeCalories} kcal")
+                                        else
+                                          const SizedBox(width: 80),
+                                        const SizedBox(width: 80), // Alinhador para manter 3 colunas
+                                      ],
+                                    ),
+                                  ],
+                                  if (log.recovery != null && log.recovery!.pain.isNotEmpty) ...[
+                                    const SizedBox(height: 10),
+                                    Row(
+                                      children: [
+                                        const Text("Dores: ", style: TextStyle(color: Colors.white38, fontSize: 11)),
+                                        Wrap(
+                                          spacing: 4,
+                                          children: log.recovery!.pain.map((p) => Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: Colors.redAccent.withOpacity(0.12),
+                                              borderRadius: BorderRadius.circular(4),
+                                            ),
+                                            child: Text(
+                                              p,
+                                              style: const TextStyle(color: Colors.redAccent, fontSize: 9, fontWeight: FontWeight.bold),
+                                            ),
+                                          )).toList(),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                  const SizedBox(height: 12),
+
+                                  // Lista de exercícios concluídos
+                                  const Text(
+                                    "Exercícios Executados:",
+                                    style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w700),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Column(
+                                    children: log.exercises.map((ex) {
+                                      final isCardio = ex.muscle.toLowerCase().contains('cardio');
+                                      final done = ex.completedSets;
+                                      
+                                      String subtitle = "";
+                                      if (isCardio) {
+                                        final doneCardios = (ex.performedCardios ?? []).where((c) => c != null).toList();
+                                        if (doneCardios.isNotEmpty) {
+                                          subtitle = doneCardios.map((c) => "${c!.distanceKm.toStringAsFixed(1)}km em ${c.durationSeconds ~/ 60}m").join(', ');
+                                        } else {
+                                          subtitle = "${ex.weight}km em ${ex.reps}min";
+                                        }
+                                      } else {
+                                        subtitle = "${ex.sets} séries x ${ex.reps} reps @ ${ex.weight.toStringAsFixed(1).replaceAll('.0', '')}kg";
+                                      }
+
+                                      final failedSets = <String>[];
+                                      if (ex.failureReport != null) {
+                                        for (int i = 0; i < ex.failureReport!.length; i++) {
+                                          if (ex.failureReport![i]) {
+                                            final rep = (ex.failureReps != null && ex.failureReps!.length > i) ? ex.failureReps![i] : null;
+                                            failedSets.add("S${i+1}${rep != null ? ' (Rep $rep)' : ''}");
+                                          }
+                                        }
+                                      }
+
+                                      return Container(
+                                        margin: const EdgeInsets.symmetric(vertical: 4),
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.02),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    ex.name,
+                                                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                                  ),
+                                                  const SizedBox(height: 2),
+                                                  RichText(
+                                                    text: TextSpan(
+                                                      style: const TextStyle(color: Colors.white54, fontSize: 11),
+                                                      children: [
+                                                        TextSpan(text: subtitle),
+                                                        if (failedSets.isNotEmpty) ...[
+                                                          const TextSpan(text: " • "),
+                                                          TextSpan(
+                                                            text: "Falha: ${failedSets.join(', ')}",
+                                                            style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+                                                          ),
+                                                        ],
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: widget.accentColor.withOpacity(0.12),
+                                                borderRadius: BorderRadius.circular(6),
+                                              ),
+                                              child: Text(
+                                                "FEITO $done",
+                                                style: TextStyle(color: widget.accentColor, fontSize: 9, fontWeight: FontWeight.w800),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+
+                                  if (log.notes.isNotEmpty) ...[
+                                    const SizedBox(height: 12),
+                                    Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.03),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: Colors.white.withOpacity(0.05)),
+                                      ),
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
+                                          const Text("Notas da Sessão:", style: TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.bold)),
+                                          const SizedBox(height: 4),
                                           Text(
-                                            ex.name,
-                                            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                                          ),
-                                          const SizedBox(height: 2),
-                                          RichText(
-                                            text: TextSpan(
-                                              style: const TextStyle(color: Colors.white54, fontSize: 11),
-                                              children: [
-                                                TextSpan(text: subtitle),
-                                                if (failedSets.isNotEmpty) ...[
-                                                  const TextSpan(text: " • "),
-                                                  TextSpan(
-                                                    text: "Falha: ${failedSets.join(', ')}",
-                                                    style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
-                                                  ),
-                                                ],
-                                              ],
-                                            ),
+                                            log.notes,
+                                            style: const TextStyle(color: Colors.white70, fontSize: 12, height: 1.3),
                                           ),
                                         ],
                                       ),
                                     ),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: widget.accentColor.withOpacity(0.12),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        "FEITO $done",
-                                        style: TextStyle(color: widget.accentColor, fontSize: 9, fontWeight: FontWeight.w800),
-                                      ),
-                                    ),
                                   ],
-                                ),
-                              );
-                            }).toList(),
-                          ),
+                                  const SizedBox(height: 16),
 
-                          if (log.notes.isNotEmpty) ...[
-                            const SizedBox(height: 12),
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.03),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.white.withOpacity(0.05)),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text("Notas da Sessão:", style: TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.bold)),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    log.notes,
-                                    style: const TextStyle(color: Colors.white70, fontSize: 12, height: 1.3),
+                                  // Excluir registro
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: TextButton.icon(
+                                      onPressed: () {
+                                        _confirmDeleteLog(context, provider, log);
+                                      },
+                                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 16),
+                                      label: const Text("Excluir Registro", style: TextStyle(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.w700)),
+                                    ),
                                   ),
                                 ],
-                              ),
-                            ),
-                          ],
-                          const SizedBox(height: 16),
-
-                          // Excluir registro
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: TextButton.icon(
-                              onPressed: () {
-                                _confirmDeleteLog(context, provider, log);
-                              },
-                              icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 16),
-                              label: const Text("Excluir Registro", style: TextStyle(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.w700)),
+                              ],
                             ),
                           ),
-                        ],
-                      ],
-                    ),
-                  ),
+                        );
+                      }),
+                    ],
+                  ],
                 );
               },
             ),
@@ -418,11 +590,7 @@ class _HistoryTabState extends State<HistoryTab> {
           ),
           TextButton(
             onPressed: () {
-              final state = provider.state!;
-              final list = List<WorkoutLog>.from(state.history)..removeWhere((h) => h.id == log.id);
-              provider.state!.history.clear();
-              provider.state!.history.addAll(list);
-              provider.saveState();
+              provider.deleteWorkoutLog(log.id);
               Navigator.pop(dialogCtx);
               setState(() {});
             },
