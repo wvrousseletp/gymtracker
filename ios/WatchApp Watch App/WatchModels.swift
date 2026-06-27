@@ -235,6 +235,17 @@ struct WatchActiveWorkoutState: Codable {
         return exercises[currentExerciseIndex].setsState.filter { $0 }.count
     }
 
+    var currentSetIndex: Int {
+        guard currentExerciseIndex >= 0 && currentExerciseIndex < exercises.count else {
+            return 0
+        }
+        let ex = exercises[currentExerciseIndex]
+        if let idx = ex.setsState.firstIndex(of: false) {
+            return idx
+        }
+        return max(0, ex.sets - 1)
+    }
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         name = (try? container.decode(String.self, forKey: .name)) ?? ""
