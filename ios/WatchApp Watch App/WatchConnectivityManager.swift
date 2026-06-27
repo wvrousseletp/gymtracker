@@ -325,12 +325,19 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
 
     // MARK: - Actions Sent to iPhone
 
-    func startWorkout(routineId: String) {
+    func startWorkout(routineId: String, customExercises: [[String: Any]]? = nil) {
         if isReachable {
-            sendToiPhone(["action": "startWorkout", "routineId": routineId])
+            var msg: [String: Any] = [
+                "action": "startWorkout",
+                "routineId": routineId
+            ]
+            if let custom = customExercises {
+                msg["customExercises"] = custom
+            }
+            sendToiPhone(msg)
         } else {
             isLocalWorkout = true
-            startLocalWorkout(routineId: routineId)
+            startLocalWorkout(routineId: routineId, customExercises: customExercises)
         }
     }
 
@@ -529,7 +536,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         WidgetCenter.shared.reloadAllTimelines()
     }
 
-    private func startLocalWorkout(routineId: String) {
+    private func startLocalWorkout(routineId: String, customExercises: [[String: Any]]? = nil) {
         guard let routine = routines.first(where: { $0.id == routineId }) else { return }
         
         var activeExercises: [WatchActiveExercise] = []
@@ -540,19 +547,29 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             let measurementType = libEx?.measurementType ?? "reps"
             let executionType = libEx?.executionType
             
+            var targetSets = re.sets
+            var targetReps = re.reps
+            var targetWeight = re.weight
+            
+            if let custom = customExercises?.first(where: { ($0["exerciseId"] as? String) == re.exerciseId }) {
+                targetSets = custom["sets"] as? Int ?? re.sets
+                targetReps = custom["reps"] as? Int ?? re.reps
+                targetWeight = custom["weight"] as? Double ?? re.weight
+            }
+            
             let activeEx = WatchActiveExercise(
                 name: name,
                 muscle: muscle,
-                sets: re.sets,
-                reps: re.reps,
+                sets: targetSets,
+                reps: targetReps,
                 rest: re.rest,
-                weight: re.weight,
-                setsState: Array(repeating: false, count: re.sets),
+                weight: targetWeight,
+                setsState: Array(repeating: false, count: targetSets),
                 measurementType: measurementType,
                 executionType: executionType,
-                performedCardios: Array(repeating: nil, count: re.sets),
-                failureReport: Array(repeating: false, count: re.sets),
-                failureReps: Array(repeating: nil, count: re.sets)
+                performedCardios: Array(repeating: nil, count: targetSets),
+                failureReport: Array(repeating: false, count: targetSets),
+                failureReps: Array(repeating: nil, count: targetSets)
             )
             activeExercises.append(activeEx)
         }

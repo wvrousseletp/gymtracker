@@ -1,5 +1,158 @@
 import SwiftUI
 
+struct PlannedRoutineRow: View {
+    let routine: WatchRoutine
+    let item: PlannedWatchItem
+    let isCompleted: Bool
+    
+    var body: some View {
+        NavigationLink(destination: WorkoutSetupView(routine: routine)) {
+            HStack(spacing: 8) {
+                ZStack {
+                    Circle()
+                        .fill(isCompleted ? Color.green.opacity(0.12) : Color.green.opacity(0.12))
+                        .frame(width: 24, height: 24)
+                    Image(systemName: isCompleted ? "checkmark.seal.fill" : "calendar")
+                        .font(.system(size: 10))
+                        .foregroundColor(isCompleted ? .green : .green)
+                }
+                
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(item.title)
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(isCompleted ? .gray : .white)
+                        .strikethrough(isCompleted, color: .gray)
+                    Text(isCompleted ? "Treino concluído hoje" : item.subtitle)
+                        .font(.system(size: 9))
+                        .foregroundColor(isCompleted ? .green.opacity(0.8) : .gray)
+                }
+                Spacer()
+                Image(systemName: isCompleted ? "checkmark.circle.fill" : "play.fill")
+                    .font(.system(size: isCompleted ? 12 : 8))
+                    .foregroundColor(isCompleted ? .green : .green)
+            }
+            .padding(.vertical, 4)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .padding(8)
+        .background(isCompleted ? Color.black.opacity(0.2) : Color.green.opacity(0.04))
+        .cornerRadius(10)
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(isCompleted ? Color.green.opacity(0.2) : Color.green.opacity(0.15), lineWidth: 1)
+        )
+    }
+}
+
+struct PlannedExerciseRow: View {
+    let exerciseId: String
+    let item: PlannedWatchItem
+    let isCompleted: Bool
+    let onSingleExerciseTap: (String) -> Void
+    
+    var body: some View {
+        Button(action: {
+            onSingleExerciseTap(exerciseId)
+        }) {
+            HStack(spacing: 8) {
+                ZStack {
+                    Circle()
+                        .fill(isCompleted ? Color.green.opacity(0.12) : Color.green.opacity(0.12))
+                        .frame(width: 24, height: 24)
+                    Image(systemName: isCompleted ? "checkmark.seal.fill" : "calendar")
+                        .font(.system(size: 10))
+                        .foregroundColor(isCompleted ? .green : .green)
+                }
+                
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(item.title)
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(isCompleted ? .gray : .white)
+                        .strikethrough(isCompleted, color: .gray)
+                    Text(isCompleted ? "Treino concluído hoje" : item.subtitle)
+                        .font(.system(size: 9))
+                        .foregroundColor(isCompleted ? .green.opacity(0.8) : .gray)
+                }
+                Spacer()
+                Image(systemName: isCompleted ? "checkmark.circle.fill" : "play.fill")
+                    .font(.system(size: isCompleted ? 12 : 8))
+                    .foregroundColor(isCompleted ? .green : .green)
+            }
+            .padding(.vertical, 4)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .padding(8)
+        .background(isCompleted ? Color.black.opacity(0.2) : Color.green.opacity(0.04))
+        .cornerRadius(10)
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(isCompleted ? Color.green.opacity(0.2) : Color.green.opacity(0.15), lineWidth: 1)
+        )
+    }
+}
+
+struct PlannedItemRow: View {
+    let item: PlannedWatchItem
+    let isCompleted: Bool
+    let onSingleExerciseTap: (String) -> Void
+    let routines: [WatchRoutine]
+    
+    var body: some View {
+        if item.kind == .routine,
+           let routineId = item.routineId,
+           let routine = routines.first(where: { $0.id == routineId }) {
+            PlannedRoutineRow(routine: routine, item: item, isCompleted: isCompleted)
+        } else if item.kind == .singleExercise, let exerciseId = item.exerciseId {
+            PlannedExerciseRow(exerciseId: exerciseId, item: item, isCompleted: isCompleted, onSingleExerciseTap: onSingleExerciseTap)
+        } else {
+            EmptyView()
+        }
+    }
+}
+
+struct RoutineRow: View {
+    let routine: WatchRoutine
+    let isCompleted: Bool
+    
+    var body: some View {
+        NavigationLink(destination: WorkoutSetupView(routine: routine)) {
+            HStack(spacing: 8) {
+                ZStack {
+                    Circle()
+                        .fill(isCompleted ? Color.green.opacity(0.12) : Color.green.opacity(0.12))
+                        .frame(width: 24, height: 24)
+                    Image(systemName: isCompleted ? "checkmark.seal.fill" : "play.fill")
+                        .font(.system(size: 10))
+                        .foregroundColor(isCompleted ? .green : .green)
+                }
+                
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(routine.name)
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(isCompleted ? .gray : .white)
+                        .strikethrough(isCompleted, color: .gray)
+                    Text(isCompleted ? "Treino concluído hoje" : "\(routine.exercises.count) exercícios")
+                        .font(.system(size: 9))
+                        .foregroundColor(isCompleted ? .green.opacity(0.8) : .gray)
+                }
+                Spacer()
+                Image(systemName: isCompleted ? "checkmark.circle.fill" : "chevron.right")
+                    .font(.system(size: isCompleted ? 12 : 8, weight: .bold))
+                    .foregroundColor(isCompleted ? .green : .gray)
+            }
+            .padding(.vertical, 4)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .padding(8)
+        .background(isCompleted ? Color.black.opacity(0.2) : Color.white.opacity(0.04))
+        .cornerRadius(10)
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(isCompleted ? Color.green.opacity(0.2) : Color.white.opacity(0.06), lineWidth: 1)
+        )
+    }
+}
+
 struct WorkoutSelectionView: View {
     @ObservedObject var connectivityManager = WatchConnectivityManager.shared
 
@@ -113,51 +266,13 @@ struct WorkoutSelectionView: View {
                                     Section(header: Text("Treinos de Hoje").font(.system(size: 10, weight: .bold)).foregroundColor(.green)) {
                                         ForEach(todayPlannedItems) { item in
                                             let isCompleted = connectivityManager.streak.completedTodayRoutines.contains(item.title)
-                                            Button(action: {
-                                                switch item.kind {
-                                                case .routine:
-                                                    if let routineId = item.routineId {
-                                                        connectivityManager.startWorkout(routineId: routineId)
-                                                    }
-                                                case .singleExercise:
-                                                    if let exerciseId = item.exerciseId {
-                                                        connectivityManager.startSingleExercise(exerciseId: exerciseId)
-                                                    }
-                                                }
-                                            }) {
-                                                HStack(spacing: 8) {
-                                                    ZStack {
-                                                        Circle()
-                                                            .fill(isCompleted ? Color.green.opacity(0.12) : Color.green.opacity(0.12))
-                                                            .frame(width: 24, height: 24)
-                                                        Image(systemName: isCompleted ? "checkmark.seal.fill" : "calendar")
-                                                            .font(.system(size: 10))
-                                                            .foregroundColor(isCompleted ? .green : .green)
-                                                    }
-                                                    
-                                                    VStack(alignment: .leading, spacing: 1) {
-                                                        Text(item.title)
-                                                            .font(.system(size: 12, weight: .bold))
-                                                            .foregroundColor(isCompleted ? .gray : .white)
-                                                            .strikethrough(isCompleted, color: .gray)
-                                                        Text(isCompleted ? "Treino concluído hoje" : item.subtitle)
-                                                            .font(.system(size: 9))
-                                                            .foregroundColor(isCompleted ? .green.opacity(0.8) : .gray)
-                                                    }
-                                                    Spacer()
-                                                    Image(systemName: isCompleted ? "checkmark.circle.fill" : "play.fill")
-                                                        .font(.system(size: isCompleted ? 12 : 8))
-                                                        .foregroundColor(isCompleted ? .green : .green)
-                                                }
-                                                .padding(.vertical, 4)
-                                            }
-                                            .buttonStyle(PlainButtonStyle())
-                                            .padding(8)
-                                            .background(isCompleted ? Color.black.opacity(0.2) : Color.green.opacity(0.04))
-                                            .cornerRadius(10)
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 10)
-                                                    .stroke(isCompleted ? Color.green.opacity(0.2) : Color.green.opacity(0.15), lineWidth: 1)
+                                            PlannedItemRow(
+                                                item: item,
+                                                isCompleted: isCompleted,
+                                                onSingleExerciseTap: { exerciseId in
+                                                    connectivityManager.startSingleExercise(exerciseId: exerciseId)
+                                                },
+                                                routines: connectivityManager.routines
                                             )
                                         }
                                     }
@@ -168,42 +283,9 @@ struct WorkoutSelectionView: View {
                                     Section(header: Text("Todos os Treinos").font(.system(size: 10, weight: .bold)).foregroundColor(.orange)) {
                                         ForEach(connectivityManager.routines) { routine in
                                             let isCompleted = connectivityManager.streak.completedTodayRoutines.contains(routine.name)
-                                            Button(action: {
-                                                connectivityManager.startWorkout(routineId: routine.id)
-                                            }) {
-                                                HStack(spacing: 8) {
-                                                    ZStack {
-                                                        Circle()
-                                                            .fill(isCompleted ? Color.green.opacity(0.12) : Color.green.opacity(0.12))
-                                                            .frame(width: 24, height: 24)
-                                                        Image(systemName: isCompleted ? "checkmark.seal.fill" : "play.fill")
-                                                            .font(.system(size: 10))
-                                                            .foregroundColor(isCompleted ? .green : .green)
-                                                    }
-                                                    
-                                                    VStack(alignment: .leading, spacing: 1) {
-                                                        Text(routine.name)
-                                                            .font(.system(size: 12, weight: .bold))
-                                                            .foregroundColor(isCompleted ? .gray : .white)
-                                                            .strikethrough(isCompleted, color: .gray)
-                                                        Text(isCompleted ? "Treino concluído hoje" : "\(routine.exercises.count) exercícios")
-                                                            .font(.system(size: 9))
-                                                            .foregroundColor(isCompleted ? .green.opacity(0.8) : .gray)
-                                                    }
-                                                    Spacer()
-                                                    Image(systemName: isCompleted ? "checkmark.circle.fill" : "chevron.right")
-                                                        .font(.system(size: isCompleted ? 12 : 8, weight: .bold))
-                                                        .foregroundColor(isCompleted ? .green : .gray)
-                                                }
-                                                .padding(.vertical, 4)
-                                            }
-                                            .buttonStyle(PlainButtonStyle())
-                                            .padding(8)
-                                            .background(isCompleted ? Color.black.opacity(0.2) : Color.white.opacity(0.04))
-                                            .cornerRadius(10)
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 10)
-                                                    .stroke(isCompleted ? Color.green.opacity(0.2) : Color.white.opacity(0.06), lineWidth: 1)
+                                            RoutineRow(
+                                                routine: routine,
+                                                isCompleted: isCompleted
                                             )
                                         }
                                     }

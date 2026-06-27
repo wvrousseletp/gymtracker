@@ -45,10 +45,49 @@ class WatchService {
         break;
 
       case 'startWorkout':
-        final String routineId = call.arguments as String;
-        final routine = _provider!.state?.routines.firstWhere((r) => r.id == routineId);
-        if (routine != null) {
-          _provider!.startWorkout(routine, WorkoutRecovery(sleepOk: 'ok', pain: [], warmUpDone: false), false);
+        String routineId;
+        List? customExercisesJson;
+        if (call.arguments is Map) {
+          routineId = call.arguments['routineId'] as String;
+          customExercisesJson = call.arguments['customExercises'] as List?;
+        } else {
+          routineId = call.arguments as String;
+        }
+
+        final baseRoutine = _provider!.state?.routines.firstWhere((r) => r.id == routineId);
+        if (baseRoutine != null) {
+          Routine routineToStart = baseRoutine;
+          if (customExercisesJson != null) {
+            final List<RoutineExercise> customExList = [];
+            for (var item in customExercisesJson) {
+              final String exId = item['exerciseId'] as String;
+              final int sets = (item['sets'] as num).toInt();
+              final int reps = (item['reps'] as num).toInt();
+              final double weight = (item['weight'] as num).toDouble();
+              
+              final orig = baseRoutine.exercises.firstWhere(
+                (e) => e.exerciseId == exId,
+                orElse: () => baseRoutine.exercises.first,
+              );
+              customExList.add(RoutineExercise(
+                id: orig.id,
+                exerciseId: exId,
+                sets: sets,
+                reps: reps,
+                rest: orig.rest,
+                weight: weight,
+              ));
+            }
+            routineToStart = Routine(
+              id: baseRoutine.id,
+              name: baseRoutine.name,
+              defaultRest: baseRoutine.defaultRest,
+              exercises: customExList,
+              isDynamicExercise: baseRoutine.isDynamicExercise,
+            );
+          }
+          
+          _provider!.startWorkout(routineToStart, WorkoutRecovery(sleepOk: 'ok', pain: [], warmUpDone: false), false);
           // Envia de volta o estado atualizado do treino ativo
           if (_provider!.state?.activeWorkout != null) {
             sendActiveWorkout(_provider!.state!.activeWorkout!);
