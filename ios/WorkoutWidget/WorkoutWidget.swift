@@ -247,36 +247,43 @@ struct WaterIntakeWidgetView: View {
                 
                 // Interactive buttons for iOS 17+
                 if #available(iOS 17.0, *) {
-                    HStack(spacing: 6) {
-                        Button(intent: AddWaterIntent(amount: 250)) {
-                            Text("+250ml")
-                                .font(.system(size: 9, weight: .bold))
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 20)
-                                .background(Color.blue.opacity(0.15))
-                                .foregroundColor(.blue)
-                                .cornerRadius(4)
-                        }
-                        .buttonStyle(.plain)
-                        
-                        Button(intent: AddWaterIntent(amount: 500)) {
-                            Text("+500ml")
-                                .font(.system(size: 9, weight: .bold))
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 20)
-                                .background(Color.blue.opacity(0.15))
-                                .foregroundColor(.blue)
-                                .cornerRadius(4)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    .padding(.top, 2)
+                    WaterIntakeButtonsView()
                 }
             }
             .padding(12)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color(red: 0.05, green: 0.05, blue: 0.05))
         }
+    }
+}
+
+@available(iOS 17.0, *)
+struct WaterIntakeButtonsView: View {
+    var body: some View {
+        HStack(spacing: 6) {
+            Button(intent: AddWaterIntent(amount: 250)) {
+                Text("+250ml")
+                    .font(.system(size: 9, weight: .bold))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 20)
+                    .background(Color.blue.opacity(0.15))
+                    .foregroundColor(.blue)
+                    .cornerRadius(4)
+            }
+            .buttonStyle(.plain)
+            
+            Button(intent: AddWaterIntent(amount: 500)) {
+                Text("+500ml")
+                    .font(.system(size: 9, weight: .bold))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 20)
+                    .background(Color.blue.opacity(0.15))
+                    .foregroundColor(.blue)
+                    .cornerRadius(4)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.top, 2)
     }
 }
 
