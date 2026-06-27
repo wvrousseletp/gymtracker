@@ -185,9 +185,11 @@ struct WaterIntakeWidgetView: View {
     @Environment(\.widgetFamily) var family
     var entry: WaterIntakeProvider.Entry
 
+    var percent: Double {
+        entry.targetMl > 0 ? Double(entry.currentMl) / Double(entry.targetMl) : 0.0
+    }
+
     var body: some View {
-        let percent = entry.targetMl > 0 ? Double(entry.currentMl) / Double(entry.targetMl) : 0.0
-        
         switch family {
         case .accessoryCircular:
             Gauge(value: percent) {
