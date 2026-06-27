@@ -2,6 +2,7 @@ import Foundation
 import WatchConnectivity
 import Combine
 import os.log
+import WidgetKit
 #if os(watchOS)
 import WatchKit
 #endif
@@ -278,6 +279,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                        let decoded = try? JSONDecoder().decode(WatchStreak.self, from: jsonData) {
                         self.streak = decoded
                         UserDefaults.standard.set(streakJson, forKey: "cached_streak")
+                        WidgetCenter.shared.reloadAllTimelines()
                     }
 
                 default:
@@ -524,6 +526,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         } else {
             defaults.removeObject(forKey: "local_workout_state")
         }
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     private func startLocalWorkout(routineId: String) {

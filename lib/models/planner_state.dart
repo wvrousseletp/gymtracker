@@ -231,6 +231,7 @@ class PlannerState {
   final ActiveWorkoutState? activeWorkout;
   final DietState diet;
   final WorkoutStreak streak;
+  final Map<String, DietHistoryDay> dietHistory;
 
   PlannerState({
     required this.library,
@@ -242,8 +243,10 @@ class PlannerState {
     required this.settings,
     this.activeWorkout,
     required this.diet,
+    Map<String, DietHistoryDay>? dietHistory,
     WorkoutStreak? streak,
-  }) : streak = streak ??
+  }) : dietHistory = dietHistory ?? {},
+       streak = streak ??
             WorkoutStreak(
               currentWeekCount: 0,
               consecutiveWeeks: 0,
@@ -262,6 +265,7 @@ class PlannerState {
     bool clearActiveWorkout = false,
     DietState? diet,
     WorkoutStreak? streak,
+    Map<String, DietHistoryDay>? dietHistory,
   }) {
     return PlannerState(
       library: library ?? this.library,
@@ -274,6 +278,7 @@ class PlannerState {
       activeWorkout: clearActiveWorkout ? null : (activeWorkout ?? this.activeWorkout),
       diet: diet ?? this.diet,
       streak: streak ?? this.streak,
+      dietHistory: dietHistory ?? this.dietHistory,
     );
   }
 
@@ -288,6 +293,7 @@ class PlannerState {
     'activeWorkout': activeWorkout?.toJson(),
     'diet': diet.toJson(),
     'streak': streak.toJson(),
+    'dietHistory': dietHistory.map((k, v) => MapEntry(k, v.toJson())),
   };
 
   factory PlannerState.fromJson(Map<String, dynamic> json) {
@@ -304,6 +310,16 @@ class PlannerState {
         prsMap[k.toString()] = PersonalRecord.fromJson(Map<String, dynamic>.from(v));
       });
     }
+
+    Map<String, DietHistoryDay> dietHistoryMap = {};
+    if (json['dietHistory'] != null) {
+      (json['dietHistory'] as Map).forEach((k, v) {
+        dietHistoryMap[k.toString()] = DietHistoryDay.fromJson(Map<String, dynamic>.from(v));
+      });
+    }
+
+    final now = DateTime.now();
+    final todayStr = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
 
     return PlannerState(
       library: json['library'] != null
@@ -338,10 +354,12 @@ class PlannerState {
               waterIntakeMl: 0,
               fasting: FastingState(history: []),
               abstinence: [],
+              lastDietDate: todayStr,
             ),
       streak: json['streak'] != null
           ? WorkoutStreak.fromJson(Map<String, dynamic>.from(json['streak']))
           : WorkoutStreak(currentWeekCount: 0, consecutiveWeeks: 0, lastWorkoutDate: ''),
+      dietHistory: dietHistoryMap,
     );
   }
 }

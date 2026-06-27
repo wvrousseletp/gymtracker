@@ -790,6 +790,7 @@ class ActiveWorkoutView extends StatefulWidget {
 
 class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
   Timer? _stopwatchTimer;
+  Timer? _healthSyncTimer;
   late final ValueNotifier<int> _workoutDurationNotifier;
 
   // ─── Rest/Prep timer – driven by RestTimerService (global singleton) ───
@@ -818,6 +819,12 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
     // Iniciar cronômetro do treino
     _startStopwatch();
 
+    // Sincronizar métricas de saúde inicialmente e a cada 15 segundos
+    widget.provider.syncHealthMetrics();
+    _healthSyncTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
+      widget.provider.syncHealthMetrics();
+    });
+
     // Ouvir alterações do provedor para sincronizar timer de descanso e exercício atual
     widget.provider.addListener(_onProviderChange);
 
@@ -826,8 +833,6 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
 
     // Sync initial timer state from service (in case user navigated back during rest)
     _syncFromService();
-
-
   }
 
   @override
@@ -835,6 +840,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
     widget.provider.removeListener(_onProviderChange);
     RestTimerService.instance.secondsRemaining.removeListener(_onRestTimerTick);
     _stopwatchTimer?.cancel();
+    _healthSyncTimer?.cancel();
     _workoutDurationNotifier.dispose();
     super.dispose();
   }
@@ -940,6 +946,9 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
     final workout = widget.activeWorkout;
     final exercises = workout.exercises;
     final accentColor = ThemeUtils.getColor(widget.provider.currentProfile.colorAccent);
+    final hr = widget.provider.currentHeartRate > 0 ? widget.provider.currentHeartRate : workout.heartRate;
+    final cal = widget.provider.todayBurnedCalories > 0 ? widget.provider.todayBurnedCalories : workout.activeCalories;
+    final steps = widget.provider.todaySteps;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -973,24 +982,33 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
                               );
                             },
                           ),
-                          if (workout.heartRate > 0 || workout.activeCalories > 0) ...[
+                          if (hr > 0 || cal > 0 || steps > 0) ...[
                             const SizedBox(height: 4),
                             Row(
                               children: [
-                                if (workout.heartRate > 0) ...[
+                                if (hr > 0) ...[
                                   const Icon(Icons.favorite, color: Colors.redAccent, size: 12),
                                   const SizedBox(width: 4),
                                   Text(
-                                    "${workout.heartRate} bpm",
+                                    "$hr bpm",
                                     style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
                                   ),
                                   const SizedBox(width: 12),
                                 ],
-                                if (workout.activeCalories > 0) ...[
+                                if (cal > 0) ...[
                                   const Icon(Icons.local_fire_department, color: Colors.orangeAccent, size: 12),
                                   const SizedBox(width: 4),
                                   Text(
-                                    "${workout.activeCalories} kcal",
+                                    "$cal kcal",
+                                    style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(width: 12),
+                                ],
+                                if (steps > 0) ...[
+                                  const Icon(Icons.directions_walk, color: Colors.blueAccent, size: 12),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    "$steps passos",
                                     style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
                                   ),
                                 ],
@@ -1226,137 +1244,194 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
           const SizedBox(height: 16),
 
           // Lista de Séries
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: ex.sets,
-            itemBuilder: (context, setIdx) {
-              final isDone = ex.setsState[setIdx];
-              final isFailure = ex.failureReport[setIdx];
+          Builder(
+            builder: (context) {
+              final activeSetIdx = ex.setsState.indexOf(false);
+              return ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: ex.sets,
+                itemBuilder: (context, setIdx) {
+                  final isDone = ex.setsState[setIdx];
+                  final isFailure = ex.failureReport[setIdx];
+                  final isActive = (setIdx == activeSetIdx);
 
-              if (isCardio) {
-                // RENDERIZAR SESSÃO DE CARDIO
-                // _CardioSetRow is a StatefulWidget that owns its TextEditingControllers
-                // so they are NOT recreated on every rebuild (which would lose text/focus).
-                final pc = ex.performedCardios[setIdx];
-                return _CardioSetRow(
-                  key: ValueKey('cardio_${exIdx}_$setIdx'),
-                  setIndex: setIdx,
-                  isDone: isDone,
-                  initialDistance: pc?.distanceKm,
-                  initialMinutes: pc != null ? pc.durationSeconds ~/ 60 : null,
-                  onChanged: (dist, durMinutes, done) {
-                    widget.provider.completeSet(
-                      exIdx, setIdx, done,
-                      distance: dist,
-                      duration: durMinutes * 60,
+                  if (isCardio) {
+                    // RENDERIZAR SESSÃO DE CARDIO
+                    final pc = ex.performedCardios[setIdx];
+                    return Opacity(
+                      opacity: isDone ? 0.65 : 1.0,
+                      child: _CardioSetRow(
+                        key: ValueKey('cardio_${exIdx}_$setIdx'),
+                        setIndex: setIdx,
+                        isDone: isDone,
+                        initialDistance: pc?.distanceKm,
+                        initialMinutes: pc != null ? pc.durationSeconds ~/ 60 : null,
+                        onChanged: (dist, durMinutes, done) {
+                          widget.provider.completeSet(
+                            exIdx, setIdx, done,
+                            distance: dist,
+                            duration: durMinutes * 60,
+                          );
+                        },
+                      ),
                     );
-                  },
-                );
-              } else {
-                // RENDERIZAR SÉRIE DE MUSCULAÇÃO / ISOMETRIA
-                return Container(
-                  margin: const EdgeInsets.symmetric(vertical: 6),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(isDone ? 0.05 : 0.01),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: isDone ? accentColor.withOpacity(0.35) : Colors.white.withOpacity(0.06)),
-                  ),
-                  child: Row(
-                    children: [
-                      // Número da série
-                      Text(
-                        "Série ${setIdx + 1}",
-                        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(width: 12),
-
-                      // Quantidade (reps ou segs)
-                      Expanded(
-                        child: Text(
-                          ex.measurementType == 'time'
-                              ? "${ex.reps} segundos"
-                              : "${ex.reps} reps",
-                          style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
+                  } else {
+                    // RENDERIZAR SÉRIE DE MUSCULAÇÃO / ISOMETRIA
+                    return Opacity(
+                      opacity: isDone ? 0.65 : 1.0,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        margin: const EdgeInsets.symmetric(vertical: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: isActive
+                              ? accentColor.withOpacity(0.04)
+                              : Colors.white.withOpacity(isDone ? 0.03 : 0.01),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isActive
+                                ? accentColor.withOpacity(0.85)
+                                : (isDone ? accentColor.withOpacity(0.2) : Colors.white.withOpacity(0.06)),
+                            width: isActive ? 1.5 : 1.0,
+                          ),
+                          boxShadow: isActive ? [
+                            BoxShadow(
+                              color: accentColor.withOpacity(0.08),
+                              blurRadius: 8,
+                              spreadRadius: 1,
+                            ),
+                          ] : null,
                         ),
-                      ),
-                      
-                      // Carga (kg)
-                      Text(
-                        ex.weight > 0 ? "${ex.weight.toStringAsFixed(1).replaceAll('.0', '')} kg" : "Sem carga",
-                        style: const TextStyle(color: Colors.white54, fontSize: 11),
-                      ),
-                      const SizedBox(width: 16),
-
-                      // Botão Falha (RPE/Failure)
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          GestureDetector(
-                            onTap: () {
-                              widget.provider.completeSet(
-                                exIdx,
-                                setIdx,
-                                isDone,
-                                isFailure: !isFailure,
-                                failureRep: !isFailure ? ex.failureReps[setIdx] : null,
-                              );
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: isFailure ? Colors.redAccent.withOpacity(0.15) : Colors.white.withOpacity(0.02),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: isFailure ? Colors.redAccent : Colors.white.withOpacity(0.08)),
+                        child: Row(
+                          children: [
+                            // Número da série
+                            Text(
+                              "Série ${setIdx + 1}",
+                              style: TextStyle(
+                                color: isActive ? Colors.white : Colors.white70,
+                                fontSize: 12,
+                                fontWeight: isActive ? FontWeight.w900 : FontWeight.bold,
                               ),
+                            ),
+                            const SizedBox(width: 12),
+
+                            // Quantidade (reps ou segs)
+                            Expanded(
                               child: Text(
-                                "❌ Falha",
+                                ex.measurementType == 'time'
+                                    ? "${ex.reps} segundos"
+                                    : "${ex.reps} reps",
                                 style: TextStyle(
-                                  color: isFailure ? Colors.redAccent : Colors.white24,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
+                                  color: isActive ? Colors.white : Colors.white60,
+                                  fontSize: 12,
+                                  fontWeight: isActive ? FontWeight.w900 : FontWeight.bold,
                                 ),
                               ),
                             ),
-                          ),
-                          if (isFailure) ...[
-                            const SizedBox(width: 4),
+                            Text(
+                              ex.weight > 0 ? "${ex.weight.toStringAsFixed(1).replaceAll('.0', '')} kg" : "Sem carga",
+                              style: TextStyle(
+                                color: isActive ? Colors.white : Colors.white38,
+                                fontSize: 11,
+                                fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                GestureDetector(
+                                  onTap: () {
+                                    widget.provider.completeSet(
+                                      exIdx,
+                                      setIdx,
+                                      isDone,
+                                      isFailure: !isFailure,
+                                      failureRep: !isFailure ? ex.failureReps[setIdx] : null,
+                                    );
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: isFailure ? Colors.redAccent.withOpacity(0.15) : Colors.white.withOpacity(0.02),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: isFailure ? Colors.redAccent : Colors.white.withOpacity(0.08)),
+                                    ),
+                                    child: Text(
+                                      "❌ Falha",
+                                      style: TextStyle(
+                                        color: isFailure ? Colors.redAccent : Colors.white24,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                if (isFailure) ...[
+                                  const SizedBox(width: 4),
+                                  GestureDetector(
+                                    onTap: () {
+                                      _showFailureRepDialog(context, exIdx, setIdx, ex.failureReps[setIdx]);
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+                                      decoration: BoxDecoration(
+                                        color: Colors.redAccent.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(color: Colors.redAccent.withOpacity(0.25)),
+                                      ),
+                                      child: Text(
+                                        "Rep: ${ex.failureReps[setIdx] ?? '-'}",
+                                        style: const TextStyle(color: Colors.redAccent, fontSize: 10, fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            const SizedBox(width: 12),
+
+                            // Checkbox Concluir (Premium Custom Animated Circle)
                             GestureDetector(
                               onTap: () {
-                                _showFailureRepDialog(context, exIdx, setIdx, ex.failureReps[setIdx]);
+                                widget.provider.completeSet(
+                                  exIdx,
+                                  setIdx,
+                                  !isDone,
+                                  isFailure: isFailure,
+                                  failureRep: ex.failureReps[setIdx],
+                                );
                               },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
-                                decoration: BoxDecoration(
-                                  color: Colors.redAccent.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: Colors.redAccent.withOpacity(0.25)),
-                                ),
-                                child: Text(
-                                  "Rep: ${ex.failureReps[setIdx] ?? '-'}",
-                                  style: const TextStyle(color: Colors.redAccent, fontSize: 10, fontWeight: FontWeight.bold),
+                              child: AnimatedScale(
+                                scale: isDone ? 1.0 : 0.92,
+                                duration: const Duration(milliseconds: 150),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 150),
+                                  width: 22,
+                                  height: 22,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: isDone ? accentColor : Colors.transparent,
+                                    border: Border.all(
+                                      color: isDone ? accentColor : (isActive ? Colors.white54 : Colors.white24),
+                                      width: 2.0,
+                                    ),
+                                  ),
+                                  child: isDone
+                                      ? const Icon(Icons.check, color: Colors.black, size: 13)
+                                      : null,
                                 ),
                               ),
                             ),
                           ],
-                        ],
+                        ),
                       ),
-                      const SizedBox(width: 8),
-
-                      // Checkbox Concluir
-                      Checkbox(
-                        value: isDone,
-                        activeColor: accentColor,
-                        onChanged: (val) {
-                          widget.provider.completeSet(exIdx, setIdx, val ?? false, isFailure: isFailure, failureRep: ex.failureReps[setIdx]);
-                        },
-                      ),
-                    ],
-                  ),
-                );
-              }
-            },
+                    );
+                  }
+                },
+              );
+            }
           ),
         ],
       ),

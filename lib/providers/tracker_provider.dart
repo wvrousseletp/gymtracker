@@ -14,11 +14,12 @@ import '../services/watch_service.dart';
 import '../services/rest_timer_service.dart';
 import '../services/state_persistence_service.dart';
 import '../services/firebase_sync_service.dart';
+import '../services/health_service.dart';
 import '../utils/date_utils.dart';
 
 export '../utils/date_utils.dart';
 
-class TrackerProvider extends ChangeNotifier {
+class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
   final StatePersistenceService _persistence = StatePersistenceService();
   final FirebaseSyncService _firebaseSync = FirebaseSyncService();
 
@@ -26,8 +27,18 @@ class TrackerProvider extends ChangeNotifier {
   String _currentUserId = '';
   PlannerState? _state;
   bool _isLoading = true;
-  DateTime? _lastHealthMetricsNotify;
   bool _historyLoaded = false;
+  DateTime? _lastHealthMetricsNotify;
+  
+  int _todaySteps = 0;
+  int _todayBurnedCalories = 0;
+  int _currentHeartRate = 0;
+  bool _healthAuthorized = false;
+
+  int get todaySteps => _todaySteps;
+  int get todayBurnedCalories => _todayBurnedCalories;
+  int get currentHeartRate => _currentHeartRate;
+  bool get healthAuthorized => _healthAuthorized;
   static const Duration _healthMetricsNotifyInterval = Duration(seconds: 5);
 
   List<Profile> get profiles => _profiles;
@@ -51,11 +62,13 @@ class TrackerProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _firebaseSync.dispose();
     super.dispose();
   }
 
   Future<void> _init() async {
+    WidgetsBinding.instance.addObserver(this);
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       await initializeUser(user.uid);
@@ -94,6 +107,10 @@ class TrackerProvider extends ChangeNotifier {
     }
 
     await loadCurrentState();
+    await syncWaterFromWidget();
+    await syncActiveWorkoutFromWidget();
+    checkAndResetDailyDiet();
+    await syncHealthMetrics();
 
     if (_state == null || _state!.history.isEmpty) {
       final oldStateRaw = await _persistence.loadLegacyVicenteStateJson();
@@ -1466,5 +1483,156 @@ class TrackerProvider extends ChangeNotifier {
       "sab": [],
       "dom": []
     };
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      syncWaterFromWidget();
+      syncActiveWorkoutFromWidget();
+      checkAndResetDailyDiet();
+      syncHealthMetrics();
+    }
+  }
+
+  Future<void> syncWaterFromWidget() async {
+    if (_state == null) return;
+    try {
+      final currentWater = await WatchService.instance.getSharedWaterIntake();
+      if (currentWater != null && currentWater != _state!.diet.waterIntakeMl) {
+        updateWaterIntake(currentWater);
+      }
+    } catch (e) {
+      debugPrint('[TrackerProvider] Erro ao sincronizar água do widget: $e');
+    }
+  }
+
+  Future<void> syncActiveWorkoutFromWidget() async {
+    if (_state == null || _isLoading) return;
+    try {
+      final res = await WatchService.instance.getSharedActiveWorkout();
+      if (res == null) return;
+
+      final bool finishPending = res['finishWorkoutPending'] ?? false;
+      if (finishPending) {
+        final active = _state!.activeWorkout;
+        if (active != null) {
+          final elapsed = active.elapsedSeconds;
+          finishWorkout(elapsed ~/ 60, 5, 'Finalizado via Dynamic Island');
+        }
+        return;
+      }
+
+      final String? workoutJson = res['workoutJson'];
+      if (workoutJson != null) {
+        final decodedMap = json.decode(workoutJson) as Map<String, dynamic>;
+        final fromWidget = ActiveWorkoutState.fromJson(decodedMap);
+        
+        final current = _state!.activeWorkout;
+        if (current == null) {
+          _state = _state!.copyWith(activeWorkout: fromWidget);
+          notifyListeners();
+        } else {
+          final jsonCurrent = json.encode(current.toJson());
+          final jsonWidget = json.encode(fromWidget.toJson());
+          if (jsonCurrent != jsonWidget) {
+            _state = _state!.copyWith(activeWorkout: fromWidget);
+            
+            final rest = fromWidget.restTimer;
+            if (rest != null) {
+              RestTimerService.instance.start(
+                endTimeMs: rest.endTime,
+                seconds: rest.totalSeconds,
+                prep: rest.isPrep,
+                exName: rest.nextExerciseName,
+                setNum: rest.nextSetNum,
+              );
+            } else {
+              RestTimerService.instance.clear();
+            }
+            
+            notifyListeners();
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('[TrackerProvider] Erro ao sincronizar treino do widget: $e');
+    }
+  }
+
+  void checkAndResetDailyDiet() {
+    if (_state == null) return;
+    final now = DateTime.now();
+    final todayStr = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+    
+    final currentDiet = _state!.diet;
+    if (currentDiet.lastDietDate != todayStr) {
+      int totalCals = currentDiet.meals.fold<int>(0, (sum, m) => sum + m.calories);
+      double totalProt = currentDiet.meals.fold<double>(0, (sum, m) => sum + m.protein);
+      double totalCarbs = currentDiet.meals.fold<double>(0, (sum, m) => sum + m.carbs);
+      double totalFat = currentDiet.meals.fold<double>(0, (sum, m) => sum + m.fat);
+      
+      final historyDay = DietHistoryDay(
+        date: currentDiet.lastDietDate,
+        caloriesGoal: currentDiet.caloriesGoal,
+        caloriesIntake: totalCals,
+        proteinGoal: currentDiet.proteinGoal,
+        proteinIntake: totalProt,
+        carbsGoal: currentDiet.carbsGoal,
+        carbsIntake: totalCarbs,
+        fatGoal: currentDiet.fatGoal,
+        fatIntake: totalFat,
+        waterGoalMl: currentDiet.waterGoalMl,
+        waterIntakeMl: currentDiet.waterIntakeMl,
+      );
+      
+      final newHistory = Map<String, DietHistoryDay>.from(_state!.dietHistory);
+      newHistory[currentDiet.lastDietDate] = historyDay;
+      
+      final newDiet = DietState(
+        caloriesGoal: currentDiet.caloriesGoal,
+        proteinGoal: currentDiet.proteinGoal,
+        carbsGoal: currentDiet.carbsGoal,
+        fatGoal: currentDiet.fatGoal,
+        waterGoalMl: currentDiet.waterGoalMl,
+        meals: [],
+        waterIntakeMl: 0,
+        fasting: currentDiet.fasting,
+        abstinence: currentDiet.abstinence,
+        lastDietDate: todayStr,
+      );
+      
+      _state = _state!.copyWith(
+        diet: newDiet,
+        dietHistory: newHistory,
+      );
+      
+      saveState();
+      notifyListeners();
+    }
+  }
+
+  Future<void> syncHealthMetrics() async {
+    if (_currentUserId.isEmpty) return;
+    try {
+      final metrics = await HealthService.instance.getDailyMetrics();
+      if (metrics != null) {
+        _todaySteps = metrics['steps'] ?? 0;
+        _todayBurnedCalories = metrics['activeCalories'] ?? 0;
+        _currentHeartRate = metrics['heartRate'] ?? 0;
+        _healthAuthorized = true;
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('[TrackerProvider] Erro ao sincronizar HealthKit: $e');
+    }
+  }
+
+  Future<void> requestHealthAuthorization() async {
+    final success = await HealthService.instance.requestAuthorization();
+    if (success) {
+      _healthAuthorized = true;
+      await syncHealthMetrics();
+    }
   }
 }

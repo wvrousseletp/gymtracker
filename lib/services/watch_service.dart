@@ -411,4 +411,27 @@ class WatchService {
       debugPrint("[WatchService] Erro ao enviar streak: $e");
     }
   }
+
+  Future<int?> getSharedWaterIntake() async {
+    try {
+      final int? value = await _channel.invokeMethod<int>('getSharedWaterIntake');
+      return value;
+    } on PlatformException catch (e) {
+      debugPrint("[WatchService] Erro ao buscar ingestão de água compartilhada: $e");
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getSharedActiveWorkout() async {
+    try {
+      final Map? res = await _channel.invokeMethod<Map>('getSharedActiveWorkout');
+      if (res != null) {
+        return Map<String, dynamic>.from(res);
+      }
+      return null;
+    } on PlatformException catch (e) {
+      debugPrint("[WatchService] Erro ao buscar treino compartilhado: $e");
+      return null;
+    }
+  }
 }

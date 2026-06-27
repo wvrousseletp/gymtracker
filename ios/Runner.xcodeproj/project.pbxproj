@@ -24,6 +24,8 @@
 		D316F33E2FE20CC9008A94F4 /* WatchApp_Watch_AppUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D316F33D2FE20CC9008A94F4 /* WatchApp_Watch_AppUITestsLaunchTests.swift */; };
 		D316F3412FE20CC9008A94F4 /* WatchApp Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = D316F31E2FE20CC4008A94F4 /* WatchApp Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		D38888882FE20CC4008A9570 /* WorkoutWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = D38888882FE20CC4008A9571 /* WorkoutWidget.swift */; };
+		D38888882FE20CC4008A95EB /* WorkoutIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = D38888882FE20CC4008A95EC /* WorkoutIntents.swift */; };
+		D38888882FE20CC4008A959A /* AddWaterIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = D38888882FE20CC4008A959B /* AddWaterIntent.swift */; };
 		D38888882FE20CC4008A9580 /* WorkoutLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = D38888882FE20CC4008A9581 /* WorkoutLiveActivity.swift */; };
 		D38888882FE20CC4008A9590 /* WorkoutWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = D38888882FE20CC4008A9591 /* WorkoutWidgetBundle.swift */; };
 		D38888882FE20CC4008A95A0 /* WorkoutWidgetAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = D38888882FE20CC4008A95A1 /* WorkoutWidgetAttributes.swift */; };
@@ -32,6 +34,7 @@
 		D39999992FE20CC4008A94B1 /* WatchConnectivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A94F1 /* WatchConnectivityManager.swift */; };
 		D39999992FE20CC4008A94B2 /* WorkoutSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A94F2 /* WorkoutSelectionView.swift */; };
 		D39999992FE20CC4008A94B3 /* ActiveWorkoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A94F3 /* ActiveWorkoutView.swift */; };
+		D37777772FE20CC4008A94BA /* WatchComplications.swift in Sources */ = {isa = PBXBuildFile; fileRef = D37777772FE20CC4008A94FA /* WatchComplications.swift */; };
 		D39999992FE20CC4008A94B4 /* RestTimerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A94F4 /* RestTimerView.swift */; };
 		D39999992FE20CC4008A94B9 /* WeeklyStatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A94F9 /* WeeklyStatsView.swift */; };
 		D39999992FE20CC4008A9500 /* WorkoutManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A9501 /* WorkoutManager.swift */; };
@@ -148,6 +151,8 @@
 		D35CAB162FE15C1100B7A6F5 /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
 		D38888882FE20CC4008A9560 /* WorkoutWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = WorkoutWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		D38888882FE20CC4008A9571 /* WorkoutWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutWidget.swift; sourceTree = "<group>"; };
+		D38888882FE20CC4008A95EC /* WorkoutIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutIntents.swift; sourceTree = "<group>"; };
+		D38888882FE20CC4008A959B /* AddWaterIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddWaterIntent.swift; sourceTree = "<group>"; };
 		D38888882FE20CC4008A9581 /* WorkoutLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutLiveActivity.swift; sourceTree = "<group>"; };
 		D38888882FE20CC4008A9591 /* WorkoutWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutWidgetBundle.swift; sourceTree = "<group>"; };
 		D38888882FE20CC4008A95A1 /* WorkoutWidgetAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutWidgetAttributes.swift; sourceTree = "<group>"; };
@@ -155,6 +160,7 @@
 		D39999992FE20CC4008A94F1 /* WatchConnectivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchConnectivityManager.swift; sourceTree = "<group>"; };
 		D39999992FE20CC4008A94F2 /* WorkoutSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutSelectionView.swift; sourceTree = "<group>"; };
 		D39999992FE20CC4008A94F3 /* ActiveWorkoutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveWorkoutView.swift; sourceTree = "<group>"; };
+		D37777772FE20CC4008A94FA /* WatchComplications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchComplications.swift; sourceTree = "<group>"; };
 		D39999992FE20CC4008A94F4 /* RestTimerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestTimerView.swift; sourceTree = "<group>"; };
 		D39999992FE20CC4008A94F9 /* WeeklyStatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyStatsView.swift; sourceTree = "<group>"; };
 		D39999992FE20CC4008A9501 /* WorkoutManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutManager.swift; sourceTree = "<group>"; };
@@ -311,6 +317,7 @@
 				D39999992FE20CC4008A95C4 /* FinishWorkoutSheet.swift */,
 				D39999992FE20CC4008A94F2 /* WorkoutSelectionView.swift */,
 				D39999992FE20CC4008A94F3 /* ActiveWorkoutView.swift */,
+				D37777772FE20CC4008A94FA /* WatchComplications.swift */,
 				D39999992FE20CC4008A94F9 /* WeeklyStatsView.swift */,
 				D39999992FE20CC4008A9501 /* WorkoutManager.swift */,
 				D39999992FE20CC4008A94F4 /* RestTimerView.swift */,
@@ -349,6 +356,8 @@
 			isa = PBXGroup;
 			children = (
 				D38888882FE20CC4008A9571 /* WorkoutWidget.swift */,
+				D38888882FE20CC4008A95EC /* WorkoutIntents.swift */,
+				D38888882FE20CC4008A959B /* AddWaterIntent.swift */,
 				D38888882FE20CC4008A9581 /* WorkoutLiveActivity.swift */,
 				D38888882FE20CC4008A9591 /* WorkoutWidgetBundle.swift */,
 				D38888882FE20CC4008A95A1 /* WorkoutWidgetAttributes.swift */,
@@ -725,6 +734,7 @@
 				D39999992FE20CC4008A95D4 /* FinishWorkoutSheet.swift in Sources */,
 				D39999992FE20CC4008A94B2 /* WorkoutSelectionView.swift in Sources */,
 				D39999992FE20CC4008A94B3 /* ActiveWorkoutView.swift in Sources */,
+				D37777772FE20CC4008A94BA /* WatchComplications.swift in Sources */,
 				D39999992FE20CC4008A94B9 /* WeeklyStatsView.swift in Sources */,
 				D39999992FE20CC4008A9500 /* WorkoutManager.swift in Sources */,
 				D39999992FE20CC4008A94B4 /* RestTimerView.swift in Sources */,
@@ -753,6 +763,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				D38888882FE20CC4008A9570 /* WorkoutWidget.swift in Sources */,
+				D38888882FE20CC4008A95EB /* WorkoutIntents.swift in Sources */,
+				D38888882FE20CC4008A959A /* AddWaterIntent.swift in Sources */,
 				D38888882FE20CC4008A9580 /* WorkoutLiveActivity.swift in Sources */,
 				D38888882FE20CC4008A9590 /* WorkoutWidgetBundle.swift in Sources */,
 				D38888882FE20CC4008A95A0 /* WorkoutWidgetAttributes.swift in Sources */,

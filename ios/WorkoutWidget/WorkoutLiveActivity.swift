@@ -1,6 +1,7 @@
 import ActivityKit
 import WidgetKit
 import SwiftUI
+import AppIntents
 
 // MARK: - Gauge-style ring for rest timer progress
 @available(iOSApplicationExtension 16.1, *)
@@ -106,17 +107,33 @@ struct WorkoutLiveActivity: Widget {
                             }
                         }
                         
-                        Link(destination: URL(string: "losmooscles://skipRest")!) {
-                            HStack(spacing: 3) {
-                                Image(systemName: "forward.fill")
-                                Text("Pular")
+                        if #available(iOS 17.0, *) {
+                            Button(intent: SkipRestIntent()) {
+                                HStack(spacing: 3) {
+                                    Image(systemName: "forward.fill")
+                                    Text("Pular")
+                                }
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(accent.opacity(0.35))
+                                .cornerRadius(12)
                             }
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(accent.opacity(0.35))
-                            .cornerRadius(12)
+                            .buttonStyle(.plain)
+                        } else {
+                            Link(destination: URL(string: "losmooscles://skipRest")!) {
+                                HStack(spacing: 3) {
+                                    Image(systemName: "forward.fill")
+                                    Text("Pular")
+                                }
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(accent.opacity(0.35))
+                                .cornerRadius(12)
+                            }
                         }
                         
                         Spacer()
@@ -135,10 +152,54 @@ struct WorkoutLiveActivity: Widget {
                     }
                     .padding(.vertical, 4)
                 } else {
-                    // No rest: show set info
-                    Text(context.state.currentSetInfo)
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(.gray)
+                    // No rest: show set info and interactive buttons
+                    HStack(alignment: .center) {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(context.state.currentSetInfo)
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundColor(.gray)
+                            
+                            // Series dots
+                            HStack(spacing: 3) {
+                                ForEach(0..<context.state.totalSets, id: \.self) { index in
+                                    Circle()
+                                        .fill(index < context.state.completedSets ? Color.green : Color.gray.opacity(0.4))
+                                        .frame(width: 6, height: 6)
+                                }
+                            }
+                        }
+                        
+                        Spacer()
+                        
+                        if #available(iOS 17.0, *) {
+                            HStack(spacing: 8) {
+                                Button(intent: TogglePauseIntent()) {
+                                    Image(systemName: context.state.isPaused ? "play.fill" : "pause.fill")
+                                        .font(.system(size: 10))
+                                        .foregroundColor(.white)
+                                        .padding(8)
+                                        .background(Color.white.opacity(0.15))
+                                        .clipShape(Circle())
+                                }
+                                .buttonStyle(.plain)
+                                
+                                Button(intent: CompleteSetIntent()) {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "checkmark.circle.fill")
+                                        Text("Concluir")
+                                    }
+                                    .font(.system(size: 11, weight: .bold))
+                                    .foregroundColor(.black)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(Color.green)
+                                    .cornerRadius(8)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+                    .padding(.vertical, 2)
                 }
             }
             .padding(.horizontal, 16)
@@ -204,14 +265,27 @@ struct WorkoutLiveActivity: Widget {
                                     .monospacedDigit()
                             }
                             
-                            Link(destination: URL(string: "losmooscles://skipRest")!) {
-                                Text("Pular")
-                                    .font(.system(size: 10, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(accent.opacity(0.35))
-                                    .cornerRadius(8)
+                            if #available(iOS 17.0, *) {
+                                Button(intent: SkipRestIntent()) {
+                                    Text("Pular")
+                                        .font(.system(size: 10, weight: .bold))
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(accent.opacity(0.35))
+                                        .cornerRadius(8)
+                                }
+                                .buttonStyle(.plain)
+                            } else {
+                                Link(destination: URL(string: "losmooscles://skipRest")!) {
+                                    Text("Pular")
+                                        .font(.system(size: 10, weight: .bold))
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(accent.opacity(0.35))
+                                        .cornerRadius(8)
+                                }
                             }
                             
                             Spacer()
@@ -229,21 +303,79 @@ struct WorkoutLiveActivity: Widget {
                         .padding(.horizontal, 4)
                         .padding(.bottom, 6)
                     } else {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(context.state.exerciseName)
-                                .font(.system(size: 13, weight: .bold))
-                                .foregroundColor(.white)
-                            Text(context.state.currentSetInfo)
-                                .font(.system(size: 10))
-                                .foregroundColor(.gray)
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(context.state.exerciseName)
+                                        .font(.system(size: 13, weight: .bold))
+                                        .foregroundColor(.white)
+                                    Text(context.state.currentSetInfo)
+                                        .font(.system(size: 10))
+                                        .foregroundColor(.gray)
+                                }
+                                Spacer()
+                                
+                                // Progress Dots
+                                HStack(spacing: 3) {
+                                    ForEach(0..<context.state.totalSets, id: \.self) { index in
+                                        Circle()
+                                            .fill(index < context.state.completedSets ? Color.green : Color.gray.opacity(0.4))
+                                            .frame(width: 8, height: 8)
+                                    }
+                                }
+                            }
+                            
+                            if #available(iOS 17.0, *) {
+                                HStack(spacing: 8) {
+                                    Button(intent: TogglePauseIntent()) {
+                                        HStack {
+                                            Image(systemName: context.state.isPaused ? "play.fill" : "pause.fill")
+                                            Text(context.state.isPaused ? "Retomar" : "Pausar")
+                                        }
+                                        .font(.system(size: 10, weight: .bold))
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 6)
+                                        .background(Color.white.opacity(0.15))
+                                        .cornerRadius(8)
+                                    }
+                                    .buttonStyle(.plain)
+                                    
+                                    Button(intent: CompleteSetIntent()) {
+                                        HStack {
+                                            Image(systemName: "checkmark.circle.fill")
+                                            Text("Concluir Série")
+                                        }
+                                        .font(.system(size: 10, weight: .bold))
+                                        .foregroundColor(.black)
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 6)
+                                        .background(Color.green)
+                                        .cornerRadius(8)
+                                    }
+                                    .buttonStyle(.plain)
+                                    
+                                    Spacer()
+                                    
+                                    Button(intent: FinishWorkoutIntent()) {
+                                        Text("Finalizar")
+                                            .font(.system(size: 10, weight: .bold))
+                                            .foregroundColor(.red)
+                                            .padding(.horizontal, 10)
+                                            .padding(.vertical, 6)
+                                            .background(Color.red.opacity(0.15))
+                                            .cornerRadius(8)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
                         }
-                        .padding(.leading, 4)
-                        .padding(.bottom, 4)
+                        .padding(.horizontal, 4)
+                        .padding(.bottom, 6)
                     }
                 }
                 
             } compactLeading: {
-                // Compact: show rest timer icon when resting, else workout icon
                 if let endDate = context.state.restTimerEndDate, endDate > Date() {
                     let isPrep = context.state.restIsPrep
                     Image(systemName: isPrep ? "bolt.fill" : "timer")
@@ -256,7 +388,6 @@ struct WorkoutLiveActivity: Widget {
                 }
                 
             } compactTrailing: {
-                // Compact trailing: rest countdown takes priority over workout time
                 if let endDate = context.state.restTimerEndDate, endDate > Date() {
                     let isPrep = context.state.restIsPrep
                     Text(endDate, style: .timer)
@@ -269,11 +400,15 @@ struct WorkoutLiveActivity: Widget {
                         .font(.system(size: 9, weight: .bold))
                         .foregroundColor(.yellow)
                 } else {
-                    Text(Date(timeIntervalSinceNow: Double(-context.state.elapsedSeconds)), style: .timer)
-                        .font(.system(size: 9, weight: .bold, design: .rounded))
-                        .foregroundColor(.green)
-                        .frame(width: 40)
-                        .monospacedDigit()
+                    // Show compact progress: checkmark and e.g., 2/3
+                    HStack(spacing: 2) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 8))
+                            .foregroundColor(.green)
+                        Text("\(context.state.completedSets)/\(context.state.totalSets)")
+                            .font(.system(size: 9, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
+                    }
                 }
                 
             } minimal: {

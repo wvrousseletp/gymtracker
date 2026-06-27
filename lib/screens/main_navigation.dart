@@ -6,7 +6,6 @@ import '../models/profile.dart';
 import '../services/watch_service.dart';
 import '../widgets/profile_avatar.dart';
 import 'workout_screen.dart';
-import 'planner_screen.dart';
 import 'routines_screen.dart';
 import 'progress_screen.dart';
 import 'diet_screen.dart';
@@ -24,7 +23,6 @@ class _MainNavigationState extends State<MainNavigation> {
 
   final List<Widget> _screens = const [
     WorkoutScreen(),
-    PlannerScreen(),
     RoutinesScreen(),
     ProgressScreen(),
     DietScreen(),
@@ -190,10 +188,9 @@ class _MainNavigationState extends State<MainNavigation> {
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
                         _buildNavItem(0, Icons.fitness_center_outlined, "Treino", accentColor),
-                        _buildNavItem(1, Icons.calendar_today_outlined, "Planejar", accentColor),
-                        _buildNavItem(2, Icons.list_alt_outlined, "Treinos", accentColor),
-                        _buildNavItem(3, Icons.bar_chart_outlined, "Progresso", accentColor),
-                        _buildNavItem(4, Icons.restaurant_outlined, "Dieta", accentColor),
+                        _buildNavItem(1, Icons.calendar_today_outlined, "Rotinas", accentColor),
+                        _buildNavItem(2, Icons.bar_chart_outlined, "Progresso", accentColor),
+                        _buildNavItem(3, Icons.restaurant_outlined, "Dieta", accentColor),
                       ],
                     ),
                   ),

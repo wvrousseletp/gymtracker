@@ -2,6 +2,7 @@ import UIKit
 import Flutter
 import WatchConnectivity
 import UserNotifications
+import HealthKit
 #if canImport(ActivityKit)
 import ActivityKit
 #endif
@@ -25,6 +26,7 @@ import WidgetKit
   private var workoutActivity: Any? = nil
   /// Actions from Watch that arrived before the Flutter method channel was initialised.
   private var pendingWatchActions: [[String: Any]] = []
+  private let healthStore = HKHealthStore()
 
   override func application(
     _ application: UIApplication,
@@ -152,6 +154,9 @@ import WidgetKit
     case "updateActiveWorkout":
       if let json = call.arguments as? String {
         sendToWatch("activeWorkout", json: json)
+        let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles")
+        sharedDefaults?.set(json, forKey: "activeWorkoutJson")
+        sharedDefaults?.synchronize()
         self.updateLiveActivity(workoutJson: json)
         result(nil)
       } else {
@@ -166,6 +171,10 @@ import WidgetKit
       }
     case "clearActiveWorkout", "workoutFinished", "workoutCancelled":
       sendToWatch("activeWorkout", json: nil, clearActive: true)
+      let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles")
+      sharedDefaults?.set(nil, forKey: "activeWorkoutJson")
+      sharedDefaults?.set(nil, forKey: "finishWorkoutPending")
+      sharedDefaults?.synchronize()
       self.clearRestTimerNotification()
       self.stopLiveActivity()
       result(nil)
@@ -215,6 +224,10 @@ import WidgetKit
           sharedDefaults?.set(waterIntakeTarget, forKey: "waterIntakeTarget")
         }
         sharedDefaults?.synchronize()
+        
+        let current = args["waterIntakeCurrent"] as? Int ?? sharedDefaults?.integer(forKey: "waterIntakeCurrent") ?? 0
+        let target = args["waterIntakeTarget"] as? Int ?? sharedDefaults?.integer(forKey: "waterIntakeTarget") ?? 2000
+        self.scheduleHydrationReminders(waterIntake: current, waterGoal: target)
         
         #if canImport(WidgetKit)
         if #available(iOS 14.0, *) {
@@ -291,6 +304,29 @@ import WidgetKit
       } else {
         result(FlutterError(code: "INVALID_ARGUMENT", message: "Expected workoutId string", details: nil))
       }
+
+    case "getSharedWaterIntake":
+      let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles")
+      let current = sharedDefaults?.integer(forKey: "waterIntakeCurrent") ?? 0
+      result(current)
+
+    case "getSharedActiveWorkout":
+      let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles")
+      let workoutJson = sharedDefaults?.string(forKey: "activeWorkoutJson")
+      let finishPending = sharedDefaults?.bool(forKey: "finishWorkoutPending") ?? false
+      
+      var response: [String: Any] = [:]
+      if let workoutJson = workoutJson {
+        response["workoutJson"] = workoutJson
+      }
+      response["finishWorkoutPending"] = finishPending
+      result(response)
+
+    case "requestHealthAuth":
+      self.requestHealthAuthorization(result: result)
+
+    case "getDailyHealthMetrics":
+      self.getDailyHealthMetrics(result: result)
 
     default:
       result(FlutterMethodNotImplemented)
@@ -523,6 +559,39 @@ import WidgetKit
     UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [restTimerNotificationId])
   }
 
+  private func scheduleHydrationReminders(waterIntake: Int, waterGoal: Int) {
+    let hydrationNotificationIds = ["hydration_reminder_1", "hydration_reminder_2", "hydration_reminder_3"]
+    UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: hydrationNotificationIds)
+    
+    guard waterIntake < waterGoal else { return }
+    
+    let intervals: [TimeInterval] = [7200, 14400, 21600] // 2h, 4h, 6h
+    let messages = [
+      "Que tal um gole d'água? Você bebeu \(waterIntake)ml de \(waterGoal)ml hoje. Vamos bater a meta!",
+      "Lembrete de hidratação: beba um copo de água para manter o foco e energia!",
+      "Não se esqueça de se hidratar hoje! Seu corpo agradece. 💪"
+    ]
+    
+    for i in 0..<intervals.count {
+      let content = UNMutableNotificationContent()
+      content.title = "💧 Lembrete de Hidratação"
+      content.body = messages[i]
+      content.sound = UNNotificationSound.default
+      
+      let trigger = UNTimeIntervalNotificationTrigger(timeInterval: intervals[i], repeats: false)
+      let request = UNNotificationRequest(
+        identifier: hydrationNotificationIds[i],
+        content: content,
+        trigger: trigger
+      )
+      UNUserNotificationCenter.current().add(request) { error in
+        if let error = error {
+          print("[AppDelegate] Failed to schedule hydration notification \(i): \(error.localizedDescription)")
+        }
+      }
+    }
+  }
+
   // MARK: - Live Activity Management
   
   private func updateLiveActivity(workoutJson: String) {
@@ -539,8 +608,8 @@ import WidgetKit
     let elapsedSeconds = json["elapsedSeconds"] as? Int ?? 0
     let postponed = json["postponed"] as? Bool ?? false
     
-    var exerciseName = "Nenhum exercício ativo"
-    var setInfo = ""
+    var completedSets = 0
+    var totalSets = 0
     
     if let exercises = json["exercises"] as? [[String: Any]],
        let currentIndex = json["currentExerciseIndex"] as? Int,
@@ -549,11 +618,13 @@ import WidgetKit
         exerciseName = currentExercise["name"] as? String ?? "Exercício"
         
         let sets = currentExercise["sets"] as? Int ?? 0
+        totalSets = sets
         
         var completedCount = 0
         if let setsState = currentExercise["setsState"] as? [Bool] {
             completedCount = setsState.filter { $0 }.count
         }
+        completedSets = completedCount
         
         let weight = currentExercise["weight"] as? Double ?? 0.0
         let reps = currentExercise["reps"] as? Int ?? 0
@@ -587,7 +658,9 @@ import WidgetKit
         elapsedSeconds: elapsedSeconds,
         restTimerEndDate: restEndDate,
         restTimerTotalSeconds: restTotalSeconds,
-        restIsPrep: restIsPrep
+        restIsPrep: restIsPrep,
+        completedSets: completedSets,
+        totalSets: totalSets
     )
     
     if let activity = workoutActivity as? Activity<WorkoutWidgetAttributes> {
@@ -625,7 +698,9 @@ import WidgetKit
         elapsedSeconds: current.elapsedSeconds,
         restTimerEndDate: endDate,
         restTimerTotalSeconds: totalSeconds,
-        restIsPrep: isPrep
+        restIsPrep: isPrep,
+        completedSets: current.completedSets,
+        totalSets: current.totalSets
     )
     Task {
         await activity.update(using: updated)
@@ -647,7 +722,9 @@ import WidgetKit
         elapsedSeconds: current.elapsedSeconds,
         restTimerEndDate: nil,
         restTimerTotalSeconds: 0,
-        restIsPrep: false
+        restIsPrep: false,
+        completedSets: current.completedSets,
+        totalSets: current.totalSets
     )
     Task {
         await activity.update(using: updated)
@@ -735,6 +812,130 @@ extension AppDelegate {
     } else {
       super.userNotificationCenter(center, didReceive: response, withCompletionHandler: completionHandler)
     }
+  }
+
+  // MARK: - HealthKit Queries
+
+  private func requestHealthAuthorization(result: @escaping FlutterResult) {
+    guard HKHealthStore.isHealthDataAvailable() else {
+      result(FlutterError(code: "UNAVAILABLE", message: "HealthKit is not available on this device", details: nil))
+      return
+    }
+    
+    guard let steps = HKQuantityType.quantityType(forIdentifier: .stepCount),
+          let calories = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned),
+          let heartRate = HKQuantityType.quantityType(forIdentifier: .heartRate) else {
+      result(FlutterError(code: "INVALID_TYPE", message: "One or more HealthKit types are invalid", details: nil))
+      return
+    }
+    
+    let readTypes: Set<HKObjectType> = [steps, calories, heartRate]
+    
+    healthStore.requestAuthorization(toShare: nil, read: readTypes) { success, error in
+      DispatchQueue.main.async {
+        if let error = error {
+          result(FlutterError(code: "AUTH_ERROR", message: error.localizedDescription, details: nil))
+        } else {
+          result(success)
+        }
+      }
+    }
+  }
+
+  private func getDailyHealthMetrics(result: @escaping FlutterResult) {
+    guard HKHealthStore.isHealthDataAvailable() else {
+      result(FlutterError(code: "UNAVAILABLE", message: "HealthKit is not available", details: nil))
+      return
+    }
+    
+    guard let stepsType = HKQuantityType.quantityType(forIdentifier: .stepCount),
+          let caloriesType = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned) else {
+      result(FlutterError(code: "INVALID_TYPE", message: "HealthKit quantity types invalid", details: nil))
+      return
+    }
+    
+    let group = DispatchGroup()
+    
+    var steps: Double = 0
+    var calories: Double = 0
+    var heartRate: Double = 0
+    
+    group.enter()
+    queryQuantityTypeSum(type: stepsType, unit: HKUnit.count()) { val in
+      steps = val
+      group.leave()
+    }
+    
+    group.enter()
+    queryQuantityTypeSum(type: caloriesType, unit: HKUnit.kilocalorie()) { val in
+      calories = val
+      group.leave()
+    }
+    
+    group.enter()
+    queryLatestHeartRate { val in
+      heartRate = val
+      group.leave()
+    }
+    
+    group.notify(queue: .main) {
+      let metrics: [String: Any] = [
+        "steps": Int(steps),
+        "activeCalories": Int(calories),
+        "heartRate": Int(heartRate)
+      ]
+      result(metrics)
+    }
+  }
+
+  private func getStartOfDay() -> Date {
+    return Calendar.current.startOfDay(for: Date())
+  }
+
+  private func queryQuantityTypeSum(type: HKQuantityType, unit: HKUnit, completion: @escaping (Double) -> Void) {
+    let now = Date()
+    let startOfDay = getStartOfDay()
+    let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: now, options: .strictStartDate)
+    
+    let query = HKStatisticsQuery(quantityType: type, quantitySamplePredicate: predicate, options: .cumulativeSum) { _, statistics, error in
+      if let error = error {
+        print("[AppDelegate] HealthKit query error: \(error.localizedDescription)")
+        completion(0)
+        return
+      }
+      
+      let sum = statistics?.sumQuantity()?.doubleValue(for: unit) ?? 0
+      completion(sum)
+    }
+    healthStore.execute(query)
+  }
+
+  private func queryLatestHeartRate(completion: @escaping (Double) -> Void) {
+    guard let heartRateType = HKQuantityType.quantityType(forIdentifier: .heartRate) else {
+      completion(0)
+      return
+    }
+    
+    let now = Date()
+    let past24Hours = now.addingTimeInterval(-86400)
+    let predicate = HKQuery.predicateForSamples(withStart: past24Hours, end: now, options: .strictEndDate)
+    let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
+    
+    let query = HKSampleQuery(sampleType: heartRateType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
+      if let error = error {
+        print("[AppDelegate] Heart rate query error: \(error.localizedDescription)")
+        completion(0)
+        return
+      }
+      
+      if let sample = samples?.first as? HKQuantitySample {
+        let hr = sample.quantity.doubleValue(for: HKUnit(from: "count/min"))
+        completion(hr)
+      } else {
+        completion(0)
+      }
+    }
+    healthStore.execute(query)
   }
 }
 

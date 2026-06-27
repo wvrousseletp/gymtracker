@@ -47,7 +47,7 @@ class _ProgressScreenState extends State<ProgressScreen> with SingleTickerProvid
           unselectedLabelColor: Colors.white38,
           labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
           tabs: const [
-            Tab(text: "Diário"),
+            Tab(text: "Histórico"),
             Tab(text: "Recordes (PRs)"),
             Tab(text: "Medidas"),
           ],

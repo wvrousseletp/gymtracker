@@ -108,6 +108,62 @@ class FastingState {
   );
 }
 
+class DietHistoryDay {
+  final String date;
+  final int caloriesGoal;
+  final int caloriesIntake;
+  final double proteinGoal;
+  final double proteinIntake;
+  final double carbsGoal;
+  final double carbsIntake;
+  final double fatGoal;
+  final double fatIntake;
+  final int waterGoalMl;
+  final int waterIntakeMl;
+
+  DietHistoryDay({
+    required this.date,
+    required this.caloriesGoal,
+    required this.caloriesIntake,
+    required this.proteinGoal,
+    required this.proteinIntake,
+    required this.carbsGoal,
+    required this.carbsIntake,
+    required this.fatGoal,
+    required this.fatIntake,
+    required this.waterGoalMl,
+    required this.waterIntakeMl,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'date': date,
+    'caloriesGoal': caloriesGoal,
+    'caloriesIntake': caloriesIntake,
+    'proteinGoal': proteinGoal,
+    'proteinIntake': proteinIntake,
+    'carbsGoal': carbsGoal,
+    'carbsIntake': carbsIntake,
+    'fatGoal': fatGoal,
+    'fatIntake': fatIntake,
+    'waterGoalMl': waterGoalMl,
+    'waterIntakeMl': waterIntakeMl,
+  };
+
+  factory DietHistoryDay.fromJson(Map<String, dynamic> json) => DietHistoryDay(
+    date: json['date'] ?? '',
+    caloriesGoal: (json['caloriesGoal'] as num?)?.toInt() ?? 2000,
+    caloriesIntake: (json['caloriesIntake'] as num?)?.toInt() ?? 0,
+    proteinGoal: (json['proteinGoal'] as num?)?.toDouble() ?? 150.0,
+    proteinIntake: (json['proteinIntake'] as num?)?.toDouble() ?? 0.0,
+    carbsGoal: (json['carbsGoal'] as num?)?.toDouble() ?? 200.0,
+    carbsIntake: (json['carbsIntake'] as num?)?.toDouble() ?? 0.0,
+    fatGoal: (json['fatGoal'] as num?)?.toDouble() ?? 70.0,
+    fatIntake: (json['fatIntake'] as num?)?.toDouble() ?? 0.0,
+    waterGoalMl: (json['waterGoalMl'] as num?)?.toInt() ?? 2000,
+    waterIntakeMl: (json['waterIntakeMl'] as num?)?.toInt() ?? 0,
+  );
+}
+
 class DietState {
   final int caloriesGoal;
   final double proteinGoal;
@@ -118,6 +174,7 @@ class DietState {
   final int waterIntakeMl;
   final FastingState fasting;
   final List<AbstinenceRecord> abstinence;
+  final String lastDietDate;
 
   DietState({
     required this.caloriesGoal,
@@ -129,7 +186,13 @@ class DietState {
     required this.waterIntakeMl,
     required this.fasting,
     required this.abstinence,
-  });
+    String? lastDietDate,
+  }) : lastDietDate = lastDietDate ?? _getTodayStr();
+
+  static String _getTodayStr() {
+    final now = DateTime.now();
+    return "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+  }
 
   Map<String, dynamic> toJson() => {
     'caloriesGoal': caloriesGoal,
@@ -141,25 +204,57 @@ class DietState {
     'waterIntakeMl': waterIntakeMl,
     'fasting': fasting.toJson(),
     'abstinence': abstinence.map((a) => a.toJson()).toList(),
+    'lastDietDate': lastDietDate,
   };
 
-  factory DietState.fromJson(Map<String, dynamic> json) => DietState(
-    caloriesGoal: (json['caloriesGoal'] as num?)?.toInt() ?? 2000,
-    proteinGoal: (json['proteinGoal'] as num?)?.toDouble() ?? 150.0,
-    carbsGoal: (json['carbsGoal'] as num?)?.toDouble() ?? 200.0,
-    fatGoal: (json['fatGoal'] as num?)?.toDouble() ?? 70.0,
-    waterGoalMl: (json['waterGoalMl'] as num?)?.toInt() ?? 2000,
-    meals: json['meals'] != null
-        ? (json['meals'] as List).map((m) => Meal.fromJson(m)).toList()
-        : [],
-    waterIntakeMl: (json['waterIntakeMl'] as num?)?.toInt() ?? 0,
-    fasting: json['fasting'] != null
-        ? FastingState.fromJson(json['fasting'])
-        : FastingState(history: []),
-    abstinence: json['abstinence'] != null
-        ? (json['abstinence'] as List).map((a) => AbstinenceRecord.fromJson(a)).toList()
-        : [],
-  );
+  factory DietState.fromJson(Map<String, dynamic> json) {
+    final now = DateTime.now();
+    final todayStr = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+    return DietState(
+      caloriesGoal: (json['caloriesGoal'] as num?)?.toInt() ?? 2000,
+      proteinGoal: (json['proteinGoal'] as num?)?.toDouble() ?? 150.0,
+      carbsGoal: (json['carbsGoal'] as num?)?.toDouble() ?? 200.0,
+      fatGoal: (json['fatGoal'] as num?)?.toDouble() ?? 70.0,
+      waterGoalMl: (json['waterGoalMl'] as num?)?.toInt() ?? 2000,
+      meals: json['meals'] != null
+          ? (json['meals'] as List).map((m) => Meal.fromJson(m)).toList()
+          : [],
+      waterIntakeMl: (json['waterIntakeMl'] as num?)?.toInt() ?? 0,
+      fasting: json['fasting'] != null
+          ? FastingState.fromJson(json['fasting'])
+          : FastingState(history: []),
+      abstinence: json['abstinence'] != null
+          ? (json['abstinence'] as List).map((a) => AbstinenceRecord.fromJson(a)).toList()
+          : [],
+      lastDietDate: json['lastDietDate'] ?? todayStr,
+    );
+  }
+
+  DietState copyWith({
+    int? caloriesGoal,
+    double? proteinGoal,
+    double? carbsGoal,
+    double? fatGoal,
+    int? waterGoalMl,
+    List<Meal>? meals,
+    int? waterIntakeMl,
+    FastingState? fasting,
+    List<AbstinenceRecord>? abstinence,
+    String? lastDietDate,
+  }) {
+    return DietState(
+      caloriesGoal: caloriesGoal ?? this.caloriesGoal,
+      proteinGoal: proteinGoal ?? this.proteinGoal,
+      carbsGoal: carbsGoal ?? this.carbsGoal,
+      fatGoal: fatGoal ?? this.fatGoal,
+      waterGoalMl: waterGoalMl ?? this.waterGoalMl,
+      meals: meals ?? this.meals,
+      waterIntakeMl: waterIntakeMl ?? this.waterIntakeMl,
+      fasting: fasting ?? this.fasting,
+      abstinence: abstinence ?? this.abstinence,
+      lastDietDate: lastDietDate ?? this.lastDietDate,
+    );
+  }
 }
 
 class AbstinenceRecord {

@@ -11,6 +11,9 @@ struct WorkoutWidgetAttributes: ActivityAttributes {
         var restTimerEndDate: Date?
         var restTimerTotalSeconds: Int
         var restIsPrep: Bool
+        // Series progress
+        var completedSets: Int
+        var totalSets: Int
     }
     
     var workoutName: String

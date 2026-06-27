@@ -1,5 +1,6 @@
 import WidgetKit
 import SwiftUI
+import AppIntents
 
 // MARK: - Today Routine Widget
 
@@ -241,6 +242,34 @@ struct WaterIntakeWidgetView: View {
                     }
                 }
                 .frame(height: 6)
+                
+                // Interactive buttons for iOS 17+
+                if #available(iOS 17.0, *) {
+                    HStack(spacing: 6) {
+                        Button(intent: AddWaterIntent(amount: 250)) {
+                            Text("+250ml")
+                                .font(.system(size: 9, weight: .bold))
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 20)
+                                .background(Color.blue.opacity(0.15))
+                                .foregroundColor(.blue)
+                                .cornerRadius(4)
+                        }
+                        .buttonStyle(.plain)
+                        
+                        Button(intent: AddWaterIntent(amount: 500)) {
+                            Text("+500ml")
+                                .font(.system(size: 9, weight: .bold))
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 20)
+                                .background(Color.blue.opacity(0.15))
+                                .foregroundColor(.blue)
+                                .cornerRadius(4)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(.top, 2)
+                }
             }
             .padding(12)
             .frame(maxWidth: .infinity, maxHeight: .infinity)

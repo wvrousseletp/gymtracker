@@ -8,6 +8,8 @@ import '../models/workout_log.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/profile_avatar.dart';
 
+import 'planner_screen.dart';
+
 class RoutinesScreen extends StatefulWidget {
   const RoutinesScreen({super.key});
 
@@ -21,7 +23,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> with SingleTickerProvid
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -47,7 +49,8 @@ class _RoutinesScreenState extends State<RoutinesScreen> with SingleTickerProvid
           unselectedLabelColor: Colors.white38,
           labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
           tabs: const [
-            Tab(text: "Rotinas"),
+            Tab(text: "Agenda"),
+            Tab(text: "Modelos"),
             Tab(text: "Biblioteca"),
           ],
         ),
@@ -55,6 +58,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> with SingleTickerProvid
       body: TabBarView(
         controller: _tabController,
         children: [
+          const PlannerScreen(),
           RoutinesTab(accentColor: accentColor),
           LibraryTab(accentColor: accentColor),
         ],
