@@ -246,6 +246,10 @@ struct WatchActiveWorkoutState: Codable {
         return max(0, ex.sets - 1)
     }
 
+    var isPaused: Bool {
+        return paused
+    }
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         name = (try? container.decode(String.self, forKey: .name)) ?? ""
