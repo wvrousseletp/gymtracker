@@ -199,6 +199,7 @@ struct LockScreenWidgetView: View {
                         }
                     }
                     
+                    #if compiler(>=5.9)
                     if #available(iOS 17.0, *) {
                         Button(intent: SkipRestIntent()) {
                             HStack(spacing: 3) {
@@ -227,6 +228,20 @@ struct LockScreenWidgetView: View {
                             .cornerRadius(12)
                         }
                     }
+                    #else
+                    Link(destination: URL(string: "losmooscles://skipRest")!) {
+                        HStack(spacing: 3) {
+                            Image(systemName: "forward.fill")
+                            Text("Pular")
+                        }
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(accent.opacity(0.35))
+                        .cornerRadius(12)
+                    }
+                    #endif
                     
                     Spacer()
                     
@@ -263,6 +278,7 @@ struct LockScreenWidgetView: View {
                     
                     Spacer()
                     
+                    #if compiler(>=5.9)
                     if #available(iOS 17.0, *) {
                         HStack(spacing: 8) {
                             Button(intent: TogglePauseIntent()) {
@@ -290,6 +306,7 @@ struct LockScreenWidgetView: View {
                             .buttonStyle(.plain)
                         }
                     }
+                    #endif
                 }
                 .padding(.vertical, 2)
             }
@@ -331,6 +348,7 @@ struct DynamicIslandExpandedBottomView: View {
                         .monospacedDigit()
                 }
                 
+                #if compiler(>=5.9)
                 if #available(iOS 17.0, *) {
                     Button(intent: SkipRestIntent()) {
                         Text("Pular")
@@ -353,6 +371,17 @@ struct DynamicIslandExpandedBottomView: View {
                             .cornerRadius(8)
                     }
                 }
+                #else
+                Link(destination: URL(string: "losmooscles://skipRest")!) {
+                    Text("Pular")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(accent.opacity(0.35))
+                        .cornerRadius(8)
+                }
+                #endif
                 
                 Spacer()
                 VStack(alignment: .trailing, spacing: 1) {
@@ -391,6 +420,7 @@ struct DynamicIslandExpandedBottomView: View {
                     }
                 }
                 
+                #if compiler(>=5.9)
                 if #available(iOS 17.0, *) {
                     HStack(spacing: 8) {
                         Button(intent: TogglePauseIntent()) {
@@ -435,6 +465,7 @@ struct DynamicIslandExpandedBottomView: View {
                         .buttonStyle(.plain)
                     }
                 }
+                #endif
             }
             .padding(.horizontal, 4)
             .padding(.bottom, 6)

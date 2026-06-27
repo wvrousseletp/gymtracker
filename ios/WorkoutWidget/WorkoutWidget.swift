@@ -246,9 +246,11 @@ struct WaterIntakeWidgetView: View {
                 .frame(height: 6)
                 
                 // Interactive buttons for iOS 17+
+                #if compiler(>=5.9)
                 if #available(iOS 17.0, *) {
                     WaterIntakeButtonsView()
                 }
+                #endif
             }
             .padding(12)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -257,6 +259,7 @@ struct WaterIntakeWidgetView: View {
     }
 }
 
+#if compiler(>=5.9)
 @available(iOS 17.0, *)
 struct WaterIntakeButtonsView: View {
     var body: some View {
@@ -286,6 +289,7 @@ struct WaterIntakeButtonsView: View {
         .padding(.top, 2)
     }
 }
+#endif
 
 struct WaterIntakeWidget: Widget {
     let kind: String = "WaterIntakeWidget"
