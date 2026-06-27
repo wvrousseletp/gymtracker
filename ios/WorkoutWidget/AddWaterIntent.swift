@@ -2,7 +2,7 @@ import AppIntents
 import WidgetKit
 import Foundation
 
-@available(iOS 17.0, macOS 14.0, watchOS 10.0, *)
+@available(iOS 16.0, macOS 13.0, watchOS 9.0, *)
 struct AddWaterIntent: AppIntent {
     static var title: LocalizedStringResource = "Adicionar Água"
     

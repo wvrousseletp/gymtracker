@@ -3,7 +3,7 @@ import ActivityKit
 import WidgetKit
 import Foundation
 
-@available(iOS 17.0, macOS 14.0, watchOS 10.0, *)
+@available(iOS 16.1, macOS 13.0, watchOS 9.1, *)
 struct CompleteSetIntent: AppIntent {
     static var title: LocalizedStringResource = "Concluir Série"
     
@@ -88,7 +88,7 @@ struct CompleteSetIntent: AppIntent {
     }
 }
 
-@available(iOS 17.0, macOS 14.0, watchOS 10.0, *)
+@available(iOS 16.1, macOS 13.0, watchOS 9.1, *)
 struct SkipRestIntent: AppIntent {
     static var title: LocalizedStringResource = "Pular Descanso"
     
@@ -114,7 +114,7 @@ struct SkipRestIntent: AppIntent {
     }
 }
 
-@available(iOS 17.0, macOS 14.0, watchOS 10.0, *)
+@available(iOS 16.1, macOS 13.0, watchOS 9.1, *)
 struct TogglePauseIntent: AppIntent {
     static var title: LocalizedStringResource = "Pausar/Retomar Treino"
     
@@ -141,7 +141,7 @@ struct TogglePauseIntent: AppIntent {
     }
 }
 
-@available(iOS 17.0, macOS 14.0, watchOS 10.0, *)
+@available(iOS 16.1, macOS 13.0, watchOS 9.1, *)
 struct FinishWorkoutIntent: AppIntent {
     static var title: LocalizedStringResource = "Finalizar Treino"
     
