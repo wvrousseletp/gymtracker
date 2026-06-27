@@ -608,6 +608,8 @@ import WidgetKit
     let elapsedSeconds = json["elapsedSeconds"] as? Int ?? 0
     let postponed = json["postponed"] as? Bool ?? false
     
+    var exerciseName = "Exercício"
+    var setInfo = ""
     var completedSets = 0
     var totalSets = 0
     
