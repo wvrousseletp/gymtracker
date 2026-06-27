@@ -210,6 +210,31 @@ struct WatchActiveWorkoutState: Codable {
         self.postponed = postponed
     }
 
+    var routineName: String {
+        return name
+    }
+
+    var exerciseName: String {
+        guard currentExerciseIndex >= 0 && currentExerciseIndex < exercises.count else {
+            return "Exercício"
+        }
+        return exercises[currentExerciseIndex].name
+    }
+
+    var totalSets: Int {
+        guard currentExerciseIndex >= 0 && currentExerciseIndex < exercises.count else {
+            return 0
+        }
+        return exercises[currentExerciseIndex].sets
+    }
+
+    var completedSets: Int {
+        guard currentExerciseIndex >= 0 && currentExerciseIndex < exercises.count else {
+            return 0
+        }
+        return exercises[currentExerciseIndex].setsState.filter { $0 }.count
+    }
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         name = (try? container.decode(String.self, forKey: .name)) ?? ""
