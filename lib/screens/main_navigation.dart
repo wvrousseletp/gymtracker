@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/tracker_provider.dart';
 import '../models/profile.dart';
 import '../services/watch_service.dart';
@@ -35,6 +36,10 @@ class _MainNavigationState extends State<MainNavigation> {
     WatchService.instance.onNavigateToWorkout = () {
       if (mounted) setState(() => _currentIndex = 0);
     };
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkWhatsNew();
+    });
   }
 
   @override
@@ -258,6 +263,137 @@ class _MainNavigationState extends State<MainNavigation> {
           ],
         ),
       ),
+    );
+  }
+
+  void _checkWhatsNew() async {
+    final prefs = await SharedPreferences.getInstance();
+    const currentBuild = 71;
+    final lastSeenBuild = prefs.getInt('last_seen_whats_new_build') ?? 0;
+    
+    if (lastSeenBuild < currentBuild) {
+      if (!mounted) return;
+      _showWhatsNewDialog(context);
+      await prefs.setInt('last_seen_whats_new_build', currentBuild);
+    }
+  }
+
+  void _showWhatsNewDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogCtx) {
+        return AlertDialog(
+          backgroundColor: const Color(0xff1c1c1e),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(color: Colors.white.withOpacity(0.08)),
+          ),
+          titlePadding: const EdgeInsets.only(top: 24, left: 24, right: 24),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          title: const Row(
+            children: [
+              Icon(Icons.auto_awesome, color: Colors.amber, size: 24),
+              SizedBox(width: 8),
+              Text(
+                "O que há de novo! 🌟",
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18),
+              ),
+            ],
+          ),
+          content: SizedBox(
+            width: 320,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  "Preparamos atualizações incríveis para você atingir seus objetivos de forma ainda mais inteligente!",
+                  style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+                ),
+                const SizedBox(height: 16),
+                _whatsNewItem(
+                  Icons.psychology_outlined,
+                  Colors.purpleAccent,
+                  "Banco de Alimentos com IA",
+                  "Consulte e estime macros e calorias de qualquer alimento com o Gemini.",
+                ),
+                const SizedBox(height: 12),
+                _whatsNewItem(
+                  Icons.star_outline_rounded,
+                  Colors.amber,
+                  "Favoritos Personalizados",
+                  "Salve porções recorrentes de alimentos e registre-os com um só toque.",
+                ),
+                const SizedBox(height: 12),
+                _whatsNewItem(
+                  Icons.local_cafe_outlined,
+                  Colors.blueAccent,
+                  "Combos de Alimentos (Presets)",
+                  "Salve grupos (como seu shake diário) para inserir de uma vez só.",
+                ),
+                const SizedBox(height: 12),
+                _whatsNewItem(
+                  Icons.database_outlined,
+                  Colors.greenAccent,
+                  "100+ Alimentos Pré-carregados",
+                  "Base de dados inicial completa para buscas locais offline ultrarrápidas.",
+                ),
+              ],
+            ),
+          ),
+          actionsPadding: const EdgeInsets.only(bottom: 20, right: 24, left: 24),
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.pop(dialogCtx),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black,
+                minimumSize: const Size.fromHeight(48),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+              child: const Text(
+                "Começar a Usar! 🚀",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _whatsNewItem(IconData icon, Color color, String title, String description) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: color.withOpacity(0.2), width: 0.5),
+          ),
+          child: Icon(icon, color: color, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                description,
+                style: const TextStyle(color: Colors.white54, fontSize: 11, height: 1.3),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
