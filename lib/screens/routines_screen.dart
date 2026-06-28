@@ -1109,249 +1109,372 @@ class _LibraryTabState extends State<LibraryTab> {
           return AlertDialog(
             backgroundColor: const Color(0xff1c1c1e),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(24),
               side: BorderSide(color: Colors.white.withOpacity(0.08)),
             ),
-            title: Text(existing == null ? "Novo Exercício" : "Editar Exercício", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16)),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Nome
-                  TextField(
-                    controller: nameCtrl,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white.withOpacity(0.05),
-                      hintText: "Nome do Exercício",
-                      hintStyle: const TextStyle(color: Colors.white30),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+            titlePadding: const EdgeInsets.only(top: 24, left: 24, right: 24),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            title: Row(
+              children: [
+                Icon(existing == null ? Icons.add_circle_outline_rounded : Icons.edit_calendar_rounded, color: widget.accentColor, size: 22),
+                const SizedBox(width: 8),
+                Text(
+                  existing == null ? "Novo Exercício" : "Editar Exercício",
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
+                ),
+              ],
+            ),
+            content: SizedBox(
+              width: 320,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Nome
+                    TextField(
+                      controller: nameCtrl,
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.white.withOpacity(0.03),
+                        hintText: "Nome do Exercício",
+                        hintStyle: const TextStyle(color: Colors.white30, fontSize: 13),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: widget.accentColor.withOpacity(0.5), width: 1.5),
+                        ),
+                        prefixIcon: const Icon(Icons.edit_note_rounded, color: Colors.white30, size: 20),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
+                    const SizedBox(height: 16),
 
-                  // Tipo de Exercício
-                  const Text("Tipo de Exercício", style: TextStyle(color: Colors.white54, fontSize: 11)),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ChoiceChip(
-                          label: const Center(child: Text("Musculação")),
-                          selected: category == "Musculação",
-                          selectedColor: widget.accentColor.withOpacity(0.25),
-                          disabledColor: Colors.transparent,
-                          backgroundColor: Colors.white.withOpacity(0.05),
-                          labelStyle: TextStyle(color: category == "Musculação" ? widget.accentColor : Colors.white70, fontSize: 13, fontWeight: FontWeight.bold),
-                          onSelected: (selected) {
-                            if (selected) {
+                    // Tipo de Exercício
+                    const Text("Tipo de Exercício", style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
                               setState(() {
                                 category = "Musculação";
                                 if (muscle == "Cardio") {
                                   muscle = "Peito";
                                 }
                               });
-                            }
-                          },
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                color: category == "Musculação"
+                                    ? widget.accentColor.withOpacity(0.12)
+                                    : Colors.white.withOpacity(0.03),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: category == "Musculação"
+                                      ? widget.accentColor.withOpacity(0.4)
+                                      : Colors.white.withOpacity(0.08),
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  "Musculação 🏋️",
+                                  style: TextStyle(
+                                    color: category == "Musculação" ? Colors.white : Colors.white60,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: ChoiceChip(
-                          label: const Center(child: Text("Cardio")),
-                          selected: category == "Cardio",
-                          selectedColor: widget.accentColor.withOpacity(0.25),
-                          disabledColor: Colors.transparent,
-                          backgroundColor: Colors.white.withOpacity(0.05),
-                          labelStyle: TextStyle(color: category == "Cardio" ? widget.accentColor : Colors.white70, fontSize: 13, fontWeight: FontWeight.bold),
-                          onSelected: (selected) {
-                            if (selected) {
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
                               setState(() {
                                 category = "Cardio";
                                 muscle = "Cardio";
                               });
-                            }
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Grupo Muscular (se Musculação)
-                  if (category == "Musculação") ...[
-                    const Text("Grupo Muscular", style: TextStyle(color: Colors.white54, fontSize: 11)),
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.05),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: muscle == "Cardio" ? "Peito" : muscle,
-                          dropdownColor: const Color(0xff1c1c1e),
-                          style: const TextStyle(color: Colors.white, fontSize: 14),
-                          isExpanded: true,
-                          onChanged: (val) {
-                            if (val != null) setState(() => muscle = val);
-                          },
-                          items: ["Peito", "Costas", "Pernas", "Ombros", "Bíceps", "Tríceps", "Core", "Outros"]
-                              .map((m) => DropdownMenuItem(value: m, child: Text(m)))
-                              .toList(),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-
-                  // Tipo de Equipamento (se Musculação)
-                  if (category == "Musculação") ...[
-                    const Text("Tipo de Equipamento", style: TextStyle(color: Colors.white54, fontSize: 11)),
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.05),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: equipment,
-                          dropdownColor: const Color(0xff1c1c1e),
-                          style: const TextStyle(color: Colors.white, fontSize: 14),
-                          isExpanded: true,
-                          onChanged: (val) {
-                            if (val != null) setState(() => equipment = val);
-                          },
-                          items: ["Barra", "Haltere", "Máquina", "Livre"]
-                              .map((m) => DropdownMenuItem(value: m, child: Text(m)))
-                              .toList(),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-
-                  // Tipo de Medição (se Musculação)
-                  if (category == "Musculação") ...[
-                    const Text("Tipo de Medição", style: TextStyle(color: Colors.white54, fontSize: 11)),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ChoiceChip(
-                            label: const Center(child: Text("Repetições")),
-                            selected: measurement == "Repetições",
-                            selectedColor: Colors.blueAccent.withOpacity(0.2),
-                            disabledColor: Colors.transparent,
-                            backgroundColor: Colors.white.withOpacity(0.05),
-                            labelStyle: TextStyle(color: measurement == "Repetições" ? Colors.blueAccent : Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
-                            onSelected: (selected) {
-                              if (selected) {
-                                setState(() => measurement = "Repetições");
-                              }
                             },
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: ChoiceChip(
-                            label: const Center(child: Text("Isometria")),
-                            selected: measurement == "Tempo de Isometria",
-                            selectedColor: Colors.amber.withOpacity(0.2),
-                            disabledColor: Colors.transparent,
-                            backgroundColor: Colors.white.withOpacity(0.05),
-                            labelStyle: TextStyle(color: measurement == "Tempo de Isometria" ? Colors.amber : Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
-                            onSelected: (selected) {
-                              if (selected) {
-                                setState(() => measurement = "Tempo de Isometria");
-                              }
-                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                color: category == "Cardio"
+                                    ? widget.accentColor.withOpacity(0.12)
+                                    : Colors.white.withOpacity(0.03),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: category == "Cardio"
+                                      ? widget.accentColor.withOpacity(0.4)
+                                      : Colors.white.withOpacity(0.08),
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  "Cardio 🏃",
+                                  style: TextStyle(
+                                    color: category == "Cardio" ? Colors.white : Colors.white60,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                  ],
+                    const SizedBox(height: 16),
 
-                  // Tipo de Medição (se Cardio)
-                  if (category == "Cardio") ...[
-                    const Text("Tipo de Medição", style: TextStyle(color: Colors.white54, fontSize: 11)),
-                    const SizedBox(height: 6),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.05),
-                        borderRadius: BorderRadius.circular(10),
+                    // Grupo Muscular (se Musculação)
+                    if (category == "Musculação") ...[
+                      const Text("Grupo Muscular", style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.03),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.white.withOpacity(0.08)),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: muscle == "Cardio" ? "Peito" : muscle,
+                            dropdownColor: const Color(0xff1c1c1e),
+                            style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                            isExpanded: true,
+                            icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white54),
+                            onChanged: (val) {
+                              if (val != null) setState(() => muscle = val);
+                            },
+                            items: ["Peito", "Costas", "Pernas", "Ombros", "Bíceps", "Tríceps", "Core", "Outros"]
+                                .map((m) => DropdownMenuItem(value: m, child: Text(m)))
+                                .toList(),
+                          ),
+                        ),
                       ),
-                      child: const Text(
-                        "Distância + Tempo (Automático)",
-                        style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // Tipo de Equipamento (se Musculação)
+                    if (category == "Musculação") ...[
+                      const Text("Tipo de Equipamento", style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.03),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.white.withOpacity(0.08)),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: equipment,
+                            dropdownColor: const Color(0xff1c1c1e),
+                            style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                            isExpanded: true,
+                            icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white54),
+                            onChanged: (val) {
+                              if (val != null) setState(() => equipment = val);
+                            },
+                            items: ["Barra", "Haltere", "Máquina", "Livre"]
+                                .map((m) => DropdownMenuItem(value: m, child: Text(m)))
+                                .toList(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // Tipo de Medição (se Musculação)
+                    if (category == "Musculação") ...[
+                      const Text("Tipo de Medição", style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => setState(() => measurement = "Repetições"),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 11),
+                                decoration: BoxDecoration(
+                                  color: measurement == "Repetições"
+                                      ? Colors.blueAccent.withOpacity(0.12)
+                                      : Colors.white.withOpacity(0.03),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: measurement == "Repetições"
+                                      ? Colors.blueAccent.withOpacity(0.4)
+                                      : Colors.white.withOpacity(0.08),
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    "Repetições",
+                                    style: TextStyle(
+                                      color: measurement == "Repetições" ? Colors.white : Colors.white60,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => setState(() => measurement = "Tempo de Isometria"),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 11),
+                                decoration: BoxDecoration(
+                                  color: measurement == "Tempo de Isometria"
+                                      ? Colors.amber.withOpacity(0.12)
+                                      : Colors.white.withOpacity(0.03),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: measurement == "Tempo de Isometria"
+                                      ? Colors.amber.withOpacity(0.4)
+                                      : Colors.white.withOpacity(0.08),
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    "Isometria",
+                                    style: TextStyle(
+                                      color: measurement == "Tempo de Isometria" ? Colors.white : Colors.white60,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // Tipo de Medição (se Cardio)
+                    if (category == "Cardio") ...[
+                      const Text("Tipo de Medição", style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.02),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.white.withOpacity(0.06)),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.flash_on_rounded, color: widget.accentColor, size: 16),
+                            const SizedBox(width: 8),
+                            const Text(
+                              "Distância + Tempo (Automático)",
+                              style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // Observação
+                    TextField(
+                      controller: notesCtrl,
+                      maxLines: 2,
+                      style: const TextStyle(color: Colors.white, fontSize: 13),
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.white.withOpacity(0.03),
+                        hintText: "Observação (Opcional)",
+                        hintStyle: const TextStyle(color: Colors.white30, fontSize: 12),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: widget.accentColor.withOpacity(0.5), width: 1.5),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 12),
                   ],
+                ),
+              ),
+            ),
+            actionsPadding: const EdgeInsets.only(bottom: 20, right: 24, left: 24),
+            actions: [
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(dialogCtx),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text("Cancelar", style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        final name = nameCtrl.text.trim();
+                        if (name.isNotEmpty) {
+                          final isCardioEx = category == "Cardio";
+                          final mType = isCardioEx
+                              ? "time"
+                              : (measurement == "Tempo de Isometria" ? "time" : "reps");
+                          final execType = isCardioEx
+                              ? "Livre"
+                              : equipment;
 
-                  // Observação
-                  TextField(
-                    controller: notesCtrl,
-                    maxLines: 2,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white.withOpacity(0.05),
-                      hintText: "Observação (Opcional)",
-                      hintStyle: const TextStyle(color: Colors.white30),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                          if (existing == null) {
+                            provider.addLibraryExercise(
+                              name,
+                              isCardioEx ? "Cardio" : muscle,
+                              mType,
+                              notesCtrl.text.trim(),
+                              execType,
+                            );
+                          } else {
+                            provider.updateLibraryExercise(
+                              existing.id,
+                              name,
+                              isCardioEx ? "Cardio" : muscle,
+                              mType,
+                              notesCtrl.text.trim(),
+                              execType,
+                            );
+                          }
+                          Navigator.pop(dialogCtx);
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: widget.accentColor,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
+                      ),
+                      child: Text(existing == null ? "Adicionar" : "Salvar", style: const TextStyle(fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogCtx),
-                child: const Text("Cancelar", style: TextStyle(color: Colors.white54)),
-              ),
-              TextButton(
-                onPressed: () {
-                  final name = nameCtrl.text.trim();
-                  if (name.isNotEmpty) {
-                    final isCardioEx = category == "Cardio";
-                    final mType = isCardioEx
-                        ? "time"
-                        : (measurement == "Tempo de Isometria" ? "time" : "reps");
-                    final execType = isCardioEx
-                        ? "Livre"
-                        : equipment;
-
-                    if (existing == null) {
-                      provider.addLibraryExercise(
-                        name,
-                        isCardioEx ? "Cardio" : muscle,
-                        mType,
-                        notesCtrl.text.trim(),
-                        execType,
-                      );
-                    } else {
-                      provider.updateLibraryExercise(
-                        existing.id,
-                        name,
-                        isCardioEx ? "Cardio" : muscle,
-                        mType,
-                        notesCtrl.text.trim(),
-                        execType,
-                      );
-                    }
-                    Navigator.pop(dialogCtx);
-                  }
-                },
-                child: Text(existing == null ? "Adicionar" : "Salvar", style: TextStyle(color: widget.accentColor, fontWeight: FontWeight.bold)),
               ),
             ],
           );

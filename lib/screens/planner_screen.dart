@@ -168,7 +168,8 @@ class _PlannerScreenState extends State<PlannerScreen> {
     Color accentColor,
   ) {
     // Calcular volume planejado por grupo muscular
-    final Map<String, int> volumeMap = {};
+    final Map<String, int> strengthMap = {};
+    final Map<String, int> cardioMap = {};
     
     for (final day in state.planner.keys) {
       final items = state.planner[day] ?? [];
@@ -181,7 +182,12 @@ class _PlannerScreenState extends State<PlannerScreen> {
               final libEx = state.library.where((e) => e.id == re.exerciseId).firstOrNull;
               if (libEx != null) {
                 final muscle = libEx.muscle;
-                volumeMap[muscle] = (volumeMap[muscle] ?? 0) + re.sets.toInt();
+                final isCardio = muscle.toLowerCase().contains('cardio') || libEx.measurementType == 'time';
+                if (isCardio) {
+                  cardioMap[muscle] = (cardioMap[muscle] ?? 0) + re.sets.toInt();
+                } else {
+                  strengthMap[muscle] = (strengthMap[muscle] ?? 0) + re.sets.toInt();
+                }
               }
             }
           }
@@ -193,7 +199,12 @@ class _PlannerScreenState extends State<PlannerScreen> {
             final libEx = state.library.where((e) => e.id == exId).firstOrNull;
             if (libEx != null) {
               final muscle = libEx.muscle;
-              volumeMap[muscle] = (volumeMap[muscle] ?? 0) + quantity;
+              final isCardio = muscle.toLowerCase().contains('cardio') || libEx.measurementType == 'time';
+              if (isCardio) {
+                cardioMap[muscle] = (cardioMap[muscle] ?? 0) + quantity;
+              } else {
+                strengthMap[muscle] = (strengthMap[muscle] ?? 0) + quantity;
+              }
             }
           }
         } else if (rawItem.isNotEmpty) {
@@ -203,7 +214,12 @@ class _PlannerScreenState extends State<PlannerScreen> {
               final libEx = state.library.where((e) => e.id == re.exerciseId).firstOrNull;
               if (libEx != null) {
                 final muscle = libEx.muscle;
-                volumeMap[muscle] = (volumeMap[muscle] ?? 0) + re.sets.toInt();
+                final isCardio = muscle.toLowerCase().contains('cardio') || libEx.measurementType == 'time';
+                if (isCardio) {
+                  cardioMap[muscle] = (cardioMap[muscle] ?? 0) + re.sets.toInt();
+                } else {
+                  strengthMap[muscle] = (strengthMap[muscle] ?? 0) + re.sets.toInt();
+                }
               }
             }
           }
@@ -211,106 +227,203 @@ class _PlannerScreenState extends State<PlannerScreen> {
       }
     }
 
-    final sortedEntries = volumeMap.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value)); // Mostrar grupos com maior volume primeiro
+    final sortedStrength = strengthMap.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
 
-    return GlassCard(
-      padding: const EdgeInsets.all(16),
-      borderColor: accentColor.withOpacity(0.15),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    final sortedCardio = cardioMap.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // 1. Volume de Musculação
+        GlassCard(
+          padding: const EdgeInsets.all(16),
+          borderColor: accentColor.withOpacity(0.15),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.bar_chart_rounded, color: accentColor, size: 24),
-              const SizedBox(width: 8),
-              const Text(
-                "Volume de Treino Planejado",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                ),
+              Row(
+                children: [
+                  Icon(Icons.fitness_center_rounded, color: accentColor, size: 22),
+                  const SizedBox(width: 8),
+                  const Text(
+                    "Volume de Treino Planejado",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          if (sortedEntries.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
-              child: Center(
-                child: Text(
-                  "Nenhum treino planejado na semana.",
-                  style: TextStyle(color: Colors.white38, fontStyle: FontStyle.italic, fontSize: 13),
-                ),
-              ),
-            )
-          else
-            Column(
-              children: sortedEntries.map((entry) {
-                final isCardio = entry.key.toLowerCase().contains('cardio');
-                final unit = isCardio ? 'min' : 'séries';
-                final maxVolume = sortedEntries.isNotEmpty ? sortedEntries.first.value : 1;
-                final fraction = maxVolume > 0 ? entry.value / maxVolume : 0.0;
-                
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              const SizedBox(height: 12),
+              if (sortedStrength.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Center(
+                    child: Text(
+                      "Nenhum treino de musculação planejado.",
+                      style: TextStyle(color: Colors.white38, fontStyle: FontStyle.italic, fontSize: 13),
+                    ),
+                  ),
+                )
+              else
+                Column(
+                  children: sortedStrength.map((entry) {
+                    final maxVolume = sortedStrength.isNotEmpty ? sortedStrength.first.value : 1;
+                    final fraction = maxVolume > 0 ? entry.value / maxVolume : 0.0;
+                    
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            entry.key,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                entry.key,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                "${entry.value} séries",
+                                style: TextStyle(
+                                  color: accentColor,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ],
                           ),
-                          Text(
-                            "${entry.value} $unit",
-                            style: TextStyle(
-                              color: accentColor,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 5),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(3),
-                        child: Container(
-                          height: 5,
-                          width: double.infinity,
-                          color: Colors.white.withOpacity(0.05),
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: FractionallySizedBox(
-                              widthFactor: fraction,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      accentColor.withOpacity(0.35),
-                                      accentColor,
-                                    ],
+                          const SizedBox(height: 5),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(3),
+                            child: Container(
+                              height: 5,
+                              width: double.infinity,
+                              color: Colors.white.withOpacity(0.05),
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: FractionallySizedBox(
+                                  widthFactor: fraction,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          accentColor.withOpacity(0.35),
+                                          accentColor,
+                                        ],
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
+                        ],
                       ),
-                    ],
-                  ),
-                );
-              }).toList(),
+                    );
+                  }).toList(),
+                ),
+            ],
+          ),
+        ),
+
+        if (sortedCardio.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          // 2. Volume de Cardio
+          GlassCard(
+            padding: const EdgeInsets.all(16),
+            borderColor: Colors.amber.withOpacity(0.15),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.directions_run_rounded, color: Colors.amber, size: 22),
+                    SizedBox(width: 8),
+                    Text(
+                      "Volume de Cardio Planejado",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Column(
+                  children: sortedCardio.map((entry) {
+                    final maxVolume = sortedCardio.isNotEmpty ? sortedCardio.first.value : 1;
+                    final fraction = maxVolume > 0 ? entry.value / maxVolume : 0.0;
+                    
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                entry.key,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                "${entry.value} min",
+                                style: const TextStyle(
+                                  color: Colors.amber,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 5),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(3),
+                            child: Container(
+                              height: 5,
+                              width: double.infinity,
+                              color: Colors.white.withOpacity(0.05),
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: FractionallySizedBox(
+                                  widthFactor: fraction,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          Colors.amber.withOpacity(0.35),
+                                          Colors.amber,
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
             ),
+          ),
         ],
-      ),
+      ],
     );
   }
 
