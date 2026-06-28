@@ -221,7 +221,15 @@ struct WorkoutSelectionView: View {
 
                                 // Seção 0: Treino Adiado em Andamento
                                 if let activeWorkout = connectivityManager.activeWorkout, activeWorkout.postponed {
-                                    Section(header: Text("Treino Adiado").font(.system(size: 10, weight: .bold)).foregroundColor(.yellow)) {
+                                    Section(header: 
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "snooze")
+                                                .font(.system(size: 8, weight: .bold))
+                                            Text("TREINO ADIADO")
+                                                .font(.system(size: 8, weight: .bold, design: .rounded))
+                                        }
+                                        .foregroundColor(.yellow)
+                                    ) {
                                         Button(action: {
                                             connectivityManager.resumeWorkout()
                                         }) {
@@ -263,7 +271,15 @@ struct WorkoutSelectionView: View {
 
                                 // Seção 0.1: Treinos Planejados para Hoje
                                 if !todayPlannedItems.isEmpty {
-                                    Section(header: Text("Treinos de Hoje").font(.system(size: 10, weight: .bold)).foregroundColor(.green)) {
+                                    Section(header: 
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "calendar")
+                                                .font(.system(size: 8, weight: .bold))
+                                            Text("TREINOS DE HOJE")
+                                                .font(.system(size: 8, weight: .bold, design: .rounded))
+                                        }
+                                        .foregroundColor(.green)
+                                    ) {
                                         ForEach(todayPlannedItems) { item in
                                             let isCompleted = connectivityManager.streak.completedTodayRoutines.contains(item.title)
                                             PlannedItemRow(
@@ -280,7 +296,15 @@ struct WorkoutSelectionView: View {
 
                                 // Seção 1: Todos os Treinos
                                 if !connectivityManager.routines.isEmpty {
-                                    Section(header: Text("Todos os Treinos").font(.system(size: 10, weight: .bold)).foregroundColor(.orange)) {
+                                    Section(header: 
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "list.bullet")
+                                                .font(.system(size: 8, weight: .bold))
+                                            Text("TODOS OS TREINOS")
+                                                .font(.system(size: 8, weight: .bold, design: .rounded))
+                                        }
+                                        .foregroundColor(.orange)
+                                    ) {
                                         ForEach(connectivityManager.routines) { routine in
                                             let isCompleted = connectivityManager.streak.completedTodayRoutines.contains(routine.name)
                                             RoutineRow(
@@ -293,7 +317,15 @@ struct WorkoutSelectionView: View {
                                 
                                 // Seção 2: Exercícios Avulsos
                                 if !filteredLibrary.isEmpty {
-                                    Section(header: Text("Exercícios Avulsos").font(.system(size: 10, weight: .bold)).foregroundColor(.blue)) {
+                                    Section(header: 
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "dumbbell.fill")
+                                                .font(.system(size: 8, weight: .bold))
+                                            Text("EXERCÍCIOS AVULSOS")
+                                                .font(.system(size: 8, weight: .bold, design: .rounded))
+                                        }
+                                        .foregroundColor(.blue)
+                                    ) {
                                         ForEach(filteredLibrary) { exercise in
                                             Button(action: {
                                                 connectivityManager.startSingleExercise(exerciseId: exercise.id)
@@ -339,7 +371,8 @@ struct WorkoutSelectionView: View {
                         }
                     }
                 }
-                .navigationTitle("Los Mooscles")
+                .navigationTitle("")
+                .navigationBarTitleDisplayMode(.inline)
                 .onAppear {
                     connectivityManager.requestSync()
                 }
