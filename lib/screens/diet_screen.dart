@@ -597,6 +597,7 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
     );
     await _foodService.addFavorite(userId, fav);
     _loadFavoritesAndPresets();
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text("Alimento adicionado aos favoritos! ⭐")),
     );
@@ -730,6 +731,7 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
       final fat = double.parse((_selectedFood!.fat * scale).toStringAsFixed(1));
 
       widget.provider.addMeal(name, calories, protein, carbs, fat, timeStr);
+      if (!mounted) return;
       Navigator.pop(context);
     }
   }
