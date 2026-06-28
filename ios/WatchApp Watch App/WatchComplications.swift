@@ -187,6 +187,7 @@ struct InlineComplicationView: View {
     }
 }
 
+@main
 struct WatchComplications: Widget {
     let kind: String = "WatchComplications"
 
