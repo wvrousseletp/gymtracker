@@ -6,6 +6,8 @@ import WatchKit
 struct WeeklyStatsView: View {
     @ObservedObject var connectivityManager = WatchConnectivityManager.shared
     @State private var ringProgress: Double = 0.0
+    @FocusState private var isFocused: Bool
+    @Environment(\.scenePhase) private var scenePhase
 
     private var streak: WatchStreak {
         connectivityManager.streak
@@ -198,6 +200,15 @@ struct WeeklyStatsView: View {
             }
             .padding(.bottom, 8)
         }
-        .focusable(true)
+        .focusable()
+        .focused($isFocused)
+        .onAppear {
+            isFocused = true
+        }
+        .onChange(of: scenePhase) { phase in
+            if phase == .active {
+                isFocused = true
+            }
+        }
     }
 }

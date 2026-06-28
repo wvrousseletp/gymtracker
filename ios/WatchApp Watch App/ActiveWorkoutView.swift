@@ -67,6 +67,9 @@ struct ActiveWorkoutView: View {
     }
     
     @FocusState private var crownFocus: CrownFocusedField?
+    @FocusState private var isCurrentPageFocused: Bool
+    @FocusState private var isControlsPageFocused: Bool
+    @Environment(\.scenePhase) private var scenePhase
     @Environment(\.isLuminanceReduced) var isLuminanceReduced
     
     @State private var showingCancelAlert = false
@@ -519,7 +522,11 @@ struct ActiveWorkoutView: View {
                     .font(.caption)
             }
         }
-        .focusable(true)
+        .focusable()
+        .focused($isCurrentPageFocused)
+        .onAppear {
+            isCurrentPageFocused = true
+        }
     }
 
     private func workoutControlsPageView(activeWorkout: WatchActiveWorkoutState) -> some View {
@@ -672,7 +679,11 @@ struct ActiveWorkoutView: View {
                 .padding(.horizontal, 4)
             }
         }
-        .focusable(true)
+        .focusable()
+        .focused($isControlsPageFocused)
+        .onAppear {
+            isControlsPageFocused = true
+        }
     }
 
     // MARK: - Main Body
@@ -742,6 +753,14 @@ struct ActiveWorkoutView: View {
             connectivityManager.requestSync()
             updateStopwatch()
             crownFocus = .reps
+            isCurrentPageFocused = true
+            isControlsPageFocused = true
+        }
+        .onChange(of: scenePhase) { phase in
+            if phase == .active {
+                isCurrentPageFocused = true
+                isControlsPageFocused = true
+            }
         }
         .onReceive(stopwatchTimer) { _ in
             if !isLuminanceReduced {
