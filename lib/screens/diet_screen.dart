@@ -734,6 +734,51 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
     }
   }
 
+  void _importDefaultFoods() async {
+    setState(() => _isLoading = true);
+    final list = [
+      FoodItem(id: 'seed_arroz', name: 'Arroz Branco Cozido', searchName: 'arroz branco cozido', calories: 130, protein: 2.5, carbs: 28.0, fat: 0.2, servingSize: 100, servingUnit: 'g'),
+      FoodItem(id: 'seed_feijao', name: 'Feijão Carioca Cozido', searchName: 'feijao carioca cozido', calories: 76, protein: 4.8, carbs: 14.0, fat: 0.5, servingSize: 100, servingUnit: 'g'),
+      FoodItem(id: 'seed_frango', name: 'Peito de Frango Grelhado', searchName: 'peito de frango grelhado', calories: 165, protein: 31.0, carbs: 0.0, fat: 3.6, servingSize: 100, servingUnit: 'g'),
+      FoodItem(id: 'seed_ovo', name: 'Ovo Cozido', searchName: 'ovo cozido', calories: 78, protein: 6.3, carbs: 0.6, fat: 5.3, servingSize: 1, servingUnit: 'unidade'),
+      FoodItem(id: 'seed_banana', name: 'Banana Prata', searchName: 'banana prata', calories: 98, protein: 1.3, carbs: 26.0, fat: 0.3, servingSize: 1, servingUnit: 'unidade'),
+      FoodItem(id: 'seed_pao', name: 'Pão Francês', searchName: 'pao frances', calories: 137, protein: 4.0, carbs: 29.0, fat: 1.0, servingSize: 1, servingUnit: 'unidade'),
+      FoodItem(id: 'seed_leite_int', name: 'Leite Integral', searchName: 'leite integral', calories: 120, protein: 6.0, carbs: 10.0, fat: 6.0, servingSize: 200, servingUnit: 'ml'),
+      FoodItem(id: 'seed_leite_des', name: 'Leite Desnatado', searchName: 'leite desnatado', calories: 70, protein: 6.0, carbs: 10.0, fat: 0.0, servingSize: 200, servingUnit: 'ml'),
+      FoodItem(id: 'seed_whey', name: 'Whey Protein', searchName: 'whey protein', calories: 120, protein: 24.0, carbs: 3.0, fat: 1.5, servingSize: 30, servingUnit: 'g'),
+      FoodItem(id: 'seed_azeite', name: 'Azeite de Oliva', searchName: 'azeite de oliva', calories: 119, protein: 0.0, carbs: 0.0, fat: 13.0, servingSize: 13, servingUnit: 'ml'),
+      FoodItem(id: 'seed_batata', name: 'Batata Doce Cozida', searchName: 'batata doce cozida', calories: 86, protein: 1.6, carbs: 20.0, fat: 0.1, servingSize: 100, servingUnit: 'g'),
+      FoodItem(id: 'seed_aveia', name: 'Aveia em Flocos', searchName: 'aveia em flocos', calories: 117, protein: 4.3, carbs: 17.0, fat: 2.2, servingSize: 30, servingUnit: 'g'),
+      FoodItem(id: 'seed_pasta_amend', name: 'Pasta de Amendoim', searchName: 'pasta de amendoim', calories: 180, protein: 7.0, carbs: 6.0, fat: 15.0, servingSize: 30, servingUnit: 'g'),
+      FoodItem(id: 'seed_tapioca', name: 'Tapioca', searchName: 'tapioca', calories: 240, protein: 0.0, carbs: 60.0, fat: 0.0, servingSize: 70, servingUnit: 'g'),
+      FoodItem(id: 'seed_carne', name: 'Patinho Grelhado', searchName: 'patinho grelhado', calories: 219, protein: 35.9, carbs: 0.0, fat: 7.3, servingSize: 100, servingUnit: 'g'),
+      FoodItem(id: 'seed_maca', name: 'Maçã Fuji', searchName: 'maca fuji', calories: 75, protein: 0.3, carbs: 19.0, fat: 0.2, servingSize: 1, servingUnit: 'unidade'),
+      FoodItem(id: 'seed_iogurte', name: 'Iogurte Natural', searchName: 'iogurte natural', calories: 126, protein: 6.8, carbs: 9.0, fat: 7.0, servingSize: 170, servingUnit: 'g'),
+      FoodItem(id: 'seed_tilapia', name: 'Tilápia Grelhada', searchName: 'tilapia grelhada', calories: 128, protein: 26.0, carbs: 0.0, fat: 2.7, servingSize: 100, servingUnit: 'g'),
+      FoodItem(id: 'seed_abacate', name: 'Abacate', searchName: 'abacate', calories: 160, protein: 2.0, carbs: 9.0, fat: 15.0, servingSize: 100, servingUnit: 'g'),
+      FoodItem(id: 'seed_brocolis', name: 'Brócolis Cozido', searchName: 'brocolis cozido', calories: 35, protein: 2.4, carbs: 7.0, fat: 0.4, servingSize: 100, servingUnit: 'g'),
+    ];
+
+    try {
+      for (final food in list) {
+        await _foodService.addFood(food);
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Banco de alimentos padrão carregado com sucesso! 📦")),
+      );
+      if (_searchCtrl.text.isNotEmpty) {
+        _onSearchChanged();
+      } else {
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = "Falha ao importar base de dados padrão.";
+        _isLoading = false;
+      });
+    }
+  }
+
   @override
   void dispose() {
     _searchCtrl.dispose();
@@ -866,6 +911,33 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                   ],
                 ),
                 const SizedBox(height: 10),
+
+                if (_searchCtrl.text.trim().isEmpty && _selectedFood == null) ...[
+                  const SizedBox(height: 12),
+                  Center(
+                    child: Column(
+                      children: [
+                        const Text(
+                          "Deseja carregar alimentos comuns?",
+                          style: TextStyle(color: Colors.white38, fontSize: 11),
+                        ),
+                        const SizedBox(height: 6),
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.download, size: 14, color: Colors.black),
+                          label: const Text("Importar Base Inicial 📦", style: TextStyle(color: Colors.black, fontSize: 11, fontWeight: FontWeight.bold)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.amber,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          onPressed: _importDefaultFoods,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
 
                 if (_errorMessage != null) ...[
                   Text(
