@@ -217,249 +217,124 @@ struct ActiveWorkoutView: View {
         let isFailure = selectedSetIdx < exercise.failureReport.count ? exercise.failureReport[selectedSetIdx] : false
         let failureRep = selectedSetIdx < exercise.failureReps.count ? exercise.failureReps[selectedSetIdx] : nil
 
-        let weightBinding = Binding<Double>(
-            get: { exercise.weight },
-            set: { val in
-                let rounded = (val * 2.0).rounded() / 2.0
-                if rounded != exercise.weight {
-                    connectivityManager.updateExerciseWeightReps(exerciseIndex: exIndex, weight: rounded, reps: exercise.reps)
+        return VStack(spacing: 6) {
+            HStack {
+                Spacer()
+                
+                // Weight Info Block
+                HStack(spacing: 4) {
+                    Image(systemName: "dumbbell.fill")
+                        .font(.system(size: 10))
+                        .foregroundColor(.orange)
+                    Text(String(format: "%.1f kg", exercise.weight))
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
                 }
+                .padding(.vertical, 6)
+                .padding(.horizontal, 10)
+                .background(Color.white.opacity(0.06))
+                .cornerRadius(8)
+                
+                Spacer(minLength: 12)
+                
+                // Reps Info Block
+                HStack(spacing: 4) {
+                    Image(systemName: "arrow.3.trianglepath")
+                        .font(.system(size: 10))
+                        .foregroundColor(.orange)
+                    Text(exercise.measurementType == "time" ? "\(exercise.reps)s" : "\(exercise.reps) reps")
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
+                }
+                .padding(.vertical, 6)
+                .padding(.horizontal, 10)
+                .background(Color.white.opacity(0.06))
+                .cornerRadius(8)
+                
+                Spacer()
             }
-        )
-
-        let repsBinding = Binding<Double>(
-            get: { Double(exercise.reps) },
-            set: { val in
-                let rounded = Int(val.rounded())
-                if rounded != exercise.reps && rounded >= 1 {
-                    connectivityManager.updateExerciseWeightReps(exerciseIndex: exIndex, weight: exercise.weight, reps: rounded)
+            
+            // Compact Failure Toggle
+            Button(action: {
+                #if canImport(WatchKit)
+                if !isFailure {
+                    WKInterfaceDevice.current().play(.directionDown)
+                } else {
+                    WKInterfaceDevice.current().play(.click)
                 }
+                #endif
+                connectivityManager.updateFailure(exerciseIndex: exIndex, setIndex: selectedSetIdx, isFailure: !isFailure, failureRep: nil)
+            }) {
+                HStack(spacing: 4) {
+                    Image(systemName: isFailure ? "xmark.octagon.fill" : "xmark.octagon")
+                        .font(.system(size: 9))
+                    Text(isFailure ? "FALHA REGISTRADA" : "REGISTRAR FALHA")
+                        .font(.system(size: 9, weight: .black))
+                }
+                .foregroundColor(isFailure ? .red : .gray)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 6)
+                .background(isFailure ? Color.red.opacity(0.12) : Color.white.opacity(0.04))
+                .cornerRadius(8)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(isFailure ? Color.red.opacity(0.3) : Color.white.opacity(0.06), lineWidth: 1)
+                )
             }
-        )
-
-        return VStack(alignment: .leading, spacing: 6) {
-            if isLuminanceReduced {
-                // Simplified, high-contrast side-by-side text layout for Always-On Display (AOD)
-                HStack {
-                    Spacer()
-                    VStack(spacing: 3) {
-                        Text("CARGA")
-                            .font(.system(size: 8, weight: .bold))
-                            .foregroundColor(.gray)
-                        Text(String(format: "%.1f kg", exercise.weight))
-                            .font(.system(size: 14, weight: .black, design: .rounded))
-                            .foregroundColor(.white)
-                    }
-                    Spacer()
-                    VStack(spacing: 3) {
-                        Text(exercise.measurementType == "time" ? "TEMPO" : "REPS")
-                            .font(.system(size: 8, weight: .bold))
-                            .foregroundColor(.gray)
-                        Text(exercise.measurementType == "time" ? "\(exercise.reps)s" : "\(exercise.reps)")
-                            .font(.system(size: 14, weight: .black, design: .rounded))
-                            .foregroundColor(.orange)
-                    }
-                    Spacer()
-                }
-                .padding(.vertical, 4)
-            } else {
-                // Interactive controls with Crown focus highlights & Digital Crown rotation
+            .buttonStyle(PlainButtonStyle())
+            
+            if isFailure {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("CARGA")
+                    Text("REPETIÇÃO DA FALHA")
                         .font(.system(size: 8, weight: .bold))
-                        .foregroundColor(.gray)
+                        .foregroundColor(.red)
                     
                     HStack {
                         Spacer()
                         HStack(spacing: 8) {
                             Button(action: {
-                                let newW = max(0.0, exercise.weight - 0.5)
-                                connectivityManager.updateExerciseWeightReps(exerciseIndex: exIndex, weight: newW, reps: exercise.reps)
+                                let current = failureRep ?? exercise.reps
+                                let newR = max(1, current - 1)
+                                connectivityManager.updateFailure(exerciseIndex: exIndex, setIndex: selectedSetIdx, isFailure: true, failureRep: newR)
                             }) {
                                 Image(systemName: "minus")
                                     .font(.system(size: 10, weight: .bold))
-                                    .foregroundColor(.white)
+                                    .foregroundColor(.red)
                                     .frame(width: 32, height: 32)
-                                    .background(Color.white.opacity(0.1))
+                                    .background(Color.red.opacity(0.1))
                                     .clipShape(Circle())
                             }
                             .buttonStyle(PlainButtonStyle())
                             
-                            Text(String(format: "%.1f kg", exercise.weight))
+                            Text("\(failureRep ?? exercise.reps)")
                                 .font(.system(size: 11, weight: .bold, design: .rounded))
                                 .foregroundColor(.white)
                                 .frame(minWidth: 48, alignment: .center)
                             
                             Button(action: {
-                                let newW = exercise.weight + 0.5
-                                connectivityManager.updateExerciseWeightReps(exerciseIndex: exIndex, weight: newW, reps: exercise.reps)
+                                let current = failureRep ?? exercise.reps
+                                let newR = current + 1
+                                connectivityManager.updateFailure(exerciseIndex: exIndex, setIndex: selectedSetIdx, isFailure: true, failureRep: newR)
                             }) {
                                 Image(systemName: "plus")
                                     .font(.system(size: 10, weight: .bold))
-                                    .foregroundColor(.white)
+                                    .foregroundColor(.red)
                                     .frame(width: 32, height: 32)
-                                    .background(Color.white.opacity(0.1))
+                                    .background(Color.red.opacity(0.1))
                                     .clipShape(Circle())
                             }
                             .buttonStyle(PlainButtonStyle())
                         }
                         .padding(3)
-                        .background(crownFocus == .weight ? Color.orange.opacity(0.15) : Color.white.opacity(0.04))
+                        .background(Color.red.opacity(0.12))
                         .cornerRadius(14)
                         .overlay(
                             RoundedRectangle(cornerRadius: 14)
-                                .stroke(crownFocus == .weight ? Color.orange : Color.white.opacity(0.08), lineWidth: 1)
+                                .stroke(Color.red.opacity(0.3), lineWidth: 1)
                         )
-                        .focusable(true)
-                        .focused($crownFocus, equals: .weight)
-                        .digitalCrownRotation(weightBinding, from: 0.0, through: 500.0, by: 0.5, sensitivity: .medium, isContinuous: false, isHapticFeedbackEnabled: true)
-                        .onTapGesture {
-                            crownFocus = .weight
-                        }
                         Spacer()
                     }
                 }
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(exercise.measurementType == "time" ? "TEMPO" : "REPS")
-                        .font(.system(size: 8, weight: .bold))
-                        .foregroundColor(.gray)
-                    
-                    HStack {
-                        Spacer()
-                        HStack(spacing: 8) {
-                            Button(action: {
-                                let newR = max(1, exercise.reps - 1)
-                                connectivityManager.updateExerciseWeightReps(exerciseIndex: exIndex, weight: exercise.weight, reps: newR)
-                            }) {
-                                Image(systemName: "minus")
-                                    .font(.system(size: 10, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .frame(width: 32, height: 32)
-                                    .background(Color.white.opacity(0.1))
-                                    .clipShape(Circle())
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            
-                            Text(exercise.measurementType == "time" ? "\(exercise.reps)s" : "\(exercise.reps)")
-                                .font(.system(size: 11, weight: .bold, design: .rounded))
-                                .foregroundColor(.white)
-                                .frame(minWidth: 48, alignment: .center)
-                            
-                            Button(action: {
-                                let newR = exercise.reps + 1
-                                connectivityManager.updateExerciseWeightReps(exerciseIndex: exIndex, weight: exercise.weight, reps: newR)
-                            }) {
-                                Image(systemName: "plus")
-                                    .font(.system(size: 10, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .frame(width: 32, height: 32)
-                                    .background(Color.white.opacity(0.1))
-                                    .clipShape(Circle())
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                        }
-                        .padding(3)
-                        .background(crownFocus == .reps ? Color.orange.opacity(0.15) : Color.white.opacity(0.04))
-                        .cornerRadius(14)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 14)
-                                .stroke(crownFocus == .reps ? Color.orange : Color.white.opacity(0.08), lineWidth: 1)
-                        )
-                        .focusable(true)
-                        .focused($crownFocus, equals: .reps)
-                        .digitalCrownRotation(repsBinding, from: 1.0, through: 300.0, by: 1.0, sensitivity: .medium, isContinuous: false, isHapticFeedbackEnabled: true)
-                        .onTapGesture {
-                            crownFocus = .reps
-                        }
-                        Spacer()
-                    }
-                }
-
-                VStack(alignment: .leading, spacing: 6) {
-                    Button(action: {
-                        #if canImport(WatchKit)
-                        if !isFailure {
-                            WKInterfaceDevice.current().play(.directionDown)
-                        } else {
-                            WKInterfaceDevice.current().play(.click)
-                        }
-                        #endif
-                        connectivityManager.updateFailure(exerciseIndex: exIndex, setIndex: selectedSetIdx, isFailure: !isFailure, failureRep: failureRep)
-                    }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: isFailure ? "xmark.octagon.fill" : "xmark.octagon")
-                                .font(.system(size: 9))
-                            Text(isFailure ? "Falhou" : "Registrar Falha")
-                                .font(.system(size: 9, weight: .bold))
-                        }
-                        .foregroundColor(isFailure ? .red : .gray)
-                        .padding(.vertical, 6)
-                        .padding(.horizontal, 10)
-                        .background(isFailure ? Color.red.opacity(0.12) : Color.white.opacity(0.04))
-                        .cornerRadius(10)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(isFailure ? Color.red.opacity(0.3) : Color.clear, lineWidth: 1)
-                        )
-                    }
-                    .buttonStyle(PlainButtonStyle())
-
-                    if isFailure {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("REPETIÇÃO DA FALHA")
-                                .font(.system(size: 8, weight: .bold))
-                                .foregroundColor(.red)
-                            
-                            HStack {
-                                Spacer()
-                                HStack(spacing: 8) {
-                                    Button(action: {
-                                        let current = failureRep ?? exercise.reps
-                                        let newR = max(1, current - 1)
-                                        connectivityManager.updateFailure(exerciseIndex: exIndex, setIndex: selectedSetIdx, isFailure: true, failureRep: newR)
-                                    }) {
-                                        Image(systemName: "minus")
-                                            .font(.system(size: 10, weight: .bold))
-                                            .foregroundColor(.red)
-                                            .frame(width: 32, height: 32)
-                                            .background(Color.red.opacity(0.1))
-                                            .clipShape(Circle())
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
-                                    
-                                    Text("\(failureRep ?? exercise.reps)")
-                                        .font(.system(size: 11, weight: .bold, design: .rounded))
-                                        .foregroundColor(.white)
-                                        .frame(minWidth: 48, alignment: .center)
-                                    
-                                    Button(action: {
-                                        let current = failureRep ?? exercise.reps
-                                        let newR = current + 1
-                                        connectivityManager.updateFailure(exerciseIndex: exIndex, setIndex: selectedSetIdx, isFailure: true, failureRep: newR)
-                                    }) {
-                                        Image(systemName: "plus")
-                                            .font(.system(size: 10, weight: .bold))
-                                            .foregroundColor(.red)
-                                            .frame(width: 32, height: 32)
-                                            .background(Color.red.opacity(0.1))
-                                            .clipShape(Circle())
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
-                                }
-                                .padding(3)
-                                .background(Color.red.opacity(0.12))
-                                .cornerRadius(14)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 14)
-                                        .stroke(Color.red.opacity(0.3), lineWidth: 1)
-                                )
-                                Spacer()
-                            }
-                        }
-                    }
-                }
-                .padding(.top, 2)
             }
         }
     }
