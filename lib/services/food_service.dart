@@ -49,7 +49,15 @@ class FoodService {
     try {
       final doc = await _firestore.collection('config').doc('gemini').get();
       if (doc.exists) {
-        return doc.data()?['apiKey'] as String?;
+        var key = doc.data()?['apiKey'] as String?;
+        if (key != null) {
+          key = key.trim();
+          // Remove aspas caso o usuário tenha colado com aspas por engano
+          if (key.startsWith('"') && key.endsWith('"') && key.length > 2) {
+            key = key.substring(1, key.length - 1);
+          }
+          return key;
+        }
       }
     } catch (e) {
       debugPrint('[FoodService] Erro ao obter API Key do Firestore: $e');
