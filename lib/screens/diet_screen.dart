@@ -890,7 +890,7 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
 
                 if (!_isLoading && _searchResults.isNotEmpty) ...[
                   Container(
-                    maxHeight: 180,
+                    constraints: const BoxConstraints(maxHeight: 180),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.03),
                       borderRadius: BorderRadius.circular(10),
@@ -1238,7 +1238,7 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                   if (_comboSearchResults.isNotEmpty) ...[
                     const SizedBox(height: 6),
                     Container(
-                      maxHeight: 120,
+                      constraints: const BoxConstraints(maxHeight: 120),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.02),
                         borderRadius: BorderRadius.circular(8),
