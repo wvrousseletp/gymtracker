@@ -32,6 +32,7 @@ jobs:
           IOS_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
           WATCH_PROFILE_BASE64: ${{ secrets.IOS_WATCH_PROVISIONING_PROFILE_BASE64 }}
           WIDGET_PROFILE_BASE64: ${{ secrets.IOS_WIDGET_PROVISIONING_PROFILE_BASE64 }}
+          WATCH_WIDGET_PROFILE_BASE64: ${{ secrets.IOS_WATCH_WIDGET_PROVISIONING_PROFILE_BASE64 }}
         run: |
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           
@@ -46,6 +47,10 @@ jobs:
           fi
           if [ -z "$WIDGET_PROFILE_BASE64" ]; then
             echo "::error::Secret IOS_WIDGET_PROVISIONING_PROFILE_BASE64 is empty or not configured!"
+            exit 1
+          fi
+          if [ -z "$WATCH_WIDGET_PROFILE_BASE64" ]; then
+            echo "::error::Secret IOS_WATCH_WIDGET_PROVISIONING_PROFILE_BASE64 is empty or not configured! Please register com.vicente.losmooscles.watchkitapp.WatchWidgetExtension in App Store Connect, generate its profile 'Los Mooscles Watch Widget App Store Profile', and add its base64 to GitHub Secrets."
             exit 1
           fi
           
@@ -66,6 +71,12 @@ jobs:
           WIDGET_UUID=$(security cms -D -i widget_temp.mobileprovision | plutil -extract UUID raw -)
           mv widget_temp.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$WIDGET_UUID.mobileprovision
           echo "Installed Widget Profile with UUID: $WIDGET_UUID"
+          
+          # Decode and install Watch Widget Profile
+          echo -n "$WATCH_WIDGET_PROFILE_BASE64" | base64 --decode --output watch_widget_temp.mobileprovision
+          WATCH_WIDGET_UUID=$(security cms -D -i watch_widget_temp.mobileprovision | plutil -extract UUID raw -)
+          mv watch_widget_temp.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$WATCH_WIDGET_UUID.mobileprovision
+          echo "Installed Watch Widget Profile with UUID: $WATCH_WIDGET_UUID"
 
 
       - name: Install Flutter SDK
