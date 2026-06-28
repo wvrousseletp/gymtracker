@@ -878,13 +878,16 @@ class _LibraryTabState extends State<LibraryTab> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          _openAddExerciseDialog(context, provider);
-        },
-        backgroundColor: widget.accentColor,
-        mini: true,
-        child: const Icon(Icons.add, color: Colors.black),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 80.0),
+        child: FloatingActionButton(
+          onPressed: () {
+            _openAddExerciseDialog(context, provider);
+          },
+          backgroundColor: widget.accentColor,
+          mini: true,
+          child: const Icon(Icons.add, color: Colors.black),
+        ),
       ),
       body: Column(
         children: [
@@ -941,7 +944,7 @@ class _LibraryTabState extends State<LibraryTab> {
                     ),
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 100),
                     itemCount: sortedMuscles.length,
                     itemBuilder: (context, mIdx) {
                       final muscle = sortedMuscles[mIdx];
