@@ -459,7 +459,6 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
 
   List<FoodItem> _searchResults = [];
   bool _isLoading = false;
-  bool _isAiSearching = false;
   String? _errorMessage;
 
   FoodItem? _selectedFood;
@@ -1035,7 +1034,6 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                   ),
                   const SizedBox(height: 12),
                 ],
-              ],
 
               if (_activeTab == 1) ...[
                 if (_loadingFavsOrPresets)
