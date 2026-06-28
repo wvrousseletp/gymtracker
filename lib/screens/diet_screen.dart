@@ -519,43 +519,7 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
     }
   }
 
-  void _searchWithAi() async {
-    final query = _searchCtrl.text.trim();
-    if (query.isEmpty) {
-      setState(() {
-        _errorMessage = "Digite o nome de um alimento para buscar com IA.";
-      });
-      return;
-    }
 
-    setState(() {
-      _isAiSearching = true;
-      _errorMessage = null;
-      _selectedFood = null;
-      _isManualMode = false;
-    });
-
-    try {
-      final food = await _foodService.fetchFoodNutritionFromAI(query);
-      if (food != null) {
-        setState(() {
-          _selectedFood = food;
-          _quantityCtrl.text = food.servingSize.round().toString();
-          _isAiSearching = false;
-        });
-      } else {
-        setState(() {
-          _errorMessage = "A IA não conseguiu identificar os macros deste alimento. Verifique se a chave de API do Gemini está configurada no Firestore (coleção 'config', documento 'gemini', campo 'apiKey').";
-          _isAiSearching = false;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _errorMessage = "Falha ao consultar Inteligência Artificial.";
-        _isAiSearching = false;
-      });
-    }
-  }
 
   void _selectFood(FoodItem food) {
     setState(() {
@@ -843,31 +807,12 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _buildTabs(),
-
               if (_activeTab == 0) ...[
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _searchCtrl,
-                        style: const TextStyle(color: Colors.white, fontSize: 14),
-                        decoration: _dialogInputDeco("Buscar alimento (ex: Banana, Ovo)..."),
-                        onChanged: (_) => _onSearchChanged(),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      icon: _isAiSearching
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.amber),
-                            )
-                          : const Icon(Icons.auto_awesome, color: Colors.amber),
-                      tooltip: "Buscar com IA",
-                      onPressed: _isAiSearching ? null : _searchWithAi,
-                    ),
-                  ],
+                TextField(
+                  controller: _searchCtrl,
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  decoration: _dialogInputDeco("Buscar alimento (ex: Banana, Ovo)..."),
+                  onChanged: (_) => _onSearchChanged(),
                 ),
                 const SizedBox(height: 10),
 
@@ -920,56 +865,7 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                   const SizedBox(height: 10),
                 ],
 
-                if (!_isLoading && _searchResults.isEmpty && _searchCtrl.text.trim().isNotEmpty && _selectedFood == null && !_isManualMode) ...[
-                  GestureDetector(
-                    onTap: _isAiSearching ? null : _searchWithAi,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Colors.purpleAccent.shade400,
-                            Colors.deepPurple.shade900,
-                            Colors.blueAccent.shade400,
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.purpleAccent.withOpacity(0.5),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          if (_isAiSearching)
-                            const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                            )
-                          else
-                            const Icon(Icons.auto_awesome, size: 18, color: Colors.white),
-                          const SizedBox(width: 8),
-                          const Text(
-                            "Buscar com Inteligência Artificial 🌟",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
+
                   InkWell(
                     onTap: _switchToManual,
                     borderRadius: BorderRadius.circular(8),

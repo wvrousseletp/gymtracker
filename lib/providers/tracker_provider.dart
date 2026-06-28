@@ -145,7 +145,7 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> _checkAndSeedFoods() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final isSeeded = prefs.getBool('food_db_seeded_v3') ?? false;
+      final isSeeded = prefs.getBool('food_db_seeded_v4') ?? false;
       if (!isSeeded) {
         final foodService = FoodService.instance;
         bool allSucceeded = true;
@@ -156,8 +156,8 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
           }
         }
         if (allSucceeded && presetFoods100.isNotEmpty) {
-          await prefs.setBool('food_db_seeded_v3', true);
-          debugPrint("[Seeding] 100 alimentos iniciais semeados com sucesso.");
+          await prefs.setBool('food_db_seeded_v4', true);
+          debugPrint("[Seeding] 500 alimentos iniciais semeados com sucesso.");
         }
       }
     } catch (e) {

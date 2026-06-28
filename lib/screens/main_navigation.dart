@@ -313,10 +313,10 @@ class _MainNavigationState extends State<MainNavigation> {
                 ),
                 const SizedBox(height: 16),
                 _whatsNewItem(
-                  Icons.psychology_outlined,
-                  Colors.purpleAccent,
-                  "Banco de Alimentos com IA",
-                  "Consulte e estime macros e calorias de qualquer alimento com o Gemini.",
+                  Icons.storage_rounded,
+                  Colors.greenAccent,
+                  "500+ Alimentos Locais 📦",
+                  "Base de dados inicial super completa com 500 alimentos comuns para buscas offline instantâneas.",
                 ),
                 const SizedBox(height: 12),
                 _whatsNewItem(
@@ -331,13 +331,6 @@ class _MainNavigationState extends State<MainNavigation> {
                   Colors.blueAccent,
                   "Combos de Alimentos (Presets)",
                   "Salve grupos (como seu shake diário) para inserir de uma vez só.",
-                ),
-                const SizedBox(height: 12),
-                _whatsNewItem(
-                  Icons.storage_rounded,
-                  Colors.greenAccent,
-                  "100+ Alimentos Pré-carregados",
-                  "Base de dados inicial completa para buscas locais offline ultrarrápidas.",
                 ),
               ],
             ),
