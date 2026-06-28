@@ -1316,25 +1316,43 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
                             ),
                             const SizedBox(width: 12),
 
-                            // Quantidade (reps ou segs)
+                            // Quantidade (reps ou segs) e Peso - editáveis por clique
                             Expanded(
-                              child: Text(
-                                ex.measurementType == 'time'
-                                    ? "${ex.reps} segundos"
-                                    : "${ex.reps} reps",
-                                style: TextStyle(
-                                  color: isActive ? Colors.white : Colors.white60,
-                                  fontSize: 12,
-                                  fontWeight: isActive ? FontWeight.w900 : FontWeight.bold,
+                              child: GestureDetector(
+                                onTap: () => _showEditSetWeightRepsDialog(context, exIdx, setIdx, ex),
+                                behavior: HitTestBehavior.opaque,
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        ex.measurementType == 'time'
+                                            ? "${(ex.repsPerSet != null && setIdx < ex.repsPerSet!.length) ? ex.repsPerSet![setIdx] : ex.reps} segundos"
+                                            : "${(ex.repsPerSet != null && setIdx < ex.repsPerSet!.length) ? ex.repsPerSet![setIdx] : ex.reps} reps",
+                                        style: TextStyle(
+                                          color: isActive ? Colors.white : Colors.white60,
+                                          fontSize: 12,
+                                          fontWeight: isActive ? FontWeight.w900 : FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    Text(
+                                      ((ex.weightsPerSet != null && setIdx < ex.weightsPerSet!.length) ? ex.weightsPerSet![setIdx] : ex.weight) > 0
+                                          ? "${((ex.weightsPerSet != null && setIdx < ex.weightsPerSet!.length) ? ex.weightsPerSet![setIdx] : ex.weight).toStringAsFixed(1).replaceAll('.0', '')} kg"
+                                          : "Sem carga",
+                                      style: TextStyle(
+                                        color: isActive ? Colors.white : Colors.white38,
+                                        fontSize: 11,
+                                        fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Icon(
+                                      Icons.edit,
+                                      size: 11,
+                                      color: isActive ? Colors.white38 : Colors.white12,
+                                    ),
+                                  ],
                                 ),
-                              ),
-                            ),
-                            Text(
-                              ex.weight > 0 ? "${ex.weight.toStringAsFixed(1).replaceAll('.0', '')} kg" : "Sem carga",
-                              style: TextStyle(
-                                color: isActive ? Colors.white : Colors.white38,
-                                fontSize: 11,
-                                fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
                               ),
                             ),
                             const SizedBox(width: 16),
@@ -1432,6 +1450,95 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
                 },
               );
             }
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditSetWeightRepsDialog(BuildContext context, int exIdx, int setIdx, ActiveExercise ex) {
+    final currentWeight = ex.weightsPerSet != null && setIdx < ex.weightsPerSet!.length
+        ? ex.weightsPerSet![setIdx]
+        : ex.weight;
+    final currentReps = ex.repsPerSet != null && setIdx < ex.repsPerSet!.length
+        ? ex.repsPerSet![setIdx]
+        : ex.reps;
+
+    final weightController = TextEditingController(text: currentWeight.toStringAsFixed(1).replaceAll('.0', ''));
+    final repsController = TextEditingController(text: currentReps.toString());
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: const Color(0xff1c1c1e),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: Colors.white.withOpacity(0.08)),
+        ),
+        title: Text("Editar Série ${setIdx + 1}",
+            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text("Peso (kg)", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: weightController,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Colors.white.withOpacity(0.05),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(ex.measurementType == 'time' ? "Tempo (s)" : "Reps",
+                          style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: repsController,
+                        keyboardType: TextInputType.number,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Colors.white.withOpacity(0.05),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text("Cancelar", style: TextStyle(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () {
+              final newWeight = double.tryParse(weightController.text.trim()) ?? currentWeight;
+              final newReps = int.tryParse(repsController.text.trim()) ?? currentReps;
+              widget.provider.updateExerciseSetWeightReps(exIdx, setIdx, newWeight, newReps);
+              Navigator.pop(dialogCtx);
+            },
+            child: const Text("Salvar", style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
           ),
         ],
       ),

@@ -312,6 +312,8 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
         reps: ex.reps,
         rest: ex.rest,
         weight: ex.weight,
+        weightsPerSet: ex.weightsPerSet,
+        repsPerSet: ex.repsPerSet,
         setsState: List<bool>.filled(ex.sets, false),
         performedCardios: List<PerformedCardio?>.filled(ex.sets, null),
         failureReport: List<bool>.filled(ex.sets, false),
@@ -390,6 +392,8 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
       reps: ex.reps,
       rest: ex.rest,
       weight: ex.weight,
+      weightsPerSet: ex.weightsPerSet,
+      repsPerSet: ex.repsPerSet,
       setsState: newSetsState,
       performedCardios: newCardios,
       failureReport: newFailure,
@@ -515,9 +519,12 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
       reps: reps,
       rest: ex.rest,
       weight: weight,
+      weightsPerSet: ex.weightsPerSet,
+      repsPerSet: ex.repsPerSet,
       setsState: ex.setsState,
       performedCardios: ex.performedCardios,
       failureReport: ex.failureReport,
+      failureReps: ex.failureReps,
     );
 
     final updatedWorkout = active.copyWith(
@@ -526,6 +533,64 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
 
     _state = _state!.copyWith(activeWorkout: updatedWorkout);
 
+    saveState();
+    notifyListeners();
+  }
+
+  void updateExerciseSetWeightReps(int exIndex, int setIdx, double weight, int reps) {
+    if (_state == null || _state!.activeWorkout == null) return;
+    final active = _state!.activeWorkout!;
+    final exercises = List<ActiveExercise>.from(active.exercises);
+    if (exIndex >= exercises.length) return;
+
+    final ex = exercises[exIndex];
+
+    final List<double> newWeights = ex.weightsPerSet != null
+        ? List<double>.from(ex.weightsPerSet!)
+        : List<double>.filled(ex.sets, ex.weight);
+
+    final List<int> newReps = ex.repsPerSet != null
+        ? List<int>.from(ex.repsPerSet!)
+        : List<int>.filled(ex.sets, ex.reps);
+
+    if (setIdx >= 0 && setIdx < newWeights.length) {
+      newWeights[setIdx] = weight;
+    }
+    if (setIdx >= 0 && setIdx < newReps.length) {
+      newReps[setIdx] = reps;
+    }
+
+    double mainWeight = ex.weight;
+    int mainReps = ex.reps;
+    if (setIdx == 0) {
+      mainWeight = weight;
+      mainReps = reps;
+    }
+
+    exercises[exIndex] = ActiveExercise(
+      id: ex.id,
+      name: ex.name,
+      muscle: ex.muscle,
+      executionType: ex.executionType,
+      measurementType: ex.measurementType,
+      sets: ex.sets,
+      reps: mainReps,
+      rest: ex.rest,
+      weight: mainWeight,
+      weightsPerSet: newWeights,
+      repsPerSet: newReps,
+      setsState: ex.setsState,
+      performedCardios: ex.performedCardios,
+      failureReport: ex.failureReport,
+      failureReps: ex.failureReps,
+    );
+
+    final updatedWorkout = active.copyWith(
+      exercises: exercises,
+    );
+
+    _state = _state!.copyWith(activeWorkout: updatedWorkout);
+    WatchService.instance.sendActiveWorkout(updatedWorkout);
     saveState();
     notifyListeners();
   }
@@ -640,6 +705,8 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
           reps: ios.reps,
           rest: ios.rest,
           weight: ios.weight,
+          weightsPerSet: ios.weightsPerSet,
+          repsPerSet: ios.repsPerSet,
           setsState: mergedSets,
           performedCardios: mergedCardios,
           failureReport: ios.failureReport,

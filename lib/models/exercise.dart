@@ -41,6 +41,8 @@ class RoutineExercise {
   final int reps; // Segundos para isometria/tempo, ou contagem de repetições
   final int rest; // Descanso em segundos
   final double weight;
+  final List<double>? weightsPerSet;
+  final List<int>? repsPerSet;
 
   RoutineExercise({
     required this.id,
@@ -49,6 +51,8 @@ class RoutineExercise {
     required this.reps,
     required this.rest,
     required this.weight,
+    this.weightsPerSet,
+    this.repsPerSet,
   });
 
   Map<String, dynamic> toJson() => {
@@ -58,6 +62,8 @@ class RoutineExercise {
     'reps': reps,
     'rest': rest,
     'weight': weight,
+    'weightsPerSet': weightsPerSet,
+    'repsPerSet': repsPerSet,
   };
 
   factory RoutineExercise.fromJson(Map<String, dynamic> json) {
@@ -68,6 +74,12 @@ class RoutineExercise {
       reps: json['reps'] is int ? json['reps'] : (json['reps'] as num?)?.toInt() ?? 10,
       rest: json['rest'] is int ? json['rest'] : (json['rest'] as num?)?.toInt() ?? 60,
       weight: json['weight'] is double ? json['weight'] : (json['weight'] as num?)?.toDouble() ?? 0.0,
+      weightsPerSet: json['weightsPerSet'] != null
+          ? (json['weightsPerSet'] as List).map<double>((w) => (w as num).toDouble()).toList()
+          : null,
+      repsPerSet: json['repsPerSet'] != null
+          ? (json['repsPerSet'] as List).map<int>((r) => (r as num).toInt()).toList()
+          : null,
     );
   }
 }
@@ -108,6 +120,8 @@ class ActiveExercise {
   final List<PerformedCardio?> performedCardios;
   final List<bool> failureReport;
   final List<int?> failureReps;
+  final List<double>? weightsPerSet;
+  final List<int>? repsPerSet;
 
   ActiveExercise({
     required this.id,
@@ -123,6 +137,8 @@ class ActiveExercise {
     required this.performedCardios,
     required this.failureReport,
     List<int?>? failureReps,
+    this.weightsPerSet,
+    this.repsPerSet,
   }) : failureReps = failureReps ?? List<int?>.filled(sets, null);
 
   Map<String, dynamic> toJson() => {
@@ -135,6 +151,8 @@ class ActiveExercise {
     'reps': reps,
     'rest': rest,
     'weight': weight,
+    'weightsPerSet': weightsPerSet,
+    'repsPerSet': repsPerSet,
     'setsState': setsState,
     'performedCardios': performedCardios.map((c) => c?.toJson()).toList(),
     'failureReport': failureReport,
@@ -153,6 +171,12 @@ class ActiveExercise {
       reps: (json['reps'] as num?)?.toInt() ?? 10,
       rest: (json['rest'] as num?)?.toInt() ?? 60,
       weight: (json['weight'] as num?)?.toDouble() ?? 0.0,
+      weightsPerSet: json['weightsPerSet'] != null
+          ? (json['weightsPerSet'] as List).map<double>((w) => (w as num).toDouble()).toList()
+          : null,
+      repsPerSet: json['repsPerSet'] != null
+          ? (json['repsPerSet'] as List).map<int>((r) => (r as num).toInt()).toList()
+          : null,
       setsState: List<bool>.from(json['setsState'] ?? List.filled(setsVal, false)),
       performedCardios: json['performedCardios'] != null
           ? (json['performedCardios'] as List).map((c) => c == null ? null : PerformedCardio.fromJson(c)).toList()
