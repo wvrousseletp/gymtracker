@@ -1236,6 +1236,19 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
+  void updateRoutine(Routine r) {
+    if (_state == null) return;
+    final idx = _state!.routines.indexWhere((item) => item.id == r.id);
+    if (idx != -1) {
+      final routines = List<Routine>.from(_state!.routines);
+      routines[idx] = r;
+      _state = _state!.copyWith(routines: routines);
+      saveState();
+      unawaited(_firebaseSync.syncRoutine(_currentUserId, r));
+      notifyListeners();
+    }
+  }
+
   void deleteRoutine(String id) {
     if (_state == null) return;
     final routines = List<Routine>.from(_state!.routines)..removeWhere((r) => r.id == id);

@@ -644,18 +644,13 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                     if (widget.existing == null) {
                       widget.provider.addRoutine(name, rest, _exercises);
                     } else {
-                      // Atualiza substituindo na lista
-                      final state = widget.provider.state!;
-                      final idx = state.routines.indexWhere((r) => r.id == widget.existing!.id);
-                      if (idx != -1) {
-                        state.routines[idx] = Routine(
-                          id: widget.existing!.id,
-                          name: name,
-                          defaultRest: rest,
-                          exercises: _exercises,
-                        );
-                        widget.provider.saveState();
-                      }
+                      final updated = Routine(
+                        id: widget.existing!.id,
+                        name: name,
+                        defaultRest: rest,
+                        exercises: _exercises,
+                      );
+                      widget.provider.updateRoutine(updated);
                     }
                     Navigator.pop(context);
                   }
