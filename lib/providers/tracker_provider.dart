@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/profile.dart';
 import '../models/exercise.dart';
 import '../models/routine.dart';
@@ -15,6 +16,8 @@ import '../services/rest_timer_service.dart';
 import '../services/state_persistence_service.dart';
 import '../services/firebase_sync_service.dart';
 import '../services/health_service.dart';
+import '../services/food_service.dart';
+import '../utils/food_presets_data.dart';
 import '../utils/date_utils.dart';
 
 export '../utils/date_utils.dart';
@@ -133,8 +136,27 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
       WatchService.instance.sendActiveWorkoutCleared();
     }
 
+    _checkAndSeedFoods();
+
     _isLoading = false;
     notifyListeners();
+  }
+
+  Future<void> _checkAndSeedFoods() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final isSeeded = prefs.getBool('food_db_seeded_v1') ?? false;
+      if (!isSeeded) {
+        final foodService = FoodService.instance;
+        for (final food in presetFoods100) {
+          await foodService.addFood(food);
+        }
+        await prefs.setBool('food_db_seeded_v1', true);
+        debugPrint("[Seeding] 100 alimentos iniciais semeados com sucesso.");
+      }
+    } catch (e) {
+      debugPrint("[Seeding] Erro ao semear alimentos: $e");
+    }
   }
 
   Profile _defaultProfile(String uid) => Profile(
