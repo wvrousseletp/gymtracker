@@ -334,7 +334,7 @@ class _MainNavigationState extends State<MainNavigation> {
                 ),
                 const SizedBox(height: 12),
                 _whatsNewItem(
-                  Icons.database_outlined,
+                  Icons.storage_rounded,
                   Colors.greenAccent,
                   "100+ Alimentos Pré-carregados",
                   "Base de dados inicial completa para buscas locais offline ultrarrápidas.",
