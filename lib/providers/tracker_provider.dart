@@ -145,13 +145,13 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> _checkAndSeedFoods() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final isSeeded = prefs.getBool('food_db_seeded_v1') ?? false;
+      final isSeeded = prefs.getBool('food_db_seeded_v2') ?? false;
       if (!isSeeded) {
         final foodService = FoodService.instance;
         for (final food in presetFoods100) {
           await foodService.addFood(food);
         }
-        await prefs.setBool('food_db_seeded_v1', true);
+        await prefs.setBool('food_db_seeded_v2', true);
         debugPrint("[Seeding] 100 alimentos iniciais semeados com sucesso.");
       }
     } catch (e) {

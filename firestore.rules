@@ -5,5 +5,15 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
+
+    // Permite leitura e escrita na coleção de alimentos para usuários autenticados
+    match /foods/{foodId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Permite leitura da chave do Gemini para usuários autenticados
+    match /config/gemini {
+      allow read: if request.auth != null;
+    }
   }
 }
