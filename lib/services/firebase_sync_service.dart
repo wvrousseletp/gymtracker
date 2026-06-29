@@ -266,6 +266,14 @@ class FirebaseSyncService {
       final cloudWorkouts = await fetchCloudWorkouts(userId);
       final cloudRoutines = await fetchCloudRoutines(userId);
 
+      // Carrega os treinos locais não existentes na nuvem para evitar perda de dados históricos
+      final cloudIds = cloudWorkouts.map((w) => w.id).toSet();
+      for (final log in localState.history) {
+        if (!cloudIds.contains(log.id)) {
+          unawaited(syncWorkoutLog(userId, log));
+        }
+      }
+
       final combinedState = remoteState.copyWith(
         history: cloudWorkouts.isNotEmpty ? cloudWorkouts : localState.history,
         routines: cloudRoutines.isNotEmpty ? cloudRoutines : localState.routines,

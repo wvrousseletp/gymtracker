@@ -241,6 +241,9 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
       forceDownload = true;
     }
 
+    // Carrega o histórico de treinos imediatamente para evitar que a sincronização limpe o arquivo local
+    await loadWorkoutHistory();
+
     await _syncWithFirebase(forceDownload: forceDownload);
   }
 
