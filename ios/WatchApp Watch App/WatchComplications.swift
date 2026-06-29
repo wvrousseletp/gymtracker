@@ -48,18 +48,21 @@ struct WatchComplicationsEntryView : View {
     @Environment(\.widgetFamily) var family
 
     var body: some View {
-        switch family {
-        case .accessoryCircular:
-            CircularComplicationView(entry: entry)
-        case .accessoryCorner:
-            CornerComplicationView(entry: entry)
-        case .accessoryRectangular:
-            RectangularComplicationView(entry: entry)
-        case .accessoryInline:
-            InlineComplicationView(entry: entry)
-        default:
-            Text("💪")
+        Group {
+            switch family {
+            case .accessoryCircular:
+                CircularComplicationView(entry: entry)
+            case .accessoryCorner:
+                CornerComplicationView(entry: entry)
+            case .accessoryRectangular:
+                RectangularComplicationView(entry: entry)
+            case .accessoryInline:
+                InlineComplicationView(entry: entry)
+            default:
+                Text("💪")
+            }
         }
+        .widgetURL(URL(string: "losmooscles://workouts"))
     }
 }
 
@@ -187,7 +190,140 @@ struct InlineComplicationView: View {
     }
 }
 
-@main
+// MARK: - Water Complication Implementation
+
+struct WaterComplicationProvider: TimelineProvider {
+    func placeholder(in context: Context) -> WaterComplicationEntry {
+        WaterComplicationEntry(date: Date(), current: 1200, target: 2000)
+    }
+
+    func getSnapshot(in context: Context, completion: @escaping (WaterComplicationEntry) -> Void) {
+        let entry = loadWaterData()
+        completion(entry)
+    }
+
+    func getTimeline(in context: Context, completion: @escaping (Timeline<WaterComplicationEntry>) -> Void) {
+        let entry = loadWaterData()
+        let timeline = Timeline(entries: [entry], policy: .never)
+        completion(timeline)
+    }
+    
+    private func loadWaterData() -> WaterComplicationEntry {
+        let defaults = UserDefaults.standard
+        let current = defaults.integer(forKey: "cached_water_intake")
+        let target = defaults.integer(forKey: "cached_water_target")
+        return WaterComplicationEntry(date: Date(), current: current, target: target > 0 ? target : 2000)
+    }
+}
+
+struct WaterComplicationEntry: TimelineEntry {
+    let date: Date
+    let current: Int
+    let target: Int
+}
+
+struct WatchWaterComplicationsEntryView : View {
+    var entry: WaterComplicationProvider.Entry
+    @Environment(\.widgetFamily) var family
+
+    var body: some View {
+        Group {
+            switch family {
+            case .accessoryCircular:
+                CircularWaterComplicationView(entry: entry)
+            case .accessoryCorner:
+                CornerWaterComplicationView(entry: entry)
+            case .accessoryRectangular:
+                RectangularWaterComplicationView(entry: entry)
+            case .accessoryInline:
+                InlineWaterComplicationView(entry: entry)
+            default:
+                Image(systemName: "drop.fill")
+                    .foregroundColor(.blue)
+            }
+        }
+        .widgetURL(URL(string: "losmooscles://water"))
+    }
+}
+
+struct CircularWaterComplicationView: View {
+    let entry: WaterComplicationEntry
+    
+    var body: some View {
+        ZStack {
+            AccessoryWidgetBackground()
+            let progress = entry.target > 0 ? Double(entry.current) / Double(entry.target) : 0.0
+            
+            ZStack {
+                Circle()
+                    .stroke(Color.blue.opacity(0.2), lineWidth: 3)
+                Circle()
+                    .trim(from: 0, to: CGFloat(min(progress, 1.0)))
+                    .stroke(Color.blue, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                
+                VStack(spacing: 0) {
+                    Image(systemName: "drop.fill")
+                        .font(.system(size: 8))
+                        .foregroundColor(.blue)
+                    Text("\(entry.current)")
+                        .font(.system(size: 7, weight: .bold, design: .rounded))
+                }
+            }
+        }
+    }
+}
+
+struct CornerWaterComplicationView: View {
+    let entry: WaterComplicationEntry
+    
+    var body: some View {
+        let progress = entry.target > 0 ? Double(entry.current) / Double(entry.target) : 0.0
+        ZStack {
+            Image(systemName: "drop.fill")
+                .foregroundColor(.blue)
+                .widgetLabel {
+                    Text("\(entry.current)ml")
+                        .foregroundColor(.blue)
+                }
+        }
+    }
+}
+
+struct RectangularWaterComplicationView: View {
+    let entry: WaterComplicationEntry
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 4) {
+                Image(systemName: "drop.fill")
+                    .foregroundColor(.blue)
+                    .font(.system(size: 11))
+                Text("Água")
+                    .font(.system(size: 11, weight: .bold))
+            }
+            Text("\(entry.current)ml de \(entry.target)ml")
+                .font(.system(size: 10))
+                .foregroundColor(.white.opacity(0.8))
+            
+            let progress = entry.target > 0 ? Double(entry.current) / Double(entry.target) : 0.0
+            ProgressView(value: min(progress, 1.0))
+                .tint(.blue)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+struct InlineWaterComplicationView: View {
+    let entry: WaterComplicationEntry
+    
+    var body: some View {
+        Text("💧 \(entry.current) / \(entry.target)ml")
+    }
+}
+
+// MARK: - Widgets Configurations
+
 struct WatchComplications: Widget {
     let kind: String = "WatchComplications"
 
@@ -195,8 +331,29 @@ struct WatchComplications: Widget {
         StaticConfiguration(kind: kind, provider: ComplicationProvider()) { entry in
             WatchComplicationsEntryView(entry: entry)
         }
-        .configurationDisplayName("Los Mooscles")
+        .configurationDisplayName("Treino Los Mooscles")
         .description("Acompanhe seus treinos e metas semanais.")
         .supportedFamilies([.accessoryCircular, .accessoryCorner, .accessoryRectangular, .accessoryInline])
+    }
+}
+
+struct WatchWaterComplication: Widget {
+    let kind: String = "WatchWaterComplication"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: WaterComplicationProvider()) { entry in
+            WatchWaterComplicationsEntryView(entry: entry)
+        }
+        .configurationDisplayName("Água Los Mooscles")
+        .description("Acompanhe sua ingestão de água diária.")
+        .supportedFamilies([.accessoryCircular, .accessoryCorner, .accessoryRectangular, .accessoryInline])
+    }
+}
+
+@main
+struct WatchWidgetsBundle: WidgetBundle {
+    var body: some Widget {
+        WatchComplications()
+        WatchWaterComplication()
     }
 }

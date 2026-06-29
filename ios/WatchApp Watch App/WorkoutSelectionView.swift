@@ -155,6 +155,7 @@ struct RoutineRow: View {
 
 struct WorkoutSelectionView: View {
     @ObservedObject var connectivityManager = WatchConnectivityManager.shared
+    @State private var activeTab = 0
 
     private var todayPlannedItems: [PlannedWatchItem] {
         WatchPlannerHelper.resolveTodayPlannedItems(
@@ -172,7 +173,7 @@ struct WorkoutSelectionView: View {
     }
 
     var body: some View {
-        TabView {
+        TabView(selection: $activeTab) {
             // MARK: - Tab 1: Workout Selection
             NavigationView {
                 VStack {
@@ -377,13 +378,23 @@ struct WorkoutSelectionView: View {
                     connectivityManager.requestSync()
                 }
             }
+            .tag(0)
 
             // MARK: - Tab 2: Weekly Stats
             WeeklyStatsView()
+                .tag(1)
 
             // MARK: - Tab 3: Water Tracker
             WatchWaterView()
+                .tag(2)
         }
         .tabViewStyle(PageTabViewStyle())
+        .onOpenURL { url in
+            if url.host == "water" {
+                activeTab = 2
+            } else if url.host == "workouts" || url.host == "home" {
+                activeTab = 0
+            }
+        }
     }
 }
