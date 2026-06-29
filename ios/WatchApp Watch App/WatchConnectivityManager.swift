@@ -16,6 +16,8 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     @Published var isReachable = false
     @Published var isLocalWorkout = false
     @Published var streak: WatchStreak = WatchStreak(currentWeekCount: 0, consecutiveWeeks: 0, lastWorkoutDate: "")
+    @Published var waterIntakeCurrent: Int = 0
+    @Published var waterIntakeTarget: Int = 2000
     /// Lista de exercícios com PR recém-batido – resetada após exibição da celebração
     @Published var prExerciseNames: [String] = []
 
@@ -68,6 +70,10 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
            let decoded = try? JSONDecoder().decode(WatchStreak.self, from: jsonData) {
             self.streak = decoded
         }
+        
+        self.waterIntakeCurrent = defaults.integer(forKey: "cached_water_intake")
+        let cachedTarget = defaults.integer(forKey: "cached_water_target")
+        self.waterIntakeTarget = cachedTarget > 0 ? cachedTarget : 2000
         
         if WCSession.isSupported() {
             session = WCSession.default
@@ -173,6 +179,16 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                 }
             }
 
+            // 2.2 Process water
+            if let waterIntakeCurrent = data["waterIntakeCurrent"] as? Int {
+                self.waterIntakeCurrent = waterIntakeCurrent
+                UserDefaults.standard.set(waterIntakeCurrent, forKey: "cached_water_intake")
+            }
+            if let waterIntakeTarget = data["waterIntakeTarget"] as? Int {
+                self.waterIntakeTarget = waterIntakeTarget
+                UserDefaults.standard.set(waterIntakeTarget, forKey: "cached_water_target")
+            }
+
             let oldWorkout = self.activeWorkout
             var receivedActiveWorkout = false
 
@@ -243,6 +259,16 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                             }
                         }
                     }
+                case "updateWater":
+                    if let current = data["waterIntakeCurrent"] as? Int {
+                        self.waterIntakeCurrent = current
+                        UserDefaults.standard.set(current, forKey: "cached_water_intake")
+                    }
+                    if let target = data["waterIntakeTarget"] as? Int {
+                        self.waterIntakeTarget = target
+                        UserDefaults.standard.set(target, forKey: "cached_water_target")
+                    }
+
                 case "clearActiveWorkout", "workoutFinished", "workoutCancelled", "workoutPostponed":
                     if !self.isLocalWorkout {
                         self.activeWorkout = nil
@@ -494,6 +520,15 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
 
     func requestSync() {
         sendToiPhone(["action": "requestSync"])
+    }
+
+    func updateWaterIntake(newAmountMl: Int) {
+        self.waterIntakeCurrent = newAmountMl
+        UserDefaults.standard.set(newAmountMl, forKey: "cached_water_intake")
+        sendToiPhone([
+            "action": "updateWaterIntake",
+            "waterIntakeMl": newAmountMl
+        ])
     }
 
     func sendHealthMetrics(heartRate: Double, calories: Double) {

@@ -380,6 +380,9 @@ struct WorkoutSelectionView: View {
 
             // MARK: - Tab 2: Weekly Stats
             WeeklyStatsView()
+
+            // MARK: - Tab 3: Water Tracker
+            WatchWaterView()
         }
         .tabViewStyle(PageTabViewStyle())
     }

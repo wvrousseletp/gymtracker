@@ -260,6 +260,12 @@ class WatchService {
           } else {
             sendActiveWorkoutCleared();
           }
+          
+          // Envia dados de água para o Watch
+          sendWaterData(
+            _provider!.state?.diet.waterIntakeMl ?? 0,
+            _provider!.state?.diet.waterGoalMl ?? 2000,
+          );
         }
         break;
 
@@ -276,6 +282,11 @@ class WatchService {
         } catch (e) {
           debugPrint("[WatchService] Erro ao processar treino offline: $e");
         }
+        break;
+
+      case 'updateWaterIntake':
+        final int currentWater = call.arguments as int;
+        _provider?.updateWaterIntake(currentWater);
         break;
 
       case 'changeExercise':
@@ -471,6 +482,17 @@ class WatchService {
     } on PlatformException catch (e) {
       debugPrint("[WatchService] Erro ao buscar treino compartilhado: $e");
       return null;
+    }
+  }
+
+  Future<void> sendWaterData(int current, int target) async {
+    try {
+      await _channel.invokeMethod('updateWidgetData', {
+        'waterIntakeCurrent': current,
+        'waterIntakeTarget': target,
+      });
+    } on PlatformException catch (e) {
+      debugPrint("[WatchService] Erro ao enviar dados de água para o Watch: $e");
     }
   }
 }

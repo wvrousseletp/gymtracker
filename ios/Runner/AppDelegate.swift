@@ -130,6 +130,34 @@ import WidgetKit
     }
   }
 
+  private func sendWaterToWatch(current: Int, target: Int) {
+    guard let session = session else { return }
+    
+    applicationContextCache["waterIntakeCurrent"] = current
+    applicationContextCache["waterIntakeTarget"] = target
+    
+    do {
+      try session.updateApplicationContext(applicationContextCache)
+    } catch {
+      print("[AppDelegate] Error updating application context for water: \(error.localizedDescription)")
+    }
+    
+    let msg: [String: Any] = [
+      "action": "updateWater",
+      "waterIntakeCurrent": current,
+      "waterIntakeTarget": target
+    ]
+    
+    if session.isReachable {
+      session.sendMessage(msg, replyHandler: nil) { error in
+        print("[AppDelegate] Error sending real-time water: \(error.localizedDescription)")
+        session.transferUserInfo(msg)
+      }
+    } else {
+      session.transferUserInfo(msg)
+    }
+  }
+
   private func handleFlutterCall(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
     guard let session = session else {
       result(FlutterError(code: "UNAVAILABLE", message: "Watch session not initialized", details: nil))
@@ -228,6 +256,8 @@ import WidgetKit
         let current = args["waterIntakeCurrent"] as? Int ?? sharedDefaults?.integer(forKey: "waterIntakeCurrent") ?? 0
         let target = args["waterIntakeTarget"] as? Int ?? sharedDefaults?.integer(forKey: "waterIntakeTarget") ?? 2000
         self.scheduleHydrationReminders(waterIntake: current, waterGoal: target)
+        
+        self.sendWaterToWatch(current: current, target: target)
         
         #if canImport(WidgetKit)
         if #available(iOS 14.0, *) {
@@ -489,6 +519,20 @@ import WidgetKit
             "heartRate": Int(heartRate),
             "activeCalories": Int(calories)
           ])
+        }
+      case "updateWaterIntake":
+        if let currentWater = data["waterIntakeMl"] as? Int {
+          let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles")
+          sharedDefaults?.set(currentWater, forKey: "waterIntakeCurrent")
+          sharedDefaults?.synchronize()
+          
+          #if canImport(WidgetKit)
+          if #available(iOS 14.0, *) {
+            WidgetCenter.shared.reloadAllTimelines()
+          }
+          #endif
+          
+          self.methodChannel?.invokeMethod("updateWaterIntake", arguments: currentWater)
         }
       default:
         break
