@@ -71,9 +71,12 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             self.streak = decoded
         }
         
-        self.waterIntakeCurrent = defaults.integer(forKey: "cached_water_intake")
-        let cachedTarget = defaults.integer(forKey: "cached_water_target")
+        let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard
+        self.waterIntakeCurrent = sharedDefaults.integer(forKey: "cached_water_intake")
+        let cachedTarget = sharedDefaults.integer(forKey: "cached_water_target")
         self.waterIntakeTarget = cachedTarget > 0 ? cachedTarget : 2000
+        
+        checkAndResetDailyWater()
         
         if WCSession.isSupported() {
             session = WCSession.default
@@ -180,14 +183,22 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             }
 
             // 2.2 Process water
+            let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard
             if let waterIntakeCurrent = data["waterIntakeCurrent"] as? Int {
                 self.waterIntakeCurrent = waterIntakeCurrent
+                sharedDefaults.set(waterIntakeCurrent, forKey: "cached_water_intake")
                 UserDefaults.standard.set(waterIntakeCurrent, forKey: "cached_water_intake")
             }
             if let waterIntakeTarget = data["waterIntakeTarget"] as? Int {
                 self.waterIntakeTarget = waterIntakeTarget
+                sharedDefaults.set(waterIntakeTarget, forKey: "cached_water_target")
                 UserDefaults.standard.set(waterIntakeTarget, forKey: "cached_water_target")
             }
+            if let waterIntakeDate = data["waterIntakeDate"] as? String {
+                sharedDefaults.set(waterIntakeDate, forKey: "cached_water_date")
+                UserDefaults.standard.set(waterIntakeDate, forKey: "cached_water_date")
+            }
+            WidgetCenter.shared.reloadAllTimelines()
 
             let oldWorkout = self.activeWorkout
             var receivedActiveWorkout = false
@@ -260,14 +271,22 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                         }
                     }
                 case "updateWater":
+                    let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard
                     if let current = data["waterIntakeCurrent"] as? Int {
                         self.waterIntakeCurrent = current
+                        sharedDefaults.set(current, forKey: "cached_water_intake")
                         UserDefaults.standard.set(current, forKey: "cached_water_intake")
                     }
                     if let target = data["waterIntakeTarget"] as? Int {
                         self.waterIntakeTarget = target
+                        sharedDefaults.set(target, forKey: "cached_water_target")
                         UserDefaults.standard.set(target, forKey: "cached_water_target")
                     }
+                    if let date = data["waterIntakeDate"] as? String {
+                        sharedDefaults.set(date, forKey: "cached_water_date")
+                        UserDefaults.standard.set(date, forKey: "cached_water_date")
+                    }
+                    WidgetCenter.shared.reloadAllTimelines()
 
                 case "clearActiveWorkout", "workoutFinished", "workoutCancelled", "workoutPostponed":
                     if !self.isLocalWorkout {
@@ -523,12 +542,36 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     }
 
     func updateWaterIntake(newAmountMl: Int) {
+        checkAndResetDailyWater()
         self.waterIntakeCurrent = newAmountMl
+        let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard
+        sharedDefaults.set(newAmountMl, forKey: "cached_water_intake")
         UserDefaults.standard.set(newAmountMl, forKey: "cached_water_intake")
+        
+        WidgetCenter.shared.reloadAllTimelines()
+        
         sendToiPhone([
             "action": "updateWaterIntake",
             "waterIntakeMl": newAmountMl
         ])
+    }
+
+    private func checkAndResetDailyWater() {
+        let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard
+        let now = Date()
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let todayStr = formatter.string(from: now)
+        
+        let savedDate = sharedDefaults.string(forKey: "cached_water_date") ?? ""
+        if savedDate != todayStr {
+            self.waterIntakeCurrent = 0
+            sharedDefaults.set(0, forKey: "cached_water_intake")
+            sharedDefaults.set(todayStr, forKey: "cached_water_date")
+            UserDefaults.standard.set(0, forKey: "cached_water_intake")
+            UserDefaults.standard.set(todayStr, forKey: "cached_water_date")
+            WidgetCenter.shared.reloadAllTimelines()
+        }
     }
 
     func sendHealthMetrics(heartRate: Double, calories: Double) {

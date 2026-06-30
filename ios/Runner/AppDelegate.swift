@@ -130,11 +130,12 @@ import WidgetKit
     }
   }
 
-  private func sendWaterToWatch(current: Int, target: Int) {
+  private func sendWaterToWatch(current: Int, target: Int, date: String) {
     guard let session = session else { return }
     
     applicationContextCache["waterIntakeCurrent"] = current
     applicationContextCache["waterIntakeTarget"] = target
+    applicationContextCache["waterIntakeDate"] = date
     
     do {
       try session.updateApplicationContext(applicationContextCache)
@@ -145,7 +146,8 @@ import WidgetKit
     let msg: [String: Any] = [
       "action": "updateWater",
       "waterIntakeCurrent": current,
-      "waterIntakeTarget": target
+      "waterIntakeTarget": target,
+      "waterIntakeDate": date
     ]
     
     if session.isReachable {
@@ -251,13 +253,17 @@ import WidgetKit
         if let waterIntakeTarget = args["waterIntakeTarget"] as? Int {
           sharedDefaults?.set(waterIntakeTarget, forKey: "waterIntakeTarget")
         }
+        if let waterIntakeDate = args["waterIntakeDate"] as? String {
+          sharedDefaults?.set(waterIntakeDate, forKey: "waterIntakeDate")
+        }
         sharedDefaults?.synchronize()
         
         let current = args["waterIntakeCurrent"] as? Int ?? sharedDefaults?.integer(forKey: "waterIntakeCurrent") ?? 0
         let target = args["waterIntakeTarget"] as? Int ?? sharedDefaults?.integer(forKey: "waterIntakeTarget") ?? 2000
+        let date = args["waterIntakeDate"] as? String ?? sharedDefaults?.string(forKey: "waterIntakeDate") ?? ""
         self.scheduleHydrationReminders(waterIntake: current, waterGoal: target)
         
-        self.sendWaterToWatch(current: current, target: target)
+        self.sendWaterToWatch(current: current, target: target, date: date)
         
         #if canImport(WidgetKit)
         if #available(iOS 14.0, *) {

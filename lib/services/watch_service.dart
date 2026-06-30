@@ -434,12 +434,16 @@ class WatchService {
       final int waterIntakeCurrent = state.diet.waterIntakeMl;
       final int waterIntakeTarget = state.diet.waterGoalMl;
       
+      final now = DateTime.now();
+      final todayStr = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+      
       await _channel.invokeMethod('updateWidgetData', {
         'todayRoutineName': todayRoutineName,
         'todayRoutineExerciseCount': todayRoutineExerciseCount,
         'todayRoutineExercises': todayRoutineExercises,
         'waterIntakeCurrent': waterIntakeCurrent,
         'waterIntakeTarget': waterIntakeTarget,
+        'waterIntakeDate': todayStr,
       });
     } on PlatformException catch (e) {
       debugPrint("[WatchService] Erro ao sincronizar widgets: $e");
@@ -487,9 +491,12 @@ class WatchService {
 
   Future<void> sendWaterData(int current, int target) async {
     try {
+      final now = DateTime.now();
+      final todayStr = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
       await _channel.invokeMethod('updateWidgetData', {
         'waterIntakeCurrent': current,
         'waterIntakeTarget': target,
+        'waterIntakeDate': todayStr,
       });
     } on PlatformException catch (e) {
       debugPrint("[WatchService] Erro ao enviar dados de água para o Watch: $e");
