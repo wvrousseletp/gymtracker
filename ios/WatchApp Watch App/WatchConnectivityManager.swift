@@ -29,9 +29,6 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                 let defaults = UserDefaults.standard
                 defaults.removeObject(forKey: "local_workout_state")
                 defaults.set(false, forKey: "local_workout_is_local")
-                let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard
-                sharedDefaults.removeObject(forKey: "local_workout_state")
-                sharedDefaults.set(false, forKey: "local_workout_is_local")
             }
         }
     }
@@ -74,9 +71,8 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             self.streak = decoded
         }
         
-        let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard
-        self.waterIntakeCurrent = sharedDefaults.integer(forKey: "cached_water_intake")
-        let cachedTarget = sharedDefaults.integer(forKey: "cached_water_target")
+        self.waterIntakeCurrent = defaults.integer(forKey: "cached_water_intake")
+        let cachedTarget = defaults.integer(forKey: "cached_water_target")
         self.waterIntakeTarget = cachedTarget > 0 ? cachedTarget : 2000
         
         checkAndResetDailyWater()
@@ -186,19 +182,15 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             }
 
             // 2.2 Process water
-            let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard
             if let waterIntakeCurrent = data["waterIntakeCurrent"] as? Int {
                 self.waterIntakeCurrent = waterIntakeCurrent
-                sharedDefaults.set(waterIntakeCurrent, forKey: "cached_water_intake")
                 UserDefaults.standard.set(waterIntakeCurrent, forKey: "cached_water_intake")
             }
             if let waterIntakeTarget = data["waterIntakeTarget"] as? Int {
                 self.waterIntakeTarget = waterIntakeTarget
-                sharedDefaults.set(waterIntakeTarget, forKey: "cached_water_target")
                 UserDefaults.standard.set(waterIntakeTarget, forKey: "cached_water_target")
             }
             if let waterIntakeDate = data["waterIntakeDate"] as? String {
-                sharedDefaults.set(waterIntakeDate, forKey: "cached_water_date")
                 UserDefaults.standard.set(waterIntakeDate, forKey: "cached_water_date")
             }
             WidgetCenter.shared.reloadAllTimelines()
@@ -274,19 +266,15 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                         }
                     }
                 case "updateWater":
-                    let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard
                     if let current = data["waterIntakeCurrent"] as? Int {
                         self.waterIntakeCurrent = current
-                        sharedDefaults.set(current, forKey: "cached_water_intake")
                         UserDefaults.standard.set(current, forKey: "cached_water_intake")
                     }
                     if let target = data["waterIntakeTarget"] as? Int {
                         self.waterIntakeTarget = target
-                        sharedDefaults.set(target, forKey: "cached_water_target")
                         UserDefaults.standard.set(target, forKey: "cached_water_target")
                     }
                     if let date = data["waterIntakeDate"] as? String {
-                        sharedDefaults.set(date, forKey: "cached_water_date")
                         UserDefaults.standard.set(date, forKey: "cached_water_date")
                     }
                     WidgetCenter.shared.reloadAllTimelines()
@@ -327,8 +315,6 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                        let decoded = try? JSONDecoder().decode(WatchStreak.self, from: jsonData) {
                         self.streak = decoded
                         UserDefaults.standard.set(streakJson, forKey: "cached_streak")
-                        let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard
-                        sharedDefaults.set(streakJson, forKey: "cached_streak")
                         WidgetCenter.shared.reloadAllTimelines()
                     }
 
@@ -549,8 +535,6 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     func updateWaterIntake(newAmountMl: Int) {
         checkAndResetDailyWater()
         self.waterIntakeCurrent = newAmountMl
-        let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard
-        sharedDefaults.set(newAmountMl, forKey: "cached_water_intake")
         UserDefaults.standard.set(newAmountMl, forKey: "cached_water_intake")
         
         WidgetCenter.shared.reloadAllTimelines()
@@ -562,17 +546,14 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     }
 
     private func checkAndResetDailyWater() {
-        let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard
         let now = Date()
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         let todayStr = formatter.string(from: now)
         
-        let savedDate = sharedDefaults.string(forKey: "cached_water_date") ?? ""
+        let savedDate = UserDefaults.standard.string(forKey: "cached_water_date") ?? ""
         if savedDate != todayStr {
             self.waterIntakeCurrent = 0
-            sharedDefaults.set(0, forKey: "cached_water_intake")
-            sharedDefaults.set(todayStr, forKey: "cached_water_date")
             UserDefaults.standard.set(0, forKey: "cached_water_intake")
             UserDefaults.standard.set(todayStr, forKey: "cached_water_date")
             WidgetCenter.shared.reloadAllTimelines()
@@ -616,17 +597,6 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         } else {
             defaults.removeObject(forKey: "local_workout_state")
         }
-        
-        let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard
-        sharedDefaults.set(isLocalWorkout, forKey: "local_workout_is_local")
-        if let active = activeWorkout {
-            if let encoded = try? JSONEncoder().encode(active) {
-                sharedDefaults.set(encoded, forKey: "local_workout_state")
-            }
-        } else {
-            sharedDefaults.removeObject(forKey: "local_workout_state")
-        }
-        
         WidgetCenter.shared.reloadAllTimelines()
     }
 
