@@ -1017,6 +1017,7 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
   void deleteWorkoutLog(String id) {
     if (_state == null) return;
     _state!.history.removeWhere((h) => h.id == id);
+    _updateStreak();
     saveState();
     unawaited(_firebaseSync.deleteWorkoutLog(_currentUserId, id));
     notifyListeners();

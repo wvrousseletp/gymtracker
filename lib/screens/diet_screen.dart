@@ -1366,21 +1366,42 @@ class AguaTab extends StatelessWidget {
   }
 
   Widget _buildWaterAddBtn(TrackerProvider provider, int current, int val) {
-    return ElevatedButton(
-      onPressed: () {
-        provider.updateWaterIntake(current + val);
-      },
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.white.withOpacity(0.05),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: BorderSide(color: Colors.white.withOpacity(0.08)),
-        ),
-        elevation: 0,
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.blueAccent.withOpacity(0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: Text(
-        "+$val ml",
-        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14),
+      child: ElevatedButton(
+        onPressed: () {
+          provider.updateWaterIntake(current + val);
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.white.withOpacity(0.04),
+          foregroundColor: Colors.blueAccent,
+          padding: EdgeInsets.zero,
+          elevation: 0,
+          side: BorderSide(color: Colors.blueAccent.withOpacity(0.25), width: 1.2),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.water_drop, color: Colors.blueAccent, size: 16),
+            const SizedBox(width: 4),
+            Text(
+              "+$val ml",
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13),
+            ),
+          ],
+        ),
       ),
     );
   }

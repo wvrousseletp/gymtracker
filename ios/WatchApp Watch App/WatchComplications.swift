@@ -18,7 +18,7 @@ struct ComplicationProvider: TimelineProvider {
     }
     
     private func loadComplicationData() -> ComplicationEntry {
-        let defaults = UserDefaults.standard
+        let defaults = UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard
         
         var active: WatchActiveWorkoutState? = nil
         if let savedData = defaults.data(forKey: "local_workout_state"),

@@ -37,7 +37,7 @@ class MyApp extends StatelessWidget {
           background: Colors.black,
           surface: Color(0xff1c1c1e),
         ),
-        textTheme: GoogleFonts.robotoTextTheme(ThemeData.dark().textTheme),
+        textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme),
         useMaterial3: true,
       ),
       home: StreamBuilder<User?>(

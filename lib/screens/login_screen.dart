@@ -196,24 +196,52 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                 )
                               else
-                                ElevatedButton.icon(
-                                  onPressed: _signInWithGoogle,
-                                  icon: const Icon(Icons.g_mobiledata, color: Colors.black, size: 32),
-                                  label: const Text(
-                                    "Entrar com o Google",
-                                    style: TextStyle(
-                                      color: Colors.black,
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 15,
-                                    ),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(16),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: activeAccentColor.withOpacity(0.15),
+                                        blurRadius: 20,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
                                   ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.white,
-                                    foregroundColor: Colors.black,
-                                    padding: const EdgeInsets.symmetric(vertical: 16),
-                                    elevation: 0,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
+                                  child: ElevatedButton.icon(
+                                    onPressed: _signInWithGoogle,
+                                    icon: Container(
+                                      padding: const EdgeInsets.all(2),
+                                      decoration: const BoxDecoration(
+                                        color: Colors.white,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.g_mobiledata,
+                                        color: Colors.black,
+                                        size: 26,
+                                      ),
+                                    ),
+                                    label: const Text(
+                                      "Entrar com o Google",
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 16,
+                                        letterSpacing: 0.3,
+                                      ),
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.white.withOpacity(0.08),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 16),
+                                      elevation: 0,
+                                      side: BorderSide(
+                                        color: Colors.white.withOpacity(0.15),
+                                        width: 1.5,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
                                     ),
                                   ),
                                 ),

@@ -121,22 +121,51 @@ class _PlannerScreenState extends State<PlannerScreen> {
               final filled = streak.weekdaysTrained.isNotEmpty
                   ? streak.weekdaysTrained.contains(dayIndex + 1)
                   : dayIndex < streak.currentWeekCount;
+              final dayInitial = _daysOfWeek[dayIndex].substring(0, 1).toUpperCase();
               return Container(
-                width: 32,
-                height: 32,
+                width: 34,
+                height: 34,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: filled ? Colors.green.withOpacity(0.2) : Colors.white.withOpacity(0.04),
                   shape: BoxShape.circle,
+                  gradient: filled
+                      ? RadialGradient(
+                          colors: [
+                            Colors.greenAccent.withOpacity(0.35),
+                            Colors.green.withOpacity(0.12),
+                          ],
+                          center: const Alignment(-0.3, -0.3),
+                          radius: 0.8,
+                        )
+                      : LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Colors.white.withOpacity(0.05),
+                            Colors.white.withOpacity(0.01),
+                          ],
+                        ),
+                  boxShadow: filled
+                      ? [
+                          BoxShadow(
+                            color: Colors.greenAccent.withOpacity(0.25),
+                            blurRadius: 10,
+                            spreadRadius: 1,
+                          ),
+                        ]
+                      : [],
                   border: Border.all(
-                    color: filled ? Colors.greenAccent : Colors.white.withOpacity(0.12),
+                    color: filled ? Colors.greenAccent.withOpacity(0.8) : Colors.white.withOpacity(0.08),
                     width: 1.5,
                   ),
                 ),
-                child: Icon(
-                  filled ? Icons.check : Icons.circle,
-                  color: filled ? Colors.greenAccent : Colors.white24,
-                  size: filled ? 16 : 8,
+                child: Text(
+                  dayInitial,
+                  style: TextStyle(
+                    color: filled ? Colors.white : Colors.white24,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               );
             }),

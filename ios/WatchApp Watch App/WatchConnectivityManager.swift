@@ -29,6 +29,9 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                 let defaults = UserDefaults.standard
                 defaults.removeObject(forKey: "local_workout_state")
                 defaults.set(false, forKey: "local_workout_is_local")
+                let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard
+                sharedDefaults.removeObject(forKey: "local_workout_state")
+                sharedDefaults.set(false, forKey: "local_workout_is_local")
             }
         }
     }
@@ -324,6 +327,8 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                        let decoded = try? JSONDecoder().decode(WatchStreak.self, from: jsonData) {
                         self.streak = decoded
                         UserDefaults.standard.set(streakJson, forKey: "cached_streak")
+                        let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard
+                        sharedDefaults.set(streakJson, forKey: "cached_streak")
                         WidgetCenter.shared.reloadAllTimelines()
                     }
 
@@ -611,6 +616,17 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         } else {
             defaults.removeObject(forKey: "local_workout_state")
         }
+        
+        let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard
+        sharedDefaults.set(isLocalWorkout, forKey: "local_workout_is_local")
+        if let active = activeWorkout {
+            if let encoded = try? JSONEncoder().encode(active) {
+                sharedDefaults.set(encoded, forKey: "local_workout_state")
+            }
+        } else {
+            sharedDefaults.removeObject(forKey: "local_workout_state")
+        }
+        
         WidgetCenter.shared.reloadAllTimelines()
     }
 

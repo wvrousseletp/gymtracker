@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 
 class GlassCard extends StatelessWidget {
@@ -44,12 +45,14 @@ class GlassCard extends StatelessWidget {
           ],
         ),
       ),
-      // Clip com raio ligeiramente menor para evitar corte de texto nas bordas
       child: ClipRRect(
         borderRadius: BorderRadius.circular(borderRadius - 1.5),
-        child: Padding(
-          padding: padding ?? const EdgeInsets.all(16),
-          child: child,
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: Padding(
+            padding: padding ?? const EdgeInsets.all(16),
+            child: child,
+          ),
         ),
       ),
     );
