@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/tracker_provider.dart';
 import '../models/profile.dart';
 import '../services/watch_service.dart';
+import '../widgets/glass_card.dart';
 import '../widgets/profile_avatar.dart';
 import 'workout_screen.dart';
 import 'routines_screen.dart';
@@ -283,74 +284,74 @@ class _MainNavigationState extends State<MainNavigation> {
       context: context,
       barrierDismissible: false,
       builder: (dialogCtx) {
-        return AlertDialog(
-          backgroundColor: const Color(0xff1c1c1e),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-            side: BorderSide(color: Colors.white.withOpacity(0.08)),
-          ),
-          titlePadding: const EdgeInsets.only(top: 24, left: 24, right: 24),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-          title: const Row(
-            children: [
-              Icon(Icons.auto_awesome, color: Colors.amber, size: 24),
-              SizedBox(width: 8),
-              Text(
-                "O que há de novo! 🌟",
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18),
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 20),
+          child: GlassCard(
+            useBlur: true,
+            borderColor: Colors.white.withOpacity(0.08),
+            borderRadius: 24,
+            padding: const EdgeInsets.all(24),
+            child: SizedBox(
+              width: 320,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: const [
+                      Icon(Icons.auto_awesome, color: Colors.amber, size: 24),
+                      SizedBox(width: 8),
+                      Text(
+                        "O que há de novo! 🌟",
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    "Preparamos atualizações incríveis para você atingir seus objetivos de forma ainda mais inteligente!",
+                    style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+                  ),
+                  const SizedBox(height: 16),
+                  _whatsNewItem(
+                    Icons.storage_rounded,
+                    Colors.greenAccent,
+                    "500+ Alimentos Locais 📦",
+                    "Base de dados inicial super completa com 500 alimentos comuns para buscas offline instantâneas.",
+                  ),
+                  const SizedBox(height: 12),
+                  _whatsNewItem(
+                    Icons.star_outline_rounded,
+                    Colors.amber,
+                    "Favoritos Personalizados",
+                    "Salve porções recorrentes de alimentos e registre-os com um só toque.",
+                  ),
+                  const SizedBox(height: 12),
+                  _whatsNewItem(
+                    Icons.local_cafe_outlined,
+                    Colors.blueAccent,
+                    "Combos de Alimentos (Presets)",
+                    "Salve grupos (como seu shake diário) para inserir de uma vez só.",
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(dialogCtx),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.black,
+                      minimumSize: const Size.fromHeight(48),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: const Text(
+                      "Começar a Usar! 🚀",
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-          content: SizedBox(
-            width: 320,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text(
-                  "Preparamos atualizações incríveis para você atingir seus objetivos de forma ainda mais inteligente!",
-                  style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
-                ),
-                const SizedBox(height: 16),
-                _whatsNewItem(
-                  Icons.storage_rounded,
-                  Colors.greenAccent,
-                  "500+ Alimentos Locais 📦",
-                  "Base de dados inicial super completa com 500 alimentos comuns para buscas offline instantâneas.",
-                ),
-                const SizedBox(height: 12),
-                _whatsNewItem(
-                  Icons.star_outline_rounded,
-                  Colors.amber,
-                  "Favoritos Personalizados",
-                  "Salve porções recorrentes de alimentos e registre-os com um só toque.",
-                ),
-                const SizedBox(height: 12),
-                _whatsNewItem(
-                  Icons.local_cafe_outlined,
-                  Colors.blueAccent,
-                  "Combos de Alimentos (Presets)",
-                  "Salve grupos (como seu shake diário) para inserir de uma vez só.",
-                ),
-              ],
             ),
           ),
-          actionsPadding: const EdgeInsets.only(bottom: 20, right: 24, left: 24),
-          actions: [
-            ElevatedButton(
-              onPressed: () => Navigator.pop(dialogCtx),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.black,
-                minimumSize: const Size.fromHeight(48),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              ),
-              child: const Text(
-                "Começar a Usar! 🚀",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-              ),
-            ),
-          ],
         );
       },
     );

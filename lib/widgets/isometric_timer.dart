@@ -1,7 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 
-class CircularProgressTimer extends StatelessWidget {
+class CircularProgressTimer extends StatefulWidget {
   final int totalSeconds;
   final int elapsedSeconds;
   final Color progressColor;
@@ -22,15 +22,41 @@ class CircularProgressTimer extends StatelessWidget {
   });
 
   @override
+  State<CircularProgressTimer> createState() => _CircularProgressTimerState();
+}
+
+class _CircularProgressTimerState extends State<CircularProgressTimer> with SingleTickerProviderStateMixin {
+  late AnimationController _glowController;
+  late Animation<double> _glowAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _glowController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
+    _glowAnimation = Tween<double>(begin: 8.0, end: 22.0).animate(
+      CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _glowController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final remaining = max(0, totalSeconds - elapsedSeconds);
-    final progress = totalSeconds > 0 ? (elapsedSeconds / totalSeconds) : 0.0;
+    final remaining = max(0, widget.totalSeconds - widget.elapsedSeconds);
+    final progress = widget.totalSeconds > 0 ? (widget.elapsedSeconds / widget.totalSeconds) : 0.0;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          title,
+          widget.title,
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,
@@ -39,46 +65,66 @@ class CircularProgressTimer extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            SizedBox(
-              width: 150,
-              height: 150,
-              child: CircularProgressIndicator(
-                value: 1.0 - progress,
-                strokeWidth: 10,
-                backgroundColor: Colors.white.withOpacity(0.05),
-                valueColor: AlwaysStoppedAnimation<Color>(progressColor),
-              ),
-            ),
-            Column(
-              mainAxisSize: MainAxisSize.min,
+        AnimatedBuilder(
+          animation: _glowAnimation,
+          builder: (context, child) {
+            return Stack(
+              alignment: Alignment.center,
               children: [
-                Text(
-                  "$remaining",
-                  style: const TextStyle(
-                    fontSize: 44,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    letterSpacing: -1,
+                // Glowing background circle
+                Container(
+                  width: 140,
+                  height: 140,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: widget.progressColor.withOpacity(0.15),
+                        blurRadius: _glowAnimation.value,
+                        spreadRadius: _glowAnimation.value * 0.15,
+                      ),
+                    ],
                   ),
                 ),
-                const Text(
-                  "segundos",
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.white54,
-                    fontWeight: FontWeight.w600,
+                SizedBox(
+                  width: 150,
+                  height: 150,
+                  child: CircularProgressIndicator(
+                    value: 1.0 - progress,
+                    strokeWidth: 10,
+                    backgroundColor: Colors.white.withOpacity(0.05),
+                    valueColor: AlwaysStoppedAnimation<Color>(widget.progressColor),
                   ),
+                ),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "$remaining",
+                      style: const TextStyle(
+                        fontSize: 44,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        letterSpacing: -1,
+                      ),
+                    ),
+                    const Text(
+                      "segundos",
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.white54,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ],
-            ),
-          ],
+            );
+          },
         ),
         const SizedBox(height: 16),
         Text(
-          subtext,
+          widget.subtext,
           textAlign: TextAlign.center,
           style: const TextStyle(
             fontSize: 13,
@@ -86,10 +132,10 @@ class CircularProgressTimer extends StatelessWidget {
             fontWeight: FontWeight.w500,
           ),
         ),
-        if (onSkip != null) ...[
+        if (widget.onSkip != null) ...[
           const SizedBox(height: 12),
           TextButton(
-            onPressed: onSkip,
+            onPressed: widget.onSkip,
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               backgroundColor: Colors.white.withOpacity(0.06),
@@ -99,9 +145,9 @@ class CircularProgressTimer extends StatelessWidget {
               ),
             ),
             child: Text(
-              skipLabel,
+              widget.skipLabel,
               style: TextStyle(
-                color: progressColor,
+                color: widget.progressColor,
                 fontWeight: FontWeight.w700,
                 fontSize: 13,
               ),

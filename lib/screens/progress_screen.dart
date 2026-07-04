@@ -1301,6 +1301,7 @@ class _PrsTabState extends State<PrsTab> {
     return GlassCard(
       borderColor: Colors.white.withOpacity(0.04),
       padding: const EdgeInsets.all(16),
+      useBlur: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
