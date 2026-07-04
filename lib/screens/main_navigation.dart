@@ -298,8 +298,8 @@ class _MainNavigationState extends State<MainNavigation> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Row(
-                    children: const [
+                  const Row(
+                    children: [
                       Icon(Icons.auto_awesome, color: Colors.amber, size: 24),
                       SizedBox(width: 8),
                       Text(
