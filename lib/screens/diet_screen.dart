@@ -114,254 +114,251 @@ class RefeicoesTab extends ConsumerWidget {
           child: const Icon(Icons.add, color: Colors.black),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 100),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Resumo de Calorias & Macros
-            GlassCard(
-              padding: const EdgeInsets.all(16),
-              borderColor: Colors.white.withOpacity(0.04),
+      body: CustomScrollView(
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsets.only(left: 16, right: 16, top: 16),
+            sliver: SliverToBoxAdapter(
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Linha Calorias
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text("Saldo Líquido de Calorias", style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 2),
-                          Text(
-                            "$netCals / ${diet.caloriesGoal} kcal",
-                            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            "Consumido: $totalCals kcal • Ativo: $activeCals kcal",
-                            style: const TextStyle(color: Colors.white38, fontSize: 9, fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                      Text(
-                        "${(netProgress * 100).toStringAsFixed(0)}%",
-                        style: TextStyle(color: accentColor, fontSize: 16, fontWeight: FontWeight.w900),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  LinearProgressIndicator(
-                    value: netProgress,
-                    backgroundColor: Colors.white.withOpacity(0.05),
-                    valueColor: AlwaysStoppedAnimation<Color>(accentColor),
-                    borderRadius: BorderRadius.circular(4),
-                    minHeight: 8,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Linhas Macros (Proteína, Carbo, Gordura)
-                  Row(
-                    children: [
-                      Expanded(child: _buildMacroBar("Proteínas", totalProt, diet.proteinGoal, protProgress, const Color(0xffff453a))),
-                      const SizedBox(width: 12),
-                      Expanded(child: _buildMacroBar("Carboidratos", totalCarbs, diet.carbsGoal, carbsProgress, const Color(0xffbf5af2))),
-                      const SizedBox(width: 12),
-                      Expanded(child: _buildMacroBar("Gorduras", totalFat, diet.fatGoal, fatProgress, const Color(0xffff9f0a))),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // HealthKit Summary / Opt-in Card
-            if (provider.healthAuthorized) ...[
-              GlassCard(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                borderColor: Colors.white.withOpacity(0.04),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Active energy burned
-                    Row(
+                  // Resumo de Calorias & Macros
+                  GlassCard(
+                    padding: const EdgeInsets.all(16),
+                    borderColor: Colors.white.withOpacity(0.04),
+                    child: Column(
                       children: [
-                        const Text("🔥", style: TextStyle(fontSize: 18)),
-                        const SizedBox(width: 8),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text("Gasto Ativo", style: TextStyle(color: Colors.white54, fontSize: 9, fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 2),
-                            Text(
-                              "${provider.todayBurnedCalories} kcal",
-                              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w900),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    
-                    // Steps
-                    Row(
-                      children: [
-                        const Text("🚶", style: TextStyle(fontSize: 18)),
-                        const SizedBox(width: 8),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text("Passos", style: TextStyle(color: Colors.white54, fontSize: 9, fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 2),
-                            Text(
-                              "${provider.todaySteps}",
-                              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w900),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-
-                    // Heart rate
-                    Row(
-                      children: [
-                        const Text("❤️", style: TextStyle(fontSize: 18)),
-                        const SizedBox(width: 8),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text("Frequência", style: TextStyle(color: Colors.white54, fontSize: 9, fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 2),
-                            Text(
-                              provider.currentHeartRate > 0 ? "${provider.currentHeartRate} bpm" : "--",
-                              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w900),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ] else ...[
-              GestureDetector(
-                onTap: () => provider.requestHealthAuthorization(),
-                child: GlassCard(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  borderColor: accentColor.withOpacity(0.3),
-                  child: Row(
-                    children: [
-                      Icon(Icons.favorite, color: accentColor, size: 20),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Conectar com App Saúde",
-                              style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
-                            ),
-                            SizedBox(height: 2),
-                            Text(
-                              "Acompanhe calorias ativas, passos e batimentos cardíacos.",
-                              style: TextStyle(color: Colors.white54, fontSize: 10),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Icon(Icons.chevron_right, color: Colors.white54),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-            const SizedBox(height: 20),
-
-            // Lista de Refeições
-            const Text(
-              "Refeições do Dia",
-              style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 10),
-
-            diet.meals.isEmpty
-                ? const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24),
-                    child: Center(
-                      child: Text(
-                        "Nenhuma refeição registrada hoje.",
-                        style: TextStyle(color: Colors.white38, fontStyle: FontStyle.italic),
-                      ),
-                    ),
-                  )
-                : ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: diet.meals.length,
-                    itemBuilder: (context, index) {
-                      final meal = diet.meals[index];
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        child: GlassCard(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          borderColor: Colors.white.withOpacity(0.04),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          meal.name,
-                                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                                        ),
-                                        Text(
-                                          meal.time,
-                                          style: const TextStyle(color: Colors.white38, fontSize: 11),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Row(
-                                      children: [
-                                        _buildMiniMacroLabel("P", meal.protein, const Color(0xffff453a)),
-                                        const SizedBox(width: 8),
-                                        _buildMiniMacroLabel("C", meal.carbs, const Color(0xffbf5af2)),
-                                        const SizedBox(width: 8),
-                                        _buildMiniMacroLabel("G", meal.fat, const Color(0xffff9f0a)),
-                                      ],
-                                    ),
-                                  ],
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text("Saldo Líquido de Calorias", style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold)),
+                                const SizedBox(height: 2),
+                                Text(
+                                  "$netCals / ${diet.caloriesGoal} kcal",
+                                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900),
                                 ),
-                              ),
-                              const SizedBox(width: 12),
-                              Row(
+                                const SizedBox(height: 2),
+                                Text(
+                                  "Consumido: $totalCals kcal • Ativo: $activeCals kcal",
+                                  style: const TextStyle(color: Colors.white38, fontSize: 9, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                            Text(
+                              "${(netProgress * 100).toStringAsFixed(0)}%",
+                              style: TextStyle(color: accentColor, fontSize: 16, fontWeight: FontWeight.w900),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        LinearProgressIndicator(
+                          value: netProgress,
+                          backgroundColor: Colors.white.withOpacity(0.05),
+                          valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+                          borderRadius: BorderRadius.circular(4),
+                          minHeight: 8,
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(child: _buildMacroBar("Proteínas", totalProt, diet.proteinGoal, protProgress, const Color(0xffff453a))),
+                            const SizedBox(width: 12),
+                            Expanded(child: _buildMacroBar("Carboidratos", totalCarbs, diet.carbsGoal, carbsProgress, const Color(0xffbf5af2))),
+                            const SizedBox(width: 12),
+                            Expanded(child: _buildMacroBar("Gorduras", totalFat, diet.fatGoal, fatProgress, const Color(0xffff9f0a))),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // HealthKit Summary / Opt-in Card
+                  if (provider.healthAuthorized) ...[
+                    GlassCard(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      borderColor: Colors.white.withOpacity(0.04),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              const Text("🔥", style: TextStyle(fontSize: 18)),
+                              const SizedBox(width: 8),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  const Text("Gasto Ativo", style: TextStyle(color: Colors.white54, fontSize: 9, fontWeight: FontWeight.bold)),
+                                  const SizedBox(height: 2),
                                   Text(
-                                    "${meal.calories} kcal",
-                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  GestureDetector(
-                                    onTap: () {
-                                      provider.deleteMeal(meal.id);
-                                    },
-                                    child: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
+                                    "${provider.todayBurnedCalories} kcal",
+                                    style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w900),
                                   ),
                                 ],
                               ),
                             ],
                           ),
+                          Row(
+                            children: [
+                              const Text("🚶", style: TextStyle(fontSize: 18)),
+                              const SizedBox(width: 8),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text("Passos", style: TextStyle(color: Colors.white54, fontSize: 9, fontWeight: FontWeight.bold)),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    "${provider.todaySteps}",
+                                    style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w900),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          Row(
+                            children: [
+                              const Text("❤️", style: TextStyle(fontSize: 18)),
+                              const SizedBox(width: 8),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text("Frequência", style: TextStyle(color: Colors.white54, fontSize: 9, fontWeight: FontWeight.bold)),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    provider.currentHeartRate > 0 ? "${provider.currentHeartRate} bpm" : "--",
+                                    style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w900),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ] else ...[
+                    GestureDetector(
+                      onTap: () => provider.requestHealthAuthorization(),
+                      child: GlassCard(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        borderColor: accentColor.withOpacity(0.3),
+                        child: Row(
+                          children: [
+                            Icon(Icons.favorite, color: accentColor, size: 20),
+                            const SizedBox(width: 12),
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "Conectar com App Saúde",
+                                    style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                                  ),
+                                  SizedBox(height: 2),
+                                  Text(
+                                    "Acompanhe calorias ativas, passos e batimentos cardíacos.",
+                                    style: TextStyle(color: Colors.white54, fontSize: 10),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(Icons.chevron_right, color: Colors.white54),
+                          ],
                         ),
-                      );
-                    },
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 20),
+                  const Text(
+                    "Refeições do Dia",
+                    style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800),
                   ),
-          ],
-        ),
+                  const SizedBox(height: 10),
+                  if (diet.meals.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 24),
+                      child: Center(
+                        child: Text(
+                          "Nenhuma refeição registrada hoje.",
+                          style: TextStyle(color: Colors.white38, fontStyle: FontStyle.italic),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          // Meals list with proper virtualization
+          if (diet.meals.isNotEmpty)
+            SliverPadding(
+              padding: const EdgeInsets.only(left: 16, right: 16, bottom: 100),
+              sliver: SliverList.builder(
+                itemCount: diet.meals.length,
+                itemBuilder: (context, index) {
+                  final meal = diet.meals[index];
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: GlassCard(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      borderColor: Colors.white.withOpacity(0.04),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      meal.name,
+                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                    ),
+                                    Text(
+                                      meal.time,
+                                      style: const TextStyle(color: Colors.white38, fontSize: 11),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    _buildMiniMacroLabel("P", meal.protein, const Color(0xffff453a)),
+                                    const SizedBox(width: 8),
+                                    _buildMiniMacroLabel("C", meal.carbs, const Color(0xffbf5af2)),
+                                    const SizedBox(width: 8),
+                                    _buildMiniMacroLabel("G", meal.fat, const Color(0xffff9f0a)),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Row(
+                            children: [
+                              Text(
+                                "${meal.calories} kcal",
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13),
+                              ),
+                              const SizedBox(width: 8),
+                              GestureDetector(
+                                onTap: () {
+                                  provider.deleteMeal(meal.id);
+                                },
+                                child: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+        ],
       ),
     );
   }

@@ -165,39 +165,41 @@ class _MainNavigationState extends State<MainNavigation> {
             bottom: 24,
             left: 20,
             right: 20,
-            child: Container(
-              height: 64,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.4),
-                    blurRadius: 24,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 12.0, sigmaY: 12.0),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xff141416).withOpacity(0.4),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.08),
-                        width: 1.0,
-                      ),
+            child: RepaintBoundary(
+              child: Container(
+                height: 64,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.4),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _buildNavItem(0, Icons.fitness_center_outlined, "Treino", accentColor),
-                        _buildNavItem(1, Icons.calendar_today_outlined, "Rotinas", accentColor),
-                        _buildNavItem(2, Icons.bar_chart_outlined, "Progresso", accentColor),
-                        _buildNavItem(3, Icons.restaurant_outlined, "Dieta", accentColor),
-                      ],
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 12.0, sigmaY: 12.0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xff141416).withOpacity(0.4),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.08),
+                          width: 1.0,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _buildNavItem(0, Icons.fitness_center_outlined, "Treino", accentColor),
+                          _buildNavItem(1, Icons.calendar_today_outlined, "Rotinas", accentColor),
+                          _buildNavItem(2, Icons.bar_chart_outlined, "Progresso", accentColor),
+                          _buildNavItem(3, Icons.restaurant_outlined, "Dieta", accentColor),
+                        ],
+                      ),
                     ),
                   ),
                 ),
