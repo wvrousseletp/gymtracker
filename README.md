@@ -1,16 +1,35 @@
-# gym_tracker_flutter
+# Los Mooscles 🏋️
 
-A new Flutter project.
+Um aplicativo moderno e premium de acompanhamento de treinos e dieta, projetado com a estética **Liquid Glassmorphism** e sincronização em tempo real entre o app móvel, Apple Watch (via watchOS) e Firebase.
 
-## Getting Started
+## 🚀 Recursos Principais
 
-This project is a starting point for a Flutter application.
+### 🏋️ Treinos e Academia
+- **Cronômetro inteligente**: Temporizador de descanso adaptativo que monitora repetições de falha sem reiniciar incondicionalmente.
+- **Biblioteca de Exercícios**: Cadastro e customização detalhada de exercícios por grupo muscular.
+- **Rotinas Personalizadas**: Planeje seus treinos semanais com metas de séries, repetições e RPE.
 
-A few resources to get you started if this is your first Flutter project:
+### 💧 Dieta e Hidratação
+- **Registro de Consumo**: Controle de ingestão de água com suporte à Digital Crown no Apple Watch.
+- **Metas Diárias**: Acompanhamento de macronutrientes (proteínas, carboidratos e gorduras).
+- **Jejum Intermitente**: Temporizadores dedicados para controle de períodos de jejum.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+### ⌚ Sincronização Apple Watch e Watch Extension
+- **Widget do Watch**: Complications atualizadas em tempo real usando a suíte compartilhada de UserDefaults (`group.com.vicente.losmooscles`).
+- **Ações Rápidas**: Adicione ou remova água e acompanhe o progresso do seu treino direto do pulso.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### 🏗️ Arquitetura do Estado (Facade & Sub-Provedores)
+- O aplicativo utiliza a arquitetura especializada de sub-provedores (`WorkoutProvider`, `DietProvider`, `ProfileProvider`) e `ProxyProvider` para isolar a renderização da interface e otimizar o desempenho (rebuilds granulares).
+- Mantém o `TrackerProvider` como uma fachada (Facade Pattern) para retrocompatibilidade.
+
+### 📴 Sincronização Incremental & Fila Offline
+- **SyncQueueService**: Fila persistida no dispositivo (`SharedPreferences`) que captura e deduplica operações do Firebase durante momentos sem conexão de rede.
+- **Drain automático**: As tarefas são sincronizadas e limpas automaticamente assim que a conectividade do dispositivo é restabelecida.
+- **Indicador Visual**: Banner superior que avisa o usuário quando o app entra em modo offline.
+
+## 🛠️ Tecnologias Utilizadas
+- **Flutter & Dart**
+- **State Management**: Provider & MultiProvider
+- **Banco de Dados & Auth**: Firebase Firestore & Firebase Authentication
+- **Analytics**: Firebase Analytics para monitoramento de uso.
+- **Connectivity**: connectivity_plus para detecção nativa de rede.

@@ -8,6 +8,7 @@ import '../models/planner_state.dart';
 import '../models/profile.dart';
 import '../models/workout_log.dart';
 import '../models/routine.dart';
+import '../models/exercise.dart';
 import 'state_persistence_service.dart';
 import 'sync_queue_service.dart';
 
@@ -121,14 +122,19 @@ class FirebaseSyncService {
   // --- INCREMENTAL FIREBASE WORKOUTS AND ROUTINES ---
 
   Future<void> syncWorkoutLog(String userId, WorkoutLog log) async {
+    if (userId.isEmpty || userId.length > 128 || log.id.isEmpty || log.id.length > 128) {
+      debugPrint('[FirebaseSync] syncWorkoutLog rejected: invalid IDs');
+      return;
+    }
+    final sanitizedLog = _sanitizeWorkoutLog(log);
     try {
       await _firestore
           .collection('users')
           .doc(userId)
           .collection('workouts')
-          .doc(log.id)
+          .doc(sanitizedLog.id)
           .set({
-        ...log.toJson(),
+        ...sanitizedLog.toJson(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
       // Sucesso: tenta drenar fila pendente em background
@@ -138,7 +144,7 @@ class FirebaseSyncService {
       await _syncQueue.enqueue(SyncOp(
         type: SyncOpType.syncWorkoutLog,
         userId: userId,
-        payload: log.toJson(),
+        payload: sanitizedLog.toJson(),
         enqueuedAt: DateTime.now().toUtc(),
       ));
     }
@@ -165,14 +171,19 @@ class FirebaseSyncService {
   }
 
   Future<void> syncRoutine(String userId, Routine routine) async {
+    if (userId.isEmpty || userId.length > 128 || routine.id.isEmpty || routine.id.length > 128) {
+      debugPrint('[FirebaseSync] syncRoutine rejected: invalid IDs');
+      return;
+    }
+    final sanitizedRoutine = _sanitizeRoutine(routine);
     try {
       await _firestore
           .collection('users')
           .doc(userId)
           .collection('routines')
-          .doc(routine.id)
+          .doc(sanitizedRoutine.id)
           .set({
-        ...routine.toJson(),
+        ...sanitizedRoutine.toJson(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
       unawaited(drainQueue(userId));
@@ -181,7 +192,7 @@ class FirebaseSyncService {
       await _syncQueue.enqueue(SyncOp(
         type: SyncOpType.syncRoutine,
         userId: userId,
-        payload: routine.toJson(),
+        payload: sanitizedRoutine.toJson(),
         enqueuedAt: DateTime.now().toUtc(),
       ));
     }
@@ -399,9 +410,14 @@ class FirebaseSyncService {
   }
 
   Future<void> updateCloudProfile(String userId, Profile profile) async {
+    if (userId.isEmpty || userId.length > 128 || profile.id.isEmpty || profile.id.length > 128) {
+      debugPrint('[FirebaseSync] updateCloudProfile rejected: invalid IDs');
+      return;
+    }
+    final sanitizedProfile = _sanitizeProfile(profile);
     try {
       await _firestore.collection('users').doc(userId).update({
-        'profile': profile.toJson(),
+        'profile': sanitizedProfile.toJson(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
     } catch (e) {
@@ -459,6 +475,87 @@ class FirebaseSyncService {
 
   void dispose() {
     _debounceTimer?.cancel();
+  }
+
+  // --- DATA SANITIZATION & VALIDATION HELPERS ---
+
+  WorkoutLog _sanitizeWorkoutLog(WorkoutLog log) {
+    String name = log.name.trim();
+    if (name.length > 100) name = name.substring(0, 100);
+
+    final exercises = log.exercises.map((ex) {
+      String exName = ex.name.trim();
+      if (exName.length > 100) exName = exName.substring(0, 100);
+      return LogExercise(
+        name: exName,
+        muscle: ex.muscle,
+        sets: ex.sets.clamp(0, 100),
+        completedSets: ex.completedSets.clamp(0, 100),
+        reps: ex.reps.clamp(0, 1000),
+        weight: ex.weight.clamp(0.0, 1000.0),
+        performedCardios: ex.performedCardios,
+        rpe: ex.rpe.clamp(0, 10),
+        failureReport: ex.failureReport,
+        failureReps: ex.failureReps,
+        executionType: ex.executionType,
+      );
+    }).toList();
+
+    return WorkoutLog(
+      id: log.id,
+      name: name,
+      date: log.date,
+      duration: log.duration.clamp(0, 86400),
+      completedSets: log.completedSets.clamp(0, 1000),
+      totalSets: log.totalSets.clamp(0, 1000),
+      totalWeight: log.totalWeight.clamp(0.0, 1000000.0),
+      rpe: log.rpe.clamp(0, 10),
+      notes: log.notes.trim().substring(0, log.notes.length > 500 ? 500 : log.notes.length),
+      recovery: log.recovery,
+      exercises: exercises,
+      warmupDurationSeconds: log.warmupDurationSeconds,
+      avgHeartRate: log.avgHeartRate,
+      activeCalories: log.activeCalories,
+    );
+  }
+
+  Routine _sanitizeRoutine(Routine routine) {
+    String name = routine.name.trim();
+    if (name.length > 100) name = name.substring(0, 100);
+
+    final exercises = routine.exercises.map((ex) {
+      return RoutineExercise(
+        id: ex.id,
+        exerciseId: ex.exerciseId,
+        sets: ex.sets.clamp(0, 100),
+        reps: ex.reps.clamp(0, 1000),
+        rest: ex.rest.clamp(0, 3600),
+        weight: ex.weight.clamp(0.0, 1000.0),
+        weightsPerSet: ex.weightsPerSet,
+        repsPerSet: ex.repsPerSet,
+      );
+    }).toList();
+
+    return Routine(
+      id: routine.id,
+      name: name,
+      defaultRest: routine.defaultRest.clamp(0, 3600),
+      exercises: exercises,
+      isDynamicExercise: routine.isDynamicExercise,
+    );
+  }
+
+  Profile _sanitizeProfile(Profile profile) {
+    String name = profile.name.trim();
+    if (name.length > 50) name = name.substring(0, 50);
+    String avatar = profile.avatar.trim();
+    if (avatar.length > 10) avatar = avatar.substring(0, 10);
+    return Profile(
+      id: profile.id,
+      name: name,
+      avatar: avatar,
+      colorAccent: profile.colorAccent,
+    );
   }
 }
 

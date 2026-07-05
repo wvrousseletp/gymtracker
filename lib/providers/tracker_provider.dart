@@ -16,6 +16,7 @@ import '../services/state_persistence_service.dart';
 import '../services/firebase_sync_service.dart';
 import '../services/health_service.dart';
 import '../services/food_service.dart';
+import '../services/analytics_service.dart';
 import '../utils/food_presets_data.dart';
 export '../utils/date_utils.dart';
 import 'profile_provider.dart';
@@ -113,6 +114,7 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
 
     _profileProvider!.currentUserId = uid;
     _workoutProvider!.historyLoaded = false;
+    unawaited(AnalyticsService.logLogin(uid));
 
     final profileRaw = await _persistence.loadProfileJson(uid);
     if (profileRaw != null) {

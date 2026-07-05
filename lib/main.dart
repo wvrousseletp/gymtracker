@@ -10,6 +10,8 @@ import 'providers/diet_provider.dart';
 import 'providers/tracker_provider.dart';
 import 'screens/main_navigation.dart';
 import 'screens/login_screen.dart';
+import 'widgets/offline_banner_wrapper.dart';
+import 'services/analytics_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -47,6 +49,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Los Mooscles',
       debugShowCheckedModeBanner: false,
+      navigatorObservers: [AnalyticsService.observer],
+      builder: (context, child) => OfflineBannerWrapper(child: child ?? const SizedBox()),
       theme: ThemeData(
         brightness: Brightness.dark,
         scaffoldBackgroundColor: Colors.black,
