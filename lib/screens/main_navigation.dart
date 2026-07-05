@@ -213,13 +213,17 @@ class _MainNavigationState extends State<MainNavigation> {
     final isSelected = _currentIndex == index;
     final color = isSelected ? accentColor : const Color(0xff8e8e93);
 
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _currentIndex = index;
-        });
-      },
-      behavior: HitTestBehavior.opaque,
+    return Semantics(
+      label: label,
+      selected: isSelected,
+      button: true,
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        behavior: HitTestBehavior.opaque,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
         child: Column(
@@ -264,8 +268,9 @@ class _MainNavigationState extends State<MainNavigation> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   void _checkWhatsNew() async {
     final prefs = await SharedPreferences.getInstance();

@@ -13,6 +13,8 @@ import 'screens/login_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' hide ChangeNotifierProvider, Provider;
 import 'widgets/offline_banner_wrapper.dart';
 import 'services/analytics_service.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'utils/app_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -53,8 +55,29 @@ class MyApp extends StatelessWidget {
       title: 'Los Mooscles',
       debugShowCheckedModeBanner: false,
       navigatorObservers: [AnalyticsService.observer],
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('pt', 'BR'),
+        Locale('en', 'US'),
+      ],
       builder: (context, child) => OfflineBannerWrapper(child: child ?? const SizedBox()),
       theme: ThemeData(
+        brightness: Brightness.light,
+        scaffoldBackgroundColor: const Color(0xfff2f2f7),
+        colorScheme: const ColorScheme.light(
+          primary: Colors.black,
+          background: Color(0xfff2f2f7),
+          surface: Colors.white,
+        ),
+        textTheme: GoogleFonts.outfitTextTheme(ThemeData.light().textTheme),
+        useMaterial3: true,
+      ),
+      darkTheme: ThemeData(
         brightness: Brightness.dark,
         scaffoldBackgroundColor: Colors.black,
         colorScheme: const ColorScheme.dark(
@@ -65,6 +88,7 @@ class MyApp extends StatelessWidget {
         textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme),
         useMaterial3: true,
       ),
+      themeMode: ThemeMode.system,
       home: StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {

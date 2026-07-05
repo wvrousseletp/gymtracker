@@ -28,7 +28,9 @@ class GlassCard extends StatelessWidget {
       child: child,
     );
 
-    if (useBlur) {
+    final shouldBlur = useBlur && !MediaQuery.of(context).disableAnimations;
+
+    if (shouldBlur) {
       cardContent = BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: cardContent,
