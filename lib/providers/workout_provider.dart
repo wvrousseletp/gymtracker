@@ -37,12 +37,31 @@ class WorkoutProvider extends ChangeNotifier {
   Profile? currentProfile;
   VoidCallback? onStateChanged;
 
+  // Cache para a biblioteca de exercícios agrupada por músculo
+  Map<String, List<LibraryExercise>>? _muscleGroupedCache;
+
+  Map<String, List<LibraryExercise>> get muscleGroupedExercises {
+    if (_muscleGroupedCache != null) return _muscleGroupedCache!;
+    final grouped = <String, List<LibraryExercise>>{};
+    for (final ex in library) {
+      grouped.putIfAbsent(ex.muscle, () => []).add(ex);
+    }
+    _muscleGroupedCache = grouped;
+    return grouped;
+  }
+
+  // Estados de erro/loading granular específicos por operação
+  bool isSavingWorkout = false;
+  bool isAddingExercise = false;
+  bool isDeletingPR = false;
+
   void updateProfile(ProfileProvider profileProvider) {
     currentUserId = profileProvider.currentUserId;
     currentProfile = profileProvider.currentProfile;
   }
 
   void _save() {
+    _muscleGroupedCache = null; // Invalida o cache
     notifyListeners();
     onStateChanged?.call();
   }

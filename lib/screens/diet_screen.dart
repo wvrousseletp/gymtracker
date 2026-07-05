@@ -1,11 +1,10 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/riverpod_providers.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../providers/tracker_provider.dart';
 import '../providers/diet_provider.dart';
-import '../providers/profile_provider.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/profile_avatar.dart';
 import '../models/diet.dart';
@@ -15,14 +14,14 @@ import '../models/meal_preset.dart';
 import '../services/food_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-class DietScreen extends StatefulWidget {
+class DietScreen extends ConsumerStatefulWidget {
   const DietScreen({super.key});
 
   @override
-  State<DietScreen> createState() => _DietScreenState();
+  ConsumerState<DietScreen> createState() => _DietScreenState();
 }
 
-class _DietScreenState extends State<DietScreen> with SingleTickerProviderStateMixin {
+class _DietScreenState extends ConsumerState<DietScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -39,9 +38,8 @@ class _DietScreenState extends State<DietScreen> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
-    final accentColor = context.select<ProfileProvider, Color>(
-      (p) => ThemeUtils.getColor(p.currentProfile.colorAccent),
-    );
+    final profileProvider = ref.watch(profileRiverpodProvider);
+    final accentColor = ThemeUtils.getColor(profileProvider.currentProfile.colorAccent);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -77,14 +75,14 @@ class _DietScreenState extends State<DietScreen> with SingleTickerProviderStateM
 // ==========================================
 // 1. REFEIÇÕES TAB
 // ==========================================
-class RefeicoesTab extends StatelessWidget {
+class RefeicoesTab extends ConsumerWidget {
   final Color accentColor;
   const RefeicoesTab({super.key, required this.accentColor});
 
   @override
-  Widget build(BuildContext context) {
-    final dietProvider = Provider.of<DietProvider>(context);
-    final trackerProvider = Provider.of<TrackerProvider>(context);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dietProvider = ref.watch(dietRiverpodProvider);
+    final trackerProvider = ref.watch(trackerRiverpodProvider);
     final provider = trackerProvider;
     final diet = dietProvider.diet;
 
@@ -407,7 +405,6 @@ class RefeicoesTab extends StatelessWidget {
   }
 
   void _openAddMealDialog(BuildContext context, DietProvider provider) {
-    final accentColor = ThemeUtils.getColor(Provider.of<ProfileProvider>(context, listen: false).currentProfile.colorAccent);
     showDialog(
       context: context,
       barrierDismissible: true,
@@ -1269,13 +1266,13 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
 // ==========================================
 // 2. ÁGUA TAB
 // ==========================================
-class AguaTab extends StatelessWidget {
+class AguaTab extends ConsumerWidget {
   final Color accentColor;
   const AguaTab({super.key, required this.accentColor});
 
   @override
-  Widget build(BuildContext context) {
-    final provider = Provider.of<DietProvider>(context);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final provider = ref.watch(dietRiverpodProvider);
     final diet = provider.diet;
 
 
@@ -1405,15 +1402,15 @@ class AguaTab extends StatelessWidget {
 // ==========================================
 // 3. JEJUM TAB
 // ==========================================
-class JejumTab extends StatefulWidget {
+class JejumTab extends ConsumerStatefulWidget {
   final Color accentColor;
   const JejumTab({super.key, required this.accentColor});
 
   @override
-  State<JejumTab> createState() => _JejumTabState();
+  ConsumerState<JejumTab> createState() => _JejumTabState();
 }
 
-class _JejumTabState extends State<JejumTab> {
+class _JejumTabState extends ConsumerState<JejumTab> {
   Timer? _timer;
   late final ValueNotifier<Duration> _elapsedNotifier;
   double _selectedGoalHours = 16.0;
@@ -1435,7 +1432,7 @@ class _JejumTabState extends State<JejumTab> {
   void _startTimer() {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) return;
-      final provider = Provider.of<DietProvider>(context, listen: false);
+      final provider = ref.read(dietRiverpodProvider);
       final active = provider.diet.fasting.active;
       if (active != null) {
         try {
@@ -1563,7 +1560,7 @@ class _JejumTabState extends State<JejumTab> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<DietProvider>(context);
+    final provider = ref.watch(dietRiverpodProvider);
     final diet = provider.diet;
 
 
@@ -2210,13 +2207,13 @@ class WavePainter extends CustomPainter {
   }
 }
 
-class HistoricoTab extends StatelessWidget {
+class HistoricoTab extends ConsumerWidget {
   final Color accentColor;
   const HistoricoTab({super.key, required this.accentColor});
 
   @override
-  Widget build(BuildContext context) {
-    final provider = Provider.of<DietProvider>(context);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final provider = ref.watch(dietRiverpodProvider);
     final history = provider.dietHistory;
     
     final now = DateTime.now();

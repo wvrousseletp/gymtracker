@@ -10,6 +10,7 @@ import 'providers/diet_provider.dart';
 import 'providers/tracker_provider.dart';
 import 'screens/main_navigation.dart';
 import 'screens/login_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' hide ChangeNotifierProvider, Provider;
 import 'widgets/offline_banner_wrapper.dart';
 import 'services/analytics_service.dart';
 
@@ -19,8 +20,9 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   runApp(
-    MultiProvider(
-      providers: [
+    ProviderScope(
+      child: MultiProvider(
+        providers: [
         ChangeNotifierProvider(create: (context) => ProfileProvider()),
         ChangeNotifierProxyProvider<ProfileProvider, WorkoutProvider>(
           create: (context) => WorkoutProvider(),
@@ -37,6 +39,7 @@ void main() async {
         ),
       ],
       child: const MyApp(),
+      ),
     ),
   );
 }

@@ -22,6 +22,11 @@ class DietProvider extends ChangeNotifier {
   Profile? currentProfile;
   VoidCallback? onStateChanged;
 
+  // Estados de erro/loading granular específicos por operação
+  bool isSavingMeal = false;
+  bool isSavingWater = false;
+  bool isFastingUpdate = false;
+
   void updateProfile(ProfileProvider profileProvider) {
     currentUserId = profileProvider.currentUserId;
     currentProfile = profileProvider.currentProfile;
