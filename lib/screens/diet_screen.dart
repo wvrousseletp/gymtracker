@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -1264,15 +1263,6 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
     );
   }
 
-  Widget _previewValue(String label, String value) {
-    return Column(
-      children: [
-        Text(label, style: const TextStyle(color: Colors.white60, fontSize: 10)),
-        const SizedBox(height: 2),
-        Text(value, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
-      ],
-    );
-  }
 
 }
 
