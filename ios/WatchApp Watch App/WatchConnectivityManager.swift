@@ -26,7 +26,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             if isLocalWorkout {
                 saveLocalActiveWorkoutToDisk()
             } else if activeWorkout == nil {
-                let defaults = UserDefaults.standard
+                let defaults = (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard)
                 defaults.removeObject(forKey: "local_workout_state")
                 defaults.set(false, forKey: "local_workout_is_local")
             }
@@ -41,7 +41,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         super.init()
         
         // Load cached data from UserDefaults
-        let defaults = UserDefaults.standard
+        let defaults = (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard)
         if let routinesJson = defaults.string(forKey: "cached_routines"),
            let jsonData = routinesJson.data(using: .utf8),
            let decoded = try? JSONDecoder().decode([WatchRoutine].self, from: jsonData) {
@@ -153,7 +153,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                let jsonData = jsonString.data(using: .utf8) {
                 do {
                     self.routines = try JSONDecoder().decode([WatchRoutine].self, from: jsonData)
-                    UserDefaults.standard.set(jsonString, forKey: "cached_routines")
+                    (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard).set(jsonString, forKey: "cached_routines")
                 } catch {
                     WatchLogger.connectivity.error("Error decoding routines: \(error.localizedDescription)")
                 }
@@ -164,7 +164,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                let jsonData = jsonString.data(using: .utf8) {
                 do {
                     self.library = try JSONDecoder().decode([WatchLibraryExercise].self, from: jsonData)
-                    UserDefaults.standard.set(jsonString, forKey: "cached_library")
+                    (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard).set(jsonString, forKey: "cached_library")
                 } catch {
                     WatchLogger.connectivity.error("Error decoding library: \(error.localizedDescription)")
                 }
@@ -175,7 +175,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                let jsonData = jsonString.data(using: .utf8) {
                 do {
                     self.planner = try JSONDecoder().decode([String: [String]].self, from: jsonData)
-                    UserDefaults.standard.set(jsonString, forKey: "cached_planner")
+                    (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard).set(jsonString, forKey: "cached_planner")
                 } catch {
                     WatchLogger.connectivity.error("Error decoding planner: \(error.localizedDescription)")
                 }
@@ -184,14 +184,14 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             // 2.2 Process water
             if let waterIntakeCurrent = data["waterIntakeCurrent"] as? Int {
                 self.waterIntakeCurrent = waterIntakeCurrent
-                UserDefaults.standard.set(waterIntakeCurrent, forKey: "cached_water_intake")
+                (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard).set(waterIntakeCurrent, forKey: "cached_water_intake")
             }
             if let waterIntakeTarget = data["waterIntakeTarget"] as? Int {
                 self.waterIntakeTarget = waterIntakeTarget
-                UserDefaults.standard.set(waterIntakeTarget, forKey: "cached_water_target")
+                (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard).set(waterIntakeTarget, forKey: "cached_water_target")
             }
             if let waterIntakeDate = data["waterIntakeDate"] as? String {
-                UserDefaults.standard.set(waterIntakeDate, forKey: "cached_water_date")
+                (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard).set(waterIntakeDate, forKey: "cached_water_date")
             }
             WidgetCenter.shared.reloadAllTimelines()
 
@@ -228,7 +228,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                        let jsonData = jsonString.data(using: .utf8) {
                         do {
                             self.routines = try JSONDecoder().decode([WatchRoutine].self, from: jsonData)
-                            UserDefaults.standard.set(jsonString, forKey: "cached_routines")
+                            (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard).set(jsonString, forKey: "cached_routines")
                         } catch {
                             WatchLogger.connectivity.error("Error decoding routines in action: \(error.localizedDescription)")
                         }
@@ -238,7 +238,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                        let jsonData = jsonString.data(using: .utf8) {
                         do {
                             self.library = try JSONDecoder().decode([WatchLibraryExercise].self, from: jsonData)
-                            UserDefaults.standard.set(jsonString, forKey: "cached_library")
+                            (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard).set(jsonString, forKey: "cached_library")
                         } catch {
                             WatchLogger.connectivity.error("Error decoding library in action: \(error.localizedDescription)")
                         }
@@ -248,7 +248,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                        let jsonData = jsonString.data(using: .utf8) {
                         do {
                             self.planner = try JSONDecoder().decode([String: [String]].self, from: jsonData)
-                            UserDefaults.standard.set(jsonString, forKey: "cached_planner")
+                            (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard).set(jsonString, forKey: "cached_planner")
                         } catch {
                             WatchLogger.connectivity.error("Error decoding planner in action: \(error.localizedDescription)")
                         }
@@ -268,14 +268,14 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                 case "updateWater":
                     if let current = data["waterIntakeCurrent"] as? Int {
                         self.waterIntakeCurrent = current
-                        UserDefaults.standard.set(current, forKey: "cached_water_intake")
+                        (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard).set(current, forKey: "cached_water_intake")
                     }
                     if let target = data["waterIntakeTarget"] as? Int {
                         self.waterIntakeTarget = target
-                        UserDefaults.standard.set(target, forKey: "cached_water_target")
+                        (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard).set(target, forKey: "cached_water_target")
                     }
                     if let date = data["waterIntakeDate"] as? String {
-                        UserDefaults.standard.set(date, forKey: "cached_water_date")
+                        (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard).set(date, forKey: "cached_water_date")
                     }
                     WidgetCenter.shared.reloadAllTimelines()
 
@@ -314,7 +314,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                        let jsonData = streakJson.data(using: .utf8),
                        let decoded = try? JSONDecoder().decode(WatchStreak.self, from: jsonData) {
                         self.streak = decoded
-                        UserDefaults.standard.set(streakJson, forKey: "cached_streak")
+                        (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard).set(streakJson, forKey: "cached_streak")
                         WidgetCenter.shared.reloadAllTimelines()
                     }
 
@@ -542,7 +542,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     func updateWaterIntake(newAmountMl: Int) {
         checkAndResetDailyWater()
         self.waterIntakeCurrent = newAmountMl
-        UserDefaults.standard.set(newAmountMl, forKey: "cached_water_intake")
+        (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard).set(newAmountMl, forKey: "cached_water_intake")
         
         WidgetCenter.shared.reloadAllTimelines()
         
@@ -558,11 +558,11 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         formatter.dateFormat = "yyyy-MM-dd"
         let todayStr = formatter.string(from: now)
         
-        let savedDate = UserDefaults.standard.string(forKey: "cached_water_date") ?? ""
+        let savedDate = (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard).string(forKey: "cached_water_date") ?? ""
         if savedDate != todayStr {
             self.waterIntakeCurrent = 0
-            UserDefaults.standard.set(0, forKey: "cached_water_intake")
-            UserDefaults.standard.set(todayStr, forKey: "cached_water_date")
+            (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard).set(0, forKey: "cached_water_intake")
+            (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard).set(todayStr, forKey: "cached_water_date")
             WidgetCenter.shared.reloadAllTimelines()
         }
     }
@@ -595,7 +595,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     // MARK: - Local Workout Implementations
 
     private func saveLocalActiveWorkoutToDisk() {
-        let defaults = UserDefaults.standard
+        let defaults = (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard)
         defaults.set(isLocalWorkout, forKey: "local_workout_is_local")
         if let active = activeWorkout {
             if let encoded = try? JSONEncoder().encode(active) {
@@ -1036,7 +1036,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     }
 
     private func migrateLegacyOfflineCacheIfNeeded() {
-        let defaults = UserDefaults.standard
+        let defaults = (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard)
         guard defaults.array(forKey: pendingOfflineCacheKey) == nil,
               let legacy = defaults.array(forKey: "offline_workout_cache") as? [[String: Any]],
               !legacy.isEmpty else { return }
@@ -1046,7 +1046,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
 
     private func saveOfflineWorkoutToCache(_ workout: [String: Any]) {
         migrateLegacyOfflineCacheIfNeeded()
-        let defaults = UserDefaults.standard
+        let defaults = (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard)
         var cachedWorkouts = defaults.array(forKey: pendingOfflineCacheKey) as? [[String: Any]] ?? []
         cachedWorkouts.append(workout)
         defaults.set(cachedWorkouts, forKey: pendingOfflineCacheKey)
@@ -1054,7 +1054,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     }
 
     private func removeAcknowledgedOfflineWorkout(workoutId: String) {
-        let defaults = UserDefaults.standard
+        let defaults = (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard)
         guard var cached = defaults.array(forKey: pendingOfflineCacheKey) as? [[String: Any]] else { return }
         let before = cached.count
         cached.removeAll { ($0["id"] as? String) == workoutId }
@@ -1066,7 +1066,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
 
     func syncOfflineWorkouts() {
         migrateLegacyOfflineCacheIfNeeded()
-        let defaults = UserDefaults.standard
+        let defaults = (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard)
         guard let cachedWorkouts = defaults.array(forKey: pendingOfflineCacheKey) as? [[String: Any]], !cachedWorkouts.isEmpty else {
             return
         }

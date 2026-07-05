@@ -18,7 +18,7 @@ struct ComplicationProvider: TimelineProvider {
     }
     
     private func loadComplicationData() -> ComplicationEntry {
-        let defaults = UserDefaults.standard
+        let defaults = UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard
         
         var active: WatchActiveWorkoutState? = nil
         if let savedData = defaults.data(forKey: "local_workout_state"),
@@ -209,7 +209,7 @@ struct WaterComplicationProvider: TimelineProvider {
     }
     
     private func loadWaterData() -> WaterComplicationEntry {
-        let defaults = UserDefaults.standard
+        let defaults = UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard
         let current = defaults.integer(forKey: "cached_water_intake")
         let target = defaults.integer(forKey: "cached_water_target")
         return WaterComplicationEntry(date: Date(), current: current, target: target > 0 ? target : 2000)

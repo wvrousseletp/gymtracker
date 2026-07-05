@@ -403,6 +403,7 @@ struct WorkoutSelectionView: View {
 
 struct WatchWaterView: View {
     @ObservedObject var connectivityManager = WatchConnectivityManager.shared
+    @State private var showRemoveSheet = false
     
     // Quick add presets
     let presets = [150, 250, 500]
@@ -483,16 +484,12 @@ struct WatchWaterView: View {
                     // Reset or Minus button for adjustments
                     if connectivityManager.waterIntakeCurrent > 0 {
                         Button(action: {
-                            let newTotal = max(0, connectivityManager.waterIntakeCurrent - 150)
-                            connectivityManager.updateWaterIntake(newAmountMl: newTotal)
-                            #if os(watchOS)
-                            WKInterfaceDevice.current().play(.directionDown)
-                            #endif
+                            showRemoveSheet = true
                         }) {
                             HStack(spacing: 4) {
                                 Image(systemName: "minus.circle")
                                     .font(.system(size: 9))
-                                Text("Remover 150ml")
+                                Text("Remover...")
                                     .font(.system(size: 9, weight: .semibold))
                             }
                             .foregroundColor(.red.opacity(0.8))
@@ -509,6 +506,91 @@ struct WatchWaterView: View {
             .padding(.bottom, 8)
         }
         .navigationTitle("Água")
+        .sheet(isPresented: $showRemoveSheet) {
+            WatchWaterRemoveSheet(
+                isPresented: $showRemoveSheet,
+                maxAmount: connectivityManager.waterIntakeCurrent,
+                onConfirm: { amount in
+                    let newTotal = max(0, connectivityManager.waterIntakeCurrent - amount)
+                    connectivityManager.updateWaterIntake(newAmountMl: newTotal)
+                }
+            )
+        }
+    }
+}
+
+struct WatchWaterRemoveSheet: View {
+    @Binding var isPresented: Bool
+    let maxAmount: Int
+    let onConfirm: (Int) -> Void
+    
+    @State private var selectedAmount: Int = 150
+    
+    var options: [Int] {
+        let step = 50
+        let limit = min(maxAmount, 3000)
+        if limit < step {
+            return [50]
+        }
+        return stride(from: step, through: limit, by: step).map { $0 }
+    }
+    
+    var body: some View {
+        VStack(spacing: 4) {
+            Text("Remover Água")
+                .font(.system(size: 12, weight: .bold))
+                .foregroundColor(.red)
+                .padding(.top, 2)
+            
+            Picker("Quantidade", selection: $selectedAmount) {
+                ForEach(options, id: \.self) { amount in
+                    Text("\(amount) ml")
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .tag(amount)
+                }
+            }
+            .pickerStyle(.wheel)
+            .frame(height: 55)
+            
+            HStack(spacing: 6) {
+                Button(action: {
+                    isPresented = false
+                }) {
+                    Text("Cancelar")
+                        .font(.system(size: 10))
+                        .foregroundColor(.gray)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 6)
+                .background(Color.white.opacity(0.12))
+                .cornerRadius(8)
+                
+                Button(action: {
+                    onConfirm(selectedAmount)
+                    isPresented = false
+                }) {
+                    Text("Remover")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.red)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 6)
+                .background(Color.red.opacity(0.15))
+                .cornerRadius(8)
+            }
+            .padding(.bottom, 2)
+        }
+        .padding(.horizontal, 4)
+        .onAppear {
+            if maxAmount < 150 {
+                selectedAmount = maxAmount > 0 ? (maxAmount / 50) * 50 : 50
+                if selectedAmount == 0 { selectedAmount = 50 }
+            } else {
+                selectedAmount = 150
+            }
+        }
     }
 }
 
