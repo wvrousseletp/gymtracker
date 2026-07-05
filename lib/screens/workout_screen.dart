@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -443,48 +444,66 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: const Color(0xff1c1c1e).withOpacity(0.95),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          border: Border.all(color: Colors.white.withOpacity(0.08)),
-        ),
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              routine.name,
-              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800),
+      barrierColor: Colors.black.withOpacity(0.4),
+      builder: (context) => ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xff141416).withOpacity(0.65),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              border: Border.all(color: Colors.white.withOpacity(0.08)),
             ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: ListView.builder(
-                itemCount: routine.exercises.length,
-                itemBuilder: (context, idx) {
-                  final ex = routine.exercises[idx];
-                  final libEx = state.library.firstWhere(
-                    (l) => l.id == ex.exerciseId,
-                    orElse: () => LibraryExercise(id: '', name: 'Deletado', muscle: '', measurementType: 'reps'),
-                  );
-                  final isCardio = libEx.muscle.toLowerCase().contains('cardio');
-
-                  return ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(libEx.name, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
-                    subtitle: Text(libEx.muscle, style: const TextStyle(color: Colors.white38, fontSize: 12)),
-                    trailing: Text(
-                      isCardio
-                          ? "${ex.reps} min"
-                          : "${ex.sets}x${ex.reps} @ ${ex.weight.toStringAsFixed(1).replaceAll('.0', '')}kg",
-                      style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                  );
-                },
-              ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  routine.name,
+                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: routine.exercises.length,
+                    itemBuilder: (context, idx) {
+                      final ex = routine.exercises[idx];
+                      final libEx = state.library.firstWhere(
+                        (l) => l.id == ex.exerciseId,
+                        orElse: () => LibraryExercise(id: '', name: 'Deletado', muscle: '', measurementType: 'reps'),
+                      );
+                      final isCardio = libEx.muscle.toLowerCase().contains('cardio');
+
+                      return ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(libEx.name, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                        subtitle: Text(libEx.muscle, style: const TextStyle(color: Colors.white38, fontSize: 12)),
+                        trailing: Text(
+                          isCardio
+                              ? "${ex.reps} min"
+                              : "${ex.sets}x${ex.reps} @ ${ex.weight.toStringAsFixed(1).replaceAll('.0', '')}kg",
+                          style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -497,20 +516,39 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     if (library.isEmpty) {
       showDialog(
         context: context,
-        builder: (dialogCtx) => AlertDialog(
-          backgroundColor: const Color(0xff1c1c1e),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: Colors.white.withOpacity(0.08)),
-          ),
-          title: const Text("Biblioteca Vazia", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          content: const Text("Cadastre alguns exercícios na aba 'Rotinas' primeiro.", style: TextStyle(color: Colors.white70)),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogCtx),
-              child: const Text("OK", style: TextStyle(color: Colors.blueAccent)),
+        builder: (dialogCtx) => Dialog(
+          backgroundColor: Colors.transparent,
+          child: GlassCard(
+            useBlur: true,
+            borderColor: Colors.white.withOpacity(0.08),
+            borderRadius: 20,
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  "Biblioteca Vazia",
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  "Cadastre alguns exercícios na aba 'Rotinas' primeiro.",
+                  style: TextStyle(color: Colors.white70, fontSize: 13),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogCtx),
+                      child: const Text("OK", style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       );
       return;
@@ -519,6 +557,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withOpacity(0.4),
       isScrollControlled: true,
       builder: (context) {
         String searchQuery = "";
@@ -529,130 +568,147 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                   ex.muscle.toLowerCase().contains(searchQuery.toLowerCase());
             }).toList();
 
-            return Container(
-              height: MediaQuery.of(context).size.height * 0.75,
-              decoration: BoxDecoration(
-                color: const Color(0xff1c1c1e).withOpacity(0.95),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                border: Border.all(color: Colors.white.withOpacity(0.08)),
-              ),
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Cabeçalho
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            return ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                child: Container(
+                  height: MediaQuery.of(context).size.height * 0.75,
+                  decoration: BoxDecoration(
+                    color: const Color(0xff141416).withOpacity(0.65),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                    border: Border.all(color: Colors.white.withOpacity(0.08)),
+                  ),
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        "Iniciar Exercício",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 5,
+                          decoration: BoxDecoration(
+                            color: Colors.white24,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white54),
-                        onPressed: () => Navigator.pop(context),
+                      const SizedBox(height: 12),
+                      // Cabeçalho
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            "Iniciar Exercício",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close, color: Colors.white54),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      
+                      // Campo de busca
+                      TextField(
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: "Buscar exercício ou grupo muscular...",
+                          hintStyle: const TextStyle(color: Colors.white30),
+                          prefixIcon: const Icon(Icons.search, color: Colors.white38),
+                          filled: true,
+                          fillColor: Colors.white.withOpacity(0.05),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
+                        onChanged: (val) {
+                          setState(() {
+                            searchQuery = val;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      // Lista de exercícios
+                      Expanded(
+                        child: filteredList.isEmpty
+                            ? const Center(
+                                child: Text(
+                                  "Nenhum exercício encontrado.",
+                                  style: TextStyle(color: Colors.white38, fontStyle: FontStyle.italic),
+                                ),
+                              )
+                            : () {
+                                // Agrupar por músculo
+                                final Map<String, List<LibraryExercise>> grouped = {};
+                                for (final ex in filteredList) {
+                                  grouped.putIfAbsent(ex.muscle, () => []).add(ex);
+                                }
+                                final sortedMuscles = grouped.keys.toList()
+                                  ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+
+                                return ListView.builder(
+                                  itemCount: sortedMuscles.length,
+                                  itemBuilder: (context, mIdx) {
+                                    final muscle = sortedMuscles[mIdx];
+                                    final exs = grouped[muscle]!;
+                                    return Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Padding(
+                                          padding: const EdgeInsets.only(top: 16, bottom: 8, left: 4),
+                                          child: Text(
+                                            muscle.toUpperCase(),
+                                            style: TextStyle(
+                                              color: accentColor,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w900,
+                                              letterSpacing: 1.2,
+                                            ),
+                                          ),
+                                        ),
+                                        ...exs.map((ex) {
+                                          return Container(
+                                            margin: const EdgeInsets.only(bottom: 8),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white.withOpacity(0.02),
+                                              borderRadius: BorderRadius.circular(12),
+                                              border: Border.all(color: Colors.white.withOpacity(0.04)),
+                                            ),
+                                            child: ListTile(
+                                              title: Text(
+                                                ex.name,
+                                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                              ),
+                                              subtitle: Text(
+                                                ex.measurementType == 'time' ? 'Isometria' : 'Repetições',
+                                                style: const TextStyle(color: Colors.white38, fontSize: 11),
+                                              ),
+                                              trailing: const Icon(Icons.play_arrow_rounded, color: Colors.white54),
+                                              onTap: () {
+                                                Navigator.pop(context); // fecha modal
+                                                provider.startSingleExercise(ex);
+                                              },
+                                            ),
+                                          );
+                                        }),
+                                      ],
+                                    );
+                                  },
+                                );
+                              }(),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  
-                  // Campo de busca
-                  TextField(
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      hintText: "Buscar exercício ou grupo muscular...",
-                      hintStyle: const TextStyle(color: Colors.white30),
-                      prefixIcon: const Icon(Icons.search, color: Colors.white38),
-                      filled: true,
-                      fillColor: Colors.white.withOpacity(0.05),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    ),
-                    onChanged: (val) {
-                      setState(() {
-                        searchQuery = val;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  // Lista de exercícios
-                  Expanded(
-                    child: filteredList.isEmpty
-                        ? const Center(
-                            child: Text(
-                              "Nenhum exercício encontrado.",
-                              style: TextStyle(color: Colors.white38, fontStyle: FontStyle.italic),
-                            ),
-                          )
-                        : () {
-                            // Agrupar por músculo
-                            final Map<String, List<LibraryExercise>> grouped = {};
-                            for (final ex in filteredList) {
-                              grouped.putIfAbsent(ex.muscle, () => []).add(ex);
-                            }
-                            final sortedMuscles = grouped.keys.toList()
-                              ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
-
-                            return ListView.builder(
-                              itemCount: sortedMuscles.length,
-                              itemBuilder: (context, mIdx) {
-                                final muscle = sortedMuscles[mIdx];
-                                final exs = grouped[muscle]!;
-                                return Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 16, bottom: 8, left: 4),
-                                      child: Text(
-                                        muscle.toUpperCase(),
-                                        style: TextStyle(
-                                          color: accentColor,
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w900,
-                                          letterSpacing: 1.2,
-                                        ),
-                                      ),
-                                    ),
-                                    ...exs.map((ex) {
-                                      return Container(
-                                        margin: const EdgeInsets.only(bottom: 8),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.02),
-                                          borderRadius: BorderRadius.circular(12),
-                                          border: Border.all(color: Colors.white.withOpacity(0.04)),
-                                        ),
-                                        child: ListTile(
-                                          title: Text(
-                                            ex.name,
-                                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                                          ),
-                                          subtitle: Text(
-                                            ex.measurementType == 'time' ? 'Isometria' : 'Repetições',
-                                            style: const TextStyle(color: Colors.white38, fontSize: 11),
-                                          ),
-                                          trailing: const Icon(Icons.play_arrow_rounded, color: Colors.white54),
-                                          onTap: () {
-                                            Navigator.pop(context); // fecha modal
-                                            provider.startSingleExercise(ex);
-                                          },
-                                        ),
-                                      );
-                                    }),
-                                  ],
-                                );
-                              },
-                            );
-                          }(),
-                  ),
-                ],
+                ),
               ),
             );
           },
@@ -670,102 +726,148 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
     showDialog(
       context: context,
-      builder: (dialogCtx) => AlertDialog(
-        backgroundColor: const Color(0xff1c1c1e),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: Colors.white.withOpacity(0.08)),
-        ),
-        title: const Text("Configurações Gerais", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ValueListenableBuilder<bool>(
-              valueListenable: soundState,
-              builder: (context, val, child) => SwitchListTile(
-                title: const Text("Bips Sonoros", style: TextStyle(color: Colors.white, fontSize: 13)),
-                value: val,
-                activeColor: accentColor,
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                onChanged: (newVal) => soundState.value = newVal,
-              ),
-            ),
-            ValueListenableBuilder<bool>(
-              valueListenable: vibrationState,
-              builder: (context, val, child) => SwitchListTile(
-                title: const Text("Vibração", style: TextStyle(color: Colors.white, fontSize: 13)),
-                value: val,
-                activeColor: accentColor,
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                onChanged: (newVal) => vibrationState.value = newVal,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      builder: (dialogCtx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20),
+        child: GlassCard(
+          useBlur: true,
+          borderColor: Colors.white.withOpacity(0.08),
+          borderRadius: 24,
+          padding: const EdgeInsets.all(24),
+          child: SizedBox(
+            width: 320,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text("Tempo de Preparo", style: TextStyle(color: Colors.white, fontSize: 13)),
-                SizedBox(
-                  width: 60,
-                  height: 36,
-                  child: TextField(
-                    controller: prepController,
-                    keyboardType: TextInputType.number,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white.withOpacity(0.05),
-                      contentPadding: EdgeInsets.zero,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                Row(
+                  children: [
+                    Icon(Icons.settings, color: accentColor, size: 22),
+                    const SizedBox(width: 8),
+                    const Text(
+                      "Configurações Gerais",
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
                     ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                
+                // SEÇÃO TREINO
+                const Text(
+                  "TREINO 🏋️",
+                  style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.0),
+                ),
+                const SizedBox(height: 8),
+                ValueListenableBuilder<bool>(
+                  valueListenable: soundState,
+                  builder: (context, val, child) => SwitchListTile(
+                    title: const Text("Bips Sonoros", style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                    value: val,
+                    activeColor: accentColor,
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    onChanged: (newVal) => soundState.value = newVal,
                   ),
+                ),
+                ValueListenableBuilder<bool>(
+                  valueListenable: vibrationState,
+                  builder: (context, val, child) => SwitchListTile(
+                    title: const Text("Vibração", style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                    value: val,
+                    activeColor: accentColor,
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    onChanged: (newVal) => vibrationState.value = newVal,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text("Tempo de Preparo", style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                    Container(
+                      width: 60,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.04),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.white.withOpacity(0.1)),
+                      ),
+                      child: TextField(
+                        controller: prepController,
+                        keyboardType: TextInputType.number,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 24),
+                
+                // SEÇÃO DIETA/HIDRATAÇÃO
+                const Text(
+                  "HIDRATAÇÃO 💧",
+                  style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.0),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text("Meta de Água (ml)", style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                    Container(
+                      width: 70,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.04),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.white.withOpacity(0.1)),
+                      ),
+                      child: TextField(
+                        controller: waterController,
+                        keyboardType: TextInputType.number,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 24),
+                
+                // AÇÕES
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogCtx),
+                      child: const Text("Cancelar", style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+                    ),
+                    const SizedBox(width: 8),
+                    TextButton(
+                      onPressed: () {
+                        final prep = int.tryParse(prepController.text.trim()) ?? 5;
+                        final waterGoal = int.tryParse(waterController.text.trim()) ?? 2000;
+                        provider.updateSettings(soundState.value, vibrationState.value, prep);
+                        provider.updateWaterGoal(waterGoal);
+                        Navigator.pop(dialogCtx);
+                      },
+                      child: Text("Salvar", style: TextStyle(color: accentColor, fontWeight: FontWeight.bold)),
+                    ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text("Meta de Água (ml)", style: TextStyle(color: Colors.white, fontSize: 13)),
-                SizedBox(
-                  width: 70,
-                  height: 36,
-                  child: TextField(
-                    controller: waterController,
-                    keyboardType: TextInputType.number,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white.withOpacity(0.05),
-                      contentPadding: EdgeInsets.zero,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text("Cancelar", style: TextStyle(color: Colors.white54)),
-          ),
-          TextButton(
-            onPressed: () {
-              final prep = int.tryParse(prepController.text.trim()) ?? 5;
-              final waterGoal = int.tryParse(waterController.text.trim()) ?? 2000;
-              provider.updateSettings(soundState.value, vibrationState.value, prep);
-              provider.updateWaterGoal(waterGoal);
-              Navigator.pop(dialogCtx);
-            },
-            child: Text("Salvar", style: TextStyle(color: accentColor, fontWeight: FontWeight.bold)),
-          ),
-        ],
       ),
     );
   }
@@ -1602,27 +1704,47 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
   void _confirmDiscardWorkout(BuildContext context) {
     showDialog(
       context: context,
-      builder: (dialogCtx) => AlertDialog(
-        backgroundColor: const Color(0xff1c1c1e),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: Colors.white.withOpacity(0.08)),
+      builder: (dialogCtx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: GlassCard(
+          useBlur: true,
+          borderColor: Colors.white.withOpacity(0.08),
+          borderRadius: 20,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                "Descartar Treino?",
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                "Tem certeza que deseja cancelar e descartar este treino em andamento? O progresso de hoje será perdido.",
+                style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogCtx),
+                    child: const Text("Cancelar", style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () {
+                      widget.provider.discardActiveWorkout();
+                      Navigator.pop(dialogCtx);
+                    },
+                    child: const Text("Descartar", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
-        title: const Text("Descartar Treino?", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
-        content: const Text("Tem certeza que deseja cancelar e descartar este treino em andamento? O progresso de hoje será perdido.", style: TextStyle(color: Colors.white70)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text("Cancelar", style: TextStyle(color: Colors.white54)),
-          ),
-          TextButton(
-            onPressed: () {
-              widget.provider.discardActiveWorkout();
-              Navigator.pop(dialogCtx);
-            },
-            child: const Text("Descartar", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
-          ),
-        ],
       ),
     );
   }
@@ -1636,80 +1758,99 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
       context: context,
       builder: (dialogCtx) => StatefulBuilder(
         builder: (context, setDialogState) {
-          return AlertDialog(
-            backgroundColor: const Color(0xff1c1c1e),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-              side: BorderSide(color: Colors.white.withOpacity(0.08)),
-            ),
-            title: const Text("Concluir Treino 🎉", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text("Como foi o esforço da sessão? (RPE)", style: TextStyle(color: Colors.white70, fontSize: 12)),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text("Leve (1)", style: TextStyle(color: Colors.white30, fontSize: 10)),
-                      Text(
-                        "Esforço: ${rpeVal.toInt()}/10",
-                        style: TextStyle(color: accentColor, fontWeight: FontWeight.bold, fontSize: 13),
-                      ),
-                      const Text("Máximo (10)", style: TextStyle(color: Colors.white30, fontSize: 10)),
-                    ],
-                  ),
-                  Slider(
-                    value: rpeVal,
-                    min: 1,
-                    max: 10,
-                    divisions: 9,
-                    activeColor: accentColor,
-                    inactiveColor: Colors.white10,
-                    onChanged: (val) {
-                      setDialogState(() {
-                        rpeVal = val;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  const Text("Notas ou observações do treino", style: TextStyle(color: Colors.white70, fontSize: 12)),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: notesCtrl,
-                    maxLines: 3,
-                    style: const TextStyle(color: Colors.white, fontSize: 13),
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white.withOpacity(0.05),
-                      hintText: "Como se sentiu hoje? Aumentou cargas?",
-                      hintStyle: const TextStyle(color: Colors.white30),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+          return Dialog(
+            backgroundColor: Colors.transparent,
+            child: GlassCard(
+              useBlur: true,
+              borderColor: Colors.white.withOpacity(0.08),
+              borderRadius: 24,
+              padding: const EdgeInsets.all(20),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text(
+                      "Concluir Treino 🎉",
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 16),
+                    const Text(
+                      "Como foi o esforço da sessão? (RPE)",
+                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text("Leve (1)", style: TextStyle(color: Colors.white30, fontSize: 10)),
+                        Text(
+                          "Esforço: ${rpeVal.toInt()}/10",
+                          style: TextStyle(color: accentColor, fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                        const Text("Máximo (10)", style: TextStyle(color: Colors.white30, fontSize: 10)),
+                      ],
+                    ),
+                    Slider(
+                      value: rpeVal,
+                      min: 1,
+                      max: 10,
+                      divisions: 9,
+                      activeColor: accentColor,
+                      inactiveColor: Colors.white10,
+                      onChanged: (val) {
+                        setDialogState(() {
+                          rpeVal = val;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      "Notas ou observações do treino",
+                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: notesCtrl,
+                      maxLines: 3,
+                      style: const TextStyle(color: Colors.white, fontSize: 13),
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.white.withOpacity(0.05),
+                        hintText: "Como se sentiu hoje? Aumentou cargas?",
+                        hintStyle: const TextStyle(color: Colors.white30),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogCtx),
+                          child: const Text("Voltar", style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+                        ),
+                        const SizedBox(width: 8),
+                        TextButton(
+                          onPressed: () {
+                            widget.provider.finishWorkout(
+                              _workoutDurationNotifier.value,
+                              rpeVal.toInt(),
+                              notesCtrl.text.trim(),
+                            );
+                            Navigator.pop(dialogCtx);
+                          },
+                          child: Text("Salvar Treino", style: TextStyle(color: accentColor, fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogCtx),
-                child: const Text("Voltar", style: TextStyle(color: Colors.white54)),
-              ),
-              TextButton(
-                onPressed: () {
-                  // Concluir treino no provider
-                  widget.provider.finishWorkout(
-                    _workoutDurationNotifier.value,
-                    rpeVal.toInt(),
-                    notesCtrl.text.trim(),
-                  );
-                  Navigator.pop(dialogCtx);
-                },
-                child: Text("Salvar Treino", style: TextStyle(color: accentColor, fontWeight: FontWeight.bold)),
-              ),
-            ],
           );
         },
       ),

@@ -426,7 +426,14 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
 
     func updateFailure(exerciseIndex: Int, setIndex: Int, isFailure: Bool, failureRep: Int?) {
         if isLocalWorkout {
-            toggleSetLocal(exerciseIndex: exerciseIndex, setIndex: setIndex, isDone: true, isFailure: isFailure, failureRep: failureRep, distance: nil, duration: nil)
+            var currentIsDone = false
+            if let active = self.activeWorkout, exerciseIndex < active.exercises.count {
+                let ex = active.exercises[exerciseIndex]
+                if setIndex < ex.setsState.count {
+                    currentIsDone = ex.setsState[setIndex]
+                }
+            }
+            toggleSetLocal(exerciseIndex: exerciseIndex, setIndex: setIndex, isDone: currentIsDone, isFailure: isFailure, failureRep: failureRep, distance: nil, duration: nil)
         } else {
             var msg: [String: Any] = [
                 "action": "updateFailure",
@@ -732,8 +739,11 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         )
         exercises[exerciseIndex] = updatedEx
         
-        var restTimer: WatchRestTimer? = nil
-        if isDone {
+        let wasDone = setIndex < ex.setsState.count ? ex.setsState[setIndex] : false
+        let isTransitionToDone = !wasDone && isDone
+        
+        var restTimer = active.restTimer
+        if isTransitionToDone {
             let nextSetNum = setIndex + 2
             let restDuration = ex.rest
             if nextSetNum <= ex.sets {
@@ -744,6 +754,8 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                 let endTime = Int64(Date().timeIntervalSince1970 * 1000) + Int64(restDuration * 1000)
                 restTimer = WatchRestTimer(endTime: endTime, totalSeconds: restDuration, nextExerciseName: nextEx.name, nextSetNum: 1, isPrep: false)
             }
+        } else if !isDone {
+            restTimer = nil
         }
         
         var currentExIdx = active.currentExerciseIndex

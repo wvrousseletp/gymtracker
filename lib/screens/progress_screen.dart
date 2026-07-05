@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -578,28 +579,48 @@ class _HistoryTabState extends State<HistoryTab> {
   void _confirmDeleteLog(BuildContext context, TrackerProvider provider, WorkoutLog log) {
     showDialog(
       context: context,
-      builder: (dialogCtx) => AlertDialog(
-        backgroundColor: const Color(0xff1c1c1e),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: Colors.white.withOpacity(0.08)),
+      builder: (dialogCtx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: GlassCard(
+          useBlur: true,
+          borderColor: Colors.white.withOpacity(0.08),
+          borderRadius: 20,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: SystemMouseCursors.click == SystemMouseCursors.click ? CrossAxisAlignment.stretch : CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "Excluir Log de Treino?",
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                "Deseja realmente deletar este registro de treino do seu histórico?",
+                style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogCtx),
+                    child: const Text("Cancelar", style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () {
+                      provider.deleteWorkoutLog(log.id);
+                      Navigator.pop(dialogCtx);
+                      setState(() {});
+                    },
+                    child: const Text("Excluir", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
-        title: const Text("Excluir Log de Treino?", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
-        content: const Text("Deseja realmente deletar este registro de treino do seu histórico?", style: TextStyle(color: Colors.white70)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text("Cancelar", style: TextStyle(color: Colors.white54)),
-          ),
-          TextButton(
-            onPressed: () {
-              provider.deleteWorkoutLog(log.id);
-              Navigator.pop(dialogCtx);
-              setState(() {});
-            },
-            child: const Text("Excluir", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
-          ),
-        ],
       ),
     );
   }
@@ -608,6 +629,7 @@ class _HistoryTabState extends State<HistoryTab> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withOpacity(0.4),
       isScrollControlled: true,
       builder: (context) => ManualWorkoutLogSheet(provider: provider),
     );
@@ -706,19 +728,23 @@ class _ManualWorkoutLogSheetState extends State<ManualWorkoutLogSheet> {
       ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
     final accentColor = ThemeUtils.getColor(widget.provider.currentProfile.colorAccent);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xff1c1c1e).withOpacity(0.95),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
-      ),
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 8,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-      ),
-      child: SingleChildScrollView(
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xff141416).withOpacity(0.65),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border.all(color: Colors.white.withOpacity(0.08)),
+          ),
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 8,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+          ),
+          child: SingleChildScrollView(
         child: Form(
           key: _formKey,
           child: Column(
@@ -1196,7 +1222,9 @@ class _ManualWorkoutLogSheetState extends State<ManualWorkoutLogSheet> {
           ),
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 }
 
@@ -1218,33 +1246,53 @@ class _PrsTabState extends State<PrsTab> {
   void _showDeletePrDialog(BuildContext context, TrackerProvider provider, String exerciseId, String exerciseName) {
     showDialog(
       context: context,
-      builder: (dialogCtx) => AlertDialog(
-        backgroundColor: const Color(0xff1c1c1e),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: Colors.white.withOpacity(0.08)),
+      builder: (dialogCtx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: GlassCard(
+          useBlur: true,
+          borderColor: Colors.white.withOpacity(0.08),
+          borderRadius: 20,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                "Excluir Recorde?",
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                "Deseja realmente excluir o recorde pessoal de '$exerciseName'?",
+                style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogCtx),
+                    child: const Text("Cancelar", style: TextStyle(color: Colors.white38, fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () {
+                      provider.deletePersonalRecord(exerciseId);
+                      Navigator.pop(dialogCtx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text("Recorde de '$exerciseName' excluído."),
+                          backgroundColor: Colors.redAccent,
+                        ),
+                      );
+                    },
+                    child: const Text("Excluir", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
-        title: const Text("Excluir Recorde?", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: Text("Deseja realmente excluir o recorde pessoal de '$exerciseName'?", style: const TextStyle(color: Colors.white70)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text("Cancelar", style: TextStyle(color: Colors.white38)),
-          ),
-          TextButton(
-            onPressed: () {
-              provider.deletePersonalRecord(exerciseId);
-              Navigator.pop(dialogCtx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text("Recorde de '$exerciseName' excluído."),
-                  backgroundColor: Colors.redAccent,
-                ),
-              );
-            },
-            child: const Text("Excluir", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
-          ),
-        ],
       ),
     );
   }
@@ -1820,84 +1868,102 @@ class _MedidasTabState extends State<MedidasTab> {
 
     showDialog(
       context: context,
-      builder: (dialogCtx) => AlertDialog(
-        backgroundColor: const Color(0xff1c1c1e),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: Colors.white.withOpacity(0.08)),
-        ),
-        title: const Text("Registrar Medidas", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildFormInput("Peso (kg)", weightCtrl),
-                _buildFormInput("Gordura (%)", fatCtrl),
-                _buildFormInput("Pescoço (cm)", neckCtrl),
-                _buildFormInput("Ombros (cm)", shouldersCtrl),
-                _buildFormInput("Peito (cm)", chestCtrl),
-                _buildFormInput("Cintura (cm)", waistCtrl),
-                _buildFormInput("Abdômen (cm)", abdomenCtrl),
-                _buildFormInput("Quadril (cm)", hipsCtrl),
-                Row(
-                  children: [
-                    Expanded(child: _buildFormInput("Braço Esq (cm)", bEsqCtrl)),
-                    const SizedBox(width: 8),
-                    Expanded(child: _buildFormInput("Braço Dir (cm)", bDirCtrl)),
-                  ],
+      builder: (dialogCtx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: GlassCard(
+          useBlur: true,
+          borderColor: Colors.white.withOpacity(0.08),
+          borderRadius: 20,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                "Registrar Medidas",
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: MediaQuery.of(context).size.height * 0.5,
+                width: double.maxFinite,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildFormInput("Peso (kg)", weightCtrl),
+                      _buildFormInput("Gordura (%)", fatCtrl),
+                      _buildFormInput("Pescoço (cm)", neckCtrl),
+                      _buildFormInput("Ombros (cm)", shouldersCtrl),
+                      _buildFormInput("Peito (cm)", chestCtrl),
+                      _buildFormInput("Cintura (cm)", waistCtrl),
+                      _buildFormInput("Abdômen (cm)", abdomenCtrl),
+                      _buildFormInput("Quadril (cm)", hipsCtrl),
+                      Row(
+                        children: [
+                          Expanded(child: _buildFormInput("Braço Esq (cm)", bEsqCtrl)),
+                          const SizedBox(width: 8),
+                          Expanded(child: _buildFormInput("Braço Dir (cm)", bDirCtrl)),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Expanded(child: _buildFormInput("Coxa Esq (cm)", cEsqCtrl)),
+                          const SizedBox(width: 8),
+                          Expanded(child: _buildFormInput("Coxa Dir (cm)", cDirCtrl)),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Expanded(child: _buildFormInput("Pant. Esq (cm)", pEsqCtrl)),
+                          const SizedBox(width: 8),
+                          Expanded(child: _buildFormInput("Pant. Dir (cm)", pDirCtrl)),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-                Row(
-                  children: [
-                    Expanded(child: _buildFormInput("Coxa Esq (cm)", cEsqCtrl)),
-                    const SizedBox(width: 8),
-                    Expanded(child: _buildFormInput("Coxa Dir (cm)", cDirCtrl)),
-                  ],
-                ),
-                Row(
-                  children: [
-                    Expanded(child: _buildFormInput("Pant. Esq (cm)", pEsqCtrl)),
-                    const SizedBox(width: 8),
-                    Expanded(child: _buildFormInput("Pant. Dir (cm)", pDirCtrl)),
-                  ],
-                ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogCtx),
+                    child: const Text("Cancelar", style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () {
+                      final m = BodyMeasurement(
+                        id: "med-${DateTime.now().millisecondsSinceEpoch}",
+                        date: dateStr,
+                        peso: double.tryParse(weightCtrl.text.trim()) ?? 0.0,
+                        gordura: double.tryParse(fatCtrl.text.trim()) ?? 0.0,
+                        pescoco: double.tryParse(neckCtrl.text.trim()) ?? 0.0,
+                        ombros: double.tryParse(shouldersCtrl.text.trim()) ?? 0.0,
+                        peito: double.tryParse(chestCtrl.text.trim()) ?? 0.0,
+                        cintura: double.tryParse(waistCtrl.text.trim()) ?? 0.0,
+                        abdomen: double.tryParse(abdomenCtrl.text.trim()) ?? 0.0,
+                        quadril: double.tryParse(hipsCtrl.text.trim()) ?? 0.0,
+                        bracoEsq: double.tryParse(bEsqCtrl.text.trim()) ?? 0.0,
+                        bracoDir: double.tryParse(bDirCtrl.text.trim()) ?? 0.0,
+                        coxaEsq: double.tryParse(cEsqCtrl.text.trim()) ?? 0.0,
+                        coxaDir: double.tryParse(cDirCtrl.text.trim()) ?? 0.0,
+                        panturrilhaEsq: double.tryParse(pEsqCtrl.text.trim()) ?? 0.0,
+                        panturrilhaDir: double.tryParse(pDirCtrl.text.trim()) ?? 0.0,
+                      );
+                      provider.addMeasurement(m);
+                      Navigator.pop(dialogCtx);
+                      setState(() {});
+                    },
+                    child: Text("Registrar", style: TextStyle(color: widget.accentColor, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text("Cancelar", style: TextStyle(color: Colors.white54)),
-          ),
-          TextButton(
-            onPressed: () {
-              final m = BodyMeasurement(
-                id: "med-${DateTime.now().millisecondsSinceEpoch}",
-                date: dateStr,
-                peso: double.tryParse(weightCtrl.text.trim()) ?? 0.0,
-                gordura: double.tryParse(fatCtrl.text.trim()) ?? 0.0,
-                pescoco: double.tryParse(neckCtrl.text.trim()) ?? 0.0,
-                ombros: double.tryParse(shouldersCtrl.text.trim()) ?? 0.0,
-                peito: double.tryParse(chestCtrl.text.trim()) ?? 0.0,
-                cintura: double.tryParse(waistCtrl.text.trim()) ?? 0.0,
-                abdomen: double.tryParse(abdomenCtrl.text.trim()) ?? 0.0,
-                quadril: double.tryParse(hipsCtrl.text.trim()) ?? 0.0,
-                bracoEsq: double.tryParse(bEsqCtrl.text.trim()) ?? 0.0,
-                bracoDir: double.tryParse(bDirCtrl.text.trim()) ?? 0.0,
-                coxaEsq: double.tryParse(cEsqCtrl.text.trim()) ?? 0.0,
-                coxaDir: double.tryParse(cDirCtrl.text.trim()) ?? 0.0,
-                panturrilhaEsq: double.tryParse(pEsqCtrl.text.trim()) ?? 0.0,
-                panturrilhaDir: double.tryParse(pDirCtrl.text.trim()) ?? 0.0,
-              );
-              provider.addMeasurement(m);
-              Navigator.pop(dialogCtx);
-              setState(() {});
-            },
-            child: Text("Registrar", style: TextStyle(color: widget.accentColor, fontWeight: FontWeight.bold)),
-          ),
-        ],
       ),
     );
   }
@@ -1924,85 +1990,103 @@ class _MedidasTabState extends State<MedidasTab> {
 
     showDialog(
       context: context,
-      builder: (dialogCtx) => AlertDialog(
-        backgroundColor: const Color(0xff1c1c1e),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: Colors.white.withOpacity(0.08)),
-        ),
-        title: const Text("Editar Medidas", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildFormInput("Data (AAAA-MM-DD)", dateCtrl),
-                _buildFormInput("Peso (kg)", weightCtrl),
-                _buildFormInput("Gordura (%)", fatCtrl),
-                _buildFormInput("Pescoço (cm)", neckCtrl),
-                _buildFormInput("Ombros (cm)", shouldersCtrl),
-                _buildFormInput("Peito (cm)", chestCtrl),
-                _buildFormInput("Cintura (cm)", waistCtrl),
-                _buildFormInput("Abdômen (cm)", abdomenCtrl),
-                _buildFormInput("Quadril (cm)", hipsCtrl),
-                Row(
-                  children: [
-                    Expanded(child: _buildFormInput("Braço Esq (cm)", bEsqCtrl)),
-                    const SizedBox(width: 8),
-                    Expanded(child: _buildFormInput("Braço Dir (cm)", bDirCtrl)),
-                  ],
+      builder: (dialogCtx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: GlassCard(
+          useBlur: true,
+          borderColor: Colors.white.withOpacity(0.08),
+          borderRadius: 20,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                "Editar Medidas",
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: MediaQuery.of(context).size.height * 0.5,
+                width: double.maxFinite,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildFormInput("Data (AAAA-MM-DD)", dateCtrl),
+                      _buildFormInput("Peso (kg)", weightCtrl),
+                      _buildFormInput("Gordura (%)", fatCtrl),
+                      _buildFormInput("Pescoço (cm)", neckCtrl),
+                      _buildFormInput("Ombros (cm)", shouldersCtrl),
+                      _buildFormInput("Peito (cm)", chestCtrl),
+                      _buildFormInput("Cintura (cm)", waistCtrl),
+                      _buildFormInput("Abdômen (cm)", abdomenCtrl),
+                      _buildFormInput("Quadril (cm)", hipsCtrl),
+                      Row(
+                        children: [
+                          Expanded(child: _buildFormInput("Braço Esq (cm)", bEsqCtrl)),
+                          const SizedBox(width: 8),
+                          Expanded(child: _buildFormInput("Braço Dir (cm)", bDirCtrl)),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Expanded(child: _buildFormInput("Coxa Esq (cm)", cEsqCtrl)),
+                          const SizedBox(width: 8),
+                          Expanded(child: _buildFormInput("Coxa Dir (cm)", cDirCtrl)),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Expanded(child: _buildFormInput("Pant. Esq (cm)", pEsqCtrl)),
+                          const SizedBox(width: 8),
+                          Expanded(child: _buildFormInput("Pant. Dir (cm)", pDirCtrl)),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-                Row(
-                  children: [
-                    Expanded(child: _buildFormInput("Coxa Esq (cm)", cEsqCtrl)),
-                    const SizedBox(width: 8),
-                    Expanded(child: _buildFormInput("Coxa Dir (cm)", cDirCtrl)),
-                  ],
-                ),
-                Row(
-                  children: [
-                    Expanded(child: _buildFormInput("Pant. Esq (cm)", pEsqCtrl)),
-                    const SizedBox(width: 8),
-                    Expanded(child: _buildFormInput("Pant. Dir (cm)", pDirCtrl)),
-                  ],
-                ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogCtx),
+                    child: const Text("Cancelar", style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () {
+                      final m = BodyMeasurement(
+                        id: measurement.id,
+                        date: dateCtrl.text.trim().isNotEmpty ? dateCtrl.text.trim() : measurement.date,
+                        peso: double.tryParse(weightCtrl.text.trim()) ?? 0.0,
+                        gordura: double.tryParse(fatCtrl.text.trim()) ?? 0.0,
+                        pescoco: double.tryParse(neckCtrl.text.trim()) ?? 0.0,
+                        ombros: double.tryParse(shouldersCtrl.text.trim()) ?? 0.0,
+                        peito: double.tryParse(chestCtrl.text.trim()) ?? 0.0,
+                        cintura: double.tryParse(waistCtrl.text.trim()) ?? 0.0,
+                        abdomen: double.tryParse(abdomenCtrl.text.trim()) ?? 0.0,
+                        quadril: double.tryParse(hipsCtrl.text.trim()) ?? 0.0,
+                        bracoEsq: double.tryParse(bEsqCtrl.text.trim()) ?? 0.0,
+                        bracoDir: double.tryParse(bDirCtrl.text.trim()) ?? 0.0,
+                        coxaEsq: double.tryParse(cEsqCtrl.text.trim()) ?? 0.0,
+                        coxaDir: double.tryParse(cDirCtrl.text.trim()) ?? 0.0,
+                        panturrilhaEsq: double.tryParse(pEsqCtrl.text.trim()) ?? 0.0,
+                        panturrilhaDir: double.tryParse(pDirCtrl.text.trim()) ?? 0.0,
+                      );
+                      provider.updateMeasurement(m);
+                      Navigator.pop(dialogCtx);
+                      setState(() {});
+                    },
+                    child: Text("Salvar", style: TextStyle(color: widget.accentColor, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text("Cancelar", style: TextStyle(color: Colors.white54)),
-          ),
-          TextButton(
-            onPressed: () {
-              final m = BodyMeasurement(
-                id: measurement.id,
-                date: dateCtrl.text.trim().isNotEmpty ? dateCtrl.text.trim() : measurement.date,
-                peso: double.tryParse(weightCtrl.text.trim()) ?? 0.0,
-                gordura: double.tryParse(fatCtrl.text.trim()) ?? 0.0,
-                pescoco: double.tryParse(neckCtrl.text.trim()) ?? 0.0,
-                ombros: double.tryParse(shouldersCtrl.text.trim()) ?? 0.0,
-                peito: double.tryParse(chestCtrl.text.trim()) ?? 0.0,
-                cintura: double.tryParse(waistCtrl.text.trim()) ?? 0.0,
-                abdomen: double.tryParse(abdomenCtrl.text.trim()) ?? 0.0,
-                quadril: double.tryParse(hipsCtrl.text.trim()) ?? 0.0,
-                bracoEsq: double.tryParse(bEsqCtrl.text.trim()) ?? 0.0,
-                bracoDir: double.tryParse(bDirCtrl.text.trim()) ?? 0.0,
-                coxaEsq: double.tryParse(cEsqCtrl.text.trim()) ?? 0.0,
-                coxaDir: double.tryParse(cDirCtrl.text.trim()) ?? 0.0,
-                panturrilhaEsq: double.tryParse(pEsqCtrl.text.trim()) ?? 0.0,
-                panturrilhaDir: double.tryParse(pDirCtrl.text.trim()) ?? 0.0,
-              );
-              provider.updateMeasurement(m);
-              Navigator.pop(dialogCtx);
-              setState(() {});
-            },
-            child: Text("Salvar", style: TextStyle(color: widget.accentColor, fontWeight: FontWeight.bold)),
-          ),
-        ],
       ),
     );
   }

@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -787,455 +788,461 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
   @override
   Widget build(BuildContext context) {
     final accentColor = widget.accentColor;
-
-    return AlertDialog(
-      backgroundColor: const Color(0xff1c1c1e),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: Colors.white.withOpacity(0.08)),
-      ),
-      title: const Text(
-        "Registrar Refeição",
-        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
-      ),
-      content: SizedBox(
-        width: 320,
-        child: SingleChildScrollView(
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: GlassCard(
+        useBlur: true,
+        borderColor: Colors.white.withOpacity(0.08),
+        borderRadius: 20,
+        padding: const EdgeInsets.all(20),
+        child: SizedBox(
+          width: 320,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildTabs(),
-              if (_activeTab == 0) ...[
-                TextField(
-                  controller: _searchCtrl,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                  decoration: _dialogInputDeco("Buscar alimento (ex: Banana, Ovo)..."),
-                  onChanged: (_) => _onSearchChanged(),
-                ),
-                const SizedBox(height: 10),
+              const Text(
+                "Registrar Refeição",
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
+              ),
+              const SizedBox(height: 16),
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildTabs(),
+                      if (_activeTab == 0) ...[
+                        TextField(
+                          controller: _searchCtrl,
+                          style: const TextStyle(color: Colors.white, fontSize: 14),
+                          decoration: _dialogInputDeco("Buscar alimento (ex: Banana, Ovo)..."),
+                          onChanged: (_) => _onSearchChanged(),
+                        ),
+                        const SizedBox(height: 10),
 
-
-
-                if (_errorMessage != null) ...[
-                  Text(
-                    _errorMessage!,
-                    style: const TextStyle(color: Colors.redAccent, fontSize: 12),
-                  ),
-                  const SizedBox(height: 10),
-                ],
-
-                if (_isLoading) ...[
-                  const Center(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 20),
-                      child: CircularProgressIndicator(color: Colors.white),
-                    ),
-                  ),
-                ],
-
-                if (!_isLoading && _searchResults.isNotEmpty) ...[
-                  Container(
-                    constraints: const BoxConstraints(maxHeight: 180),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.03),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.white.withOpacity(0.05)),
-                    ),
-                    child: ListView.separated(
-                      shrinkWrap: true,
-                      physics: const ClampingScrollPhysics(),
-                      itemCount: _searchResults.length,
-                      separatorBuilder: (_, __) => Divider(color: Colors.white.withOpacity(0.05), height: 1),
-                      itemBuilder: (context, index) {
-                        final item = _searchResults[index];
-                        return ListTile(
-                          dense: true,
-                          title: Text(item.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                          subtitle: Text(
-                            "${item.calories} kcal | P: ${item.protein}g | C: ${item.carbs}g | G: ${item.fat}g por ${item.servingSize.round()}g",
-                            style: const TextStyle(color: Colors.white60, fontSize: 11),
+                        if (_errorMessage != null) ...[
+                          Text(
+                            _errorMessage!,
+                            style: const TextStyle(color: Colors.redAccent, fontSize: 12),
                           ),
-                          onTap: () => _selectFood(item),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                ],
-
-
-                  InkWell(
-                    onTap: _switchToManual,
-                    borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.white12),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.edit, size: 16, color: Colors.white54),
-                          SizedBox(width: 6),
-                          Text("Criar alimento manual", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                          const SizedBox(height: 10),
                         ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                ],
 
-                if (_selectedFood != null) ...[
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.03),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white.withOpacity(0.08)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                _selectedFood!.name,
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                        if (_isLoading) ...[
+                          const Center(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 20),
+                              child: CircularProgressIndicator(color: Colors.white),
+                            ),
+                          ),
+                        ],
+
+                        if (!_isLoading && _searchResults.isNotEmpty) ...[
+                          Container(
+                            constraints: const BoxConstraints(maxHeight: 180),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.03),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.white.withOpacity(0.05)),
+                            ),
+                            child: ListView.separated(
+                              shrinkWrap: true,
+                              physics: const ClampingScrollPhysics(),
+                              itemCount: _searchResults.length,
+                              separatorBuilder: (_, __) => Divider(color: Colors.white.withOpacity(0.05), height: 1),
+                              itemBuilder: (context, index) {
+                                final item = _searchResults[index];
+                                return ListTile(
+                                  dense: true,
+                                  title: Text(item.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                                  subtitle: Text(
+                                    "${item.calories} kcal | P: ${item.protein}g | C: ${item.carbs}g | G: ${item.fat}g por ${item.servingSize.round()}g",
+                                    style: const TextStyle(color: Colors.white60, fontSize: 11),
+                                  ),
+                                  onTap: () => _selectFood(item),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                        ],
+
+                          InkWell(
+                            onTap: _switchToManual,
+                            borderRadius: BorderRadius.circular(8),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.edit_note_rounded, color: accentColor, size: 16),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    "Criar Alimento Manual",
+                                    style: TextStyle(color: accentColor, fontSize: 12, fontWeight: FontWeight.bold),
+                                  ),
+                                ],
                               ),
                             ),
-                            IconButton(
-                              icon: Icon(
-                                _favorites.any((f) => f.food.name == _selectedFood!.name)
-                                    ? Icons.star
-                                    : Icons.star_border,
-                                color: Colors.amber,
-                                size: 20,
-                              ),
-                              onPressed: _addCurrentToFavorites,
-                              tooltip: "Favoritar Alimento",
+                          ),
+                          const SizedBox(height: 8),
+
+                        if (_selectedFood != null) ...[
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.03),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.white.withOpacity(0.06)),
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          "Informação Nutricional Base (por ${_selectedFood!.servingSize.round()}g):",
-                          style: const TextStyle(color: Colors.white38, fontSize: 11),
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            _macroBadge("Kcal", "${_selectedFood!.calories}", Colors.orange),
-                            _macroBadge("Prot", "${_selectedFood!.protein}g", Colors.redAccent),
-                            _macroBadge("Carb", "${_selectedFood!.carbs}g", Colors.greenAccent),
-                            _macroBadge("Gord", "${_selectedFood!.fat}g", Colors.blueAccent),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            const Text("Qtd (g/ml):", style: TextStyle(color: Colors.white70, fontSize: 12)),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: TextField(
-                                controller: _quantityCtrl,
-                                keyboardType: TextInputType.number,
-                                style: const TextStyle(color: Colors.white, fontSize: 13),
-                                decoration: _dialogInputDeco("Qtd (g)"),
-                                onChanged: (_) => setState(() {}),
-                              ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        _selectedFood!.name,
+                                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.star_border, color: Colors.amber, size: 18),
+                                      onPressed: _addCurrentToFavorites,
+                                      constraints: const BoxConstraints(),
+                                      padding: EdgeInsets.zero,
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: TextField(
+                                        controller: _quantityCtrl,
+                                        keyboardType: TextInputType.number,
+                                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                                        decoration: _dialogInputDeco("Quantidade (g ou ml)"),
+                                        onChanged: (_) => setState(() {}),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                // Informações Nutricionais Proporcionais
+                                Builder(
+                                  builder: (context) {
+                                    final qty = double.tryParse(_quantityCtrl.text.trim()) ?? _selectedFood!.servingSize.toDouble();
+                                    final scale = qty / _selectedFood!.servingSize;
+                                    final calories = (_selectedFood!.calories * scale).round();
+                                    final protein = _selectedFood!.protein * scale;
+                                    final carbs = _selectedFood!.carbs * scale;
+                                    final fat = _selectedFood!.fat * scale;
+
+                                    return Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          "Total: $calories kcal",
+                                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 14),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            _macroBadge("P", "${protein.toStringAsFixed(1)}g", const Color(0xffff453a)),
+                                            _macroBadge("C", "${carbs.toStringAsFixed(1)}g", const Color(0xffbf5af2)),
+                                            _macroBadge("G", "${fat.toStringAsFixed(1)}g", const Color(0xffff9f0a)),
+                                          ],
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
+
+                        if (_isManualMode) ...[
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.03),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.white.withOpacity(0.06)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  "Modo Manual ✍️",
+                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                ),
+                                const SizedBox(height: 10),
+                                TextField(
+                                  controller: _manualNameCtrl,
+                                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                                  decoration: _dialogInputDeco("Nome do alimento..."),
+                                  onChanged: (_) => setState(() {}),
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: TextField(
+                                        controller: _manualCalsCtrl,
+                                        keyboardType: TextInputType.number,
+                                        style: const TextStyle(color: Colors.white, fontSize: 12),
+                                        decoration: _dialogInputDeco("Calorias (kcal)"),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: TextField(
+                                        controller: _manualProtCtrl,
+                                        keyboardType: TextInputType.number,
+                                        style: const TextStyle(color: Colors.white, fontSize: 12),
+                                        decoration: _dialogInputDeco("Prot (g)"),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: TextField(
+                                        controller: _manualCarbsCtrl,
+                                        keyboardType: TextInputType.number,
+                                        style: const TextStyle(color: Colors.white, fontSize: 12),
+                                        decoration: _dialogInputDeco("Carbs (g)"),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: TextField(
+                                        controller: _manualFatCtrl,
+                                        keyboardType: TextInputType.number,
+                                        style: const TextStyle(color: Colors.white, fontSize: 12),
+                                        decoration: _dialogInputDeco("Gord (g)"),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  Builder(
-                    builder: (context) {
-                      final qty = double.tryParse(_quantityCtrl.text.trim()) ?? _selectedFood!.servingSize;
-                      final scale = qty / _selectedFood!.servingSize;
-                      final calcCals = (_selectedFood!.calories * scale).round();
-                      final calcProt = (_selectedFood!.protein * scale).toStringAsFixed(1);
-                      final calcCarbs = (_selectedFood!.carbs * scale).toStringAsFixed(1);
-                      final calcFat = (_selectedFood!.fat * scale).toStringAsFixed(1);
-
-                      return Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: accentColor.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: accentColor.withOpacity(0.2)),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            _previewValue("Total Kcal", "$calcCals"),
-                            _previewValue("Prot", "${calcProt}g"),
-                            _previewValue("Carb", "${calcCarbs}g"),
-                            _previewValue("Gord", "${calcFat}g"),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                ],
-
-                if (_isManualMode) ...[
-                  TextField(
-                    controller: _manualNameCtrl,
-                    style: const TextStyle(color: Colors.white, fontSize: 13),
-                    decoration: _dialogInputDeco("Nome do alimento"),
-                    onChanged: (_) => setState(() {}),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _manualCalsCtrl,
-                    keyboardType: TextInputType.number,
-                    style: const TextStyle(color: Colors.white, fontSize: 13),
-                    decoration: _dialogInputDeco("Calorias (kcal)"),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _manualProtCtrl,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          style: const TextStyle(color: Colors.white, fontSize: 13),
-                          decoration: _dialogInputDeco("Prot (g)"),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: TextField(
-                          controller: _manualCarbsCtrl,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          style: const TextStyle(color: Colors.white, fontSize: 13),
-                          decoration: _dialogInputDeco("Carb (g)"),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: TextField(
-                          controller: _manualFatCtrl,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          style: const TextStyle(color: Colors.white, fontSize: 13),
-                          decoration: _dialogInputDeco("Gord (g)"),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                ],
-
-              if (_activeTab == 1) ...[
-                if (_loadingFavsOrPresets)
-                  const Center(child: CircularProgressIndicator(color: Colors.amber))
-                else if (_favorites.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24),
-                    child: Center(
-                      child: Text(
-                        "Nenhum favorito salvo ainda. Busque um alimento e toque na estrela ⭐ para adicioná-lo.",
-                        style: TextStyle(color: Colors.white38, fontSize: 12),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  )
-                else
-                  ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _favorites.length,
-                    separatorBuilder: (_, __) => Divider(color: Colors.white.withOpacity(0.05), height: 1),
-                    itemBuilder: (context, index) {
-                      final fav = _favorites[index];
-                      return ListTile(
-                        dense: true,
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(
-                          fav.food.name,
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                        ),
-                        subtitle: Text(
-                          "Padrão: ${fav.favoriteQuantity.round()}${fav.food.servingUnit} | ${(fav.food.calories * (fav.favoriteQuantity / fav.food.servingSize)).round()} kcal",
-                          style: const TextStyle(color: Colors.white60, fontSize: 11),
-                        ),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.redAccent, size: 16),
-                          onPressed: () => _deleteFavorite(fav.id),
-                        ),
-                        onTap: () => _registerFavoriteMeal(fav),
-                      );
-                    },
-                  ),
-              ],
-
-              if (_activeTab == 2) ...[
-                if (_isCreatingCombo) ...[
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text("Criar Combo", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                      TextButton(
-                        onPressed: () => setState(() => _isCreatingCombo = false),
-                        child: const Text("Voltar", style: TextStyle(color: Colors.amber, fontSize: 11)),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _comboNameCtrl,
-                    style: const TextStyle(color: Colors.white, fontSize: 13),
-                    decoration: _dialogInputDeco("Nome do Combo (ex: Shake Monstro)"),
-                  ),
-                  const SizedBox(height: 10),
-                  const Text("Alimentos Adicionados:", style: TextStyle(color: Colors.white70, fontSize: 11)),
-                  const SizedBox(height: 4),
-                  if (_newComboItems.isEmpty)
-                    const Text("Nenhum alimento adicionado ao combo.", style: TextStyle(color: Colors.white38, fontSize: 11))
-                  else
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _newComboItems.length,
-                      itemBuilder: (context, idx) {
-                        final item = _newComboItems[idx];
-                        return Row(
-                          children: [
-                            Expanded(
+                      if (_activeTab == 1) ...[
+                        if (_loadingFavsOrPresets)
+                          const Center(child: CircularProgressIndicator(color: Colors.amber))
+                        else if (_favorites.isEmpty)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 24),
+                            child: Center(
                               child: Text(
-                                "${item.food.name} (${item.quantity.round()}g)",
-                                style: const TextStyle(color: Colors.white, fontSize: 12),
+                                "Nenhum favorito salvo ainda.",
+                                style: TextStyle(color: Colors.white38, fontSize: 12),
                               ),
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent, size: 16),
-                              onPressed: () => _removeItemFromNewCombo(idx),
+                          )
+                        else
+                          ListView.separated(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: _favorites.length,
+                            separatorBuilder: (_, __) => Divider(color: Colors.white.withOpacity(0.05), height: 1),
+                            itemBuilder: (context, index) {
+                              final fav = _favorites[index];
+                              return ListTile(
+                                dense: true,
+                                contentPadding: EdgeInsets.zero,
+                                title: Text(fav.food.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                                subtitle: Text(
+                                  "${fav.favoriteQuantity.round()}g | ${(fav.food.calories * (fav.favoriteQuantity / fav.food.servingSize)).round()} kcal",
+                                  style: const TextStyle(color: Colors.white60, fontSize: 11),
+                                ),
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.star, color: Colors.amber, size: 16),
+                                  onPressed: () => _deleteFavorite(fav.id),
+                                ),
+                                onTap: () => _registerFavoriteMeal(fav),
+                              );
+                            },
+                          ),
+                      ],
+                      if (_activeTab == 2) ...[
+                        if (_isCreatingCombo) ...[
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: _comboNameCtrl,
+                                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                                  decoration: _dialogInputDeco("Nome do combo (ex: Café da Manhã)"),
+                                  onChanged: (_) => setState(() {}),
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.close, color: Colors.redAccent),
+                                onPressed: () => setState(() => _isCreatingCombo = false),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          if (_newComboItems.isNotEmpty)
+                            ListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: _newComboItems.length,
+                              itemBuilder: (context, idx) {
+                                final item = _newComboItems[idx];
+                                return Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        "${item.food.name} (${item.quantity.round()}g) - ${(item.food.calories * (item.quantity / item.food.servingSize)).round()} kcal",
+                                        style: const TextStyle(color: Colors.white70, fontSize: 11),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent, size: 16),
+                                      onPressed: () => _removeItemFromNewCombo(idx),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                          const SizedBox(height: 10),
+                          TextField(
+                            controller: _comboSearchCtrl,
+                            style: const TextStyle(color: Colors.white, fontSize: 12),
+                            decoration: _dialogInputDeco("Buscar e adicionar alimento..."),
+                            onChanged: (_) => _onComboSearchChanged(),
+                          ),
+                          if (_comboSearchResults.isNotEmpty) ...[
+                            const SizedBox(height: 6),
+                            Container(
+                              constraints: const BoxConstraints(maxHeight: 120),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.02),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: ListView.builder(
+                                shrinkWrap: true,
+                                itemCount: _comboSearchResults.length,
+                                itemBuilder: (context, idx) {
+                                  final food = _comboSearchResults[idx];
+                                  return ListTile(
+                                    dense: true,
+                                    title: Text(food.name, style: const TextStyle(color: Colors.white, fontSize: 12)),
+                                    onTap: () => _addItemToNewCombo(food),
+                                  );
+                                },
+                              ),
                             ),
                           ],
-                        );
-                      },
-                    ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: _comboSearchCtrl,
-                    style: const TextStyle(color: Colors.white, fontSize: 12),
-                    decoration: _dialogInputDeco("Buscar e adicionar alimento..."),
-                    onChanged: (_) => _onComboSearchChanged(),
+                          const SizedBox(height: 12),
+                          ElevatedButton(
+                            onPressed: (_newComboItems.isNotEmpty && _comboNameCtrl.text.trim().isNotEmpty) ? _saveNewCombo : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: accentColor,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                            child: const Text("Salvar Combo 🥤", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                          ),
+                        ] else ...[
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text("Seus Combos", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                              TextButton.icon(
+                                icon: const Icon(Icons.add, size: 14, color: Colors.amber),
+                                label: const Text("Criar Novo", style: TextStyle(color: Colors.amber, fontSize: 11)),
+                                onPressed: () => setState(() => _isCreatingCombo = true),
+                              ),
+                            ],
+                          ),
+                          if (_loadingFavsOrPresets)
+                            const Center(child: CircularProgressIndicator(color: Colors.amber))
+                          else if (_presets.isEmpty)
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 24),
+                              child: Center(
+                                child: Text(
+                                  "Nenhum combo salvo ainda.",
+                                  style: TextStyle(color: Colors.white38, fontSize: 12),
+                                ),
+                              ),
+                            )
+                          else
+                            ListView.separated(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: _presets.length,
+                              separatorBuilder: (_, __) => Divider(color: Colors.white.withOpacity(0.05), height: 1),
+                              itemBuilder: (context, index) {
+                                final preset = _presets[index];
+                                return ListTile(
+                                  dense: true,
+                                  contentPadding: EdgeInsets.zero,
+                                  title: Text(
+                                    preset.name,
+                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                  ),
+                                  subtitle: Text(
+                                    "${preset.items.length} itens | ${preset.totalCalories} kcal",
+                                    style: const TextStyle(color: Colors.white60, fontSize: 11),
+                                  ),
+                                  trailing: IconButton(
+                                    icon: const Icon(Icons.delete, color: Colors.redAccent, size: 16),
+                                    onPressed: () => _deletePreset(preset.id),
+                                  ),
+                                  onTap: () => _registerPresetMeal(preset),
+                                );
+                              },
+                            ),
+                        ],
+                      ],
+                    ],
                   ),
-                  if (_comboSearchResults.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Container(
-                      constraints: const BoxConstraints(maxHeight: 120),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.02),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: _comboSearchResults.length,
-                        itemBuilder: (context, idx) {
-                          final food = _comboSearchResults[idx];
-                          return ListTile(
-                            dense: true,
-                            title: Text(food.name, style: const TextStyle(color: Colors.white, fontSize: 12)),
-                            onTap: () => _addItemToNewCombo(food),
-                          );
-                        },
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text("Cancelar", style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+                  ),
+                  if (_activeTab == 0 && (_selectedFood != null || (_isManualMode && _manualNameCtrl.text.isNotEmpty))) ...[
+                    const SizedBox(width: 8),
+                    TextButton(
+                      onPressed: _registerMeal,
+                      child: Text(
+                        "Adicionar",
+                        style: TextStyle(
+                          color: accentColor,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ],
-                  const SizedBox(height: 12),
-                  ElevatedButton(
-                    onPressed: (_newComboItems.isNotEmpty && _comboNameCtrl.text.trim().isNotEmpty) ? _saveNewCombo : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: accentColor,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                    child: const Text("Salvar Combo 🥤", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
-                  ),
-                ] else ...[
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text("Seus Combos", style: TextStyle(color: Colors.white70, fontSize: 12)),
-                      TextButton.icon(
-                        icon: const Icon(Icons.add, size: 14, color: Colors.amber),
-                        label: const Text("Criar Novo", style: TextStyle(color: Colors.amber, fontSize: 11)),
-                        onPressed: () => setState(() => _isCreatingCombo = true),
-                      ),
-                    ],
-                  ),
-                  if (_loadingFavsOrPresets)
-                    const Center(child: CircularProgressIndicator(color: Colors.amber))
-                  else if (_presets.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 24),
-                      child: Center(
-                        child: Text(
-                          "Nenhum combo salvo ainda.",
-                          style: TextStyle(color: Colors.white38, fontSize: 12),
-                        ),
-                      ),
-                    )
-                  else
-                    ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _presets.length,
-                      separatorBuilder: (_, __) => Divider(color: Colors.white.withOpacity(0.05), height: 1),
-                      itemBuilder: (context, index) {
-                        final preset = _presets[index];
-                        return ListTile(
-                          dense: true,
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(
-                            preset.name,
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                          ),
-                          subtitle: Text(
-                            "${preset.items.length} itens | ${preset.totalCalories} kcal",
-                            style: const TextStyle(color: Colors.white60, fontSize: 11),
-                          ),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.redAccent, size: 16),
-                            onPressed: () => _deletePreset(preset.id),
-                          ),
-                          onTap: () => _registerPresetMeal(preset),
-                        );
-                      },
-                    ),
                 ],
-              ],
+              ),
             ],
           ),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text("Cancelar", style: TextStyle(color: Colors.white54)),
-        ),
-        if (_activeTab == 0 && (_selectedFood != null || (_isManualMode && _manualNameCtrl.text.isNotEmpty)))
-          TextButton(
-            onPressed: _registerMeal,
-            child: Text(
-              "Adicionar",
-              style: TextStyle(
-                color: accentColor,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-      ],
     );
   }
 
@@ -1971,59 +1978,71 @@ class _JejumTabState extends State<JejumTab> {
 
     showDialog(
       context: context,
-      builder: (dialogCtx) => AlertDialog(
-        backgroundColor: const Color(0xff1c1c1e),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: Colors.white.withOpacity(0.08)),
-        ),
-        title: const Text("Nova Abstinência", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: titleCtrl,
-              autofocus: true,
-              style: const TextStyle(color: Colors.white, fontSize: 13),
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.white.withOpacity(0.05),
-                hintText: "O que você vai parar? (ex: Açúcar)",
-                hintStyle: const TextStyle(color: Colors.white30, fontSize: 12),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+      builder: (dialogCtx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: GlassCard(
+          useBlur: true,
+          borderColor: Colors.white.withOpacity(0.08),
+          borderRadius: 20,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                "Nova Abstinência",
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
               ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: notesCtrl,
-              maxLines: 2,
-              style: const TextStyle(color: Colors.white, fontSize: 13),
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.white.withOpacity(0.05),
-                hintText: "Notas / Motivação (Opcional)",
-                hintStyle: const TextStyle(color: Colors.white30, fontSize: 12),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+              const SizedBox(height: 16),
+              TextField(
+                controller: titleCtrl,
+                autofocus: true,
+                style: const TextStyle(color: Colors.white, fontSize: 13),
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.05),
+                  hintText: "O que você vai parar? (ex: Açúcar)",
+                  hintStyle: const TextStyle(color: Colors.white30, fontSize: 12),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 12),
+              TextField(
+                controller: notesCtrl,
+                maxLines: 2,
+                style: const TextStyle(color: Colors.white, fontSize: 13),
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.05),
+                  hintText: "Notas / Motivação (Opcional)",
+                  hintStyle: const TextStyle(color: Colors.white30, fontSize: 12),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogCtx),
+                    child: const Text("Cancelar", style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () {
+                      final title = titleCtrl.text.trim();
+                      if (title.isNotEmpty) {
+                        provider.addAbstinence(title, notesCtrl.text.trim());
+                        Navigator.pop(dialogCtx);
+                      }
+                    },
+                    child: Text("Iniciar", style: TextStyle(color: widget.accentColor, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text("Cancelar", style: TextStyle(color: Colors.white54)),
-          ),
-          TextButton(
-            onPressed: () {
-              final title = titleCtrl.text.trim();
-              if (title.isNotEmpty) {
-                provider.addAbstinence(title, notesCtrl.text.trim());
-                Navigator.pop(dialogCtx);
-              }
-            },
-            child: Text("Iniciar", style: TextStyle(color: widget.accentColor, fontWeight: FontWeight.bold)),
-          ),
-        ],
       ),
     );
   }
@@ -2031,30 +2050,47 @@ class _JejumTabState extends State<JejumTab> {
   void _confirmResetAbstinence(BuildContext context, TrackerProvider provider, AbstinenceRecord a) {
     showDialog(
       context: context,
-      builder: (dialogCtx) => AlertDialog(
-        backgroundColor: const Color(0xff1c1c1e),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: Colors.white.withOpacity(0.08)),
-        ),
-        title: const Text("Zerar Contador?", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
-        content: Text(
-          "Deseja realmente reiniciar o tempo de '${a.title}'? O contador recomeçará do zero.",
-          style: const TextStyle(color: Colors.white70, fontSize: 13),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text("Cancelar", style: TextStyle(color: Colors.white54)),
+      builder: (dialogCtx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: GlassCard(
+          useBlur: true,
+          borderColor: Colors.white.withOpacity(0.08),
+          borderRadius: 20,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                "Zerar Contador?",
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                "Deseja realmente reiniciar o tempo de '${a.title}'? O contador recomeçará do zero.",
+                style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogCtx),
+                    child: const Text("Cancelar", style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () {
+                      provider.resetAbstinence(a.id);
+                      Navigator.pop(dialogCtx);
+                    },
+                    child: const Text("Zerar", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () {
-              provider.resetAbstinence(a.id);
-              Navigator.pop(dialogCtx);
-            },
-            child: const Text("Zerar", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
-          ),
-        ],
+        ),
       ),
     );
   }

@@ -434,7 +434,12 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     // Calcular cronômetro de descanso se a série foi completada
     WatchRestTimer? computedRestTimer = active.restTimer;
     int computedExIndex = active.currentExerciseIndex;
-    if (isDone) {
+    
+    final bool wasDone = setIndex < ex.setsState.length ? ex.setsState[setIndex] : false;
+    final bool isTransitionToDone = !wasDone && isDone;
+    final bool isStateChanged = wasDone != isDone;
+
+    if (isTransitionToDone) {
       if (setIndex < ex.sets - 1) {
         final endTime = DateTime.now().millisecondsSinceEpoch + (ex.rest * 1000);
         computedRestTimer = WatchRestTimer(
@@ -458,7 +463,7 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
       } else {
         computedRestTimer = null;
       }
-    } else {
+    } else if (!isDone) {
       // Se desmarcou, cancela o timer de descanso ativo
       computedRestTimer = null;
     }
@@ -472,16 +477,19 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     _state = _state!.copyWith(activeWorkout: updatedWorkout);
 
     saveState();
-    if (computedRestTimer != null) {
-      RestTimerService.instance.start(
-        endTimeMs: computedRestTimer.endTime,
-        seconds: computedRestTimer.totalSeconds,
-        prep: computedRestTimer.isPrep,
-        exName: computedRestTimer.nextExerciseName,
-        setNum: computedRestTimer.nextSetNum,
-      );
-    } else {
-      RestTimerService.instance.clear();
+    
+    if (isStateChanged) {
+      if (computedRestTimer != null) {
+        RestTimerService.instance.start(
+          endTimeMs: computedRestTimer.endTime,
+          seconds: computedRestTimer.totalSeconds,
+          prep: computedRestTimer.isPrep,
+          exName: computedRestTimer.nextExerciseName,
+          setNum: computedRestTimer.nextSetNum,
+        );
+      } else {
+        RestTimerService.instance.clear();
+      }
     }
     notifyListeners();
   }
