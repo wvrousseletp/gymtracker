@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../providers/tracker_provider.dart';
+import '../providers/workout_provider.dart';
+import '../providers/profile_provider.dart';
 import '../models/routine.dart';
 import '../models/exercise.dart';
 import '../models/workout_log.dart';
@@ -65,30 +67,23 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final state = context.select<TrackerProvider, PlannerState?>((p) => p.state);
-
-    if (state == null) {
-      return const Center(child: CircularProgressIndicator(color: Colors.white));
-    }
-
-    final activeWorkout = state.activeWorkout;
+    final provider = Provider.of<WorkoutProvider>(context);
+    final activeWorkout = provider.activeWorkout;
 
     // Alternar visualização com base na presença de um treino ativo
     if (activeWorkout != null && !activeWorkout.postponed) {
-      final provider = Provider.of<TrackerProvider>(context, listen: false);
-      return ActiveWorkoutView(activeWorkout: activeWorkout, provider: provider);
+      final trackerProvider = Provider.of<TrackerProvider>(context, listen: false);
+      return ActiveWorkoutView(activeWorkout: activeWorkout, provider: trackerProvider);
     } else {
-      final provider = Provider.of<TrackerProvider>(context, listen: false);
       return _buildIdleView(context, provider);
     }
   }
 
-  Widget _buildIdleView(BuildContext context, TrackerProvider provider) {
-    final state = provider.state!;
+  Widget _buildIdleView(BuildContext context, WorkoutProvider provider) {
     final todayKey = _getTodayKey();
     final todayLabel = _getTodayLabel();
-    final plannedRoutineIds = state.planner[todayKey] ?? [];
-    final accentColor = context.select<TrackerProvider, Color>(
+    final plannedRoutineIds = provider.planner[todayKey] ?? [];
+    final accentColor = context.select<ProfileProvider, Color>(
       (p) => ThemeUtils.getColor(p.currentProfile.colorAccent),
     );
 
@@ -100,7 +95,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
         if (parts.length >= 3) {
           final exerciseId = parts[1];
           final sets = int.tryParse(parts[2]) ?? 3;
-          final libEx = state.library.where((l) => l.id == exerciseId).firstOrNull;
+          final libEx = provider.library.where((l) => l.id == exerciseId).firstOrNull;
           if (libEx != null) {
             final isCardio = libEx.muscle.toLowerCase().contains('cardio');
             return Routine(
@@ -112,7 +107,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                   id: "e-temp-${const Uuid().v4()}",
                   exerciseId: exerciseId,
                   sets: isCardio ? 1 : sets,
-                  reps: isCardio ? sets : (libEx.measurementType == 'time' ? 45 : 10),
+                  reps: isCardio ? sets : (libEx.measurementType == MeasurementType.time ? 45 : 10),
                   rest: 60,
                   weight: 0,
                 )
@@ -126,7 +121,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
         if (item.startsWith('routine:')) {
           routineId = item.substring(8);
         }
-        return state.routines.where((r) => r.id == routineId).firstOrNull;
+        return provider.routines.where((r) => r.id == routineId).firstOrNull;
       }
     }).whereType<Routine>().toList();
 
@@ -138,7 +133,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Banner de Treino Adiado
-            if (state.activeWorkout != null && state.activeWorkout!.postponed)
+            if (provider.activeWorkout != null && provider.activeWorkout!.postponed)
               Padding(
                 padding: const EdgeInsets.only(bottom: 16),
                 child: GlassCard(
@@ -164,7 +159,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              state.activeWorkout!.name,
+                              provider.activeWorkout!.name,
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 14,
@@ -216,7 +211,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 IconButton(
                   icon: const Icon(Icons.settings_outlined, color: Colors.white70),
                   onPressed: () {
-                    _showSettingsDialog(context, provider);
+                    _showSettingsDialog(context, Provider.of<TrackerProvider>(context, listen: false));
                   },
                 ),
               ],
@@ -244,7 +239,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             else
               Column(
                 children: plannedRoutines.map((routine) {
-                  final isCompleted = _isRoutineCompletedToday(routine.name, state.history);
+                  final isCompleted = _isRoutineCompletedToday(routine.name, provider.history);
                   final totalSets = routine.exercises.fold<int>(0, (sum, ex) => sum + ex.sets);
 
                   return Container(
@@ -252,7 +247,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                     child: GestureDetector(
                       onTap: () {
                         // Ao clicar no card, abre uma visão dos exercícios agendados
-                        _showPlannedRoutineDetails(context, state, routine);
+                        _showPlannedRoutineDetails(context, provider, routine);
                       },
                       child: GlassCard(
                         padding: const EdgeInsets.all(16),
@@ -309,7 +304,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                               onPressed: () {
                                 provider.startWorkout(
                                   routine,
-                                  WorkoutRecovery(sleepOk: 'ok', pain: [], warmUpDone: false),
+                                  WorkoutRecovery(sleepOk: SleepQuality.okay, pain: [], warmUpDone: false),
                                   false,
                                 );
                               },
@@ -342,7 +337,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             ),
             const SizedBox(height: 8),
 
-            if (state.routines.isEmpty)
+            if (provider.routines.isEmpty)
               const GlassCard(
                 padding: EdgeInsets.all(16),
                 child: Center(
@@ -360,12 +355,12 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
                 childAspectRatio: 2.2,
-                children: state.routines.map((routine) {
+                children: provider.routines.map((routine) {
                   return GestureDetector(
                     onTap: () {
                       provider.startWorkout(
                         routine,
-                        WorkoutRecovery(sleepOk: 'ok', pain: [], warmUpDone: false),
+                        WorkoutRecovery(sleepOk: SleepQuality.okay, pain: [], warmUpDone: false),
                         false,
                       );
                     },
@@ -404,7 +399,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
             GestureDetector(
               onTap: () {
-                _showSelectExerciseDialog(context, provider, state);
+                _showSelectExerciseDialog(context, provider);
               },
               child: GlassCard(
                 padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
@@ -440,7 +435,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     );
   }
 
-  void _showPlannedRoutineDetails(BuildContext context, PlannerState state, Routine routine) {
+  void _showPlannedRoutineDetails(BuildContext context, WorkoutProvider provider, Routine routine) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -481,9 +476,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                     itemCount: routine.exercises.length,
                     itemBuilder: (context, idx) {
                       final ex = routine.exercises[idx];
-                      final libEx = state.library.firstWhere(
+                       final libEx = provider.library.firstWhere(
                         (l) => l.id == ex.exerciseId,
-                        orElse: () => LibraryExercise(id: '', name: 'Deletado', muscle: '', measurementType: 'reps'),
+                        orElse: () => LibraryExercise(id: '', name: 'Deletado', muscle: '', measurementType: MeasurementType.reps),
                       );
                       final isCardio = libEx.muscle.toLowerCase().contains('cardio');
 
@@ -509,9 +504,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     );
   }
 
-  void _showSelectExerciseDialog(BuildContext context, TrackerProvider provider, PlannerState state) {
-    final library = state.library;
-    final accentColor = ThemeUtils.getColor(provider.currentProfile.colorAccent);
+  void _showSelectExerciseDialog(BuildContext context, WorkoutProvider provider) {
+    final library = provider.library;
+    final accentColor = ThemeUtils.getColor(Provider.of<ProfileProvider>(context, listen: false).currentProfile.colorAccent);
     
     if (library.isEmpty) {
       showDialog(
@@ -689,7 +684,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                                 style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                                               ),
                                               subtitle: Text(
-                                                ex.measurementType == 'time' ? 'Isometria' : 'Repetições',
+                                                ex.measurementType == MeasurementType.time ? 'Isometria' : 'Repetições',
                                                 style: const TextStyle(color: Colors.white38, fontSize: 11),
                                               ),
                                               trailing: const Icon(Icons.play_arrow_rounded, color: Colors.white54),
@@ -1427,7 +1422,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
                                   children: [
                                     Expanded(
                                       child: Text(
-                                        ex.measurementType == 'time'
+                                        ex.measurementType == MeasurementType.time
                                             ? "${(ex.repsPerSet != null && setIdx < ex.repsPerSet!.length) ? ex.repsPerSet![setIdx] : ex.reps} segundos"
                                             : "${(ex.repsPerSet != null && setIdx < ex.repsPerSet!.length) ? ex.repsPerSet![setIdx] : ex.reps} reps",
                                         style: TextStyle(
@@ -1608,7 +1603,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(ex.measurementType == 'time' ? "Tempo (s)" : "Reps",
+                      Text(ex.measurementType == MeasurementType.time ? "Tempo (s)" : "Reps",
                           style: const TextStyle(color: Colors.white70, fontSize: 12)),
                       const SizedBox(height: 6),
                       TextField(

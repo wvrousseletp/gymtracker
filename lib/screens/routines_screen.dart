@@ -2,7 +2,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
-import '../providers/tracker_provider.dart';
+import '../providers/workout_provider.dart';
+import '../providers/profile_provider.dart';
 import '../models/exercise.dart';
 import '../models/routine.dart';
 import '../models/workout_log.dart';
@@ -35,7 +36,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
-    final accentColor = context.select<TrackerProvider, Color>(
+    final accentColor = context.select<ProfileProvider, Color>(
       (p) => ThemeUtils.getColor(p.currentProfile.colorAccent),
     );
 
@@ -77,14 +78,8 @@ class RoutinesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<TrackerProvider>(context);
-    final state = provider.state;
-
-    if (state == null) {
-      return const Center(child: CircularProgressIndicator(color: Colors.white));
-    }
-
-    final routines = state.routines;
+    final provider = Provider.of<WorkoutProvider>(context);
+    final routines = provider.routines;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -118,8 +113,8 @@ class RoutinesTab extends StatelessWidget {
     );
   }
 
-  Widget _buildRoutineCard(BuildContext context, TrackerProvider provider, Routine routine) {
-    final state = provider.state!;
+  Widget _buildRoutineCard(BuildContext context, WorkoutProvider provider, Routine routine) {
+    final state = provider;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -163,11 +158,11 @@ class RoutinesTab extends StatelessWidget {
               children: routine.exercises.map((ex) {
                 final ref = state.library.firstWhere(
                   (l) => l.id == ex.exerciseId,
-                  orElse: () => LibraryExercise(id: '', name: 'Deletado', muscle: 'Desconhecido', measurementType: 'reps'),
+                  orElse: () => LibraryExercise(id: '', name: 'Deletado', muscle: 'Desconhecido', measurementType: MeasurementType.reps),
                 );
 
                 final isCardio = ref.muscle.toLowerCase().contains('cardio');
-                final isTime = ref.measurementType == 'time';
+                final isTime = ref.measurementType == MeasurementType.time;
                 final repsSuffix = isCardio ? 'min' : (isTime ? 's' : '');
                 final repsBadgeText = "${ex.sets}x${ex.reps}$repsSuffix";
                 final restTime = ex.rest;
@@ -217,7 +212,7 @@ class RoutinesTab extends StatelessWidget {
                       // Disparar o treino ativo
                       provider.startWorkout(
                         routine,
-                        WorkoutRecovery(sleepOk: 'ok', pain: [], warmUpDone: false),
+                        WorkoutRecovery(sleepOk: SleepQuality.okay, pain: [], warmUpDone: false),
                         false,
                       );
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -297,7 +292,7 @@ class RoutinesTab extends StatelessWidget {
     );
   }
 
-  void _confirmDeleteRoutine(BuildContext context, TrackerProvider provider, Routine routine) {
+  void _confirmDeleteRoutine(BuildContext context, WorkoutProvider provider, Routine routine) {
     showDialog(
       context: context,
       builder: (dialogCtx) => Dialog(
@@ -345,7 +340,7 @@ class RoutinesTab extends StatelessWidget {
     );
   }
 
-  void _openRoutineForm(BuildContext context, TrackerProvider provider, Routine? existing) {
+  void _openRoutineForm(BuildContext context, WorkoutProvider provider, Routine? existing) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -358,7 +353,7 @@ class RoutinesTab extends StatelessWidget {
 
 // FORMULÁRIO DE ROTINA (SHEET)
 class RoutineFormSheet extends StatefulWidget {
-  final TrackerProvider provider;
+  final WorkoutProvider provider;
   final Routine? existing;
 
   const RoutineFormSheet({super.key, required this.provider, this.existing});
@@ -393,8 +388,8 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final library = widget.provider.state!.library;
-    final accentColor = ThemeUtils.getColor(widget.provider.currentProfile.colorAccent);
+    final library = widget.provider.library;
+    final accentColor = ThemeUtils.getColor(Provider.of<ProfileProvider>(context, listen: false).currentProfile.colorAccent);
 
     // Ordena biblioteca de exercícios para seleção
     final sortedLibrary = List<LibraryExercise>.from(library)
@@ -519,7 +514,7 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                         final ex = _exercises[idx];
                         final ref = library.firstWhere(
                           (l) => l.id == ex.exerciseId,
-                          orElse: () => LibraryExercise(id: '', name: 'Deletado', muscle: '', measurementType: 'reps'),
+                          orElse: () => LibraryExercise(id: '', name: 'Deletado', muscle: '', measurementType: MeasurementType.reps),
                         );
                         final isCardio = ref.muscle.toLowerCase().contains('cardio');
 
@@ -588,7 +583,7 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                                   // Reps / Cardio Time
                                   Expanded(
                                     child: _buildInputRow(
-                                      label: isCardio ? "Minutos" : (ref.measurementType == 'time' ? "Segundos" : "Reps"),
+                                      label: isCardio ? "Minutos" : (ref.measurementType == MeasurementType.time ? "Segundos" : "Reps"),
                                       value: ex.reps.toString(),
                                       onChanged: (val) {
                                         _updateExerciseField(idx, reps: int.tryParse(val) ?? 0);
@@ -753,7 +748,7 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
   }
 
   void _addExercisePicker(List<LibraryExercise> library) {
-    final accentColor = ThemeUtils.getColor(widget.provider.currentProfile.colorAccent);
+    final accentColor = ThemeUtils.getColor(widget.provider.currentProfile?.colorAccent ?? 'Peito');
     // Agrupar por músculo
     final Map<String, List<LibraryExercise>> grouped = {};
     for (final ex in library) {
@@ -844,7 +839,7 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                               ],
                             ),
                             subtitle: Text(
-                              ex.measurementType == 'time' ? 'Isometria' : 'Repetições',
+                              ex.measurementType == MeasurementType.time ? 'Isometria' : 'Repetições',
                               style: const TextStyle(color: Colors.white38, fontSize: 11),
                             ),
                             onTap: () {
@@ -853,7 +848,7 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                                   id: "e-${const Uuid().v4()}",
                                   exerciseId: ex.id,
                                   sets: 3,
-                                  reps: ex.measurementType == 'time' ? 45 : 10,
+                                  reps: ex.measurementType == MeasurementType.time ? 45 : 10,
                                   rest: int.tryParse(_restController.text.trim()) ?? 60,
                                   weight: 0,
                                 ));
@@ -899,17 +894,13 @@ class _LibraryTabState extends State<LibraryTab> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<TrackerProvider>(context);
-    final state = provider.state;
+    final provider = Provider.of<WorkoutProvider>(context);
+    final library = provider.library;
 
-    if (state == null) {
-      return const Center(child: CircularProgressIndicator(color: Colors.white));
-    }
-
-    final muscles = _getMusclesList(state.library);
+    final muscles = _getMusclesList(library);
     final filteredExs = _selectedMuscleFilter == "todos"
-        ? state.library
-        : state.library.where((e) => e.muscle == _selectedMuscleFilter).toList();
+        ? library
+        : library.where((e) => e.muscle == _selectedMuscleFilter).toList();
 
     // Organizar biblioteca em ordem alfabética de nome
     final sortedExs = List<LibraryExercise>.from(filteredExs)
@@ -1030,7 +1021,7 @@ class _LibraryTabState extends State<LibraryTab> {
                                                 ex.name,
                                                 style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
                                               ),
-                                              if (ex.measurementType == 'time') ...[
+                                              if (ex.measurementType == MeasurementType.time) ...[
                                                 const SizedBox(width: 6),
                                                 Container(
                                                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -1062,7 +1053,7 @@ class _LibraryTabState extends State<LibraryTab> {
                                           ),
                                           const SizedBox(height: 2),
                                           Text(
-                                            "${ex.muscle} • ${ex.measurementType == 'time' ? 'Isometria' : 'Repetições'}",
+                                            "${ex.muscle} • ${ex.measurementType == MeasurementType.time ? 'Isometria' : 'Repetições'}",
                                             style: const TextStyle(color: Colors.white38, fontSize: 11),
                                           ),
                                           if (ex.notes != null && ex.notes!.trim().isNotEmpty) ...[
@@ -1107,7 +1098,7 @@ class _LibraryTabState extends State<LibraryTab> {
     );
   }
 
-  void _confirmDeleteExercise(BuildContext context, TrackerProvider provider, LibraryExercise ex) {
+  void _confirmDeleteExercise(BuildContext context, WorkoutProvider provider, LibraryExercise ex) {
     showDialog(
       context: context,
       builder: (dialogCtx) => Dialog(
@@ -1155,7 +1146,7 @@ class _LibraryTabState extends State<LibraryTab> {
     );
   }
 
-  void _openAddExerciseDialog(BuildContext context, TrackerProvider provider, {LibraryExercise? existing}) {
+  void _openAddExerciseDialog(BuildContext context, WorkoutProvider provider, {LibraryExercise? existing}) {
     final nameCtrl = TextEditingController(text: existing?.name ?? "");
     String category = existing != null
         ? (existing.muscle == "Cardio" ? "Cardio" : "Musculação")
@@ -1165,7 +1156,7 @@ class _LibraryTabState extends State<LibraryTab> {
         : "Peito";
     String equipment = existing?.executionType ?? "Barra";
     String measurement = existing != null
-        ? (existing.measurementType == 'time' ? "Tempo de Isometria" : "Repetições")
+        ? (existing.measurementType == MeasurementType.time ? "Tempo de Isometria" : "Repetições")
         : "Repetições";
     final notesCtrl = TextEditingController(text: existing?.notes ?? "");
 

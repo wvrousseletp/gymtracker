@@ -87,7 +87,7 @@ class WatchService {
             );
           }
           
-          _provider!.startWorkout(routineToStart, WorkoutRecovery(sleepOk: 'ok', pain: [], warmUpDone: false), false);
+          _provider!.startWorkout(routineToStart, WorkoutRecovery(sleepOk: SleepQuality.okay, pain: [], warmUpDone: false), false);
           // Envia de volta o estado atualizado do treino ativo
           if (_provider!.state?.activeWorkout != null) {
             sendActiveWorkout(_provider!.state!.activeWorkout!);
@@ -425,7 +425,7 @@ class WatchService {
           ? todayRoutines.first.exercises.map<String>((e) {
               final libEx = state.library.firstWhere(
                 (l) => l.id == e.exerciseId,
-                orElse: () => LibraryExercise(id: '', name: 'Exercício', muscle: '', measurementType: ''),
+                orElse: () => LibraryExercise(id: '', name: 'Exercício', muscle: '', measurementType: MeasurementType.reps),
               );
               return libEx.name;
             }).toList() 

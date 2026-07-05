@@ -141,6 +141,9 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     checkAndResetDailyDiet();
     await syncHealthMetrics();
 
+    // Drenar operações offline pendentes após reconexão
+    unawaited(_firebaseSync.drainQueue(uid));
+
     // Migração de estado legado do "vicente" local para o UID do Google
     final compiledState = state;
     if (compiledState == null || compiledState.history.isEmpty) {
@@ -229,6 +232,12 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
       abstinence: [],
     );
     _dietProvider!.dietHistory = {};
+
+    // Limpar fila de sync offline do usuário
+    final uid = currentUserId;
+    if (uid.isNotEmpty) {
+      unawaited(_firebaseSync.clearQueueFor(uid));
+    }
 
     await FirebaseAuth.instance.signOut();
 

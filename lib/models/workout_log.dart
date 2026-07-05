@@ -1,3 +1,5 @@
+import 'enums.dart';
+export 'enums.dart';
 import 'exercise.dart';
 
 class LogExercise {
@@ -61,7 +63,7 @@ class LogExercise {
 }
 
 class WorkoutRecovery {
-  final String sleepOk; // 'ruim', 'ok', 'bom'
+  final SleepQuality sleepOk;
   final List<String> pain;
   final bool warmUpDone;
 
@@ -72,13 +74,13 @@ class WorkoutRecovery {
   });
 
   Map<String, dynamic> toJson() => {
-    'sleepOk': sleepOk,
+    'sleepOk': sleepQualityToString(sleepOk),
     'pain': pain,
     'warmUpDone': warmUpDone,
   };
 
   factory WorkoutRecovery.fromJson(Map<String, dynamic> json) => WorkoutRecovery(
-    sleepOk: json['sleepOk'] ?? 'ok',
+    sleepOk: sleepQualityFromString(json['sleepOk'] ?? 'ok'),
     pain: json['pain'] != null ? List<String>.from(json['pain']) : [],
     warmUpDone: json['warmUpDone'] ?? false,
   );

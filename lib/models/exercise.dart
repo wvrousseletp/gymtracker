@@ -1,8 +1,10 @@
+import 'enums.dart';
+
 class LibraryExercise {
   final String id;
   final String name;
   final String muscle;
-  final String measurementType; // 'reps' ou 'time'
+  final MeasurementType measurementType;
   final String? executionType;  // 'isometric' ou null
   final String? notes;
 
@@ -19,7 +21,7 @@ class LibraryExercise {
     'id': id,
     'name': name,
     'muscle': muscle,
-    'measurementType': measurementType,
+    'measurementType': measurementTypeToString(measurementType),
     'executionType': executionType ?? 'Livre',
     'notes': notes,
   };
@@ -28,7 +30,7 @@ class LibraryExercise {
     id: json['id'] ?? '',
     name: json['name'] ?? '',
     muscle: json['muscle'] ?? 'Geral',
-    measurementType: json['measurementType'] ?? 'reps',
+    measurementType: measurementTypeFromString(json['measurementType'] ?? 'reps'),
     executionType: json['executionType'] ?? 'Livre',
     notes: json['notes'],
   );
@@ -111,7 +113,7 @@ class ActiveExercise {
   final String name;
   final String muscle;
   final String? executionType;
-  final String measurementType;
+  final MeasurementType measurementType;
   final int sets;
   final int reps;
   final int rest;
@@ -146,7 +148,7 @@ class ActiveExercise {
     'name': name,
     'muscle': muscle,
     'executionType': executionType,
-    'measurementType': measurementType,
+    'measurementType': measurementTypeToString(measurementType),
     'sets': sets,
     'reps': reps,
     'rest': rest,
@@ -166,7 +168,7 @@ class ActiveExercise {
       name: json['name'] ?? '',
       muscle: json['muscle'] ?? 'Geral',
       executionType: json['executionType'],
-      measurementType: json['measurementType'] ?? 'reps',
+      measurementType: measurementTypeFromString(json['measurementType'] ?? 'reps'),
       sets: setsVal,
       reps: (json['reps'] as num?)?.toInt() ?? 10,
       rest: (json['rest'] as num?)?.toInt() ?? 60,

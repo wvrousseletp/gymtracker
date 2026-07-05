@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../providers/tracker_provider.dart';
+import '../providers/diet_provider.dart';
+import '../providers/profile_provider.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/profile_avatar.dart';
 import '../models/diet.dart';
@@ -37,7 +39,7 @@ class _DietScreenState extends State<DietScreen> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
-    final accentColor = context.select<TrackerProvider, Color>(
+    final accentColor = context.select<ProfileProvider, Color>(
       (p) => ThemeUtils.getColor(p.currentProfile.colorAccent),
     );
 
@@ -81,12 +83,10 @@ class RefeicoesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<TrackerProvider>(context);
-    final diet = provider.state?.diet;
-
-    if (diet == null) {
-      return const Center(child: CircularProgressIndicator(color: Colors.white));
-    }
+    final dietProvider = Provider.of<DietProvider>(context);
+    final trackerProvider = Provider.of<TrackerProvider>(context);
+    final provider = trackerProvider;
+    final diet = dietProvider.diet;
 
     // Cálculos
     int totalCals = diet.meals.fold<int>(0, (sum, m) => sum + m.calories);
@@ -109,7 +109,7 @@ class RefeicoesTab extends StatelessWidget {
         padding: const EdgeInsets.only(bottom: 80.0),
         child: FloatingActionButton(
           onPressed: () {
-            _openAddMealDialog(context, provider);
+            _openAddMealDialog(context, dietProvider);
           },
           backgroundColor: accentColor,
           mini: true,
@@ -406,8 +406,8 @@ class RefeicoesTab extends StatelessWidget {
     );
   }
 
-  void _openAddMealDialog(BuildContext context, TrackerProvider provider) {
-    final accentColor = ThemeUtils.getColor(provider.currentProfile.colorAccent);
+  void _openAddMealDialog(BuildContext context, DietProvider provider) {
+    final accentColor = ThemeUtils.getColor(Provider.of<ProfileProvider>(context, listen: false).currentProfile.colorAccent);
     showDialog(
       context: context,
       barrierDismissible: true,
@@ -420,7 +420,7 @@ class RefeicoesTab extends StatelessWidget {
 }
 
 class _AddMealDialogContent extends StatefulWidget {
-  final TrackerProvider provider;
+  final DietProvider provider;
   final Color accentColor;
 
   const _AddMealDialogContent({
@@ -1275,12 +1275,10 @@ class AguaTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<TrackerProvider>(context);
-    final diet = provider.state?.diet;
+    final provider = Provider.of<DietProvider>(context);
+    final diet = provider.diet;
 
-    if (diet == null) {
-      return const Center(child: CircularProgressIndicator(color: Colors.white));
-    }
+
 
     final waterProgress = diet.waterGoalMl > 0 ? (diet.waterIntakeMl / diet.waterGoalMl).clamp(0.0, 1.0) : 0.0;
 
@@ -1362,7 +1360,7 @@ class AguaTab extends StatelessWidget {
     );
   }
 
-  Widget _buildWaterAddBtn(TrackerProvider provider, int current, int val) {
+  Widget _buildWaterAddBtn(DietProvider provider, int current, int val) {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
@@ -1437,8 +1435,8 @@ class _JejumTabState extends State<JejumTab> {
   void _startTimer() {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) return;
-      final provider = Provider.of<TrackerProvider>(context, listen: false);
-      final active = provider.state?.diet.fasting.active;
+      final provider = Provider.of<DietProvider>(context, listen: false);
+      final active = provider.diet.fasting.active;
       if (active != null) {
         try {
           final start = DateTime.parse(active.startTime);
@@ -1448,7 +1446,7 @@ class _JejumTabState extends State<JejumTab> {
           // parse error
         }
       }
-      if (provider.state?.diet.abstinence.isNotEmpty ?? false) {
+      if (provider.diet.abstinence.isNotEmpty) {
         setState(() {});
       }
     });
@@ -1565,12 +1563,10 @@ class _JejumTabState extends State<JejumTab> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<TrackerProvider>(context);
-    final diet = provider.state?.diet;
+    final provider = Provider.of<DietProvider>(context);
+    final diet = provider.diet;
 
-    if (diet == null) {
-      return const Center(child: CircularProgressIndicator(color: Colors.white));
-    }
+
 
     final active = diet.fasting.active;
 
@@ -1962,7 +1958,7 @@ class _JejumTabState extends State<JejumTab> {
     );
   }
 
-  void _showAddAbstinenceDialog(BuildContext context, TrackerProvider provider) {
+  void _showAddAbstinenceDialog(BuildContext context, DietProvider provider) {
     final titleCtrl = TextEditingController();
     final notesCtrl = TextEditingController();
 
@@ -2037,7 +2033,7 @@ class _JejumTabState extends State<JejumTab> {
     );
   }
 
-  void _confirmResetAbstinence(BuildContext context, TrackerProvider provider, AbstinenceRecord a) {
+  void _confirmResetAbstinence(BuildContext context, DietProvider provider, AbstinenceRecord a) {
     showDialog(
       context: context,
       builder: (dialogCtx) => Dialog(
@@ -2220,8 +2216,8 @@ class HistoricoTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<TrackerProvider>(context);
-    final history = provider.state?.dietHistory ?? {};
+    final provider = Provider.of<DietProvider>(context);
+    final history = provider.dietHistory;
     
     final now = DateTime.now();
     final List<DateTime> last7Days = List.generate(7, (i) => now.subtract(Duration(days: 6 - i)));
@@ -2246,14 +2242,14 @@ class HistoricoTab extends StatelessWidget {
     double maxCal = 1000.0;
     double maxWater = 1000.0;
     
-    final currentDiet = provider.state?.diet;
+    final currentDiet = provider.diet;
     for (int i = 0; i < 7; i++) {
       final dateStr = dateStrings[i];
       double cal = 0;
       double water = 0;
       
       final todayStr = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
-      if (dateStr == todayStr && currentDiet != null) {
+      if (dateStr == todayStr) {
         cal = currentDiet.meals.fold<int>(0, (sum, m) => sum + m.calories).toDouble();
         water = currentDiet.waterIntakeMl.toDouble();
       } else if (history.containsKey(dateStr)) {
@@ -2271,8 +2267,8 @@ class HistoricoTab extends StatelessWidget {
     maxCal *= 1.2;
     maxWater *= 1.2;
     
-    final double calGoal = currentDiet?.caloriesGoal.toDouble() ?? 2000;
-    final double waterGoal = currentDiet?.waterGoalMl.toDouble() ?? 2000;
+    final double calGoal = currentDiet.caloriesGoal.toDouble();
+    final double waterGoal = currentDiet.waterGoalMl.toDouble();
     if (calGoal > maxCal) maxCal = calGoal * 1.2;
     if (waterGoal > maxWater) maxWater = waterGoal * 1.2;
     

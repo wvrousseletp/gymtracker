@@ -9,6 +9,7 @@ import '../models/profile.dart';
 import '../models/workout_log.dart';
 import '../models/routine.dart';
 import 'state_persistence_service.dart';
+import 'sync_queue_service.dart';
 
 typedef RemoteStateHandler = Future<void> Function(
   PlannerState state,
@@ -20,9 +21,11 @@ class FirebaseSyncService {
   FirebaseSyncService({
     FirebaseFirestore? firestore,
     StatePersistenceService? persistence,
+    SyncQueueService? syncQueue,
     Duration debounceDuration = const Duration(seconds: 15),
   })  : _firestore = firestore ?? FirebaseFirestore.instance,
         _persistence = persistence ?? StatePersistenceService(),
+        _syncQueue = syncQueue ?? SyncQueueService(),
         _debounceDuration = debounceDuration {
     // Enable offline persistence explicitly
     try {
@@ -37,6 +40,7 @@ class FirebaseSyncService {
 
   final FirebaseFirestore _firestore;
   final StatePersistenceService _persistence;
+  final SyncQueueService _syncQueue;
   final Duration _debounceDuration;
 
   Timer? _debounceTimer;
@@ -127,8 +131,16 @@ class FirebaseSyncService {
         ...log.toJson(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
+      // Sucesso: tenta drenar fila pendente em background
+      unawaited(drainQueue(userId));
     } catch (e) {
-      debugPrint('[FirebaseSync] syncWorkoutLog error: $e');
+      debugPrint('[FirebaseSync] syncWorkoutLog error (offline?): $e');
+      await _syncQueue.enqueue(SyncOp(
+        type: SyncOpType.syncWorkoutLog,
+        userId: userId,
+        payload: log.toJson(),
+        enqueuedAt: DateTime.now().toUtc(),
+      ));
     }
   }
 
@@ -140,8 +152,15 @@ class FirebaseSyncService {
           .collection('workouts')
           .doc(logId)
           .delete();
+      unawaited(drainQueue(userId));
     } catch (e) {
-      debugPrint('[FirebaseSync] deleteWorkoutLog error: $e');
+      debugPrint('[FirebaseSync] deleteWorkoutLog error (offline?): $e');
+      await _syncQueue.enqueue(SyncOp(
+        type: SyncOpType.deleteWorkoutLog,
+        userId: userId,
+        payload: {'id': logId},
+        enqueuedAt: DateTime.now().toUtc(),
+      ));
     }
   }
 
@@ -156,8 +175,15 @@ class FirebaseSyncService {
         ...routine.toJson(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
+      unawaited(drainQueue(userId));
     } catch (e) {
-      debugPrint('[FirebaseSync] syncRoutine error: $e');
+      debugPrint('[FirebaseSync] syncRoutine error (offline?): $e');
+      await _syncQueue.enqueue(SyncOp(
+        type: SyncOpType.syncRoutine,
+        userId: userId,
+        payload: routine.toJson(),
+        enqueuedAt: DateTime.now().toUtc(),
+      ));
     }
   }
 
@@ -169,10 +195,95 @@ class FirebaseSyncService {
           .collection('routines')
           .doc(routineId)
           .delete();
+      unawaited(drainQueue(userId));
     } catch (e) {
-      debugPrint('[FirebaseSync] deleteRoutine error: $e');
+      debugPrint('[FirebaseSync] deleteRoutine error (offline?): $e');
+      await _syncQueue.enqueue(SyncOp(
+        type: SyncOpType.deleteRoutine,
+        userId: userId,
+        payload: {'id': routineId},
+        enqueuedAt: DateTime.now().toUtc(),
+      ));
     }
   }
+
+  // --- OFFLINE SYNC QUEUE ---
+
+  bool _isDraining = false;
+
+  /// Drena todas as operações pendentes na fila para o usuário especificado.
+  /// É chamado automaticamente após cada operação bem-sucedida.
+  /// Protegido contra execuções concorrentes com [_isDraining].
+  Future<void> drainQueue(String userId) async {
+    if (_isDraining) return;
+    _isDraining = true;
+    try {
+      final pending = await _syncQueue.pendingFor(userId);
+      if (pending.isEmpty) return;
+      debugPrint('[SyncQueue] Draining ${pending.length} pending op(s) for user $userId');
+
+      final completed = <SyncOp>[];
+      for (final op in pending) {
+        try {
+          switch (op.type) {
+            case SyncOpType.syncWorkoutLog:
+              final log = WorkoutLog.fromJson(op.payload);
+              await _firestore
+                  .collection('users')
+                  .doc(userId)
+                  .collection('workouts')
+                  .doc(log.id)
+                  .set({...log.toJson(), 'updatedAt': FieldValue.serverTimestamp()});
+              completed.add(op);
+            case SyncOpType.deleteWorkoutLog:
+              final id = op.payload['id'] as String;
+              await _firestore
+                  .collection('users')
+                  .doc(userId)
+                  .collection('workouts')
+                  .doc(id)
+                  .delete();
+              completed.add(op);
+            case SyncOpType.syncRoutine:
+              final routine = Routine.fromJson(op.payload);
+              await _firestore
+                  .collection('users')
+                  .doc(userId)
+                  .collection('routines')
+                  .doc(routine.id)
+                  .set({...routine.toJson(), 'updatedAt': FieldValue.serverTimestamp()});
+              completed.add(op);
+            case SyncOpType.deleteRoutine:
+              final id = op.payload['id'] as String;
+              await _firestore
+                  .collection('users')
+                  .doc(userId)
+                  .collection('routines')
+                  .doc(id)
+                  .delete();
+              completed.add(op);
+          }
+        } catch (e) {
+          // Falhou novamente — para o drain (ainda offline). Tenta no próximo ciclo.
+          debugPrint('[SyncQueue] Drain failed for ${op.type.name}: $e');
+          break;
+        }
+      }
+
+      if (completed.isNotEmpty) {
+        await _syncQueue.removeCompleted(completed);
+        debugPrint('[SyncQueue] Drained ${completed.length} op(s) successfully.');
+      }
+    } finally {
+      _isDraining = false;
+    }
+  }
+
+  /// Retorna o número de operações pendentes na fila (para diagnóstico/UI).
+  Future<int> get pendingQueueSize => _syncQueue.queueSize;
+
+  /// Limpa a fila do usuário (ex: logout).
+  Future<void> clearQueueFor(String userId) => _syncQueue.clearFor(userId);
 
   Future<List<WorkoutLog>> fetchCloudWorkouts(String userId) async {
     try {

@@ -209,7 +209,7 @@ class ActiveWorkoutState {
     elapsedSeconds: (json['elapsedSeconds'] as num?)?.toInt() ?? 0,
     recovery: json['recovery'] != null
         ? WorkoutRecovery.fromJson(json['recovery'])
-        : WorkoutRecovery(sleepOk: 'ok', pain: [], warmUpDone: false),
+        : WorkoutRecovery(sleepOk: SleepQuality.okay, pain: [], warmUpDone: false),
     isWarmup: json['isWarmup'] ?? false,
     warmupDurationSeconds: (json['warmupDurationSeconds'] as num?)?.toInt() ?? 0,
     paused: json['paused'] ?? false,

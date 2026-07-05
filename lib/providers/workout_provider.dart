@@ -56,7 +56,7 @@ class WorkoutProvider extends ChangeNotifier {
           id: ex.exerciseId,
           name: 'Exercício',
           muscle: 'Geral',
-          measurementType: 'reps',
+          measurementType: MeasurementType.reps,
         ),
       );
 
@@ -109,7 +109,7 @@ class WorkoutProvider extends ChangeNotifier {
         )
       ],
     );
-    startWorkout(tempRoutine, WorkoutRecovery(sleepOk: 'ok', pain: [], warmUpDone: false), false);
+    startWorkout(tempRoutine, WorkoutRecovery(sleepOk: SleepQuality.okay, pain: [], warmUpDone: false), false);
   }
 
   void completeSet(int exIndex, int setIndex, bool isDone, {double? distance, int? duration, bool isFailure = false, int? failureRep}) {
@@ -584,7 +584,7 @@ class WorkoutProvider extends ChangeNotifier {
         }
       }
 
-      final libEx = library.firstWhere((l) => l.name == ex.name, orElse: () => LibraryExercise(id: '', name: '', muscle: '', measurementType: ''));
+      final libEx = library.firstWhere((l) => l.name == ex.name, orElse: () => LibraryExercise(id: '', name: '', muscle: '', measurementType: MeasurementType.reps));
       if (libEx.id.isEmpty) continue;
 
       final currentPr = prs[libEx.id];
@@ -642,7 +642,7 @@ class WorkoutProvider extends ChangeNotifier {
         }
       }
 
-      final libEx = library.firstWhere((l) => l.name == ex.name, orElse: () => LibraryExercise(id: '', name: '', muscle: '', measurementType: ''));
+      final libEx = library.firstWhere((l) => l.name == ex.name, orElse: () => LibraryExercise(id: '', name: '', muscle: '', measurementType: MeasurementType.reps));
       if (libEx.id.isEmpty) continue;
 
       final currentPr = prs[libEx.id];
@@ -802,7 +802,7 @@ class WorkoutProvider extends ChangeNotifier {
       id: "lib-${DateTime.now().millisecondsSinceEpoch}",
       name: name,
       muscle: muscle,
-      measurementType: measurementType,
+      measurementType: measurementTypeFromString(measurementType),
       notes: notes,
       executionType: executionType,
     );
@@ -817,7 +817,7 @@ class WorkoutProvider extends ChangeNotifier {
         id: id,
         name: name,
         muscle: muscle,
-        measurementType: measurementType,
+        measurementType: measurementTypeFromString(measurementType),
         notes: notes,
         executionType: executionType,
       );

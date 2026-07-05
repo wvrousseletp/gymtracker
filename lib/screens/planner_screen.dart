@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/tracker_provider.dart';
 import '../models/exercise.dart';
 import '../models/planner_state.dart';
+import '../models/enums.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/profile_avatar.dart';
 
@@ -211,7 +212,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
               final libEx = state.library.where((e) => e.id == re.exerciseId).firstOrNull;
               if (libEx != null) {
                 final muscle = libEx.muscle;
-                final isCardio = muscle.toLowerCase().contains('cardio') || libEx.measurementType == 'time';
+                final isCardio = muscle.toLowerCase().contains('cardio') || libEx.measurementType == MeasurementType.time;
                 if (isCardio) {
                   cardioMap[muscle] = (cardioMap[muscle] ?? 0) + re.sets.toInt();
                 } else {
@@ -228,7 +229,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
             final libEx = state.library.where((e) => e.id == exId).firstOrNull;
             if (libEx != null) {
               final muscle = libEx.muscle;
-              final isCardio = muscle.toLowerCase().contains('cardio') || libEx.measurementType == 'time';
+              final isCardio = muscle.toLowerCase().contains('cardio') || libEx.measurementType == MeasurementType.time;
               if (isCardio) {
                 cardioMap[muscle] = (cardioMap[muscle] ?? 0) + quantity;
               } else {
@@ -243,7 +244,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
               final libEx = state.library.where((e) => e.id == re.exerciseId).firstOrNull;
               if (libEx != null) {
                 final muscle = libEx.muscle;
-                final isCardio = muscle.toLowerCase().contains('cardio') || libEx.measurementType == 'time';
+                final isCardio = muscle.toLowerCase().contains('cardio') || libEx.measurementType == MeasurementType.time;
                 if (isCardio) {
                   cardioMap[muscle] = (cardioMap[muscle] ?? 0) + re.sets.toInt();
                 } else {

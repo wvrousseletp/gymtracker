@@ -375,7 +375,7 @@ class _HistoryTabState extends State<HistoryTab> {
                                     children: [
                                       _buildMetricItem("Esforço (RPE)", "${log.rpe}/10"),
                                       _buildMetricItem("Séries Concl.", "${log.completedSets}/${log.totalSets}"),
-                                      _buildMetricItem("Sono", (log.recovery?.sleepOk ?? "ok").toUpperCase()),
+                                      _buildMetricItem("Sono", sleepQualityToString(log.recovery?.sleepOk ?? SleepQuality.okay).toUpperCase()),
                                     ],
                                   ),
                                   if (log.avgHeartRate != null || log.activeCalories != null) ...[
@@ -809,7 +809,7 @@ class _ManualWorkoutLogSheetState extends State<ManualWorkoutLogSheet> {
                       setState(() {
                         _selectedExercise = val;
                         if (val != null) {
-                          _repsCount = val.measurementType == 'time' ? 45 : 10;
+                          _repsCount = val.measurementType == MeasurementType.time ? 45 : 10;
                           _updateSetsLists(_setsCount);
                         }
                       });
@@ -859,7 +859,7 @@ class _ManualWorkoutLogSheetState extends State<ManualWorkoutLogSheet> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            _selectedExercise!.measurementType == 'time' ? "Tempo (s)" : "Reps Padrão",
+                            _selectedExercise!.measurementType == MeasurementType.time ? "Tempo (s)" : "Reps Padrão",
                             style: const TextStyle(color: Colors.white54, fontSize: 10),
                           ),
                           const SizedBox(height: 4),
@@ -954,7 +954,7 @@ class _ManualWorkoutLogSheetState extends State<ManualWorkoutLogSheet> {
                                 fillColor: Colors.white.withOpacity(0.04),
                                 isDense: true,
                                 contentPadding: const EdgeInsets.all(6),
-                                labelText: isCardio ? "Minutos" : (_selectedExercise!.measurementType == 'time' ? "Segs" : "Reps"),
+                                labelText: isCardio ? "Minutos" : (_selectedExercise!.measurementType == MeasurementType.time ? "Segs" : "Reps"),
                                 labelStyle: const TextStyle(fontSize: 10),
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide.none),
                               ),
@@ -1343,7 +1343,7 @@ class _PrsTabState extends State<PrsTab> {
   ) {
     final selectedEx = strengthExercises.firstWhere(
       (e) => e.id == _selectedExerciseId,
-      orElse: () => LibraryExercise(id: '', name: '', muscle: '', measurementType: 'reps'),
+      orElse: () => LibraryExercise(id: '', name: '', muscle: '', measurementType: MeasurementType.reps),
     );
 
     return GlassCard(
@@ -1537,7 +1537,7 @@ class _PrsTabState extends State<PrsTab> {
     prs.forEach((exId, pr) {
       final ex = state.library.firstWhere(
         (l) => l.id == exId,
-        orElse: () => LibraryExercise(id: '', name: 'Exercício Deletado', muscle: '', measurementType: 'reps'),
+        orElse: () => LibraryExercise(id: '', name: 'Exercício Deletado', muscle: '', measurementType: MeasurementType.reps),
       );
       prItems.add({
         'exerciseId': exId,

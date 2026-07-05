@@ -51,7 +51,7 @@ void main() {
           exercises: const [],
           currentExerciseIndex: 0,
           elapsedSeconds: 0,
-          recovery: WorkoutRecovery(sleepOk: 'ok', pain: const [], warmUpDone: false),
+          recovery: WorkoutRecovery(sleepOk: SleepQuality.okay, pain: const [], warmUpDone: false),
           isWarmup: false,
           warmupDurationSeconds: 0,
         ),
