@@ -10,7 +10,6 @@ import 'providers/diet_provider.dart';
 import 'providers/tracker_provider.dart';
 import 'screens/main_navigation.dart';
 import 'screens/login_screen.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart' hide ChangeNotifierProvider, Provider;
 import 'widgets/offline_banner_wrapper.dart';
 import 'services/analytics_service.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -22,26 +21,20 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   runApp(
-    ProviderScope(
-      child: MultiProvider(
-        providers: [
-        ChangeNotifierProvider(create: (context) => ProfileProvider()),
-        ChangeNotifierProxyProvider<ProfileProvider, WorkoutProvider>(
-          create: (context) => WorkoutProvider(),
-          update: (context, profile, workout) => workout!..updateProfile(profile),
-        ),
-        ChangeNotifierProxyProvider<ProfileProvider, DietProvider>(
-          create: (context) => DietProvider(),
-          update: (context, profile, diet) => diet!..updateProfile(profile),
-        ),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ProfileProvider()),
+        ChangeNotifierProvider(create: (_) => WorkoutProvider()),
+        ChangeNotifierProvider(create: (_) => DietProvider()),
         ChangeNotifierProxyProvider3<ProfileProvider, WorkoutProvider, DietProvider, TrackerProvider>(
           create: (context) => TrackerProvider(),
-          update: (context, profile, workout, diet, tracker) =>
-              tracker!..update(profile, workout, diet),
+          update: (context, profile, workout, diet, tracker) {
+            tracker?.update(profile, workout, diet);
+            return tracker!;
+          },
         ),
       ],
       child: const MyApp(),
-      ),
     ),
   );
 }
@@ -101,11 +94,11 @@ class MyApp extends StatelessWidget {
           }
           if (snapshot.hasData && snapshot.data != null) {
             final provider = Provider.of<TrackerProvider>(context, listen: false);
-            if (provider.currentUserId != snapshot.data!.uid) {
-              Future.microtask(() {
+            Future.microtask(() {
+              if (provider.currentUserId != snapshot.data!.uid) {
                 provider.initializeUser(snapshot.data!.uid);
-              });
-            }
+              }
+            });
             return const MainNavigation();
           }
           return const LoginScreen();

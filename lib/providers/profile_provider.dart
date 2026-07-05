@@ -16,21 +16,6 @@ class ProfileProvider extends ChangeNotifier {
   String get currentUserId => _currentUserId;
   bool get isLoading => _isLoading;
 
-  set profiles(List<Profile> val) {
-    _profiles = val;
-    notifyListeners();
-  }
-
-  set currentUserId(String val) {
-    _currentUserId = val;
-    notifyListeners();
-  }
-
-  set isLoading(bool val) {
-    _isLoading = val;
-    notifyListeners();
-  }
-
   Profile get currentProfile => _profiles.firstWhere(
         (p) => p.id == _currentUserId,
         orElse: () => Profile(
@@ -48,6 +33,21 @@ class ProfileProvider extends ChangeNotifier {
       _currentUserId,
       _persistence.encodeProfile(profile),
     );
+  }
+
+  void setProfiles(List<Profile> val) {
+    _profiles = val;
+    notifyListeners();
+  }
+
+  void setCurrentUserId(String val) {
+    _currentUserId = val;
+    notifyListeners();
+  }
+
+  void setLoading(bool val) {
+    _isLoading = val;
+    notifyListeners();
   }
 
   Future<void> updateProfile(String id, String name, String avatar, String color) async {

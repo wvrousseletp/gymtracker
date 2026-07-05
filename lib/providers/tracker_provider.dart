@@ -82,8 +82,8 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     _dietProvider = diet;
 
     // Set callback to save state whenever sub-providers update
-    _workoutProvider!.onStateChanged = () => saveState();
-    _dietProvider!.onStateChanged = () => saveState();
+    _workoutProvider?.onStateChanged = () => saveState();
+    _dietProvider?.onStateChanged = () => saveState();
   }
 
   @override
@@ -95,45 +95,40 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<void> _init() async {
     WidgetsBinding.instance.addObserver(this);
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      // O MultiProvider irá instanciar o TrackerProvider e injetar os sub-provedores no 'update'.
-      // Chamamos initializeUser após a injeção inicializada.
-      Future.microtask(() => initializeUser(user.uid));
-    } else {
-      _isLoading = false;
-      notifyListeners();
-    }
     WatchService.instance.init(this);
   }
 
   Future<void> initializeUser(String uid) async {
-    if (_profileProvider == null || _workoutProvider == null || _dietProvider == null) return;
+    if (_profileProvider == null || _workoutProvider == null || _dietProvider == null) {
+      debugPrint('[TrackerProvider] Sub-providers not initialized yet, deferring user initialization');
+      return;
+    }
+
     _isLoading = true;
     notifyListeners();
 
-    _profileProvider!.currentUserId = uid;
+    _profileProvider!.setCurrentUserId(uid);
     _workoutProvider!.historyLoaded = false;
     unawaited(AnalyticsService.logLogin(uid));
 
     final profileRaw = await _persistence.loadProfileJson(uid);
     if (profileRaw != null) {
       try {
-        _profileProvider!.profiles = [_persistence.decodeProfile(profileRaw)];
+        _profileProvider!.setProfiles([_persistence.decodeProfile(profileRaw)]);
       } catch (e) {
-        _profileProvider!.profiles = [_defaultProfile(uid)];
+        _profileProvider!.setProfiles([_defaultProfile(uid)]);
       }
     } else {
       final cloudProfile = await checkProfileExistsInCloud(uid);
       if (cloudProfile != null) {
         try {
-          _profileProvider!.profiles = [Profile.fromJson(cloudProfile)];
+          _profileProvider!.setProfiles([Profile.fromJson(cloudProfile)]);
           await _profileProvider!.saveProfilesConfig();
         } catch (_) {
-          _profileProvider!.profiles = [_defaultProfile(uid)];
+          _profileProvider!.setProfiles([_defaultProfile(uid)]);
         }
       } else {
-        _profileProvider!.profiles = [_defaultProfile(uid)];
+        _profileProvider!.setProfiles([_defaultProfile(uid)]);
       }
     }
 
@@ -209,9 +204,9 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     _isLoading = true;
     notifyListeners();
 
-    _profileProvider!.profiles = [];
-    _profileProvider!.currentUserId = '';
-    
+    _profileProvider!.setProfiles([]);
+    _profileProvider!.setCurrentUserId('');
+
     // Clear sub-providers
     _workoutProvider!.library = [];
     _workoutProvider!.routines = [];
@@ -254,10 +249,10 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
       avatar: avatar,
       colorAccent: color,
     );
-    _profileProvider!.profiles = [newProfile];
-    _profileProvider!.currentUserId = uid;
+    _profileProvider!.setProfiles([newProfile]);
+    _profileProvider!.setCurrentUserId(uid);
     await _profileProvider!.saveProfilesConfig();
-    
+
     final defState = _getDefaultState();
     _applyStateToSubproviders(defState);
     await saveState(immediateSync: true);
@@ -378,142 +373,235 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   // --- COMPATIBILITY DELEGATIONS ---
-  void startWorkout(Routine routine, WorkoutRecovery recovery, bool isWarmup) =>
-      _workoutProvider!.startWorkout(routine, recovery, isWarmup);
+  void startWorkout(Routine routine, WorkoutRecovery recovery, bool isWarmup) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.startWorkout(routine, recovery, isWarmup);
+  }
 
-  void startSingleExercise(LibraryExercise exercise) =>
-      _workoutProvider!.startSingleExercise(exercise);
+  void startSingleExercise(LibraryExercise exercise) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.startSingleExercise(exercise);
+  }
 
-  void completeSet(int exIndex, int setIndex, bool isDone, {double? distance, int? duration, bool isFailure = false, int? failureRep}) =>
-      _workoutProvider!.completeSet(exIndex, setIndex, isDone, distance: distance, duration: duration, isFailure: isFailure, failureRep: failureRep);
+  void completeSet(int exIndex, int setIndex, bool isDone, {double? distance, int? duration, bool isFailure = false, int? failureRep}) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.completeSet(exIndex, setIndex, isDone, distance: distance, duration: duration, isFailure: isFailure, failureRep: failureRep);
+  }
 
-  void startRestTimer(int seconds, String nextExName, int nextSetNum, bool isPrep) =>
-      _workoutProvider!.startRestTimer(seconds, nextExName, nextSetNum, isPrep);
+  void startRestTimer(int seconds, String nextExName, int nextSetNum, bool isPrep) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.startRestTimer(seconds, nextExName, nextSetNum, isPrep);
+  }
 
-  void clearRestTimer() => _workoutProvider!.clearRestTimer();
+  void clearRestTimer() {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.clearRestTimer();
+  }
 
-  void updateExerciseWeightReps(int exIndex, double weight, int reps) =>
-      _workoutProvider!.updateExerciseWeightReps(exIndex, weight, reps);
+  void updateExerciseWeightReps(int exIndex, double weight, int reps) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.updateExerciseWeightReps(exIndex, weight, reps);
+  }
 
-  void updateExerciseSetWeightReps(int exIndex, int setIdx, double weight, int reps) =>
-      _workoutProvider!.updateExerciseSetWeightReps(exIndex, setIdx, weight, reps);
+  void updateExerciseSetWeightReps(int exIndex, int setIdx, double weight, int reps) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.updateExerciseSetWeightReps(exIndex, setIdx, weight, reps);
+  }
 
-  void updateWorkoutTimer(int seconds, {bool isWarmupTimer = false}) =>
-      _workoutProvider!.updateWorkoutTimer(seconds, isWarmupTimer: isWarmupTimer);
+  void updateWorkoutTimer(int seconds, {bool isWarmupTimer = false}) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.updateWorkoutTimer(seconds, isWarmupTimer: isWarmupTimer);
+  }
 
-  void setCurrentExerciseIndex(int index) =>
-      _workoutProvider!.setCurrentExerciseIndex(index);
+  void setCurrentExerciseIndex(int index) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.setCurrentExerciseIndex(index);
+  }
 
-  void pauseWorkout(bool isPaused) =>
-      _workoutProvider!.pauseWorkout(isPaused);
+  void pauseWorkout(bool isPaused) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.pauseWorkout(isPaused);
+  }
 
-  void applyActiveWorkoutFromWatch(Map<String, dynamic> watchData) =>
-      _workoutProvider!.applyActiveWorkoutFromWatch(watchData);
+  void applyActiveWorkoutFromWatch(Map<String, dynamic> watchData) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.applyActiveWorkoutFromWatch(watchData);
+  }
 
-  void discardActiveWorkout() =>
-      _workoutProvider!.discardActiveWorkout();
+  void discardActiveWorkout() {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.discardActiveWorkout();
+  }
 
-  void postponeActiveWorkout() =>
-      _workoutProvider!.postponeActiveWorkout();
+  void postponeActiveWorkout() {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.postponeActiveWorkout();
+  }
 
-  void resumeActiveWorkout() =>
-      _workoutProvider!.resumeActiveWorkout();
+  void resumeActiveWorkout() {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.resumeActiveWorkout();
+  }
 
-  void updateHealthMetrics(int heartRate, int activeCalories) =>
-      _workoutProvider!.updateHealthMetrics(heartRate, activeCalories);
+  void updateHealthMetrics(int heartRate, int activeCalories) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.updateHealthMetrics(heartRate, activeCalories);
+  }
 
-  void finishWorkout(int duration, int rpeValue, String notes) =>
-      _workoutProvider!.finishWorkout(duration, rpeValue, notes);
+  void finishWorkout(int duration, int rpeValue, String notes) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.finishWorkout(duration, rpeValue, notes);
+  }
 
-  void addManualWorkoutLog(WorkoutLog log) =>
-      _workoutProvider!.addManualWorkoutLog(log);
+  void addManualWorkoutLog(WorkoutLog log) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.addManualWorkoutLog(log);
+  }
 
-  Future<List<WorkoutLog>> loadWorkoutHistory() =>
-      _workoutProvider!.loadWorkoutHistory();
+  Future<List<WorkoutLog>> loadWorkoutHistory() {
+    if (_workoutProvider == null) return Future.value([]);
+    return _workoutProvider!.loadWorkoutHistory();
+  }
 
-  void deleteWorkoutLog(String id) =>
-      _workoutProvider!.deleteWorkoutLog(id);
+  void deleteWorkoutLog(String id) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.deleteWorkoutLog(id);
+  }
 
-  void addPlannerItem(String day) =>
-      _workoutProvider!.addPlannerItem(day);
+  void addPlannerItem(String day) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.addPlannerItem(day);
+  }
 
-  void updatePlannerItem(String day, int index, String value) =>
-      _workoutProvider!.updatePlannerItem(day, index, value);
+  void updatePlannerItem(String day, int index, String value) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.updatePlannerItem(day, index, value);
+  }
 
-  void reorderPlannerItem(String day, int index, bool moveUp) =>
-      _workoutProvider!.reorderPlannerItem(day, index, moveUp);
+  void reorderPlannerItem(String day, int index, bool moveUp) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.reorderPlannerItem(day, index, moveUp);
+  }
 
-  void removePlannerItem(String day, int index) =>
-      _workoutProvider!.removePlannerItem(day, index);
+  void removePlannerItem(String day, int index) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.removePlannerItem(day, index);
+  }
 
-  void deletePersonalRecord(String exerciseId) =>
-      _workoutProvider!.deletePersonalRecord(exerciseId);
+  void deletePersonalRecord(String exerciseId) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.deletePersonalRecord(exerciseId);
+  }
 
-  void addLibraryExercise(String name, String muscle, String measurementType, String? notes, String? executionType) =>
-      _workoutProvider!.addLibraryExercise(name, muscle, measurementType, notes, executionType);
+  void addLibraryExercise(String name, String muscle, String measurementType, String? notes, String? executionType) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.addLibraryExercise(name, muscle, measurementType, notes, executionType);
+  }
 
-  void updateLibraryExercise(String id, String name, String muscle, String measurementType, String? notes, String? executionType) =>
-      _workoutProvider!.updateLibraryExercise(id, name, muscle, measurementType, notes, executionType);
+  void updateLibraryExercise(String id, String name, String muscle, String measurementType, String? notes, String? executionType) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.updateLibraryExercise(id, name, muscle, measurementType, notes, executionType);
+  }
 
-  void deleteLibraryExercise(String id) =>
-      _workoutProvider!.deleteLibraryExercise(id);
+  void deleteLibraryExercise(String id) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.deleteLibraryExercise(id);
+  }
 
-  void addRoutine(String name, int defaultRest, List<RoutineExercise> exercises) =>
-      _workoutProvider!.addRoutine(name, defaultRest, exercises);
+  void addRoutine(String name, int defaultRest, List<RoutineExercise> exercises) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.addRoutine(name, defaultRest, exercises);
+  }
 
-  void updateRoutine(Routine r) =>
-      _workoutProvider!.updateRoutine(r);
+  void updateRoutine(Routine r) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.updateRoutine(r);
+  }
 
-  void deleteRoutine(String id) =>
-      _workoutProvider!.deleteRoutine(id);
+  void deleteRoutine(String id) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.deleteRoutine(id);
+  }
 
-  void addMeasurement(BodyMeasurement record) =>
-      _workoutProvider!.addMeasurement(record);
+  void addMeasurement(BodyMeasurement record) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.addMeasurement(record);
+  }
 
-  void deleteMeasurement(String id) =>
-      _workoutProvider!.deleteMeasurement(id);
+  void deleteMeasurement(String id) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.deleteMeasurement(id);
+  }
 
-  void updateMeasurement(BodyMeasurement record) =>
-      _workoutProvider!.updateMeasurement(record);
+  void updateMeasurement(BodyMeasurement record) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.updateMeasurement(record);
+  }
 
-  void updateSettings(bool sound, bool vibration, int prepSeconds) =>
-      _workoutProvider!.updateSettings(sound, vibration, prepSeconds);
+  void updateSettings(bool sound, bool vibration, int prepSeconds) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.updateSettings(sound, vibration, prepSeconds);
+  }
 
-  void updateWaterIntake(int quantityMl) =>
-      _dietProvider!.updateWaterIntake(quantityMl);
+  void updateWaterIntake(int quantityMl) {
+    if (_dietProvider == null) return;
+    _dietProvider!.updateWaterIntake(quantityMl);
+  }
 
-  void addMeal(String name, int cals, double prot, double carbs, double fat, String time) =>
-      _dietProvider!.addMeal(name, cals, prot, carbs, fat, time);
+  void addMeal(String name, int cals, double prot, double carbs, double fat, String time) {
+    if (_dietProvider == null) return;
+    _dietProvider!.addMeal(name, cals, prot, carbs, fat, time);
+  }
 
-  void deleteMeal(String mealId) =>
-      _dietProvider!.deleteMeal(mealId);
+  void deleteMeal(String mealId) {
+    if (_dietProvider == null) return;
+    _dietProvider!.deleteMeal(mealId);
+  }
 
-  void updateDietGoals(int cals, double prot, double carbs, double fat) =>
-      _dietProvider!.updateDietGoals(cals, prot, carbs, fat);
+  void updateDietGoals(int cals, double prot, double carbs, double fat) {
+    if (_dietProvider == null) return;
+    _dietProvider!.updateDietGoals(cals, prot, carbs, fat);
+  }
 
-  void startFasting(double hours) =>
-      _dietProvider!.startFasting(hours);
+  void startFasting(double hours) {
+    if (_dietProvider == null) return;
+    _dietProvider!.startFasting(hours);
+  }
 
-  void endFasting() =>
-      _dietProvider!.endFasting();
+  void endFasting() {
+    if (_dietProvider == null) return;
+    _dietProvider!.endFasting();
+  }
 
-  void updateWaterGoal(int goalMl) =>
-      _dietProvider!.updateWaterGoal(goalMl);
+  void updateWaterGoal(int goalMl) {
+    if (_dietProvider == null) return;
+    _dietProvider!.updateWaterGoal(goalMl);
+  }
 
-  void addAbstinence(String title, [String? notes]) =>
-      _dietProvider!.addAbstinence(title, notes);
+  void addAbstinence(String title, [String? notes]) {
+    if (_dietProvider == null) return;
+    _dietProvider!.addAbstinence(title, notes);
+  }
 
-  void resetAbstinence(String id) =>
-      _dietProvider!.resetAbstinence(id);
+  void resetAbstinence(String id) {
+    if (_dietProvider == null) return;
+    _dietProvider!.resetAbstinence(id);
+  }
 
-  void deleteAbstinence(String id) =>
-      _dietProvider!.deleteAbstinence(id);
+  void deleteAbstinence(String id) {
+    if (_dietProvider == null) return;
+    _dietProvider!.deleteAbstinence(id);
+  }
 
-  void checkAndResetDailyDiet() =>
-      _dietProvider!.checkAndResetDailyDiet();
+  void checkAndResetDailyDiet() {
+    if (_dietProvider == null) return;
+    _dietProvider!.checkAndResetDailyDiet();
+  }
 
-  Future<void> updateProfile(String id, String name, String avatar, String color) =>
-      _profileProvider!.updateProfile(id, name, avatar, color);
+  Future<void> updateProfile(String id, String name, String avatar, String color) {
+    if (_profileProvider == null) return Future.value();
+    return _profileProvider!.updateProfile(id, name, avatar, color);
+  }
 
   // --- INITIALIZERS FOR DEFAULT STATE ---
   PlannerState _getDefaultState() {
