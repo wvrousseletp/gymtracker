@@ -4,6 +4,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'firebase_options.dart';
+import 'providers/profile_provider.dart';
+import 'providers/workout_provider.dart';
+import 'providers/diet_provider.dart';
 import 'providers/tracker_provider.dart';
 import 'screens/main_navigation.dart';
 import 'screens/login_screen.dart';
@@ -14,8 +17,23 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => TrackerProvider(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => ProfileProvider()),
+        ChangeNotifierProxyProvider<ProfileProvider, WorkoutProvider>(
+          create: (context) => WorkoutProvider(),
+          update: (context, profile, workout) => workout!..updateProfile(profile),
+        ),
+        ChangeNotifierProxyProvider<ProfileProvider, DietProvider>(
+          create: (context) => DietProvider(),
+          update: (context, profile, diet) => diet!..updateProfile(profile),
+        ),
+        ChangeNotifierProxyProvider3<ProfileProvider, WorkoutProvider, DietProvider, TrackerProvider>(
+          create: (context) => TrackerProvider(),
+          update: (context, profile, workout, diet, tracker) =>
+              tracker!..update(profile, workout, diet),
+        ),
+      ],
       child: const MyApp(),
     ),
   );
