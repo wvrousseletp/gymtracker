@@ -37,10 +37,10 @@ class WatchBackgroundSyncManager: NSObject, ObservableObject {
     // MARK: - Schedule Background Sync
     
     func scheduleBackgroundSync() {
-        // Schedule a background refresh task
+        let userInfo = ["reason": "periodic_sync"] as NSDictionary
         WKExtension.shared().scheduleBackgroundRefresh(
             withPreferredDate: Date().addingTimeInterval(1800), // 30 minutes
-            userInfo: nil
+            userInfo: userInfo as? NSSecureCoding
         ) { error in
             if let error = error {
                 os_log("Failed to schedule background refresh: %{public}@", log: OSLog(subsystem: "com.losmooscles.watch", category: "BackgroundSync"), type: .error, error.localizedDescription)
