@@ -42,16 +42,14 @@ class WatchCloudBackupManager {
             return
         }
         
-        let reasonCode = NSUbiquitousKeyValueStore.ChangeReason(rawValue: reason)
-        
-        switch reasonCode {
-        case .accountChange, .initialSyncChange, .quotaViolationChange:
+        switch reason {
+        case NSUbiquitousKeyValueStoreAccountChange, NSUbiquitousKeyValueStoreInitialSyncChange, NSUbiquitousKeyValueStoreQuotaViolationChange:
             os_log("iCloud sync changed: reason %d", log: OSLog(subsystem: "com.losmooscles.watch", category: "Cloud"), type: .info, reason)
             syncFromCloud()
-        case .serverChange:
+        case NSUbiquitousKeyValueStoreServerChange:
             os_log("iCloud data changed on server", log: OSLog(subsystem: "com.losmooscles.watch", category: "Cloud"), type: .info)
             syncFromCloud()
-        @unknown default:
+        default:
             break
         }
     }
@@ -118,7 +116,7 @@ class WatchCloudBackupManager {
             // Check version compatibility
             let cloudVersion = self.iCloudStore.string(forKey: CloudKey.version.rawValue)
             if cloudVersion != self.currentVersion {
-                os_log("Version mismatch: local=%s, cloud=%s", log: OSLog(subsystem: "com.losmooscles.watch", category: "Cloud"), type: .warning, self.currentVersion, cloudVersion ?? "nil")
+                os_log("Version mismatch: local=%s, cloud=%s", log: OSLog(subsystem: "com.losmooscles.watch", category: "Cloud"), type: .error, self.currentVersion, cloudVersion ?? "nil")
             }
             
             // Download routines if local is empty or cloud is newer

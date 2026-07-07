@@ -6,7 +6,7 @@ class HealthKitWorkoutManager {
     static let shared = HealthKitWorkoutManager()
     
     private let healthStore = HKHealthStore()
-    private let workoutBuilder = HKLiveWorkoutBuilder(healthStore: HKHealthStore())
+    private var workoutBuilder: HKLiveWorkoutBuilder?
     
     // Workout types
     private let traditionalStrengthWorkout = HKWorkoutActivityType.traditionalStrengthTraining
@@ -14,18 +14,24 @@ class HealthKitWorkoutManager {
     private let functionalStrengthWorkout = HKWorkoutActivityType.functionalStrengthTraining
     
     private init() {
+        if #available(watchOS 5.0, *) {
+            let configuration = HKWorkoutConfiguration()
+            configuration.activityType = .traditionalStrengthTraining
+            configuration.locationType = .indoor
+            workoutBuilder = HKLiveWorkoutBuilder(healthStore: healthStore, configuration: configuration, device: HKDevice.local())
+        }
         requestAuthorization()
     }
     
     // MARK: - Authorization
     
     private func requestAuthorization() {
-        let typesToShare: Set = [
-            HKObjectType.workout()
+        let typesToShare: Set<HKSampleType> = [
+            HKObjectType.workoutType()
         ]
         
-        let typesToRead: Set = [
-            HKObjectType.workout(),
+        let typesToRead: Set<HKObjectType> = [
+            HKObjectType.workoutType(),
             HKQuantityType(.heartRate),
             HKQuantityType(.activeEnergyBurned),
             HKQuantityType(.basalEnergyBurned),
@@ -67,13 +73,16 @@ class HealthKitWorkoutManager {
             activityType: workoutType,
             startDate: startDate,
             endDate: endDate,
-            duration: TimeInterval(duration)
+            duration: TimeInterval(duration),
+            totalEnergyBurned: nil,
+            totalDistance: nil,
+            metadata: nil
         )
         
         // Add metadata
         var metadata: [String: Any] = [
             HKMetadataKeyWorkoutBrandName: "LosMooScles",
-            HKMetadataKeyWorkoutType: name
+            "WorkoutType": name
         ]
         
         if let rpe = workoutData["rpe"] as? Int {
@@ -113,8 +122,8 @@ class HealthKitWorkoutManager {
     // MARK: - Query Workouts from HealthKit
     
     func queryRecentWorkouts(limit: Int = 10, completion: @escaping ([HKWorkout]?, Error?) -> Void) {
-        let workoutType = HKObjectType.workout()
-        let sortDescriptor = NSSortDescriptor(key: HKWorkoutSortIdentifierStartDate, ascending: false)
+        let workoutType = HKObjectType.workoutType()
+        let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
         
         let query = HKSampleQuery(
             sampleType: workoutType,
