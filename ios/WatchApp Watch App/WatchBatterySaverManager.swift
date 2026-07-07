@@ -45,7 +45,7 @@ class WatchBatterySaverManager: ObservableObject {
     private func updateBatteryInfo() {
         #if os(watchOS)
         let device = WKInterfaceDevice.current()
-        batteryLevel = device.batteryLevel
+        batteryLevel = Double(device.batteryLevel)
         batteryState = device.batteryState
         
         os_log("Battery level: %.2f, state: %d", log: OSLog(subsystem: "com.losmooscles.watch", category: "Battery"), type: .info, batteryLevel, batteryState.rawValue)

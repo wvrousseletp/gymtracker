@@ -1,5 +1,6 @@
 import Foundation
 import WatchConnectivity
+import WatchKit
 import os.log
 
 class WatchBackgroundSyncManager: NSObject, ObservableObject {
@@ -23,41 +24,6 @@ class WatchBackgroundSyncManager: NSObject, ObservableObject {
         // Perform sync operations
         performBackgroundSync { [weak self] success in
             self?.completeBackgroundTask(success: success)
-        }
-    }
-    
-    private func performBackgroundSync(completion: @escaping (Bool) -> Void) {
-        let group = DispatchGroup()
-        var syncSuccess = true
-        
-        // 1. Sync offline workouts
-        group.enter()
-        connectivityManager.syncOfflineWorkouts()
-        group.leave()
-        
-        // 2. Sync to iCloud
-        group.enter()
-        cloudBackup.syncToCloud()
-        group.leave()
-        
-        // 3. Sync from iCloud if needed
-        group.enter()
-        let cache = WatchDataCache.shared
-        if cache.getRoutines().isEmpty {
-            cloudBackup.syncFromCloud()
-        }
-        group.leave()
-        
-        // 4. Request sync from iPhone if reachable
-        if WCSession.default.isReachable {
-            group.enter()
-            connectivityManager.requestSync()
-            group.leave()
-        }
-        
-        group.notify(queue: .main) {
-            os_log("Background sync completed", log: OSLog(subsystem: "com.losmooscles.watch", category: "BackgroundSync"), type: .info)
-            completion(syncSuccess)
         }
     }
     
@@ -157,7 +123,7 @@ class WatchBackgroundSyncManager: NSObject, ObservableObject {
     
     private func performBackgroundSync(completion: @escaping (Bool) -> Void) {
         guard !syncInProgress else {
-            os_log("Sync already in progress, skipping", log: OSLog(subsystem: "com.losmooscles.watch", category: "BackgroundSync"), type: .warning)
+            os_log("Sync already in progress, skipping", log: OSLog(subsystem: "com.losmooscles.watch", category: "BackgroundSync"), type: .error)
             completion(false)
             return
         }
@@ -194,8 +160,8 @@ class WatchBackgroundSyncManager: NSObject, ObservableObject {
         }
         
         group.notify(queue: .main) { [weak self] in
-            self?.syncInProgress = false
             os_log("Background sync completed", log: OSLog(subsystem: "com.losmooscles.watch", category: "BackgroundSync"), type: .info)
+            self?.syncInProgress = false
             completion(syncSuccess)
         }
     }

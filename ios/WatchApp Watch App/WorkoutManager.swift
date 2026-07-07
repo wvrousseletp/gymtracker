@@ -21,7 +21,7 @@ class WorkoutManager: NSObject, ObservableObject {
     var session: HKWorkoutSession?
     var builder: HKLiveWorkoutBuilder?
     private var lastHealthSync = Date.distantPast
-    private let healthSyncInterval: TimeInterval = 5
+    var healthSyncInterval: TimeInterval = 5
     
     private override init() {
         super.init()
