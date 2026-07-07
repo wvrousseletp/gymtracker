@@ -431,13 +431,17 @@ struct ActiveWorkoutView: View {
                             let isSelected = setIndex == activeSetIdx
                             let isFailure = setIndex < exercise.failureReport.count ? exercise.failureReport[setIndex] : false
                             
+                            let textLabel = "Série \(setIndex + 1)"
+                            let weightColor = isSelected ? Color.orange : Color.white
+                            let checkmarkColor = isCardio ? Color.blue : Color.green
+                            
                             Button(action: {
                                 setSelectedSetIndex(for: exercise, index: exIndex, setIndex: setIndex)
                             }) {
                                 HStack {
-                                    Text("Série \(setIndex + 1)")
+                                    Text(textLabel)
                                         .font(.system(size: 10, weight: isSelected ? .bold : .regular))
-                                        .foregroundColor(isSelected ? .orange : .white)
+                                        .foregroundColor(weightColor)
                                     
                                     Spacer()
                                     
@@ -451,7 +455,7 @@ struct ActiveWorkoutView: View {
                                     if isCompleted {
                                         Image(systemName: "checkmark.circle.fill")
                                             .font(.system(size: 10, weight: .bold))
-                                            .foregroundColor(isCardio ? .blue : .green)
+                                            .foregroundColor(checkmarkColor)
                                             .transition(.scale.combined(with: .opacity))
                                     } else {
                                         Image(systemName: "circle")

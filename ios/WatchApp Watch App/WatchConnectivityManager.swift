@@ -8,6 +8,7 @@ import WatchKit
 #endif
 
 class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
+    private let pendingOfflineCacheKey = "pending_offline_workouts"
     static let shared = WatchConnectivityManager()
 
     @Published var routines: [WatchRoutine] = []
