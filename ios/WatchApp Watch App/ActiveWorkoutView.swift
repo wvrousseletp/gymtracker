@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 #if canImport(WatchKit)
 import WatchKit
 #endif
@@ -698,40 +699,7 @@ struct ActiveWorkoutView: View {
         }
     }
 
-    // MARK: - Main Body
 
-    var body: some View {
-        Group {
-            if let activeWorkout = connectivityManager.activeWorkout {
-                if let restTimer = activeWorkout.restTimer {
-                    RestTimerView(restTimer: restTimer)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    TabView {
-                        currentExercisePageView(activeWorkout: activeWorkout)
-                        workoutControlsPageView(activeWorkout: activeWorkout)
-                    }
-                    .tabViewStyle(.page(indexDisplayMode: .never))
-                    .focusable()
-                    .digitalCrownRotation($crownValue, from: 0, through: 100, sensitivity: .medium, isContinuous: true, isHapticFeedbackEnabled: true)
-                    .onChange(of: crownValue) { oldValue, newValue in
-                        handleCrownRotation(newValue: newValue, oldValue: oldValue, activeWorkout: activeWorkout)
-                    }
-                    .onAppear {
-                        timerCancellable = stopwatchTimer.sink { _ in
-                            elapsedSeconds += 1
-                        }
-                    }
-                    .onDisappear {
-                        timerCancellable?.cancel()
-                    }
-                }
-            } else {
-                Text("Nenhum treino ativo")
-                    .foregroundColor(.gray)
-            }
-        }
-    }
     
     private func handleCrownRotation(newValue: Double, oldValue: Double, activeWorkout: WatchActiveWorkoutState) {
         let delta = Int(newValue - oldValue)
