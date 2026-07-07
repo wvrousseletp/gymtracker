@@ -15,6 +15,7 @@ struct PlannedRoutineRow: View {
                     Image(systemName: isCompleted ? "checkmark.seal.fill" : "calendar")
                         .font(.system(size: 10))
                         .foregroundColor(isCompleted ? .green : .green)
+                        .transition(.scale.combined(with: .opacity))
                 }
                 
                 VStack(alignment: .leading, spacing: 1) {
@@ -30,6 +31,7 @@ struct PlannedRoutineRow: View {
                 Image(systemName: isCompleted ? "checkmark.circle.fill" : "play.fill")
                     .font(.system(size: isCompleted ? 12 : 8))
                     .foregroundColor(isCompleted ? .green : .green)
+                    .transition(.scale.combined(with: .opacity))
             }
             .padding(.vertical, 4)
         }
@@ -43,6 +45,7 @@ struct PlannedRoutineRow: View {
         )
         .accessibilityLabel(isCompleted ? "\(item.title), treino concluído" : "\(item.title), \(item.subtitle)")
         .accessibilityHint(isCompleted ? "Toque para ver detalhes" : "Toque para iniciar treino")
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isCompleted)
     }
 }
 
@@ -64,6 +67,7 @@ struct PlannedExerciseRow: View {
                     Image(systemName: isCompleted ? "checkmark.seal.fill" : "calendar")
                         .font(.system(size: 10))
                         .foregroundColor(isCompleted ? .green : .green)
+                        .transition(.scale.combined(with: .opacity))
                 }
                 
                 VStack(alignment: .leading, spacing: 1) {
@@ -79,6 +83,7 @@ struct PlannedExerciseRow: View {
                 Image(systemName: isCompleted ? "checkmark.circle.fill" : "play.fill")
                     .font(.system(size: isCompleted ? 12 : 8))
                     .foregroundColor(isCompleted ? .green : .green)
+                    .transition(.scale.combined(with: .opacity))
             }
             .padding(.vertical, 4)
         }
@@ -92,6 +97,7 @@ struct PlannedExerciseRow: View {
         )
         .accessibilityLabel(isCompleted ? "\(item.title), exercício concluído" : "\(item.title), \(item.subtitle)")
         .accessibilityHint(isCompleted ? "Toque para ver detalhes" : "Toque para iniciar exercício")
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isCompleted)
     }
 }
 

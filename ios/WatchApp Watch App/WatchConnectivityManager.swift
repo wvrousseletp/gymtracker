@@ -24,7 +24,9 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     @Published var activeWorkout: WatchActiveWorkoutState? {
         didSet {
             if isLocalWorkout {
-                WatchLocalWorkoutManager.shared.updateLocalWorkout(activeWorkout)
+                if let workout = activeWorkout {
+                    WatchLocalWorkoutManager.shared.updateLocalWorkout(workout)
+                }
             } else if activeWorkout == nil {
                 WatchLocalWorkoutManager.shared.clearLocalWorkout()
             }
@@ -36,6 +38,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     
     private let cache = WatchDataCache.shared
     private let localWorkoutManager = WatchLocalWorkoutManager.shared
+    private let cloudBackup = WatchCloudBackupManager.shared
 
     private override init() {
         super.init()
@@ -54,6 +57,11 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         }
         
         checkAndResetDailyWater()
+        
+        // Sync from iCloud on startup if local data is empty
+        if routines.isEmpty && library.isEmpty {
+            cloudBackup.syncFromCloud()
+        }
         
         if WCSession.isSupported() {
             session = WCSession.default
@@ -133,8 +141,9 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                     let routines = try JSONDecoder().decode([WatchRoutine].self, from: jsonData)
                     self.routines = routines
                     self.cache.setRoutines(routines)
+                    self.cloudBackup.syncToCloud()
                 } catch {
-                    WatchLogger.connectivity.error("Error decoding routines: \(error.localizedDescription)")
+                    os_log("Error decoding routines: %{public}@", log: OSLog(subsystem: "com.losmooscles.watch", category: "Connectivity"), type: .error, error.localizedDescription)
                 }
             }
 
@@ -145,8 +154,9 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                     let library = try JSONDecoder().decode([WatchLibraryExercise].self, from: jsonData)
                     self.library = library
                     self.cache.setLibrary(library)
+                    self.cloudBackup.syncToCloud()
                 } catch {
-                    WatchLogger.connectivity.error("Error decoding library: \(error.localizedDescription)")
+                    os_log("Error decoding library: %{public}@", log: OSLog(subsystem: "com.losmooscles.watch", category: "Connectivity"), type: .error, error.localizedDescription)
                 }
             }
 
@@ -157,8 +167,9 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                     let planner = try JSONDecoder().decode([String: [String]].self, from: jsonData)
                     self.planner = planner
                     self.cache.setPlanner(planner)
+                    self.cloudBackup.syncToCloud()
                 } catch {
-                    WatchLogger.connectivity.error("Error decoding planner: \(error.localizedDescription)")
+                    os_log("Error decoding planner: %{public}@", log: OSLog(subsystem: "com.losmooscles.watch", category: "Connectivity"), type: .error, error.localizedDescription)
                 }
             }
 
@@ -170,6 +181,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             if let waterIntakeTarget = data["waterIntakeTarget"] as? Int {
                 self.waterIntakeTarget = waterIntakeTarget
                 self.cache.setWaterIntakeTarget(waterIntakeTarget)
+                self.cloudBackup.syncToCloud()
             }
             if let waterIntakeDate = data["waterIntakeDate"] as? String {
                 self.cache.setWaterDate(waterIntakeDate)

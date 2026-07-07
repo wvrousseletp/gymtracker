@@ -61,6 +61,7 @@ struct PRCelebrationBanner: View {
 struct ActiveWorkoutView: View {
     @ObservedObject var connectivityManager = WatchConnectivityManager.shared
     @ObservedObject var workoutManager = WorkoutManager.shared
+    private let hapticManager = WatchHapticManager.shared
     
     enum CrownFocusedField: Hashable {
         case weight
@@ -78,6 +79,7 @@ struct ActiveWorkoutView: View {
     @State private var elapsedSeconds: Int = 0
     @State private var selectedSetIndexMap: [String: Int] = [:] // exerciseId -> selectedSetIndex
     @State private var crownValue: Double = 0
+    @State private var lastCrownValue: Double = 0
     @State private var timerCancellable: Cancellable?
     let stopwatchTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -272,9 +274,9 @@ struct ActiveWorkoutView: View {
             Button(action: {
                 #if canImport(WatchKit)
                 if !isFailure {
-                    WKInterfaceDevice.current().play(.directionDown)
+                    hapticManager.playFailureRegistered()
                 } else {
-                    WKInterfaceDevice.current().play(.click)
+                    hapticManager.playFailureRemoved()
                 }
                 #endif
                 connectivityManager.updateFailure(exerciseIndex: exIndex, setIndex: selectedSetIdx, isFailure: !isFailure, failureRep: nil)
@@ -450,6 +452,7 @@ struct ActiveWorkoutView: View {
                                         Image(systemName: "checkmark.circle.fill")
                                             .font(.system(size: 10, weight: .bold))
                                             .foregroundColor(isCardio ? .blue : .green)
+                                            .transition(.scale.combined(with: .opacity))
                                     } else {
                                         Image(systemName: "circle")
                                             .font(.system(size: 10))
@@ -464,6 +467,8 @@ struct ActiveWorkoutView: View {
                                     RoundedRectangle(cornerRadius: 8)
                                         .stroke(isSelected ? Color.orange.opacity(0.5) : Color.white.opacity(0.04), lineWidth: 1)
                                 )
+                                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isCompleted)
+                                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
                             }
                             .buttonStyle(PlainButtonStyle())
                         }
@@ -489,12 +494,12 @@ struct ActiveWorkoutView: View {
                             #if canImport(WatchKit)
                             if !isCompleted {
                                 if isFailure {
-                                    WKInterfaceDevice.current().play(.directionDown)
+                                    hapticManager.playFailureRegistered()
                                 } else {
-                                    WKInterfaceDevice.current().play(.directionUp)
+                                    hapticManager.playSetCompleted()
                                 }
                             } else {
-                                WKInterfaceDevice.current().play(.click)
+                                hapticManager.playSetUncompleted()
                             }
                             #endif
 
@@ -514,6 +519,7 @@ struct ActiveWorkoutView: View {
                                 Image(systemName: isCompleted ? "checkmark.circle.fill" : "play.circle.fill")
                                     .font(.system(size: 12, weight: .bold))
                                     .foregroundColor(isCompleted ? .white : .black)
+                                    .transition(.scale.combined(with: .opacity))
                                 Text(isCompleted ? "SÉRIE CONCLUÍDA" : "CONCLUIR SÉRIE")
                                     .font(.system(size: 11, weight: .black))
                                     .foregroundColor(isCompleted ? .white : .black)
@@ -523,6 +529,7 @@ struct ActiveWorkoutView: View {
                             .background(isCompleted ? Color.gray.opacity(0.3) : Color.green)
                             .cornerRadius(12)
                             .shadow(color: isCompleted ? Color.clear : Color.green.opacity(0.3), radius: 4)
+                            .animation(.spring(response: 0.4, dampingFraction: 0.6), value: isCompleted)
                         }
                         .buttonStyle(PlainButtonStyle())
                         .padding(.top, 4)
@@ -722,7 +729,7 @@ struct ActiveWorkoutView: View {
         }
         
         #if canImport(WatchKit)
-        WKInterfaceDevice.current().play(.click)
+        hapticManager.playCrownRotation()
         #endif
     }
     
@@ -740,8 +747,9 @@ struct ActiveWorkoutView: View {
                     .tabViewStyle(.page(indexDisplayMode: .never))
                     .focusable()
                     .digitalCrownRotation($crownValue, from: 0, through: 100, sensitivity: .medium, isContinuous: true, isHapticFeedbackEnabled: true)
-                    .onChange(of: crownValue) { oldValue, newValue in
-                        handleCrownRotation(newValue: newValue, oldValue: oldValue, activeWorkout: activeWorkout)
+                    .onChange(of: crownValue) { newValue in
+                        handleCrownRotation(newValue: newValue, oldValue: lastCrownValue, activeWorkout: activeWorkout)
+                        lastCrownValue = newValue
                     }
                     .onAppear {
                         timerCancellable = stopwatchTimer.sink { _ in

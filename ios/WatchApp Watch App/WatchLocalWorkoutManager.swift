@@ -283,6 +283,15 @@ class WatchLocalWorkoutManager {
         // Add to offline queue for sync
         addToOfflineQueue(workout: activeWorkout)
         
+        // Backup to HealthKit
+        HealthKitWorkoutManager.shared.saveWorkoutToHealthKit(workoutData: workoutDict) { success, error in
+            if success {
+                os_log("Workout backed up to HealthKit", log: OSLog(subsystem: "com.losmooscles.watch", category: "LocalWorkout"), type: .info)
+            } else if let error = error {
+                os_log("Failed to backup workout to HealthKit: %{public}@", log: OSLog(subsystem: "com.losmooscles.watch", category: "LocalWorkout"), type: .error, error.localizedDescription)
+            }
+        }
+        
         // Clear local workout
         clearLocalWorkout()
         

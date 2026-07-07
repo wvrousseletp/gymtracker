@@ -10,6 +10,12 @@ class WorkoutManager: NSObject, ObservableObject {
     
     @Published var heartRate: Double = 0
     @Published var activeCalories: Double = 0
+    @Published var basalCalories: Double = 0
+    @Published var stepCount: Int = 0
+    @Published var distance: Double = 0
+    @Published var heartRateVariability: Double = 0
+    @Published var bloodOxygen: Double = 0
+    @Published var altitude: Double = 0
     @Published var workoutSessionState: HKWorkoutSessionState = .notStarted
     
     var session: HKWorkoutSession?
@@ -27,19 +33,31 @@ class WorkoutManager: NSObject, ObservableObject {
         let typesToShare: Set = [
             HKQuantityType.workoutType(),
             HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)!,
-            HKQuantityType.quantityType(forIdentifier: .heartRate)!
+            HKQuantityType.quantityType(forIdentifier: .heartRate)!,
+            HKQuantityType.quantityType(forIdentifier: .basalEnergyBurned)!,
+            HKQuantityType.quantityType(forIdentifier: .stepCount)!,
+            HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning)!,
+            HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!,
+            HKQuantityType.quantityType(forIdentifier: .oxygenSaturation)!,
+            HKQuantityType.quantityType(forIdentifier: .altitude)!
         ]
         
         let typesToRead: Set = [
             HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)!,
-            HKQuantityType.quantityType(forIdentifier: .heartRate)!
+            HKQuantityType.quantityType(forIdentifier: .heartRate)!,
+            HKQuantityType.quantityType(forIdentifier: .basalEnergyBurned)!,
+            HKQuantityType.quantityType(forIdentifier: .stepCount)!,
+            HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning)!,
+            HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!,
+            HKQuantityType.quantityType(forIdentifier: .oxygenSaturation)!,
+            HKQuantityType.quantityType(forIdentifier: .altitude)!
         ]
         
         healthStore.requestAuthorization(toShare: typesToShare, read: typesToRead) { success, error in
             if success {
-                WatchLogger.health.info("HealthKit authorized successfully")
+                os_log("HealthKit authorized successfully", log: OSLog(subsystem: "com.losmooscles.watch", category: "HealthKit"), type: .info)
             } else if let error = error {
-                WatchLogger.health.error("HealthKit authorization failed: \(error.localizedDescription)")
+                os_log("HealthKit authorization failed: %{public}@", log: OSLog(subsystem: "com.losmooscles.watch", category: "HealthKit"), type: .error, error.localizedDescription)
             }
         }
     }
@@ -130,6 +148,12 @@ class WorkoutManager: NSObject, ObservableObject {
         DispatchQueue.main.async {
             self.heartRate = 0
             self.activeCalories = 0
+            self.basalCalories = 0
+            self.stepCount = 0
+            self.distance = 0
+            self.heartRateVariability = 0
+            self.bloodOxygen = 0
+            self.altitude = 0
             self.workoutSessionState = .notStarted
         }
     }
@@ -168,6 +192,36 @@ extension WorkoutManager: HKLiveWorkoutBuilderDelegate {
                         if let quantity = statistics.sumQuantity() {
                             self.activeCalories = quantity.doubleValue(for: unit)
                         }
+                    } else if quantityType == HKQuantityType.quantityType(forIdentifier: .basalEnergyBurned) {
+                        let unit = HKUnit.kilocalorie()
+                        if let quantity = statistics.sumQuantity() {
+                            self.basalCalories = quantity.doubleValue(for: unit)
+                        }
+                    } else if quantityType == HKQuantityType.quantityType(forIdentifier: .stepCount) {
+                        let unit = HKUnit.count()
+                        if let quantity = statistics.sumQuantity() {
+                            self.stepCount = Int(quantity.doubleValue(for: unit))
+                        }
+                    } else if quantityType == HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning) {
+                        let unit = HKUnit.meter()
+                        if let quantity = statistics.sumQuantity() {
+                            self.distance = quantity.doubleValue(for: unit)
+                        }
+                    } else if quantityType == HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN) {
+                        let unit = HKUnit.secondUnit(with: .milli)
+                        if let quantity = statistics.mostRecentQuantity() {
+                            self.heartRateVariability = quantity.doubleValue(for: unit)
+                        }
+                    } else if quantityType == HKQuantityType.quantityType(forIdentifier: .oxygenSaturation) {
+                        let unit = HKUnit.percent()
+                        if let quantity = statistics.mostRecentQuantity() {
+                            self.bloodOxygen = quantity.doubleValue(for: unit)
+                        }
+                    } else if quantityType == HKQuantityType.quantityType(forIdentifier: .altitude) {
+                        let unit = HKUnit.meter()
+                        if let quantity = statistics.mostRecentQuantity() {
+                            self.altitude = quantity.doubleValue(for: unit)
+                        }
                     }
                 }
                 
@@ -175,7 +229,13 @@ extension WorkoutManager: HKLiveWorkoutBuilderDelegate {
                 let now = Date()
                 if now.timeIntervalSince(self.lastHealthSync) >= self.healthSyncInterval {
                     self.lastHealthSync = now
-                    WatchConnectivityManager.shared.sendHealthMetrics(heartRate: self.heartRate, calories: self.activeCalories)
+                    WatchConnectivityManager.shared.sendHealthMetrics(
+                        heartRate: self.heartRate,
+                        calories: self.activeCalories,
+                        basalCalories: self.basalCalories,
+                        steps: self.stepCount,
+                        distance: self.distance
+                    )
                 }
             }
         }
