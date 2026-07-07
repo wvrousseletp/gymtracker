@@ -369,6 +369,12 @@
 				D37777772FE20CC4008A94FA /* WatchComplications.swift */,
 				D39999992FE20CC4008A94F9 /* WeeklyStatsView.swift */,
 				D39999992FE20CC4008A9501 /* WorkoutManager.swift */,
+				D39999992FE20CC4008A99A1 /* HealthKitWorkoutManager.swift */,
+				D39999992FE20CC4008A99A3 /* WatchBackgroundSyncManager.swift */,
+				D39999992FE20CC4008A99A5 /* WatchBatterySaverManager.swift */,
+				D39999992FE20CC4008A99A7 /* WatchCloudBackupManager.swift */,
+				D39999992FE20CC4008A99A9 /* WatchComplicationProvider.swift */,
+				D39999992FE20CC4008A99AB /* WatchHapticManager.swift */,
 
 
 				D39999992FE20CC4008A999B /* WatchLocalWorkoutManager.swift */,
