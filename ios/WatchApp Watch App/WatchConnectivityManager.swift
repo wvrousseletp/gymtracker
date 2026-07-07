@@ -963,6 +963,8 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             defaults.set(cached, forKey: pendingOfflineCacheKey)
             WatchLogger.connectivity.info("Removed acknowledged offline workout \(workoutId)")
         }
+        localWorkoutManager.markAsSynced(workoutId: workoutId)
+        localWorkoutManager.clearSyncedWorkouts()
     }
 
     func syncOfflineWorkouts() {
@@ -980,10 +982,5 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             ]
             session.transferUserInfo(message)
         }
-    }
-    
-    private func removeAcknowledgedOfflineWorkout(workoutId: String) {
-        localWorkoutManager.markAsSynced(workoutId: workoutId)
-        localWorkoutManager.clearSyncedWorkouts()
     }
 }

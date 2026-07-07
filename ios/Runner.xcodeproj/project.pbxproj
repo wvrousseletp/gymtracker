@@ -7,6 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D39999992FE20CC4008A99A0 /* HealthKitWorkoutManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A99A1 /* HealthKitWorkoutManager.swift */; };
+		D39999992FE20CC4008A99A2 /* WatchBackgroundSyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A99A3 /* WatchBackgroundSyncManager.swift */; };
+		D39999992FE20CC4008A99A6 /* WatchCloudBackupManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A99A7 /* WatchCloudBackupManager.swift */; };
+		D39999992FE20CC4008A99A4 /* WatchBatterySaverManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A99A5 /* WatchBatterySaverManager.swift */; };
+		D39999992FE20CC4008A99A8 /* WatchComplicationProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A99A9 /* WatchComplicationProvider.swift */; };
+		D39999992FE20CC4008A99AA /* WatchHapticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A99AB /* WatchHapticManager.swift */; };
+
 		D39999992FE20CC4008A999A /* WatchLocalWorkoutManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A999B /* WatchLocalWorkoutManager.swift */; };
 		D39999992FE20CC4008A999C /* WatchDataCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A999D /* WatchDataCache.swift */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
@@ -356,6 +363,8 @@
 				D37777772FE20CC4008A94FA /* WatchComplications.swift */,
 				D39999992FE20CC4008A94F9 /* WeeklyStatsView.swift */,
 				D39999992FE20CC4008A9501 /* WorkoutManager.swift */,
+
+
 				D39999992FE20CC4008A999B /* WatchLocalWorkoutManager.swift */,
 				D39999992FE20CC4008A999D /* WatchDataCache.swift */,
 				D39999992FE20CC4008A94F4 /* RestTimerView.swift */,
@@ -802,6 +811,12 @@
 				D39999992FE20CC4008A94B3 /* ActiveWorkoutView.swift in Sources */,
 				D39999992FE20CC4008A94B9 /* WeeklyStatsView.swift in Sources */,
 				D39999992FE20CC4008A9500 /* WorkoutManager.swift in Sources */,
+				D39999992FE20CC4008A99A0 /* HealthKitWorkoutManager.swift in Sources */,
+				D39999992FE20CC4008A99A6 /* WatchCloudBackupManager.swift in Sources */,
+				D39999992FE20CC4008A99AA /* WatchHapticManager.swift in Sources */,
+				D39999992FE20CC4008A99A2 /* WatchBackgroundSyncManager.swift in Sources */,
+				D39999992FE20CC4008A99A4 /* WatchBatterySaverManager.swift in Sources */,
+				D39999992FE20CC4008A99A8 /* WatchComplicationProvider.swift in Sources */,
 				D39999992FE20CC4008A999A /* WatchLocalWorkoutManager.swift in Sources */,
 				D39999992FE20CC4008A999C /* WatchDataCache.swift in Sources */,
 				D39999992FE20CC4008A94B4 /* RestTimerView.swift in Sources */,
