@@ -76,6 +76,8 @@ struct ActiveWorkoutView: View {
     @State private var showingFinishSheet = false
     @State private var elapsedSeconds: Int = 0
     @State private var selectedSetIndexMap: [String: Int] = [:] // exerciseId -> selectedSetIndex
+    @State private var crownValue: Double = 0
+    @State private var timerCancellable: Cancellable?
     let stopwatchTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     private func formatDuration(_ seconds: Int) -> String {
@@ -134,6 +136,8 @@ struct ActiveWorkoutView: View {
                                 .clipShape(Circle())
                         }
                         .buttonStyle(PlainButtonStyle())
+                        .accessibilityLabel("Diminuir distância")
+                        .accessibilityHint("Diminui 0.1 km")
                         
                         Text(String(format: "%.1f km", distance))
                             .font(.system(size: 11, weight: .bold, design: .rounded))
@@ -152,6 +156,8 @@ struct ActiveWorkoutView: View {
                                 .clipShape(Circle())
                         }
                         .buttonStyle(PlainButtonStyle())
+                        .accessibilityLabel("Aumentar distância")
+                        .accessibilityHint("Aumenta 0.1 km")
                     }
                     .padding(3)
                     .background(Color.white.opacity(0.04))
@@ -184,6 +190,8 @@ struct ActiveWorkoutView: View {
                                 .clipShape(Circle())
                         }
                         .buttonStyle(PlainButtonStyle())
+                        .accessibilityLabel("Diminuir duração")
+                        .accessibilityHint("Diminui 1 minuto")
                         
                         Text("\(durationMin) min")
                             .font(.system(size: 11, weight: .bold, design: .rounded))
@@ -202,6 +210,8 @@ struct ActiveWorkoutView: View {
                                 .clipShape(Circle())
                         }
                         .buttonStyle(PlainButtonStyle())
+                        .accessibilityLabel("Aumentar duração")
+                        .accessibilityHint("Aumenta 1 minuto")
                     }
                     .padding(3)
                     .background(Color.white.opacity(0.04))
@@ -285,6 +295,8 @@ struct ActiveWorkoutView: View {
                 )
             }
             .buttonStyle(PlainButtonStyle())
+            .accessibilityLabel(isFailure ? "Falha registrada" : "Registrar falha")
+            .accessibilityHint(isFailure ? "Toque para remover falha" : "Toque para registrar falha nesta série")
             
             if isFailure {
                 VStack(alignment: .leading, spacing: 2) {
@@ -699,7 +711,78 @@ struct ActiveWorkoutView: View {
                         currentExercisePageView(activeWorkout: activeWorkout)
                         workoutControlsPageView(activeWorkout: activeWorkout)
                     }
-                    .tabViewStyle(PageTabViewStyle())
+                    .tabViewStyle(.page(indexDisplayMode: .never))
+                    .focusable()
+                    .digitalCrownRotation($crownValue, from: 0, through: 100, sensitivity: .medium, isContinuous: true, isHapticFeedbackEnabled: true)
+                    .onChange(of: crownValue) { oldValue, newValue in
+                        handleCrownRotation(newValue: newValue, oldValue: oldValue, activeWorkout: activeWorkout)
+                    }
+                    .onAppear {
+                        timerCancellable = stopwatchTimer.sink { _ in
+                            elapsedSeconds += 1
+                        }
+                    }
+                    .onDisappear {
+                        timerCancellable?.cancel()
+                    }
+                }
+            } else {
+                Text("Nenhum treino ativo")
+                    .foregroundColor(.gray)
+            }
+        }
+    }
+    
+    private func handleCrownRotation(newValue: Double, oldValue: Double, activeWorkout: WatchActiveWorkoutState) {
+        let delta = Int(newValue - oldValue)
+        guard delta != 0 else { return }
+        
+        guard activeWorkout.currentExerciseIndex < activeWorkout.exercises.count else { return }
+        let exercise = activeWorkout.exercises[activeWorkout.currentExerciseIndex]
+        let isCardio = exercise.muscle.lowercased().contains("cardio")
+        
+        if isCardio {
+            // Adjust cardio duration
+            let currentDuration = exercise.reps
+            let newDuration = max(10, currentDuration + delta * 5)
+            connectivityManager.updateCardio(exerciseIndex: activeWorkout.currentExerciseIndex, setIndex: 0, distance: 0.0, duration: newDuration)
+        } else {
+            // Adjust weight
+            let currentWeight = exercise.weight
+            let newWeight = max(0, currentWeight + Double(delta) * 0.5)
+            connectivityManager.updateExerciseWeightReps(exerciseIndex: activeWorkout.currentExerciseIndex, weight: newWeight, reps: exercise.reps)
+        }
+        
+        #if canImport(WatchKit)
+        WKInterfaceDevice.current().play(.click)
+        #endif
+    }
+    
+    var body: some View {
+        Group {
+            if let activeWorkout = connectivityManager.activeWorkout {
+                if let restTimer = activeWorkout.restTimer {
+                    RestTimerView(restTimer: restTimer)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    TabView {
+                        currentExercisePageView(activeWorkout: activeWorkout)
+                        workoutControlsPageView(activeWorkout: activeWorkout)
+                    }
+                    .tabViewStyle(.page(indexDisplayMode: .never))
+                    .focusable()
+                    .digitalCrownRotation($crownValue, from: 0, through: 100, sensitivity: .medium, isContinuous: true, isHapticFeedbackEnabled: true)
+                    .onChange(of: crownValue) { oldValue, newValue in
+                        handleCrownRotation(newValue: newValue, oldValue: oldValue, activeWorkout: activeWorkout)
+                    }
+                    .onAppear {
+                        timerCancellable = stopwatchTimer.sink { _ in
+                            elapsedSeconds += 1
+                        }
+                    }
+                    .onDisappear {
+                        timerCancellable?.cancel()
+                    }
                 }
             } else {
                 VStack(spacing: 12) {

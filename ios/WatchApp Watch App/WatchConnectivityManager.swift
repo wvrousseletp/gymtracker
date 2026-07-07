@@ -24,56 +24,34 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     @Published var activeWorkout: WatchActiveWorkoutState? {
         didSet {
             if isLocalWorkout {
-                saveLocalActiveWorkoutToDisk()
+                WatchLocalWorkoutManager.shared.updateLocalWorkout(activeWorkout)
             } else if activeWorkout == nil {
-                let defaults = (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard)
-                defaults.removeObject(forKey: "local_workout_state")
-                defaults.set(false, forKey: "local_workout_is_local")
+                WatchLocalWorkoutManager.shared.clearLocalWorkout()
             }
         }
     }
 
     private var session: WCSession?
     private var pendingHandoffToPhone = false
-    private let pendingOfflineCacheKey = "pending_offline_workout_cache"
+    
+    private let cache = WatchDataCache.shared
+    private let localWorkoutManager = WatchLocalWorkoutManager.shared
 
     private override init() {
         super.init()
         
-        // Load cached data from UserDefaults
-        let defaults = (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard)
-        if let routinesJson = defaults.string(forKey: "cached_routines"),
-           let jsonData = routinesJson.data(using: .utf8),
-           let decoded = try? JSONDecoder().decode([WatchRoutine].self, from: jsonData) {
-            self.routines = decoded
-        }
-        if let libraryJson = defaults.string(forKey: "cached_library"),
-           let jsonData = libraryJson.data(using: .utf8),
-           let decoded = try? JSONDecoder().decode([WatchLibraryExercise].self, from: jsonData) {
-            self.library = decoded
-        }
-        if let plannerJson = defaults.string(forKey: "cached_planner"),
-           let jsonData = plannerJson.data(using: .utf8),
-           let decoded = try? JSONDecoder().decode([String: [String]].self, from: jsonData) {
-            self.planner = decoded
-        }
+        // Load cached data using WatchDataCache
+        self.routines = cache.getRoutines()
+        self.library = cache.getLibrary()
+        self.planner = cache.getPlanner()
+        self.streak = cache.getStreak()
+        self.waterIntakeCurrent = cache.getWaterIntakeCurrent()
+        self.waterIntakeTarget = cache.getWaterIntakeTarget()
+        self.isLocalWorkout = cache.isLocalWorkout()
         
-        self.isLocalWorkout = defaults.bool(forKey: "local_workout_is_local")
-        if let savedData = defaults.data(forKey: "local_workout_state"),
-           let active = try? JSONDecoder().decode(WatchActiveWorkoutState.self, from: savedData) {
-            self.activeWorkout = active
+        if let localWorkout = cache.getLocalWorkoutState() {
+            self.activeWorkout = localWorkout
         }
-        
-        // Carrega streak em cache
-        if let streakJson = defaults.string(forKey: "cached_streak"),
-           let jsonData = streakJson.data(using: .utf8),
-           let decoded = try? JSONDecoder().decode(WatchStreak.self, from: jsonData) {
-            self.streak = decoded
-        }
-        
-        self.waterIntakeCurrent = defaults.integer(forKey: "cached_water_intake")
-        let cachedTarget = defaults.integer(forKey: "cached_water_target")
-        self.waterIntakeTarget = cachedTarget > 0 ? cachedTarget : 2000
         
         checkAndResetDailyWater()
         
@@ -152,8 +130,9 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             if let jsonString = data["routines"] as? String,
                let jsonData = jsonString.data(using: .utf8) {
                 do {
-                    self.routines = try JSONDecoder().decode([WatchRoutine].self, from: jsonData)
-                    (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard).set(jsonString, forKey: "cached_routines")
+                    let routines = try JSONDecoder().decode([WatchRoutine].self, from: jsonData)
+                    self.routines = routines
+                    self.cache.setRoutines(routines)
                 } catch {
                     WatchLogger.connectivity.error("Error decoding routines: \(error.localizedDescription)")
                 }
@@ -163,8 +142,9 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             if let jsonString = data["library"] as? String,
                let jsonData = jsonString.data(using: .utf8) {
                 do {
-                    self.library = try JSONDecoder().decode([WatchLibraryExercise].self, from: jsonData)
-                    (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard).set(jsonString, forKey: "cached_library")
+                    let library = try JSONDecoder().decode([WatchLibraryExercise].self, from: jsonData)
+                    self.library = library
+                    self.cache.setLibrary(library)
                 } catch {
                     WatchLogger.connectivity.error("Error decoding library: \(error.localizedDescription)")
                 }
@@ -174,8 +154,9 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             if let jsonString = data["planner"] as? String,
                let jsonData = jsonString.data(using: .utf8) {
                 do {
-                    self.planner = try JSONDecoder().decode([String: [String]].self, from: jsonData)
-                    (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard).set(jsonString, forKey: "cached_planner")
+                    let planner = try JSONDecoder().decode([String: [String]].self, from: jsonData)
+                    self.planner = planner
+                    self.cache.setPlanner(planner)
                 } catch {
                     WatchLogger.connectivity.error("Error decoding planner: \(error.localizedDescription)")
                 }
@@ -184,14 +165,14 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             // 2.2 Process water
             if let waterIntakeCurrent = data["waterIntakeCurrent"] as? Int {
                 self.waterIntakeCurrent = waterIntakeCurrent
-                (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard).set(waterIntakeCurrent, forKey: "cached_water_intake")
+                self.cache.setWaterIntakeCurrent(waterIntakeCurrent)
             }
             if let waterIntakeTarget = data["waterIntakeTarget"] as? Int {
                 self.waterIntakeTarget = waterIntakeTarget
-                (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard).set(waterIntakeTarget, forKey: "cached_water_target")
+                self.cache.setWaterIntakeTarget(waterIntakeTarget)
             }
             if let waterIntakeDate = data["waterIntakeDate"] as? String {
-                (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard).set(waterIntakeDate, forKey: "cached_water_date")
+                self.cache.setWaterDate(waterIntakeDate)
             }
             WidgetCenter.shared.reloadAllTimelines()
 
@@ -227,8 +208,9 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                     if let jsonString = data["routines"] as? String,
                        let jsonData = jsonString.data(using: .utf8) {
                         do {
-                            self.routines = try JSONDecoder().decode([WatchRoutine].self, from: jsonData)
-                            (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard).set(jsonString, forKey: "cached_routines")
+                            let routines = try JSONDecoder().decode([WatchRoutine].self, from: jsonData)
+                            self.routines = routines
+                            self.cache.setRoutines(routines)
                         } catch {
                             WatchLogger.connectivity.error("Error decoding routines in action: \(error.localizedDescription)")
                         }
@@ -237,8 +219,9 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                     if let jsonString = data["library"] as? String,
                        let jsonData = jsonString.data(using: .utf8) {
                         do {
-                            self.library = try JSONDecoder().decode([WatchLibraryExercise].self, from: jsonData)
-                            (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard).set(jsonString, forKey: "cached_library")
+                            let library = try JSONDecoder().decode([WatchLibraryExercise].self, from: jsonData)
+                            self.library = library
+                            self.cache.setLibrary(library)
                         } catch {
                             WatchLogger.connectivity.error("Error decoding library in action: \(error.localizedDescription)")
                         }
@@ -247,8 +230,9 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                     if let jsonString = data["planner"] as? String,
                        let jsonData = jsonString.data(using: .utf8) {
                         do {
-                            self.planner = try JSONDecoder().decode([String: [String]].self, from: jsonData)
-                            (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard).set(jsonString, forKey: "cached_planner")
+                            let planner = try JSONDecoder().decode([String: [String]].self, from: jsonData)
+                            self.planner = planner
+                            self.cache.setPlanner(planner)
                         } catch {
                             WatchLogger.connectivity.error("Error decoding planner in action: \(error.localizedDescription)")
                         }
@@ -268,14 +252,14 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                 case "updateWater":
                     if let current = data["waterIntakeCurrent"] as? Int {
                         self.waterIntakeCurrent = current
-                        (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard).set(current, forKey: "cached_water_intake")
+                        self.cache.setWaterIntakeCurrent(current)
                     }
                     if let target = data["waterIntakeTarget"] as? Int {
                         self.waterIntakeTarget = target
-                        (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard).set(target, forKey: "cached_water_target")
+                        self.cache.setWaterIntakeTarget(target)
                     }
                     if let date = data["waterIntakeDate"] as? String {
-                        (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard).set(date, forKey: "cached_water_date")
+                        self.cache.setWaterDate(date)
                     }
                     WidgetCenter.shared.reloadAllTimelines()
 
@@ -306,7 +290,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
 
                 case "offlineWorkoutAck":
                     if let workoutId = data["workoutId"] as? String {
-                        self.removeAcknowledgedOfflineWorkout(workoutId: workoutId)
+                        self.localWorkoutManager.markAsSynced(workoutId: workoutId)
                     }
 
                 case "updateStreak":
@@ -314,7 +298,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                        let jsonData = streakJson.data(using: .utf8),
                        let decoded = try? JSONDecoder().decode(WatchStreak.self, from: jsonData) {
                         self.streak = decoded
-                        (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard).set(streakJson, forKey: "cached_streak")
+                        self.cache.setStreak(decoded)
                         WidgetCenter.shared.reloadAllTimelines()
                     }
 
@@ -373,7 +357,9 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             sendToiPhone(msg)
         } else {
             isLocalWorkout = true
-            startLocalWorkout(routineId: routineId, customExercises: customExercises)
+            if let workout = localWorkoutManager.startLocalWorkout(routineId: routineId, customExercises: customExercises, routines: routines, library: library) {
+                self.activeWorkout = workout
+            }
         }
     }
 
@@ -382,7 +368,9 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             sendToiPhone(["action": "startSingleExercise", "exerciseId": exerciseId])
         } else {
             isLocalWorkout = true
-            startLocalSingleExercise(exerciseId: exerciseId)
+            if let workout = localWorkoutManager.startLocalSingleExercise(exerciseId: exerciseId, library: library) {
+                self.activeWorkout = workout
+            }
         }
     }
 
@@ -542,7 +530,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     func updateWaterIntake(newAmountMl: Int) {
         checkAndResetDailyWater()
         self.waterIntakeCurrent = newAmountMl
-        (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard).set(newAmountMl, forKey: "cached_water_intake")
+        cache.setWaterIntakeCurrent(newAmountMl)
         
         WidgetCenter.shared.reloadAllTimelines()
         
@@ -558,11 +546,11 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         formatter.dateFormat = "yyyy-MM-dd"
         let todayStr = formatter.string(from: now)
         
-        let savedDate = (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard).string(forKey: "cached_water_date") ?? ""
+        let savedDate = cache.getWaterDate()
         if savedDate != todayStr {
             self.waterIntakeCurrent = 0
-            (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard).set(0, forKey: "cached_water_intake")
-            (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard).set(todayStr, forKey: "cached_water_date")
+            cache.setWaterIntakeCurrent(0)
+            cache.setWaterDate(todayStr)
             WidgetCenter.shared.reloadAllTimelines()
         }
     }
@@ -592,106 +580,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         }
     }
 
-    // MARK: - Local Workout Implementations
-
-    private func saveLocalActiveWorkoutToDisk() {
-        let defaults = (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard)
-        defaults.set(isLocalWorkout, forKey: "local_workout_is_local")
-        if let active = activeWorkout {
-            if let encoded = try? JSONEncoder().encode(active) {
-                defaults.set(encoded, forKey: "local_workout_state")
-            }
-        } else {
-            defaults.removeObject(forKey: "local_workout_state")
-        }
-        WidgetCenter.shared.reloadAllTimelines()
-    }
-
-    private func startLocalWorkout(routineId: String, customExercises: [[String: Any]]? = nil) {
-        guard let routine = routines.first(where: { $0.id == routineId }) else { return }
-        
-        var activeExercises: [WatchActiveExercise] = []
-        for re in routine.exercises {
-            let libEx = library.first(where: { $0.id == re.exerciseId })
-            let name = libEx?.name ?? "Exercício"
-            let muscle = libEx?.muscle ?? "Geral"
-            let measurementType = libEx?.measurementType ?? "reps"
-            let executionType = libEx?.executionType
-            
-            var targetSets = re.sets
-            var targetReps = re.reps
-            var targetWeight = re.weight
-            
-            if let custom = customExercises?.first(where: { ($0["exerciseId"] as? String) == re.exerciseId }) {
-                targetSets = custom["sets"] as? Int ?? re.sets
-                targetReps = custom["reps"] as? Int ?? re.reps
-                targetWeight = custom["weight"] as? Double ?? re.weight
-            }
-            
-            let activeEx = WatchActiveExercise(
-                name: name,
-                muscle: muscle,
-                sets: targetSets,
-                reps: targetReps,
-                rest: re.rest,
-                weight: targetWeight,
-                setsState: Array(repeating: false, count: targetSets),
-                measurementType: measurementType,
-                executionType: executionType,
-                performedCardios: Array(repeating: nil, count: targetSets),
-                failureReport: Array(repeating: false, count: targetSets),
-                failureReps: Array(repeating: nil, count: targetSets)
-            )
-            activeExercises.append(activeEx)
-        }
-        
-        let state = WatchActiveWorkoutState(
-            name: routine.name,
-            startTime: Int64(Date().timeIntervalSince1970 * 1000),
-            exercises: activeExercises,
-            currentExerciseIndex: 0,
-            elapsedSeconds: 0,
-            paused: false,
-            restTimer: nil,
-            postponed: false
-        )
-        
-        self.activeWorkout = state
-        WorkoutManager.shared.startWorkout()
-    }
-
-    private func startLocalSingleExercise(exerciseId: String) {
-        guard let libEx = library.first(where: { $0.id == exerciseId }) else { return }
-        
-        let activeEx = WatchActiveExercise(
-            name: libEx.name,
-            muscle: libEx.muscle,
-            sets: 3,
-            reps: 10,
-            rest: 60,
-            weight: 0.0,
-            setsState: [false, false, false],
-            measurementType: libEx.measurementType,
-            executionType: libEx.executionType,
-            performedCardios: [nil, nil, nil],
-            failureReport: [false, false, false],
-            failureReps: [nil, nil, nil]
-        )
-        
-        let state = WatchActiveWorkoutState(
-            name: libEx.name,
-            startTime: Int64(Date().timeIntervalSince1970 * 1000),
-            exercises: [activeEx],
-            currentExerciseIndex: 0,
-            elapsedSeconds: 0,
-            paused: false,
-            restTimer: nil,
-            postponed: false
-        )
-        
-        self.activeWorkout = state
-        WorkoutManager.shared.startWorkout()
-    }
+    // MARK: - Local Workout Implementations (Delegated to WatchLocalWorkoutManager)
 
     private func toggleSetLocal(exerciseIndex: Int, setIndex: Int, isDone: Bool, isFailure: Bool, failureRep: Int?, distance: Double?, duration: Int?) {
         guard var active = activeWorkout else { return }
@@ -1066,21 +955,23 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
 
     func syncOfflineWorkouts() {
         migrateLegacyOfflineCacheIfNeeded()
-        let defaults = (UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard)
-        guard let cachedWorkouts = defaults.array(forKey: pendingOfflineCacheKey) as? [[String: Any]], !cachedWorkouts.isEmpty else {
-            return
-        }
+        let pendingWorkouts = localWorkoutManager.getPendingSyncWorkouts()
+        guard !pendingWorkouts.isEmpty else { return }
         guard let session = session else { return }
 
-        WatchLogger.connectivity.info("Attempting to sync \(cachedWorkouts.count) pending offline workouts")
-        for workout in cachedWorkouts {
-            guard let workoutId = workout["id"] as? String else { continue }
+        WatchLogger.connectivity.info("Attempting to sync \(pendingWorkouts.count) pending offline workouts")
+        for item in pendingWorkouts {
             let message: [String: Any] = [
                 "action": "syncOfflineWorkout",
-                "workoutId": workoutId,
-                "workoutData": workout
+                "workoutId": item.id,
+                "workoutData": try? item.workoutData.toJSON()
             ]
             session.transferUserInfo(message)
         }
+    }
+    
+    private func removeAcknowledgedOfflineWorkout(workoutId: String) {
+        localWorkoutManager.markAsSynced(workoutId: workoutId)
+        localWorkoutManager.clearSyncedWorkouts()
     }
 }

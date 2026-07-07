@@ -41,6 +41,8 @@ struct PlannedRoutineRow: View {
             RoundedRectangle(cornerRadius: 10)
                 .stroke(isCompleted ? Color.green.opacity(0.2) : Color.green.opacity(0.15), lineWidth: 1)
         )
+        .accessibilityLabel(isCompleted ? "\(item.title), treino concluído" : "\(item.title), \(item.subtitle)")
+        .accessibilityHint(isCompleted ? "Toque para ver detalhes" : "Toque para iniciar treino")
     }
 }
 
@@ -88,6 +90,8 @@ struct PlannedExerciseRow: View {
             RoundedRectangle(cornerRadius: 10)
                 .stroke(isCompleted ? Color.green.opacity(0.2) : Color.green.opacity(0.15), lineWidth: 1)
         )
+        .accessibilityLabel(isCompleted ? "\(item.title), exercício concluído" : "\(item.title), \(item.subtitle)")
+        .accessibilityHint(isCompleted ? "Toque para ver detalhes" : "Toque para iniciar exercício")
     }
 }
 
@@ -150,6 +154,8 @@ struct RoutineRow: View {
             RoundedRectangle(cornerRadius: 10)
                 .stroke(isCompleted ? Color.green.opacity(0.2) : Color.white.opacity(0.06), lineWidth: 1)
         )
+        .accessibilityLabel(isCompleted ? "\(routine.name), treino concluído" : "\(routine.name), \(routine.exercises.count) exercícios")
+        .accessibilityHint(isCompleted ? "Toque para ver detalhes" : "Toque para configurar e iniciar treino")
     }
 }
 

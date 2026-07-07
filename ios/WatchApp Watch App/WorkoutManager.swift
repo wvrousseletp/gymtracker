@@ -44,7 +44,7 @@ class WorkoutManager: NSObject, ObservableObject {
         }
     }
     
-    func startWorkout() {
+    func startWorkout(exercises: [WatchActiveExercise]? = nil) {
         guard HKHealthStore.isHealthDataAvailable() else { return }
         // Ensure no existing session is active
         if session != nil {
@@ -52,7 +52,10 @@ class WorkoutManager: NSObject, ObservableObject {
         }
         
         let configuration = HKWorkoutConfiguration()
-        configuration.activityType = .traditionalStrengthTraining
+        
+        // Auto-detect workout type based on exercises
+        let hasCardio = exercises?.contains(where: { $0.muscle.lowercased().contains("cardio") }) ?? false
+        configuration.activityType = hasCardio ? .other : .traditionalStrengthTraining
         configuration.locationType = .indoor
         
         do {

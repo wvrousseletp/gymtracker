@@ -150,6 +150,16 @@ struct WatchRestTimer: Codable {
 
         isPrep = (try? container.decode(Bool.self, forKey: .isPrep)) ?? false
     }
+    
+    func toJSON() -> [String: Any] {
+        return [
+            "endTime": endTime,
+            "totalSeconds": totalSeconds,
+            "nextExerciseName": nextExerciseName,
+            "nextSetNum": nextSetNum,
+            "isPrep": isPrep
+        ]
+    }
 }
 
 struct WatchPerformedCardio: Codable {
@@ -182,6 +192,13 @@ struct WatchPerformedCardio: Codable {
     init(distanceKm: Double, durationSeconds: Int) {
         self.distanceKm = distanceKm
         self.durationSeconds = durationSeconds
+    }
+    
+    func toJSON() -> [String: Any] {
+        return [
+            "distanceKm": distanceKm,
+            "durationSeconds": durationSeconds
+        ]
     }
 }
 
@@ -284,6 +301,25 @@ struct WatchActiveWorkoutState: Codable {
         restTimer = try? container.decodeIfPresent(WatchRestTimer.self, forKey: .restTimer)
         postponed = (try? container.decode(Bool.self, forKey: .postponed)) ?? false
     }
+    
+    func toJSON() -> [String: Any] {
+        var dict: [String: Any] = [
+            "name": name,
+            "startTime": startTime,
+            "currentExerciseIndex": currentExerciseIndex,
+            "elapsedSeconds": elapsedSeconds,
+            "paused": paused,
+            "postponed": postponed
+        ]
+        
+        dict["exercises"] = exercises.map { $0.toJSON() }
+        
+        if let restTimer = restTimer {
+            dict["restTimer"] = restTimer.toJSON()
+        }
+        
+        return dict
+    }
 }
 
 struct WatchActiveExercise: Codable, Identifiable {
@@ -376,6 +412,24 @@ struct WatchActiveExercise: Codable, Identifiable {
         } else {
             failureReps = Array(repeating: nil, count: setsState.count)
         }
+    }
+    
+    func toJSON() -> [String: Any] {
+        return [
+            "instanceId": instanceId,
+            "name": name,
+            "muscle": muscle,
+            "sets": sets,
+            "reps": reps,
+            "rest": rest,
+            "weight": weight,
+            "setsState": setsState,
+            "measurementType": measurementType,
+            "executionType": executionType ?? "Livre",
+            "performedCardios": performedCardios.map { $0?.toJSON() ?? [:] },
+            "failureReport": failureReport,
+            "failureReps": failureReps.map { $0 ?? 0 }
+        ]
     }
 }
 
