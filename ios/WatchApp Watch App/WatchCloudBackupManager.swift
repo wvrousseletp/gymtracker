@@ -160,10 +160,10 @@ class WatchCloudBackupManager {
             }
             
             // Download water target
-            let cloudWaterTarget = self.iCloudStore.integer(forKey: CloudKey.waterTarget.rawValue)
-            if cloudWaterTarget > 0 {
-                self.cache.setWaterIntakeTarget(cloudWaterTarget)
-                os_log("Restored water target from iCloud: %d ml", log: OSLog(subsystem: "com.losmooscles.watch", category: "Cloud"), type: .info, cloudWaterTarget)
+            if let cloudWaterTargetObj = self.iCloudStore.object(forKey: CloudKey.waterTarget.rawValue) as? Int,
+               cloudWaterTargetObj > 0 {
+                self.cache.setWaterIntakeTarget(cloudWaterTargetObj)
+                os_log("Restored water target from iCloud: %d ml", log: OSLog(subsystem: "com.losmooscles.watch", category: "Cloud"), type: .info, cloudWaterTargetObj)
             }
             
             os_log("Sync from iCloud completed", log: OSLog(subsystem: "com.losmooscles.watch", category: "Cloud"), type: .info)

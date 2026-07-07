@@ -14,12 +14,6 @@ class HealthKitWorkoutManager {
     private let functionalStrengthWorkout = HKWorkoutActivityType.functionalStrengthTraining
     
     private init() {
-        if #available(watchOS 5.0, *) {
-            let configuration = HKWorkoutConfiguration()
-            configuration.activityType = .traditionalStrengthTraining
-            configuration.locationType = .indoor
-            workoutBuilder = HKLiveWorkoutBuilder(healthStore: healthStore, configuration: configuration, device: HKDevice.local())
-        }
         requestAuthorization()
     }
     
@@ -68,17 +62,6 @@ class HealthKitWorkoutManager {
         let isCardio = exercises.contains { ($0["muscle"] as? String)?.lowercased().contains("cardio") == true }
         let workoutType = isCardio ? cardioWorkout : traditionalStrengthWorkout
         
-        // Create workout
-        let workout = HKWorkout(
-            activityType: workoutType,
-            startDate: startDate,
-            endDate: endDate,
-            duration: TimeInterval(duration),
-            totalEnergyBurned: nil,
-            totalDistance: nil,
-            metadata: nil
-        )
-        
         // Add metadata
         var metadata: [String: Any] = [
             HKMetadataKeyWorkoutBrandName: "LosMooScles",
@@ -105,7 +88,16 @@ class HealthKitWorkoutManager {
             metadata["TotalWeightVolume"] = totalWeightVolume
         }
         
-        workout.metadata = metadata
+        // Create workout with metadata
+        let workout = HKWorkout(
+            activityType: workoutType,
+            start: startDate,
+            end: endDate,
+            duration: TimeInterval(duration),
+            totalEnergyBurned: nil,
+            totalDistance: nil,
+            metadata: metadata.isEmpty ? nil : metadata
+        )
         
         // Save to HealthKit
         healthStore.save(workout) { success, error in
