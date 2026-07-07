@@ -39,7 +39,7 @@ class WorkoutManager: NSObject, ObservableObject {
             HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning)!,
             HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!,
             HKQuantityType.quantityType(forIdentifier: .oxygenSaturation)!,
-            HKQuantityType.quantityType(forIdentifier: .altitude)!
+            HKQuantityType.quantityType(forIdentifier: .distanceElevationAscent)!
         ]
         
         let typesToRead: Set = [
@@ -50,7 +50,7 @@ class WorkoutManager: NSObject, ObservableObject {
             HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning)!,
             HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!,
             HKQuantityType.quantityType(forIdentifier: .oxygenSaturation)!,
-            HKQuantityType.quantityType(forIdentifier: .altitude)!
+            HKQuantityType.quantityType(forIdentifier: .distanceElevationAscent)!
         ]
         
         healthStore.requestAuthorization(toShare: typesToShare, read: typesToRead) { success, error in
@@ -217,9 +217,9 @@ extension WorkoutManager: HKLiveWorkoutBuilderDelegate {
                         if let quantity = statistics.mostRecentQuantity() {
                             self.bloodOxygen = quantity.doubleValue(for: unit)
                         }
-                    } else if quantityType == HKQuantityType.quantityType(forIdentifier: .altitude) {
+                    } else if quantityType == HKQuantityType.quantityType(forIdentifier: .distanceElevationAscent) {
                         let unit = HKUnit.meter()
-                        if let quantity = statistics.mostRecentQuantity() {
+                        if let quantity = statistics.sumQuantity() {
                             self.altitude = quantity.doubleValue(for: unit)
                         }
                     }

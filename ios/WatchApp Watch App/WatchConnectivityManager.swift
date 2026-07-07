@@ -867,7 +867,6 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             postponed: true
         )
         
-        saveLocalActiveWorkoutToDisk()
         WorkoutManager.shared.endWorkout(save: true)
     }
 
