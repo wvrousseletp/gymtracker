@@ -204,7 +204,9 @@ struct WaterComplicationProvider: TimelineProvider {
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<WaterComplicationEntry>) -> Void) {
         let entry = loadWaterData()
-        let timeline = Timeline(entries: [entry], policy: .never)
+        // Update every 15 minutes
+        let nextUpdate = Calendar.current.date(byAdding: .minute, value: 15, to: Date())!
+        let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
         completion(timeline)
     }
     

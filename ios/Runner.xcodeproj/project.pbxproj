@@ -11,7 +11,6 @@
 		D39999992FE20CC4008A99A2 /* WatchBackgroundSyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A99A3 /* WatchBackgroundSyncManager.swift */; };
 		D39999992FE20CC4008A99A6 /* WatchCloudBackupManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A99A7 /* WatchCloudBackupManager.swift */; };
 		D39999992FE20CC4008A99A4 /* WatchBatterySaverManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A99A5 /* WatchBatterySaverManager.swift */; };
-		D39999992FE20CC4008A99A8 /* WatchComplicationProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A99A9 /* WatchComplicationProvider.swift */; };
 		D39999992FE20CC4008A99AA /* WatchHapticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A99AB /* WatchHapticManager.swift */; };
 
 		D39999992FE20CC4008A999A /* WatchLocalWorkoutManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A999B /* WatchLocalWorkoutManager.swift */; };
@@ -154,7 +153,6 @@
 		D39999992FE20CC4008A99A3 /* WatchBackgroundSyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchBackgroundSyncManager.swift; sourceTree = "<group>"; };
 		D39999992FE20CC4008A99A5 /* WatchBatterySaverManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchBatterySaverManager.swift; sourceTree = "<group>"; };
 		D39999992FE20CC4008A99A7 /* WatchCloudBackupManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchCloudBackupManager.swift; sourceTree = "<group>"; };
-		D39999992FE20CC4008A99A9 /* WatchComplicationProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchComplicationProvider.swift; sourceTree = "<group>"; };
 		D39999992FE20CC4008A99AB /* WatchHapticManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchHapticManager.swift; sourceTree = "<group>"; };
 		0F4CA5F9253FB5F3284C12B3 /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
@@ -373,7 +371,6 @@
 				D39999992FE20CC4008A99A3 /* WatchBackgroundSyncManager.swift */,
 				D39999992FE20CC4008A99A5 /* WatchBatterySaverManager.swift */,
 				D39999992FE20CC4008A99A7 /* WatchCloudBackupManager.swift */,
-				D39999992FE20CC4008A99A9 /* WatchComplicationProvider.swift */,
 				D39999992FE20CC4008A99AB /* WatchHapticManager.swift */,
 
 
@@ -828,7 +825,6 @@
 				D39999992FE20CC4008A99AA /* WatchHapticManager.swift in Sources */,
 				D39999992FE20CC4008A99A2 /* WatchBackgroundSyncManager.swift in Sources */,
 				D39999992FE20CC4008A99A4 /* WatchBatterySaverManager.swift in Sources */,
-				D39999992FE20CC4008A99A8 /* WatchComplicationProvider.swift in Sources */,
 				D39999992FE20CC4008A999A /* WatchLocalWorkoutManager.swift in Sources */,
 				D39999992FE20CC4008A999C /* WatchDataCache.swift in Sources */,
 				D39999992FE20CC4008A94B4 /* RestTimerView.swift in Sources */,

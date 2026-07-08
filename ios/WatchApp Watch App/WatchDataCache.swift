@@ -1,5 +1,6 @@
 import Foundation
 import os.log
+import WidgetKit
 
 class WatchDataCache {
     static let shared = WatchDataCache()
@@ -130,6 +131,7 @@ class WatchDataCache {
     func setWaterIntakeCurrent(_ value: Int) {
         memoryCache["water_current"] = value
         scheduleWrite(key: "cached_water_intake", value: value)
+        WidgetCenter.shared.reloadAllTimelines()
     }
     
     func getWaterIntakeTarget() -> Int {
@@ -143,6 +145,7 @@ class WatchDataCache {
     func setWaterIntakeTarget(_ value: Int) {
         memoryCache["water_target"] = value
         scheduleWrite(key: "cached_water_target", value: value)
+        WidgetCenter.shared.reloadAllTimelines()
     }
     
     func getWaterDate() -> String {
