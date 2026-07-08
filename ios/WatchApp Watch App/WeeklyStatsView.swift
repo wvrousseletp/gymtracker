@@ -200,7 +200,6 @@ struct WeeklyStatsView: View {
             }
             .padding(.bottom, 8)
         }
-        .navigationBarHidden(true)
         .focusable()
         .focused($isFocused)
         .onAppear {
