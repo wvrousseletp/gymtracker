@@ -255,5 +255,6 @@ struct WorkoutSetupView: View {
             }
             .padding(.horizontal, 4)
         }
+        .navigationBarHidden(true)
     }
 }

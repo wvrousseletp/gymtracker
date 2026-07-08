@@ -384,8 +384,7 @@ struct WorkoutSelectionView: View {
                         }
                     }
                 }
-                .navigationTitle("")
-                .navigationBarTitleDisplayMode(.inline)
+                .navigationBarHidden(true)
                 .onAppear {
                     connectivityManager.requestSync()
                 }
@@ -517,7 +516,7 @@ struct WatchWaterView: View {
             }
             .padding(.bottom, 8)
         }
-        .navigationTitle("Água")
+        .navigationBarHidden(true)
         .sheet(isPresented: $showRemoveSheet) {
             WatchWaterRemoveSheet(
                 isPresented: $showRemoveSheet,
