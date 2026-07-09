@@ -388,17 +388,45 @@ class FirebaseSyncService {
       final cloudWorkouts = await fetchCloudWorkouts(userId);
       final cloudRoutines = await fetchCloudRoutines(userId);
 
-      // Carrega os treinos locais não existentes na nuvem para evitar perda de dados históricos
-      final cloudIds = cloudWorkouts.map((w) => w.id).toSet();
+      // Merge local and cloud workouts to prevent data loss
+      // Keep both local and cloud workouts, deduplicating by ID
+      final cloudWorkoutIds = cloudWorkouts.map((w) => w.id).toSet();
+      final mergedWorkouts = <WorkoutLog>[];
+      
+      // Add cloud workouts first
+      mergedWorkouts.addAll(cloudWorkouts);
+      
+      // Add local workouts that aren't in cloud (to preserve unsynced data)
       for (final log in localState.history) {
-        if (!cloudIds.contains(log.id)) {
+        if (!cloudWorkoutIds.contains(log.id)) {
+          mergedWorkouts.add(log);
+          // Upload local workout to cloud in background
           unawaited(syncWorkoutLog(userId, log));
+        }
+      }
+      
+      // Sort by date descending
+      mergedWorkouts.sort((a, b) => b.date.compareTo(a.date));
+
+      // Merge routines similarly to prevent data loss
+      final cloudRoutineIds = cloudRoutines.map((r) => r.id).toSet();
+      final mergedRoutines = <Routine>[];
+      
+      // Add cloud routines first
+      mergedRoutines.addAll(cloudRoutines);
+      
+      // Add local routines that aren't in cloud
+      for (final routine in localState.routines) {
+        if (!cloudRoutineIds.contains(routine.id)) {
+          mergedRoutines.add(routine);
+          // Upload local routine to cloud in background
+          unawaited(syncRoutine(userId, routine));
         }
       }
 
       final combinedState = remoteState.copyWith(
-        history: cloudWorkouts.isNotEmpty ? cloudWorkouts : localState.history,
-        routines: cloudRoutines.isNotEmpty ? cloudRoutines : localState.routines,
+        history: mergedWorkouts,
+        routines: mergedRoutines,
       );
 
       await onRemoteApplied?.call(combinedState, _readRemoteProfile(data));

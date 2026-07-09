@@ -164,7 +164,8 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
       WatchService.instance.sendActiveWorkoutCleared();
     }
 
-    _checkAndSeedFoods();
+    // Seed foods in background to avoid blocking startup
+    unawaited(_checkAndSeedFoods());
 
     _isLoading = false;
     notifyListeners();
