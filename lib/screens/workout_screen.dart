@@ -75,7 +75,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
     // Alternar visualização com base na presença de um treino ativo
     if (activeWorkout != null && !activeWorkout.postponed) {
-      final trackerProvider = Provider.of<TrackerProvider>(context, listen: false);
+      final trackerProvider = Provider.of<TrackerProvider>(context, listen: true);
       return ActiveWorkoutView(activeWorkout: activeWorkout, provider: trackerProvider);
     } else {
       return _buildIdleView(context, provider);

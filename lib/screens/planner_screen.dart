@@ -463,7 +463,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
     final accentColor = context.select<TrackerProvider, Color>(
       (p) => ThemeUtils.getColor(p.currentProfile.colorAccent),
     );
-    final provider = Provider.of<TrackerProvider>(context, listen: false);
+    final provider = Provider.of<TrackerProvider>(context, listen: true);
 
     if (state == null) {
       return const Center(child: CircularProgressIndicator(color: Colors.white));
