@@ -84,6 +84,11 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     // Set callback to save state whenever sub-providers update
     _workoutProvider?.onStateChanged = () => saveState();
     _dietProvider?.onStateChanged = () => saveState();
+    
+    // Set callback to sync water data to watch when water intake changes
+    _dietProvider?.onWaterChanged = (int waterIntake) {
+      WatchService.instance.sendWaterData(waterIntake, _dietProvider!.diet.waterGoalMl);
+    };
   }
 
   @override

@@ -21,6 +21,7 @@ class DietProvider extends ChangeNotifier {
   String currentUserId = '';
   Profile? currentProfile;
   VoidCallback? onStateChanged;
+  Function(int)? onWaterChanged;
 
   // Estados de erro/loading granular específicos por operação
   bool isSavingMeal = false;
@@ -52,6 +53,7 @@ class DietProvider extends ChangeNotifier {
       lastDietDate: diet.lastDietDate,
     );
     _save();
+    onWaterChanged?.call(quantityMl);
   }
 
   void addMeal(String name, int cals, double prot, double carbs, double fat, String time) {
