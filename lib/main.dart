@@ -17,12 +17,9 @@ import 'utils/app_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Initialize Firebase in background to avoid blocking startup
-  unawaited(Firebase.initializeApp(
+  await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
-  ));
-  
+  );
   runApp(
     MultiProvider(
       providers: [
