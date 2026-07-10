@@ -42,27 +42,33 @@ class _RoutinesScreenState extends State<RoutinesScreen> with SingleTickerProvid
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(48),
-        child: TabBar(
-          controller: _tabController,
-          indicatorColor: accentColor,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white38,
-          labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-          tabs: const [
-            Tab(text: "Agenda"),
-            Tab(text: "Modelos"),
-            Tab(text: "Biblioteca"),
-          ],
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Column(
         children: [
-          const PlannerScreen(),
-          RoutinesTab(accentColor: accentColor),
-          LibraryTab(accentColor: accentColor),
+          Container(
+            color: Colors.black,
+            child: TabBar(
+              controller: _tabController,
+              indicatorColor: accentColor,
+              labelColor: Colors.white,
+              unselectedLabelColor: Colors.white38,
+              labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+              tabs: const [
+                Tab(text: "Agenda"),
+                Tab(text: "Modelos"),
+                Tab(text: "Biblioteca"),
+              ],
+            ),
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                const PlannerScreen(),
+                RoutinesTab(accentColor: accentColor),
+                LibraryTab(accentColor: accentColor),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -78,8 +84,8 @@ class RoutinesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<WorkoutProvider>(context);
-    final routines = provider.routines;
+    final provider = context.select<WorkoutProvider, WorkoutProvider>((p) => p);
+    final routines = context.select<WorkoutProvider, List<Routine>>((p) => p.routines);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -103,6 +109,8 @@ class RoutinesTab extends StatelessWidget {
               ),
             )
           : ListView.builder(
+              addAutomaticKeepAlives: false,
+              addRepaintBoundaries: false,
               padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 100),
               itemCount: routines.length,
               itemBuilder: (context, index) {
@@ -798,15 +806,21 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Padding(
-                          padding: const EdgeInsets.only(top: 12, bottom: 6, left: 4),
+                        Container(
+                          margin: const EdgeInsets.only(top: 12, bottom: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: accentColor.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: accentColor.withOpacity(0.3)),
+                          ),
                           child: Text(
                             muscle.toUpperCase(),
                             style: TextStyle(
                               color: accentColor,
-                              fontSize: 10,
+                              fontSize: 12,
                               fontWeight: FontWeight.w900,
-                              letterSpacing: 1.0,
+                              letterSpacing: 1.2,
                             ),
                           ),
                         ),
