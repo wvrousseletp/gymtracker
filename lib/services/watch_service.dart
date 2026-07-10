@@ -241,7 +241,14 @@ class WatchService {
         break;
 
       case 'togglePause':
-        final bool isPaused = call.arguments as bool;
+        bool isPaused = false;
+        if (call.arguments is bool) {
+          isPaused = call.arguments as bool;
+        } else if (call.arguments is Map) {
+          isPaused = call.arguments['paused'] as bool? ?? false;
+        } else if (call.arguments != null) {
+          isPaused = call.arguments.toString() == 'true';
+        }
         _provider!.pauseWorkout(isPaused);
         // Envia estado atualizado ao watch imediatamente
         Future.delayed(const Duration(milliseconds: 100), () {
