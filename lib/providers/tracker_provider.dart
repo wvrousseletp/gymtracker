@@ -73,7 +73,7 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   TrackerProvider() {
-    _init();
+    // Don't init WatchService here - wait for update() to be called
   }
 
   void update(ProfileProvider profile, WorkoutProvider workout, DietProvider diet) {
@@ -89,6 +89,9 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     _dietProvider?.onWaterChanged = (int waterIntake) {
       WatchService.instance.sendWaterData(waterIntake, _dietProvider!.diet.waterGoalMl);
     };
+    
+    // Init WatchService after providers are set up
+    _init();
   }
 
   @override
