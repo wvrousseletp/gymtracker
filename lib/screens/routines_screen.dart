@@ -440,12 +440,6 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                   widget.existing == null ? "Nova Rotina" : "Editar Rotina",
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white),
                 ),
-                IconButton(
-                  icon: Icon(Icons.add_circle_outline, color: accentColor),
-                  onPressed: () {
-                    _addExercisePicker(sortedLibrary);
-                  },
-                ),
               ],
             ),
             const SizedBox(height: 12),
@@ -493,23 +487,45 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
+
+            // Botão Proeminente e Bonito de Adicionar Exercício
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: OutlinedButton.icon(
+                icon: Icon(Icons.add, color: accentColor, size: 20),
+                label: Text(
+                  "ADICIONAR EXERCÍCIO",
+                  style: TextStyle(color: accentColor, fontWeight: FontWeight.w800, letterSpacing: 0.5, fontSize: 13),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: accentColor.withOpacity(0.4), width: 1.5),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  backgroundColor: accentColor.withOpacity(0.05),
+                ),
+                onPressed: () {
+                  _addExercisePicker(sortedLibrary);
+                },
+              ),
+            ),
+            const SizedBox(height: 20),
 
             const Text(
-              "Exercícios Agendados",
+              "Exercícios Adicionados",
               style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
 
             // Lista de exercícios adicionados na rotina
             _exercises.isEmpty
-                ? const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24),
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
                     child: Center(
                       child: Text(
-                        "Nenhum exercício adicionado.\nToque no botão + no topo para selecionar.",
+                        "Nenhum exercício adicionado ainda.\nToque no botão 'ADICIONAR EXERCÍCIO' acima.",
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.white38, fontSize: 12, fontStyle: FontStyle.italic),
+                        style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 12, fontStyle: FontStyle.italic),
                       ),
                     ),
                   )
