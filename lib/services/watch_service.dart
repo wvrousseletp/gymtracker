@@ -26,14 +26,16 @@ class WatchService {
     _provider = provider;
     _channel.setMethodCallHandler(_handleMethodCall);
     
-    // Envia dados iniciais se houver
-    sendRoutines(provider.state?.routines ?? []);
-    sendLibrary(provider.state?.library ?? []);
-    sendPlanner(provider.state?.planner ?? {});
-    if (provider.state?.activeWorkout != null) {
-      sendActiveWorkout(provider.state!.activeWorkout!);
+    // Only send initial data if state is available
+    if (provider.state != null) {
+      sendRoutines(provider.state!.routines);
+      sendLibrary(provider.state!.library);
+      sendPlanner(provider.state!.planner);
+      if (provider.state!.activeWorkout != null) {
+        sendActiveWorkout(provider.state!.activeWorkout!);
+      }
+      syncWidgetData();
     }
-    syncWidgetData();
   }
 
   Future<void> _handleMethodCall(MethodCall call) async {
