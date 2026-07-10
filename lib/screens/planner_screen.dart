@@ -574,7 +574,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
     String rawItem,
     Color accentColor,
   ) {
-    final state = provider.state!;
+    final state = context.select<TrackerProvider, PlannerState>((p) => p.state!);
     final library = state.library;
     final routines = state.routines;
 
@@ -757,13 +757,13 @@ class _PlannerScreenState extends State<PlannerScreen> {
 
           // Botões Reordenar (▼)
           GestureDetector(
-            onTap: idx == (provider.state!.planner[day]!.length - 1)
+            onTap: idx == (state.planner[day]!.length - 1)
                 ? null
                 : () {
                     provider.reorderPlannerItem(day, idx, false);
                   },
             child: Opacity(
-              opacity: idx == (provider.state!.planner[day]!.length - 1) ? 0.3 : 1.0,
+              opacity: idx == (state.planner[day]!.length - 1) ? 0.3 : 1.0,
               child: Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
