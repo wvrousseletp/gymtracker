@@ -341,6 +341,7 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
         profile: currentProfile,
       );
     }
+    notifyListeners();
   }
 
   Future<Map<String, dynamic>?> checkProfileExistsInCloud(String profileId) {
