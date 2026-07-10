@@ -345,9 +345,11 @@ class FirebaseSyncService {
 
       if (!docSnap.exists) {
         await _upload(docRef, localState, profile, localUpdatedAt);
-        // Also upload all local routines incrementally
         for (final routine in localState.routines) {
           unawaited(syncRoutine(userId, routine));
+        }
+        for (final log in localState.history) {
+          unawaited(syncWorkoutLog(userId, log));
         }
         return localState;
       }
@@ -357,6 +359,9 @@ class FirebaseSyncService {
         await _upload(docRef, localState, profile, localUpdatedAt);
         for (final routine in localState.routines) {
           unawaited(syncRoutine(userId, routine));
+        }
+        for (final log in localState.history) {
+          unawaited(syncWorkoutLog(userId, log));
         }
         return localState;
       }
@@ -381,6 +386,12 @@ class FirebaseSyncService {
 
       if (_shouldUpload(localState, remoteState, localUpdatedAt, remoteUpdatedAt)) {
         await _upload(docRef, localState, profile, localUpdatedAt);
+        for (final routine in localState.routines) {
+          unawaited(syncRoutine(userId, routine));
+        }
+        for (final log in localState.history) {
+          unawaited(syncWorkoutLog(userId, log));
+        }
         return localState;
       }
 
