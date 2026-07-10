@@ -629,7 +629,13 @@ class _PlannerScreenState extends State<PlannerScreen> {
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
-                  value: selectedValue.isEmpty ? null : selectedValue,
+                  value: (() {
+                    if (selectedValue.isEmpty) return null;
+                    final bool hasRoutine = routines.any((r) => "routine:${r.id}" == selectedValue);
+                    final bool hasExercise = library.any((ex) => "exercise:${ex.id}" == selectedValue);
+                    if (hasRoutine || hasExercise) return selectedValue;
+                    return null;
+                  })(),
                   hint: const Text(
                     "Selecione o Item",
                     style: TextStyle(color: Colors.white30, fontSize: 13),
