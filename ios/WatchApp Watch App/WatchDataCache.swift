@@ -216,23 +216,40 @@ class WatchDataCache {
                 for (key, value) in writes {
                     if let stringValue = value as? String {
                         self.userDefaults.set(stringValue, forKey: key)
+                        if key.contains("water") || key.contains("Intake") {
+                            UserDefaults.standard.set(stringValue, forKey: key)
+                        }
                     } else if let intValue = value as? Int {
                         self.userDefaults.set(intValue, forKey: key)
+                        if key.contains("water") || key.contains("Intake") {
+                            UserDefaults.standard.set(intValue, forKey: key)
+                        }
                     } else if let boolValue = value as? Bool {
                         self.userDefaults.set(boolValue, forKey: key)
+                        if key.contains("water") || key.contains("Intake") {
+                            UserDefaults.standard.set(boolValue, forKey: key)
+                        }
                     } else if let dataValue = value as? Data {
                         self.userDefaults.set(dataValue, forKey: key)
+                        if key.contains("water") || key.contains("Intake") {
+                            UserDefaults.standard.set(dataValue, forKey: key)
+                        }
                     } else if let codable = value as? Encodable {
                         if let encoded = try? JSONEncoder().encode(codable),
                            let jsonString = String(data: encoded, encoding: .utf8) {
                             self.userDefaults.set(jsonString, forKey: key)
+                            if key.contains("water") || key.contains("Intake") {
+                                UserDefaults.standard.set(jsonString, forKey: key)
+                            }
                         }
                     } else {
                         // Value is nil, remove the key
                         self.userDefaults.removeObject(forKey: key)
+                        UserDefaults.standard.removeObject(forKey: key)
                     }
                 }
                 self.userDefaults.synchronize()
+                UserDefaults.standard.synchronize()
                 os_log("Flushed %d pending writes to UserDefaults", log: OSLog(subsystem: "com.losmooscles.watch", category: "Cache"), type: .debug, writes.count)
                 
                 // Reload widget timelines AFTER synchronize to prevent race conditions

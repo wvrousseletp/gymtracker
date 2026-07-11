@@ -172,19 +172,39 @@ struct WaterIntakeProvider: TimelineProvider {
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<WaterIntakeEntry>) -> ()) {
         let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles")
+        let standardDefaults = UserDefaults.standard
         
-        // Read with fallback to watchOS local cache keys
+        // 1. Try reading current water intake from App Group
         var current = sharedDefaults?.integer(forKey: "waterIntakeCurrent") ?? 0
         if current == 0 {
             current = sharedDefaults?.integer(forKey: "cached_water_intake") ?? 0
         }
         
-        var target = sharedDefaults?.integer(forKey: "waterIntakeTarget") ?? 2000
-        if target == 2000 {
-            let cachedTarget = sharedDefaults?.integer(forKey: "cached_water_target") ?? 2000
-            if cachedTarget > 0 {
-                target = cachedTarget
-            }
+        // 2. Fallback to Standard Local defaults (crucial on watchOS if app groups are restricted/delayed)
+        if current == 0 {
+            current = standardDefaults.integer(forKey: "waterIntakeCurrent")
+        }
+        if current == 0 {
+            current = standardDefaults.integer(forKey: "cached_water_intake")
+        }
+        
+        // 3. Try reading target goal from App Group
+        var target = sharedDefaults?.integer(forKey: "waterIntakeTarget") ?? 0
+        if target == 0 {
+            target = sharedDefaults?.integer(forKey: "cached_water_target") ?? 0
+        }
+        
+        // 4. Fallback target to Standard Local defaults
+        if target == 0 {
+            target = standardDefaults.integer(forKey: "waterIntakeTarget")
+        }
+        if target == 0 {
+            target = standardDefaults.integer(forKey: "cached_water_target")
+        }
+        
+        // 5. Default backup target if everything is missing
+        if target == 0 {
+            target = 2000
         }
         
         let entry = WaterIntakeEntry(date: Date(), currentMl: current, targetMl: target)
