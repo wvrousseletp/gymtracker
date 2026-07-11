@@ -234,6 +234,9 @@ class WatchDataCache {
                 }
                 self.userDefaults.synchronize()
                 os_log("Flushed %d pending writes to UserDefaults", log: OSLog(subsystem: "com.losmooscles.watch", category: "Cache"), type: .debug, writes.count)
+                
+                // Reload widget timelines AFTER synchronize to prevent race conditions
+                WidgetCenter.shared.reloadAllTimelines()
             }
         }
     }
