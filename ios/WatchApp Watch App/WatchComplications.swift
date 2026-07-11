@@ -211,10 +211,43 @@ struct WaterComplicationProvider: TimelineProvider {
     }
     
     private func loadWaterData() -> WaterComplicationEntry {
-        let defaults = UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard
-        let current = defaults.integer(forKey: "cached_water_intake")
-        let target = defaults.integer(forKey: "cached_water_target")
-        return WaterComplicationEntry(date: Date(), current: current, target: target > 0 ? target : 2000)
+        let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles")
+        let standardDefaults = UserDefaults.standard
+        
+        // 1. Try reading current water intake from App Group
+        var current = sharedDefaults?.integer(forKey: "waterIntakeCurrent") ?? 0
+        if current == 0 {
+            current = sharedDefaults?.integer(forKey: "cached_water_intake") ?? 0
+        }
+        
+        // 2. Fallback to Standard Local defaults (crucial on watchOS if app groups are restricted/delayed)
+        if current == 0 {
+            current = standardDefaults.integer(forKey: "waterIntakeCurrent")
+        }
+        if current == 0 {
+            current = standardDefaults.integer(forKey: "cached_water_intake")
+        }
+        
+        // 3. Try reading target goal from App Group
+        var target = sharedDefaults?.integer(forKey: "waterIntakeTarget") ?? 0
+        if target == 0 {
+            target = sharedDefaults?.integer(forKey: "cached_water_target") ?? 0
+        }
+        
+        // 4. Fallback target to Standard Local defaults
+        if target == 0 {
+            target = standardDefaults.integer(forKey: "waterIntakeTarget")
+        }
+        if target == 0 {
+            target = standardDefaults.integer(forKey: "cached_water_target")
+        }
+        
+        // 5. Default backup target if everything is missing
+        if target == 0 {
+            target = 2000
+        }
+        
+        return WaterComplicationEntry(date: Date(), current: current, target: target)
     }
 }
 

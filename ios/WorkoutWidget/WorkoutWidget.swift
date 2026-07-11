@@ -233,29 +233,6 @@ struct WaterIntakeWidgetView: View {
             .gaugeStyle(.accessoryCircular)
         case .accessoryInline:
             Text("Água: \(entry.currentMl)ml")
-        case .accessoryRectangular:
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 4) {
-                    Image(systemName: "drop.fill")
-                        .foregroundColor(.blue)
-                        .font(.system(size: 10))
-                    Text("ÁGUA")
-                        .font(.system(size: 8, weight: .bold))
-                        .foregroundColor(.blue)
-                }
-                Text("\(entry.currentMl) / \(entry.targetMl) ml")
-                    .font(.system(size: 11, weight: .bold))
-                ProgressView(value: percent)
-                    .tint(.blue)
-            }
-        #if os(watchOS)
-        case .accessoryCorner:
-            Image(systemName: "drop.fill")
-                .foregroundColor(.blue)
-                .widgetLabel {
-                    Text("\(entry.currentMl)ml")
-                }
-        #endif
         default:
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
