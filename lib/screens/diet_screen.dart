@@ -44,29 +44,35 @@ class _DietScreenState extends State<DietScreen> with SingleTickerProviderStateM
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(48),
-        child: TabBar(
-          controller: _tabController,
-          indicatorColor: accentColor,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white38,
-          labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-          tabs: const [
-            Tab(text: "Refeições"),
-            Tab(text: "Água"),
-            Tab(text: "Jejum"),
-            Tab(text: "Gráficos"),
-          ],
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Column(
         children: [
-          RefeicoesTab(accentColor: accentColor),
-          AguaTab(accentColor: accentColor),
-          JejumTab(accentColor: accentColor),
-          HistoricoTab(accentColor: accentColor),
+          Container(
+            color: Colors.black,
+            child: TabBar(
+              controller: _tabController,
+              indicatorColor: accentColor,
+              labelColor: Colors.white,
+              unselectedLabelColor: Colors.white38,
+              labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+              tabs: const [
+                Tab(text: "Refeições"),
+                Tab(text: "Água"),
+                Tab(text: "Jejum"),
+                Tab(text: "Gráficos"),
+              ],
+            ),
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                RefeicoesTab(accentColor: accentColor),
+                AguaTab(accentColor: accentColor),
+                JejumTab(accentColor: accentColor),
+                HistoricoTab(accentColor: accentColor),
+              ],
+            ),
+          ),
         ],
       ),
     );
