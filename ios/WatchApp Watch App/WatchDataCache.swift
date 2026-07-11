@@ -131,6 +131,7 @@ class WatchDataCache {
     func setWaterIntakeCurrent(_ value: Int) {
         memoryCache["water_current"] = value
         scheduleWrite(key: "cached_water_intake", value: value)
+        scheduleWrite(key: "waterIntakeCurrent", value: value)
         WidgetCenter.shared.reloadAllTimelines()
     }
     
@@ -145,6 +146,7 @@ class WatchDataCache {
     func setWaterIntakeTarget(_ value: Int) {
         memoryCache["water_target"] = value
         scheduleWrite(key: "cached_water_target", value: value)
+        scheduleWrite(key: "waterIntakeTarget", value: value)
         WidgetCenter.shared.reloadAllTimelines()
     }
     

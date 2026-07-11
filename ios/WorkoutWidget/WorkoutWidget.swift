@@ -172,8 +172,20 @@ struct WaterIntakeProvider: TimelineProvider {
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<WaterIntakeEntry>) -> ()) {
         let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles")
-        let current = sharedDefaults?.integer(forKey: "waterIntakeCurrent") ?? 0
-        let target = sharedDefaults?.integer(forKey: "waterIntakeTarget") ?? 2000
+        
+        // Read with fallback to watchOS local cache keys
+        var current = sharedDefaults?.integer(forKey: "waterIntakeCurrent") ?? 0
+        if current == 0 {
+            current = sharedDefaults?.integer(forKey: "cached_water_intake") ?? 0
+        }
+        
+        var target = sharedDefaults?.integer(forKey: "waterIntakeTarget") ?? 2000
+        if target == 2000 {
+            let cachedTarget = sharedDefaults?.integer(forKey: "cached_water_target") ?? 2000
+            if cachedTarget > 0 {
+                target = cachedTarget
+            }
+        }
         
         let entry = WaterIntakeEntry(date: Date(), currentMl: current, targetMl: target)
         let timeline = Timeline(entries: [entry], policy: .atEnd)
