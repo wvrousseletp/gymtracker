@@ -360,7 +360,7 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     );
 
     if (result != null && result != localState) {
-      _applyStateToSubproviders(result);
+      await _applyRemoteState(result, currentProfile);
       notifyListeners();
     }
   }
@@ -370,6 +370,11 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     await _persistence.saveStateJson(
       currentUserId,
       _persistence.encodeState(remoteState),
+    );
+    // Persist workout logs history separately to disk so that local cache matches merged cloud data
+    await _persistence.saveWorkoutsHistoryJson(
+      currentUserId,
+      json.encode(remoteState.history.map((h) => h.toJson()).toList()),
     );
 
     if (remoteProfile != null) {
