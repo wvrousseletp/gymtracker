@@ -525,7 +525,7 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                   width: double.infinity,
                   height: 46,
                   child: ElevatedButton.icon(
-                    icon: Icon(Icons.add_circle_outline, color: Colors.black, size: 18),
+                    icon: const Icon(Icons.add_circle_outline, color: Colors.black, size: 18),
                     label: const Text(
                       "ADICIONAR EXERCÍCIO",
                       style: TextStyle(color: Colors.black, fontWeight: FontWeight.w900, letterSpacing: 0.5, fontSize: 12),
