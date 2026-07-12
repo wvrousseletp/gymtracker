@@ -364,6 +364,9 @@ import WidgetKit
     case "getDailyHealthMetrics":
       self.getDailyHealthMetrics(result: result)
 
+    case "getRecentWorkouts":
+      self.getRecentWorkouts(result: result)
+
     default:
       result(FlutterMethodNotImplemented)
     }
@@ -881,7 +884,8 @@ extension AppDelegate {
       return
     }
     
-    let readTypes: Set<HKObjectType> = [steps, calories, heartRate]
+    let workout = HKObjectType.workoutType()
+    let readTypes: Set<HKObjectType> = [steps, calories, heartRate, workout]
     
     healthStore.requestAuthorization(toShare: nil, read: readTypes) { success, error in
       DispatchQueue.main.async {
@@ -985,6 +989,72 @@ extension AppDelegate {
         completion(hr)
       } else {
         completion(0)
+      }
+    }
+    healthStore.execute(query)
+  }
+
+  private func getRecentWorkouts(result: @escaping FlutterResult) {
+    guard HKHealthStore.isHealthDataAvailable() else {
+      result(FlutterError(code: "UNAVAILABLE", message: "HealthKit is not available", details: nil))
+      return
+    }
+    
+    let now = Date()
+    let past7Days = now.addingTimeInterval(-7 * 24 * 60 * 60)
+    let predicate = HKQuery.predicateForSamples(withStart: past7Days, end: now, options: .strictStartDate)
+    let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
+    
+    let query = HKSampleQuery(sampleType: HKObjectType.workoutType(), predicate: predicate, limit: 50, sortDescriptors: [sortDescriptor]) { _, samples, error in
+      if let error = error {
+        result(FlutterError(code: "QUERY_ERROR", message: error.localizedDescription, details: nil))
+        return
+      }
+      
+      var workoutsList: [[String: Any]] = []
+      
+      if let workoutSamples = samples as? [HKWorkout] {
+        let formatter = ISO8601DateFormatter()
+        for workout in workoutSamples {
+          var activityName = "Exercício"
+          switch workout.workoutActivityType {
+          case .soccer: activityName = "Futebol"
+          case .running: activityName = "Corrida"
+          case .cycling: activityName = "Ciclismo"
+          case .swimming: activityName = "Natação"
+          case .walking: activityName = "Caminhada"
+          case .traditionalStrengthTraining: activityName = "Musculação"
+          case .functionalStrengthTraining: activityName = "Treino Funcional"
+          case .crossTraining: activityName = "CrossFit"
+          case .yoga: activityName = "Yoga"
+          case .dance: activityName = "Dança"
+          case .cardioDance: activityName = "Dança Aeróbica"
+          case .hike: activityName = "Trilha"
+          case .rowing: activityName = "Remo"
+          case .tennis: activityName = "Tênis"
+          default:
+            activityName = "Exercício Apple (\(workout.workoutActivityType.rawValue))"
+          }
+          
+          let durationSec = Int(workout.duration)
+          let calories = Int(workout.totalEnergyBurned?.doubleValue(for: HKUnit.kilocalorie()) ?? 0)
+          let dateStr = formatter.string(from: workout.startDate)
+          let id = "healthkit-\(workout.uuid.uuidString)"
+          
+          var dict: [String: Any] = [
+            "id": id,
+            "name": activityName,
+            "duration": durationSec,
+            "calories": calories,
+            "date": dateStr
+          ]
+          
+          workoutsList.append(dict)
+        }
+      }
+      
+      DispatchQueue.main.async {
+        result(workoutsList)
       }
     }
     healthStore.execute(query)

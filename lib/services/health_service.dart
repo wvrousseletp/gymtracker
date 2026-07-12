@@ -31,4 +31,18 @@ class HealthService {
       return null;
     }
   }
+
+  /// Fetches recent workouts from Apple Health / HealthKit from the past 7 days.
+  Future<List<Map<String, dynamic>>> getRecentWorkouts() async {
+    try {
+      final List? res = await _channel.invokeMethod<List>('getRecentWorkouts');
+      if (res != null) {
+        return res.map((item) => Map<String, dynamic>.from(item as Map)).toList();
+      }
+      return [];
+    } on PlatformException catch (e) {
+      debugPrint("[HealthService] Erro ao buscar treinos recentes do HealthKit: $e");
+      return [];
+    }
+  }
 }

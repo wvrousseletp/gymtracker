@@ -730,8 +730,71 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
         _healthAuthorized = true;
         notifyListeners();
       }
+      
+      // Auto sync recent Apple Health workouts too
+      await syncAppleWorkouts();
     } catch (e) {
       debugPrint('[TrackerProvider] Erro ao sincronizar HealthKit: $e');
+    }
+  }
+
+  Future<void> syncAppleWorkouts() async {
+    if (currentUserId.isEmpty || _workoutProvider == null) return;
+    try {
+      final workouts = await HealthService.instance.getRecentWorkouts();
+      if (workouts.isEmpty) return;
+
+      bool addedAny = false;
+      for (final w in workouts) {
+        final id = w['id'] as String;
+        final name = w['name'] as String;
+        final duration = w['duration'] as int;
+        final calories = w['calories'] as int;
+        final date = w['date'] as String;
+
+        // Skip if already imported
+        if (_workoutProvider!.history.any((log) => log.id == id)) continue;
+
+        final newLog = WorkoutLog(
+          id: id,
+          name: name,
+          date: date,
+          duration: duration,
+          completedSets: 1,
+          totalSets: 1,
+          totalWeight: 0.0,
+          rpe: 8,
+          notes: "Importado do Apple Health",
+          avgHeartRate: null,
+          activeCalories: calories > 0 ? calories : null,
+          exercises: [
+            LogExercise(
+              name: name,
+              muscle: "Geral",
+              sets: 1,
+              completedSets: 1,
+              reps: duration ~/ 60,
+              weight: 0.0,
+              rpe: 8,
+              performedCardios: [],
+              failureReport: [false],
+              failureReps: [null],
+            )
+          ],
+        );
+
+        _workoutProvider!.history.insert(0, newLog);
+        unawaited(_firebaseSync.syncWorkoutLog(currentUserId, newLog));
+        addedAny = true;
+      }
+
+      if (addedAny) {
+        // Sort by date descending
+        _workoutProvider!.history.sort((a, b) => b.date.compareTo(a.date));
+        await saveState();
+      }
+    } catch (e) {
+      debugPrint('[TrackerProvider] Erro ao importar treinos do Apple Health: $e');
     }
   }
 

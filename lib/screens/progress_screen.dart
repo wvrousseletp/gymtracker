@@ -206,37 +206,52 @@ class _HistoryTabState extends State<HistoryTab> {
           child: const Icon(Icons.add_task, color: Colors.black),
         ),
       ),
-      body: monthGroups.isEmpty
-          ? const Center(
-              child: Text(
-                "Nenhum treino no diário ainda.",
-                style: TextStyle(color: Colors.white38, fontStyle: FontStyle.italic),
-              ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 100),
-              itemCount: monthGroups.length,
-              itemBuilder: (context, groupIndex) {
-                final group = monthGroups[groupIndex];
-                final isMonthExpanded = _expandedMonths.contains(group.key);
+      body: RefreshIndicator(
+        color: widget.accentColor,
+        backgroundColor: const Color(0xff1c1c1e),
+        onRefresh: () async {
+          await provider.syncAppleWorkouts();
+          await provider.loadWorkoutHistory();
+        },
+        child: monthGroups.isEmpty
+            ? ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: const [
+                  SizedBox(height: 200),
+                  Center(
+                    child: Text(
+                      "Nenhum treino no diário ainda.\nPuxe para sincronizar com o Apple Health.",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white38, fontStyle: FontStyle.italic, height: 1.4),
+                    ),
+                  ),
+                ],
+              )
+            : ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 100),
+                itemCount: monthGroups.length,
+                itemBuilder: (context, groupIndex) {
+                  final group = monthGroups[groupIndex];
+                  final isMonthExpanded = _expandedMonths.contains(group.key);
 
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Cabeçalho do Mês
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          if (isMonthExpanded) {
-                            _expandedMonths.remove(group.key);
-                          } else {
-                            _expandedMonths.add(group.key);
-                          }
-                        });
-                      },
-                      behavior: HitTestBehavior.opaque,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Cabeçalho do Mês
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            if (isMonthExpanded) {
+                              _expandedMonths.remove(group.key);
+                            } else {
+                              _expandedMonths.add(group.key);
+                            }
+                          });
+                        },
+                        behavior: HitTestBehavior.opaque,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
                         margin: const EdgeInsets.only(top: 8, bottom: 8),
                         decoration: BoxDecoration(
                           border: Border(bottom: BorderSide(color: Colors.white.withOpacity(0.05))),
@@ -553,6 +568,7 @@ class _HistoryTabState extends State<HistoryTab> {
                 );
               },
             ),
+      ),
     );
   }
 
