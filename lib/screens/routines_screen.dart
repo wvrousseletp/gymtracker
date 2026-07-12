@@ -844,40 +844,35 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                     children: [
                       const Text(
                         "Selecione o Exercício",
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 16,
+                          letterSpacing: -0.2,
+                        ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white54, size: 18),
+                        icon: const Icon(Icons.close_rounded, color: Colors.white38, size: 20),
                         onPressed: () => Navigator.pop(dialogCtx),
                         constraints: const BoxConstraints(),
                         padding: EdgeInsets.zero,
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   // Horizontal muscle filter chips
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
                     child: Row(
                       children: sortedMuscles.map((muscle) {
                         final isSelected = activeFilters.contains(muscle);
                         return Padding(
                           padding: const EdgeInsets.only(right: 8.0, bottom: 8.0),
-                          child: ChoiceChip(
-                            label: Text(
-                              muscle.toUpperCase(),
-                              style: TextStyle(
-                                color: isSelected ? Colors.black : Colors.white70,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            selected: isSelected,
-                            selectedColor: accentColor,
-                            backgroundColor: Colors.white.withOpacity(0.06),
-                            onSelected: (bool selected) {
+                          child: GestureDetector(
+                            onTap: () {
                               setDialogState(() {
-                                if (selected) {
+                                if (!isSelected) {
                                   activeFilters.clear();
                                   activeFilters.add(muscle);
                                 } else {
@@ -885,16 +880,42 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                                 }
                               });
                             },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: isSelected 
+                                    ? accentColor.withOpacity(0.15) 
+                                    : Colors.white.withOpacity(0.04),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: isSelected 
+                                      ? accentColor.withOpacity(0.5) 
+                                      : Colors.white.withOpacity(0.08),
+                                  width: 1.2,
+                                ),
+                              ),
+                              child: Text(
+                                muscle.toUpperCase(),
+                                style: TextStyle(
+                                  color: isSelected ? accentColor : Colors.white60,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
                           ),
                         );
                       }).toList(),
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 8),
                   SizedBox(
-                    height: MediaQuery.of(context).size.height * 0.5,
+                    height: MediaQuery.of(context).size.height * 0.55,
                     width: double.maxFinite,
                     child: ListView.builder(
+                      physics: const BouncingScrollPhysics(),
                       shrinkWrap: true,
                       itemCount: sortedMuscles.where((m) => activeFilters.isEmpty || activeFilters.contains(m)).length,
                       itemBuilder: (context, mIdx) {
@@ -904,69 +925,81 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(
-                              margin: const EdgeInsets.only(top: 12, bottom: 8),
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: accentColor.withOpacity(0.15),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: accentColor.withOpacity(0.3)),
-                              ),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 16, bottom: 6),
                               child: Text(
                                 muscle.toUpperCase(),
                                 style: TextStyle(
-                                  color: accentColor,
-                                  fontSize: 12,
+                                  color: accentColor.withOpacity(0.9),
+                                  fontSize: 11,
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: 1.2,
                                 ),
                               ),
                             ),
                             ...exs.map((ex) {
-                              return ListTile(
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-                                title: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        ex.name,
-                                        style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    if (ex.executionType != null && ex.executionType!.isNotEmpty) ...[
-                                      const SizedBox(width: 6),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: Colors.blueAccent.withOpacity(0.15),
-                                          borderRadius: BorderRadius.circular(4),
-                                        ),
+                              return Container(
+                                margin: const EdgeInsets.symmetric(vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.02),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.white.withOpacity(0.04)),
+                                ),
+                                child: ListTile(
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                  title: Row(
+                                    children: [
+                                      Expanded(
                                         child: Text(
-                                          ex.executionType!,
-                                          style: const TextStyle(color: Colors.blueAccent, fontSize: 9, fontWeight: FontWeight.bold),
+                                          ex.name,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w700,
+                                            letterSpacing: -0.1,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
+                                      if (ex.executionType != null && ex.executionType!.isNotEmpty) ...[
+                                        const SizedBox(width: 6),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: Colors.blueAccent.withOpacity(0.12),
+                                            borderRadius: BorderRadius.circular(6),
+                                            border: Border.all(color: Colors.blueAccent.withOpacity(0.2)),
+                                          ),
+                                          child: Text(
+                                            ex.executionType!,
+                                            style: const TextStyle(color: Colors.blueAccent, fontSize: 9, fontWeight: FontWeight.w800),
+                                          ),
+                                        ),
+                                      ],
                                     ],
-                                  ],
+                                  ),
+                                  subtitle: Padding(
+                                    padding: const EdgeInsets.only(top: 3.0),
+                                    child: Text(
+                                      ex.measurementType == MeasurementType.time ? 'Isometria' : 'Repetições',
+                                      style: TextStyle(color: Colors.white.withOpacity(0.35), fontSize: 11),
+                                    ),
+                                  ),
+                                  trailing: Icon(Icons.add_circle_outline_rounded, color: accentColor.withOpacity(0.7), size: 20),
+                                  onTap: () {
+                                    setState(() {
+                                      _exercises.add(RoutineExercise(
+                                        id: "e-${const Uuid().v4()}",
+                                        exerciseId: ex.id,
+                                        sets: 3,
+                                        reps: ex.measurementType == MeasurementType.time ? 45 : 10,
+                                        rest: int.tryParse(_restController.text.trim()) ?? 60,
+                                        weight: 0,
+                                      ));
+                                    });
+                                    Navigator.pop(dialogCtx);
+                                  },
                                 ),
-                                subtitle: Text(
-                                  ex.measurementType == MeasurementType.time ? 'Isometria' : 'Repetições',
-                                  style: const TextStyle(color: Colors.white38, fontSize: 11),
-                                ),
-                                onTap: () {
-                                  setState(() {
-                                    _exercises.add(RoutineExercise(
-                                      id: "e-${const Uuid().v4()}",
-                                      exerciseId: ex.id,
-                                      sets: 3,
-                                      reps: ex.measurementType == MeasurementType.time ? 45 : 10,
-                                      rest: int.tryParse(_restController.text.trim()) ?? 60,
-                                      weight: 0,
-                                    ));
-                                  });
-                                  Navigator.pop(dialogCtx);
-                                },
                               );
                             }),
                           ],
