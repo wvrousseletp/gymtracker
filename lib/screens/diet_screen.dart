@@ -1745,22 +1745,7 @@ class _JejumTabState extends State<JejumTab> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Botão Iniciar
-                        SizedBox(
-                          width: double.infinity,
-                          height: 44,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              provider.startFasting(_selectedGoalHours);
-                              _elapsedNotifier.value = Duration.zero;
-                              _startTimer();
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: widget.accentColor,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              elevation: 0,
-                            ),
-                         // Botões de Ação
+                        // Botões de Ação
                          Row(
                            children: [
                              Expanded(
