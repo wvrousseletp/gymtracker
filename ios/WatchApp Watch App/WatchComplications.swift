@@ -315,21 +315,14 @@ struct CornerWaterComplicationView: View {
     var body: some View {
         let percent = entry.target > 0 ? Double(entry.current) / Double(entry.target) : 0.0
         
-        Gauge(value: min(percent, 1.0)) {
-            Image(systemName: "drop.fill")
-                .foregroundColor(.blue)
-        } currentValueLabel: {
-            Text("\(entry.current)")
-        } minimumValueLabel: {
-            Text("0")
-        } maximumValueLabel: {
-            Text("\(entry.target)")
-        }
-        #if os(watchOS)
-        .gaugeStyle(.accessoryCorner)
-        #else
-        .gaugeStyle(.accessoryCircular)
-        #endif
+        Image(systemName: "drop.fill")
+            .foregroundColor(.blue)
+            .widgetLabel {
+                ProgressView(value: min(percent, 1.0)) {
+                    Text("\(entry.current)ml")
+                        .foregroundColor(.blue)
+                }
+            }
     }
 }
 
