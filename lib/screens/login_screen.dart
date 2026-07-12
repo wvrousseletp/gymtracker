@@ -57,9 +57,8 @@ class _LoginScreenState extends State<LoginScreen> {
             "🏋️",
             "Azul", // Cor padrão para Google
           );
-        } else {
-          await provider.initializeUser(user.uid);
         }
+        await provider.initializeUser(user.uid);
       }
     } on FirebaseAuthException catch (e) {
       setState(() {

@@ -781,120 +781,163 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
     final sortedMuscles = grouped.keys.toList()
       ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
 
+    final List<String> activeFilters = [];
+
     showDialog(
       context: context,
-      builder: (dialogCtx) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: GlassCard(
-          useBlur: true,
-          borderColor: Colors.white.withOpacity(0.08),
-          borderRadius: 20,
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (dialogCtx, setDialogState) {
+          return Dialog(
+            backgroundColor: Colors.transparent,
+            child: GlassCard(
+              useBlur: true,
+              borderColor: Colors.white.withOpacity(0.08),
+              borderRadius: 20,
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text(
-                    "Selecione o Exercício",
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        "Selecione o Exercício",
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white54, size: 18),
+                        onPressed: () => Navigator.pop(dialogCtx),
+                        constraints: const BoxConstraints(),
+                        padding: EdgeInsets.zero,
+                      ),
+                    ],
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white54, size: 18),
-                    onPressed: () => Navigator.pop(dialogCtx),
-                    constraints: const BoxConstraints(),
-                    padding: EdgeInsets.zero,
+                  const SizedBox(height: 12),
+                  // Horizontal muscle filter chips
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: sortedMuscles.map((muscle) {
+                        final isSelected = activeFilters.contains(muscle);
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8.0, bottom: 8.0),
+                          child: ChoiceChip(
+                            label: Text(
+                              muscle.toUpperCase(),
+                              style: TextStyle(
+                                color: isSelected ? Colors.black : Colors.white70,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            selected: isSelected,
+                            selectedColor: accentColor,
+                            backgroundColor: Colors.white.withOpacity(0.06),
+                            onSelected: (bool selected) {
+                              setDialogState(() {
+                                if (selected) {
+                                  activeFilters.clear();
+                                  activeFilters.add(muscle);
+                                } else {
+                                  activeFilters.remove(muscle);
+                                }
+                              });
+                            },
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.5,
+                    width: double.maxFinite,
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: sortedMuscles.where((m) => activeFilters.isEmpty || activeFilters.contains(m)).length,
+                      itemBuilder: (context, mIdx) {
+                        final filteredMuscles = sortedMuscles.where((m) => activeFilters.isEmpty || activeFilters.contains(m)).toList();
+                        final muscle = filteredMuscles[mIdx];
+                        final exs = grouped[muscle]!;
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              margin: const EdgeInsets.only(top: 12, bottom: 8),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: accentColor.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: accentColor.withOpacity(0.3)),
+                              ),
+                              child: Text(
+                                muscle.toUpperCase(),
+                                style: TextStyle(
+                                  color: accentColor,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                            ),
+                            ...exs.map((ex) {
+                              return ListTile(
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+                                title: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        ex.name,
+                                        style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    if (ex.executionType != null && ex.executionType!.isNotEmpty) ...[
+                                      const SizedBox(width: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: Colors.blueAccent.withOpacity(0.15),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          ex.executionType!,
+                                          style: const TextStyle(color: Colors.blueAccent, fontSize: 9, fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                subtitle: Text(
+                                  ex.measurementType == MeasurementType.time ? 'Isometria' : 'Repetições',
+                                  style: const TextStyle(color: Colors.white38, fontSize: 11),
+                                ),
+                                onTap: () {
+                                  setState(() {
+                                    _exercises.add(RoutineExercise(
+                                      id: "e-${const Uuid().v4()}",
+                                      exerciseId: ex.id,
+                                      sets: 3,
+                                      reps: ex.measurementType == MeasurementType.time ? 45 : 10,
+                                      rest: int.tryParse(_restController.text.trim()) ?? 60,
+                                      weight: 0,
+                                    ));
+                                  });
+                                  Navigator.pop(dialogCtx);
+                                },
+                              );
+                            }),
+                          ],
+                        );
+                      },
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: MediaQuery.of(context).size.height * 0.5,
-                width: double.maxFinite,
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: sortedMuscles.length,
-                  itemBuilder: (context, mIdx) {
-                    final muscle = sortedMuscles[mIdx];
-                    final exs = grouped[muscle]!;
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          margin: const EdgeInsets.only(top: 12, bottom: 8),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: accentColor.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: accentColor.withOpacity(0.3)),
-                          ),
-                          child: Text(
-                            muscle.toUpperCase(),
-                            style: TextStyle(
-                              color: accentColor,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                        ),
-                        ...exs.map((ex) {
-                          return ListTile(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-                            title: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    ex.name,
-                                    style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                if (ex.executionType != null && ex.executionType!.isNotEmpty) ...[
-                                  const SizedBox(width: 6),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: Colors.blueAccent.withOpacity(0.15),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Text(
-                                      ex.executionType!,
-                                      style: const TextStyle(color: Colors.blueAccent, fontSize: 9, fontWeight: FontWeight.bold),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                            subtitle: Text(
-                              ex.measurementType == MeasurementType.time ? 'Isometria' : 'Repetições',
-                              style: const TextStyle(color: Colors.white38, fontSize: 11),
-                            ),
-                            onTap: () {
-                              setState(() {
-                                _exercises.add(RoutineExercise(
-                                  id: "e-${const Uuid().v4()}",
-                                  exerciseId: ex.id,
-                                  sets: 3,
-                                  reps: ex.measurementType == MeasurementType.time ? 45 : 10,
-                                  rest: int.tryParse(_restController.text.trim()) ?? 60,
-                                  weight: 0,
-                                ));
-                              });
-                              Navigator.pop(dialogCtx);
-                            },
-                          );
-                        }),
-                      ],
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
