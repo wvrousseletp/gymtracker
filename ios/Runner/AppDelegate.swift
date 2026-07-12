@@ -1029,7 +1029,7 @@ extension AppDelegate {
           case .yoga: activityName = "Yoga"
           case .dance: activityName = "Dança"
           case .cardioDance: activityName = "Dança Aeróbica"
-          case .hike: activityName = "Trilha"
+          case .hiking: activityName = "Trilha"
           case .rowing: activityName = "Remo"
           case .tennis: activityName = "Tênis"
           default:
