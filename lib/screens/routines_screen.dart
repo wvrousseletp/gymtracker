@@ -585,7 +585,6 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                               orElse: () => LibraryExercise(id: '', name: 'Deletado', muscle: '', measurementType: MeasurementType.reps),
                             );
                             final isCardio = ref.muscle.toLowerCase().contains('cardio');
-
                             return Container(
                               margin: const EdgeInsets.only(bottom: 10),
                               padding: const EdgeInsets.all(12),
@@ -684,7 +683,7 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                                   ),
                                 ],
                               ),
-                            ];
+                            );
                           },
                         ),
                 ),
