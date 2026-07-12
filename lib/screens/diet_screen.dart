@@ -1594,6 +1594,7 @@ class _JejumTabState extends State<JejumTab> {
                     ValueListenableBuilder<Duration>(
                       valueListenable: _elapsedNotifier,
                       builder: (context, elapsed, child) {
+                        final isIndefinite = active.goalDurationHours == 0.0;
                         final goalSecs = active.goalDurationHours * 3600;
                         final elapsedSecs = elapsed.inSeconds;
                         final progress = goalSecs > 0 ? (elapsedSecs / goalSecs).clamp(0.0, 1.0) : 0.0;
@@ -1611,26 +1612,42 @@ class _JejumTabState extends State<JejumTab> {
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              "Meta: ${active.goalDurationHours.toStringAsFixed(0)} horas",
+                              isIndefinite ? "Jejum por Tempo Indefinido" : "Meta: ${active.goalDurationHours.toStringAsFixed(0)} horas",
                               style: const TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w700),
                             ),
                             const SizedBox(height: 16),
 
-                            LinearProgressIndicator(
-                              value: progress,
-                              backgroundColor: Colors.white.withOpacity(0.05),
-                              valueColor: const AlwaysStoppedAnimation<Color>(Colors.amber),
-                              borderRadius: BorderRadius.circular(4),
-                              minHeight: 8,
-                            ),
-                            const SizedBox(height: 6),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: Text(
-                                "${(progress * 100).toStringAsFixed(0)}% concluído",
-                                style: const TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.bold),
+                            if (!isIndefinite) ...[
+                              LinearProgressIndicator(
+                                value: progress,
+                                backgroundColor: Colors.white.withOpacity(0.05),
+                                valueColor: const AlwaysStoppedAnimation<Color>(Colors.amber),
+                                borderRadius: BorderRadius.circular(4),
+                                minHeight: 8,
                               ),
-                            ),
+                              const SizedBox(height: 6),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: Text(
+                                  "${(progress * 100).toStringAsFixed(0)}% concluído",
+                                  style: const TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ] else ...[
+                              // Indefinite design details
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.amber.withOpacity(0.2), width: 0.8),
+                                ),
+                                child: const Text(
+                                  "Cronômetro ativo. Finalize quando desejar.",
+                                  style: TextStyle(color: Colors.amber, fontSize: 11, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
                             _buildFastingStageCard(elapsed),
                           ],
                         );
@@ -1743,17 +1760,61 @@ class _JejumTabState extends State<JejumTab> {
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                               elevation: 0,
                             ),
-                            child: const Text(
-                              "Iniciar Jejum",
-                              style: TextStyle(color: Colors.black, fontWeight: FontWeight.w800, fontSize: 14),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
+                         // Botões de Ação
+                         Row(
+                           children: [
+                             Expanded(
+                               child: SizedBox(
+                                 height: 44,
+                                 child: ElevatedButton(
+                                   onPressed: () {
+                                     provider.startFasting(0.0); // 0.0 represents Indefinite fasting
+                                     _elapsedNotifier.value = Duration.zero;
+                                     _startTimer();
+                                   },
+                                   style: ElevatedButton.styleFrom(
+                                     backgroundColor: Colors.white.withOpacity(0.06),
+                                     foregroundColor: Colors.white,
+                                     side: BorderSide(color: Colors.white.withOpacity(0.15), width: 1.2),
+                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                     elevation: 0,
+                                   ),
+                                   child: const Text(
+                                     "Jejum Indefinido",
+                                     style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 12),
+                                   ),
+                                 ),
+                               ),
+                             ),
+                             const SizedBox(width: 10),
+                             Expanded(
+                               child: SizedBox(
+                                 height: 44,
+                                 child: ElevatedButton(
+                                   onPressed: () {
+                                     provider.startFasting(_selectedGoalHours);
+                                     _elapsedNotifier.value = Duration.zero;
+                                     _startTimer();
+                                   },
+                                   style: ElevatedButton.styleFrom(
+                                     backgroundColor: widget.accentColor,
+                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                     elevation: 0,
+                                   ),
+                                   child: const Text(
+                                     "Iniciar Meta",
+                                     style: TextStyle(color: Colors.black, fontWeight: FontWeight.w800, fontSize: 13),
+                                   ),
+                                 ),
+                               ),
+                             ),
+                           ],
+                         ),
+                       ],
+                     ),
+                   );
+                 },
+               ),
             ],
             const SizedBox(height: 24),
 
@@ -1962,74 +2023,161 @@ class _JejumTabState extends State<JejumTab> {
   void _showAddAbstinenceDialog(BuildContext context, DietProvider provider) {
     final titleCtrl = TextEditingController();
     final notesCtrl = TextEditingController();
+    
+    DateTime selectedDateTime = DateTime.now();
 
     showDialog(
       context: context,
-      builder: (dialogCtx) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: GlassCard(
-          useBlur: true,
-          borderColor: Colors.white.withOpacity(0.08),
-          borderRadius: 20,
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(
-                "Nova Abstinência",
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: titleCtrl,
-                autofocus: true,
-                style: const TextStyle(color: Colors.white, fontSize: 13),
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.white.withOpacity(0.05),
-                  hintText: "O que você vai parar? (ex: Açúcar)",
-                  hintStyle: const TextStyle(color: Colors.white30, fontSize: 12),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: notesCtrl,
-                maxLines: 2,
-                style: const TextStyle(color: Colors.white, fontSize: 13),
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.white.withOpacity(0.05),
-                  hintText: "Notas / Motivação (Opcional)",
-                  hintStyle: const TextStyle(color: Colors.white30, fontSize: 12),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(dialogCtx),
-                    child: const Text("Cancelar", style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (dialogCtx, setDialogState) {
+          Future<void> pickDateTime() async {
+            final date = await showDatePicker(
+              context: dialogCtx,
+              initialDate: selectedDateTime,
+              firstDate: DateTime(2020),
+              lastDate: DateTime.now(),
+              builder: (context, child) => Theme(
+                data: Theme.of(context).copyWith(
+                  colorScheme: ColorScheme.dark(
+                    primary: widget.accentColor,
+                    onPrimary: Colors.black,
+                    surface: const Color(0xff1c1c1e),
                   ),
-                  const SizedBox(width: 8),
-                  TextButton(
-                    onPressed: () {
-                      final title = titleCtrl.text.trim();
-                      if (title.isNotEmpty) {
-                        provider.addAbstinence(title, notesCtrl.text.trim());
-                        Navigator.pop(dialogCtx);
-                      }
-                    },
-                    child: Text("Iniciar", style: TextStyle(color: widget.accentColor, fontWeight: FontWeight.bold)),
+                ),
+                child: child!,
+              ),
+            );
+            if (date == null) return;
+
+            if (!dialogCtx.mounted) return;
+            final time = await showTimePicker(
+              context: dialogCtx,
+              initialTime: TimeOfDay.fromDateTime(selectedDateTime),
+              builder: (context, child) => Theme(
+                data: Theme.of(context).copyWith(
+                  colorScheme: ColorScheme.dark(
+                    primary: widget.accentColor,
+                    onPrimary: Colors.black,
+                    surface: const Color(0xff1c1c1e),
+                  ),
+                ),
+                child: child!,
+              ),
+            );
+            if (time == null) return;
+
+            setDialogState(() {
+              selectedDateTime = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+            });
+          }
+
+          final displayStr = "${selectedDateTime.day.toString().padLeft(2, '0')}/${selectedDateTime.month.toString().padLeft(2, '0')} às ${selectedDateTime.hour.toString().padLeft(2, '0')}:${selectedDateTime.minute.toString().padLeft(2, '0')}";
+
+          return Dialog(
+            backgroundColor: Colors.transparent,
+            child: GlassCard(
+              useBlur: true,
+              borderColor: Colors.white.withOpacity(0.08),
+              borderRadius: 20,
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    "Nova Abstinência",
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: titleCtrl,
+                    autofocus: true,
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.white.withOpacity(0.05),
+                      hintText: "O que você vai parar? (ex: Açúcar)",
+                      hintStyle: const TextStyle(color: Colors.white30, fontSize: 12),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: notesCtrl,
+                    maxLines: 2,
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.white.withOpacity(0.05),
+                      hintText: "Notas / Motivação (Opcional)",
+                      hintStyle: const TextStyle(color: Colors.white30, fontSize: 12),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Date and Time picker trigger
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Iniciado em:",
+                            style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            "Caso já tenha começado",
+                            style: TextStyle(color: Colors.white24, fontSize: 10),
+                          ),
+                        ],
+                      ),
+                      TextButton.icon(
+                        onPressed: pickDateTime,
+                        icon: Icon(Icons.calendar_today, color: widget.accentColor, size: 14),
+                        label: Text(
+                          displayStr,
+                          style: TextStyle(color: widget.accentColor, fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
+                        style: TextButton.styleFrom(
+                          backgroundColor: Colors.white.withOpacity(0.04),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(dialogCtx),
+                        child: const Text("Cancelar", style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(width: 8),
+                      TextButton(
+                        onPressed: () {
+                          final title = titleCtrl.text.trim();
+                          if (title.isNotEmpty) {
+                            provider.addAbstinence(
+                              title,
+                              notesCtrl.text.trim(),
+                              selectedDateTime.toUtc().toIso8601String(),
+                            );
+                            Navigator.pop(dialogCtx);
+                          }
+                        },
+                        child: Text("Iniciar", style: TextStyle(color: widget.accentColor, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }

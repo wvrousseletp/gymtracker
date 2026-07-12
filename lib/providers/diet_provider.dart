@@ -191,11 +191,11 @@ class DietProvider extends ChangeNotifier {
     _save();
   }
 
-  void addAbstinence(String title, [String? notes]) {
+  void addAbstinence(String title, [String? notes, String? customStartTime]) {
     final newRecord = AbstinenceRecord(
       id: "abst-${DateTime.now().millisecondsSinceEpoch}",
       title: title,
-      startTime: DateTime.now().toUtc().toIso8601String(),
+      startTime: customStartTime ?? DateTime.now().toUtc().toIso8601String(),
       notes: notes,
     );
     final list = List<AbstinenceRecord>.from(diet.abstinence)..add(newRecord);
