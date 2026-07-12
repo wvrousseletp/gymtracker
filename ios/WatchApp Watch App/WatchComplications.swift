@@ -325,7 +325,11 @@ struct CornerWaterComplicationView: View {
         } maximumValueLabel: {
             Text("\(entry.target)")
         }
+        #if os(watchOS)
         .gaugeStyle(.accessoryCorner)
+        #else
+        .gaugeStyle(.accessoryCircular)
+        #endif
     }
 }
 
