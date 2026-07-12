@@ -403,320 +403,362 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
     final sortedLibrary = List<LibraryExercise>.from(library)
       ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
 
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          decoration: BoxDecoration(
-            color: const Color(0xff141416).withOpacity(0.65),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border.all(color: Colors.white.withOpacity(0.08)),
-          ),
-          padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 8,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-          ),
-          child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Drag handle
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
-                margin: const EdgeInsets.symmetric(vertical: 12),
-              ),
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            curve: Curves.easeOut,
+            height: MediaQuery.of(context).size.height * 0.88,
+            decoration: BoxDecoration(
+              color: const Color(0xff0d0d0f).withOpacity(0.92),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              border: Border.all(color: Colors.white.withOpacity(0.08), width: 1.5),
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: 8,
+              bottom: MediaQuery.of(context).viewInsets.bottom > 0
+                  ? MediaQuery.of(context).viewInsets.bottom + 12
+                  : MediaQuery.of(context).padding.bottom + 20,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  widget.existing == null ? "Nova Rotina" : "Editar Rotina",
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white),
+                // Drag handle
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.18),
+                      borderRadius: BorderRadius.circular(2.5),
+                    ),
+                    margin: const EdgeInsets.symmetric(vertical: 10),
+                  ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
+                
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      widget.existing == null ? "Nova Rotina" : "Editar Rotina",
+                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -0.3),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.close, color: Colors.white.withOpacity(0.6), size: 20),
+                      onPressed: () => Navigator.pop(context),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.white.withOpacity(0.05),
+                        padding: const EdgeInsets.all(6),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
 
-            Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  Row(
+                Form(
+                  key: _formKey,
+                  child: Row(
                     children: [
                       Expanded(
                         flex: 3,
                         child: TextFormField(
                           controller: _nameController,
-                          style: const TextStyle(color: Colors.white),
+                          style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
                           decoration: InputDecoration(
                             filled: true,
-                            fillColor: Colors.white.withOpacity(0.05),
+                            fillColor: Colors.white.withOpacity(0.04),
                             labelText: "Nome da Rotina",
-                            labelStyle: const TextStyle(color: Colors.white54, fontSize: 13),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                            labelStyle: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12),
+                            floatingLabelStyle: TextStyle(color: accentColor, fontWeight: FontWeight.bold),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.white.withOpacity(0.06)),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: accentColor, width: 1.5),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                           ),
                           validator: (value) => (value == null || value.trim().isEmpty) ? "Obrigatório" : null,
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 10),
                       Expanded(
                         flex: 2,
                         child: TextFormField(
                           controller: _restController,
                           keyboardType: TextInputType.number,
-                          style: const TextStyle(color: Colors.white),
+                          style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
                           decoration: InputDecoration(
                             filled: true,
-                            fillColor: Colors.white.withOpacity(0.05),
+                            fillColor: Colors.white.withOpacity(0.04),
                             labelText: "Descanso (seg)",
-                            labelStyle: const TextStyle(color: Colors.white54, fontSize: 13),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                            labelStyle: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12),
+                            floatingLabelStyle: TextStyle(color: accentColor, fontWeight: FontWeight.bold),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.white.withOpacity(0.06)),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: accentColor, width: 1.5),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                           ),
                           validator: (value) => (value == null || int.tryParse(value) == null) ? "Inválido" : null,
                         ),
                       ),
                     ],
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Botão Proeminente e Bonito de Adicionar Exercício
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: OutlinedButton.icon(
-                icon: Icon(Icons.add, color: accentColor, size: 20),
-                label: Text(
-                  "ADICIONAR EXERCÍCIO",
-                  style: TextStyle(color: accentColor, fontWeight: FontWeight.w800, letterSpacing: 0.5, fontSize: 13),
                 ),
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: accentColor.withOpacity(0.4), width: 1.5),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  backgroundColor: accentColor.withOpacity(0.05),
-                ),
-                onPressed: () {
-                  _addExercisePicker(sortedLibrary);
-                },
-              ),
-            ),
-            const SizedBox(height: 20),
+                const SizedBox(height: 16),
 
-            const Text(
-              "Exercícios Adicionados",
-              style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 8),
-
-            // Lista de exercícios adicionados na rotina
-            _exercises.isEmpty
-                ? Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    child: Center(
-                      child: Text(
-                        "Nenhum exercício adicionado ainda.\nToque no botão 'ADICIONAR EXERCÍCIO' acima.",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 12, fontStyle: FontStyle.italic),
-                      ),
+                // Botão Proeminente e Bonito de Adicionar Exercício
+                SizedBox(
+                  width: double.infinity,
+                  height: 46,
+                  child: ElevatedButton.icon(
+                    icon: Icon(Icons.add_circle_outline, color: Colors.black, size: 18),
+                    label: const Text(
+                      "ADICIONAR EXERCÍCIO",
+                      style: TextStyle(color: Colors.black, fontWeight: FontWeight.w900, letterSpacing: 0.5, fontSize: 12),
                     ),
-                  )
-                : SizedBox(
-                    height: 250,
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: _exercises.length,
-                      itemBuilder: (context, idx) {
-                        final ex = _exercises[idx];
-                        final ref = library.firstWhere(
-                          (l) => l.id == ex.exerciseId,
-                          orElse: () => LibraryExercise(id: '', name: 'Deletado', muscle: '', measurementType: MeasurementType.reps),
-                        );
-                        final isCardio = ref.muscle.toLowerCase().contains('cardio');
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: accentColor,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                    onPressed: () {
+                      _addExercisePicker(sortedLibrary);
+                    },
+                  ),
+                ),
+                const SizedBox(height: 20),
 
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.03),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.white.withOpacity(0.06)),
-                          ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "Exercícios Adicionados",
+                      style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: -0.2),
+                    ),
+                    if (_exercises.isNotEmpty)
+                      Text(
+                        "${_exercises.length} ${_exercises.length == 1 ? 'exercício' : 'exercícios'}",
+                        style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11, fontWeight: FontWeight.w600),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+
+                // Lista de exercícios adicionados na rotina
+                Expanded(
+                  child: _exercises.isEmpty
+                      ? Center(
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              Icon(Icons.fitness_center, size: 36, color: Colors.white.withOpacity(0.15)),
+                              const SizedBox(height: 8),
+                              Text(
+                                "Nenhum exercício adicionado ainda.\nToque no botão acima para adicionar.",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: Colors.white.withOpacity(0.35), fontSize: 12, height: 1.4, fontStyle: FontStyle.italic),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          physics: const BouncingScrollPhysics(),
+                          itemCount: _exercises.length,
+                          itemBuilder: (context, idx) {
+                            final ex = _exercises[idx];
+                            final ref = library.firstWhere(
+                              (l) => l.id == ex.exerciseId,
+                              orElse: () => LibraryExercise(id: '', name: 'Deletado', muscle: '', measurementType: MeasurementType.reps),
+                            );
+                            final isCardio = ref.muscle.toLowerCase().contains('cardio');
+
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 10),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.03),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: Colors.white.withOpacity(0.06)),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    ref.name,
-                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          ref.name,
+                                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14, letterSpacing: -0.1),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      Row(
+                                        children: [
+                                          IconButton(
+                                            icon: Icon(Icons.arrow_upward_rounded, color: idx == 0 ? Colors.white10 : Colors.white60, size: 18),
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(),
+                                            onPressed: idx == 0 ? null : () => _moveExercise(idx, true),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          IconButton(
+                                            icon: Icon(Icons.arrow_downward_rounded, color: idx == _exercises.length - 1 ? Colors.white10 : Colors.white60, size: 18),
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(),
+                                            onPressed: idx == _exercises.length - 1 ? null : () => _moveExercise(idx, false),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          GestureDetector(
+                                            onTap: () {
+                                              setState(() {
+                                                _exercises.removeAt(idx);
+                                              });
+                                            },
+                                            child: Icon(Icons.delete_outline_rounded, color: Colors.redAccent.withOpacity(0.8), size: 20),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                   ),
+                                  const SizedBox(height: 12),
                                   Row(
                                     children: [
-                                      // Up Button
-                                      IconButton(
-                                        icon: const Icon(Icons.arrow_upward, color: Colors.white54, size: 16),
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(),
-                                        onPressed: idx == 0 ? null : () => _moveExercise(idx, true),
+                                      Expanded(
+                                        child: _buildInputRow(
+                                          label: isCardio ? "Repet." : "Séries",
+                                          value: ex.sets.toString(),
+                                          onChanged: (val) {
+                                            _updateExerciseField(idx, sets: int.tryParse(val) ?? 0);
+                                          },
+                                        ),
                                       ),
                                       const SizedBox(width: 8),
-                                      // Down Button
-                                      IconButton(
-                                        icon: const Icon(Icons.arrow_downward, color: Colors.white54, size: 16),
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(),
-                                        onPressed: idx == _exercises.length - 1 ? null : () => _moveExercise(idx, false),
+                                      Expanded(
+                                        child: _buildInputRow(
+                                          label: isCardio ? "Minutos" : (ref.measurementType == MeasurementType.time ? "Segundos" : "Reps"),
+                                          value: ex.reps.toString(),
+                                          onChanged: (val) {
+                                            _updateExerciseField(idx, reps: int.tryParse(val) ?? 0);
+                                          },
+                                        ),
                                       ),
                                       const SizedBox(width: 8),
-                                      GestureDetector(
-                                        onTap: () {
-                                          setState(() {
-                                            _exercises.removeAt(idx);
-                                          });
-                                        },
-                                        child: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
+                                      if (!isCardio) ...[
+                                        Expanded(
+                                          child: _buildInputRow(
+                                            label: "Carga (kg)",
+                                            value: ex.weight.toString(),
+                                            onChanged: (val) {
+                                              _updateExerciseField(idx, weight: double.tryParse(val) ?? 0.0);
+                                            },
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                      ],
+                                      Expanded(
+                                        child: _buildInputRow(
+                                          label: "Desc. (s)",
+                                          value: ex.rest.toString(),
+                                          onChanged: (val) {
+                                            _updateExerciseField(idx, rest: int.tryParse(val) ?? 0);
+                                          },
+                                        ),
                                       ),
                                     ],
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  // Sets
-                                  Expanded(
-                                    child: _buildInputRow(
-                                      label: isCardio ? "Repet." : "Séries",
-                                      value: ex.sets.toString(),
-                                      onChanged: (val) {
-                                        _updateExerciseField(idx, sets: int.tryParse(val) ?? 0);
-                                      },
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  // Reps / Cardio Time
-                                  Expanded(
-                                    child: _buildInputRow(
-                                      label: isCardio ? "Minutos" : (ref.measurementType == MeasurementType.time ? "Segundos" : "Reps"),
-                                      value: ex.reps.toString(),
-                                      onChanged: (val) {
-                                        _updateExerciseField(idx, reps: int.tryParse(val) ?? 0);
-                                      },
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  // Weight (only for non-cardio)
-                                  if (!isCardio) ...[
-                                    Expanded(
-                                      child: _buildInputRow(
-                                        label: "Carga (kg)",
-                                        value: ex.weight.toString(),
-                                        onChanged: (val) {
-                                          _updateExerciseField(idx, weight: double.tryParse(val) ?? 0.0);
-                                        },
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                  ],
-                                  // Rest Override
-                                  Expanded(
-                                    child: _buildInputRow(
-                                      label: "Desc. (s)",
-                                      value: ex.rest.toString(),
-                                      onChanged: (val) {
-                                        _updateExerciseField(idx, rest: int.tryParse(val) ?? 0);
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        );
-                      },
+                            ];
+                          },
+                        ),
+                ),
+                const SizedBox(height: 12),
+
+                // Botão de Confirmação
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (_formKey.currentState!.validate()) {
+                        if (_exercises.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Adicione pelo menos um exercício à rotina!"),
+                              backgroundColor: Colors.redAccent,
+                            ),
+                          );
+                          return;
+                        }
+
+                        // Validar se há exercícios com 0 séries ou reps
+                        bool anyInvalid = false;
+                        for (var ex in _exercises) {
+                          if (ex.sets <= 0 || ex.reps <= 0) {
+                            anyInvalid = true;
+                            break;
+                          }
+                        }
+                        if (anyInvalid) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Todas as séries e repetições/tempo devem ser maiores que zero!"),
+                              backgroundColor: Colors.redAccent,
+                            ),
+                          );
+                          return;
+                        }
+
+                        final name = _nameController.text.trim();
+                        final rest = int.parse(_restController.text.trim());
+
+                        if (widget.existing == null) {
+                          widget.provider.addRoutine(name, rest, _exercises);
+                        } else {
+                          final updated = Routine(
+                            id: widget.existing!.id,
+                            name: name,
+                            defaultRest: rest,
+                            exercises: _exercises,
+                          );
+                          widget.provider.updateRoutine(updated);
+                        }
+                        Navigator.pop(context);
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: accentColor,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      widget.existing == null ? "Criar Rotina" : "Salvar Alterações",
+                      style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w900, fontSize: 14),
                     ),
                   ),
-            const SizedBox(height: 16),
-
-            // Botão de Confirmação
-            SizedBox(
-              width: double.infinity,
-              height: 44,
-              child: ElevatedButton(
-                onPressed: () {
-                  if (_formKey.currentState!.validate()) {
-                    if (_exercises.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Adicione pelo menos um exercício à rotina!"),
-                          backgroundColor: Colors.redAccent,
-                        ),
-                      );
-                      return;
-                    }
-
-                    // Validar se há exercícios com 0 séries ou reps
-                    bool anyInvalid = false;
-                    for (var ex in _exercises) {
-                      if (ex.sets <= 0 || ex.reps <= 0) {
-                        anyInvalid = true;
-                        break;
-                      }
-                    }
-                    if (anyInvalid) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Todas as séries e repetições/tempo devem ser maiores que zero!"),
-                          backgroundColor: Colors.redAccent,
-                        ),
-                      );
-                      return;
-                    }
-
-                    final name = _nameController.text.trim();
-                    final rest = int.parse(_restController.text.trim());
-
-                    if (widget.existing == null) {
-                      widget.provider.addRoutine(name, rest, _exercises);
-                    } else {
-                      final updated = Routine(
-                        id: widget.existing!.id,
-                        name: name,
-                        defaultRest: rest,
-                        exercises: _exercises,
-                      );
-                      widget.provider.updateRoutine(updated);
-                    }
-                    Navigator.pop(context);
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: accentColor,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 0,
                 ),
-                child: Text(
-                  widget.existing == null ? "Criar Rotina" : "Salvar Alterações",
-                  style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w800),
-                ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
-    ),
-  ),
-);
+    );
   }
 
   Widget _buildInputRow({required String label, required String value, required ValueChanged<String> onChanged}) {
