@@ -67,6 +67,10 @@ class MyApp extends StatelessWidget {
           background: Color(0xfff2f2f7),
           surface: Colors.white,
         ),
+        tabBarTheme: const TabBarTheme(
+          dividerColor: Colors.transparent,
+          dividerHeight: 0,
+        ),
         textTheme: GoogleFonts.outfitTextTheme(ThemeData.light().textTheme),
         useMaterial3: true,
       ),
@@ -77,6 +81,10 @@ class MyApp extends StatelessWidget {
           primary: Colors.white,
           background: Colors.black,
           surface: Color(0xff1c1c1e),
+        ),
+        tabBarTheme: const TabBarTheme(
+          dividerColor: Colors.transparent,
+          dividerHeight: 0,
         ),
         textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme),
         useMaterial3: true,
