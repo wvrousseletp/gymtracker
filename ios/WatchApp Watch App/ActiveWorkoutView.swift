@@ -360,46 +360,46 @@ struct ActiveWorkoutView: View {
     private func currentExercisePageView(activeWorkout: WatchActiveWorkoutState) -> some View {
         let exIndex = activeWorkout.currentExerciseIndex
         
-        return ScrollView {
+        return VStack(spacing: 0) {
             if exIndex < activeWorkout.exercises.count {
                 let exercise = activeWorkout.exercises[exIndex]
                 let isCardio = exercise.muscle.lowercased().contains("cardio")
                 
-                VStack(alignment: .leading, spacing: 6) {
-                    // Exercise Info Header with Navigation Chevrons
+                VStack(spacing: 4) {
+                    // 1. Exercise Info Header with Navigation Chevrons (More Compact)
                     HStack(alignment: .center) {
                         Button(action: {
                             connectivityManager.changeExercise(to: exIndex - 1)
                         }) {
                             Image(systemName: "chevron.left")
-                                .font(.system(size: 12, weight: .bold))
+                                .font(.system(size: 11, weight: .bold))
                                 .foregroundColor(.orange)
                         }
                         .disabled(exIndex == 0)
                         .opacity(exIndex == 0 ? 0.2 : 1.0)
                         .buttonStyle(PlainButtonStyle())
-                        .frame(width: 32, height: 32)
+                        .frame(width: 24, height: 24)
                         
                         Spacer()
                         
-                        VStack(alignment: .center, spacing: 2) {
+                        VStack(alignment: .center, spacing: 0) {
                             Text(exercise.name)
-                                .font(.system(size: 13, weight: .bold))
+                                .font(.system(size: 12, weight: .bold))
                                 .foregroundColor(.orange)
                                 .multilineTextAlignment(.center)
-                                .lineLimit(2)
+                                .lineLimit(1)
                             
                             HStack(spacing: 4) {
                                 Text(exercise.muscle)
-                                    .font(.system(size: 8, weight: .semibold))
+                                    .font(.system(size: 7, weight: .semibold))
                                     .foregroundColor(.gray)
                                 
                                 if let exec = exercise.executionType, !exec.isEmpty {
                                     Text("•")
-                                        .font(.system(size: 8))
+                                        .font(.system(size: 7))
                                         .foregroundColor(.gray)
                                     Text(exec)
-                                        .font(.system(size: 8))
+                                        .font(.system(size: 7))
                                         .foregroundColor(.blue)
                                 }
                             }
@@ -411,84 +411,107 @@ struct ActiveWorkoutView: View {
                             connectivityManager.changeExercise(to: exIndex + 1)
                         }) {
                             Image(systemName: "chevron.right")
-                                .font(.system(size: 12, weight: .bold))
+                                .font(.system(size: 11, weight: .bold))
                                 .foregroundColor(.orange)
                         }
                         .disabled(exIndex + 1 >= activeWorkout.exercises.count)
                         .opacity(exIndex + 1 >= activeWorkout.exercises.count ? 0.2 : 1.0)
                         .buttonStyle(PlainButtonStyle())
-                        .frame(width: 32, height: 32)
+                        .frame(width: 24, height: 24)
                     }
-                    .padding(.horizontal, 4)
+                    .padding(.horizontal, 2)
                     
-                    Divider().background(Color.white.opacity(0.1))
+                    Divider().background(Color.white.opacity(0.08))
                     
-                    // Vertical Sets List
+                    // 2. Compact Horizontal Sets Row (Tappable circles/capsules)
                     let activeSetIdx = getSelectedSetIndex(for: exercise, index: exIndex)
-                    VStack(spacing: 4) {
+                    
+                    HStack(spacing: 4) {
                         ForEach(0..<exercise.sets, id: \.self) { setIndex in
                             let isCompleted = setIndex < exercise.setsState.count ? exercise.setsState[setIndex] : false
                             let isSelected = setIndex == activeSetIdx
                             let isFailure = setIndex < exercise.failureReport.count ? exercise.failureReport[setIndex] : false
-                            
-                            let textLabel = "Série \(setIndex + 1)"
-                            let weightColor = isSelected ? Color.orange : Color.white
                             let checkmarkColor = isCardio ? Color.blue : Color.green
                             
                             Button(action: {
-                                setSelectedSetIndex(for: exercise, index: exIndex, setIndex: setIndex)
-                            }) {
-                                HStack {
-                                    Text(textLabel)
-                                        .font(.system(size: 10, weight: isSelected ? .bold : .regular))
-                                        .foregroundColor(weightColor)
+                                // Tap selects the set. If already selected, taps toggle/complete it!
+                                if isSelected {
+                                    let failureRep = activeSetIdx < exercise.failureReps.count ? exercise.failureReps[activeSetIdx] : nil
+                                    let pc = activeSetIdx < exercise.performedCardios.count ? exercise.performedCardios[activeSetIdx] : nil
                                     
-                                    Spacer()
+                                    #if canImport(WatchKit)
+                                    if !isCompleted {
+                                        if isFailure {
+                                            hapticManager.playFailureRegistered()
+                                        } else {
+                                            hapticManager.playSetCompleted()
+                                        }
+                                    } else {
+                                        hapticManager.playSetUncompleted()
+                                    }
+                                    #endif
+
+                                    connectivityManager.toggleSet(
+                                        exerciseIndex: exIndex,
+                                        setIndex: setIndex,
+                                        isDone: !isCompleted,
+                                        isFailure: isFailure,
+                                        failureRep: failureRep,
+                                        distance: pc?.distanceKm,
+                                        duration: pc?.durationSeconds
+                                    )
+                                } else {
+                                    setSelectedSetIndex(for: exercise, index: exIndex, setIndex: setIndex)
+                                }
+                            }) {
+                                VStack(spacing: 2) {
+                                    Text("\(setIndex + 1)")
+                                        .font(.system(size: 9, weight: .bold))
+                                        .foregroundColor(isSelected ? .black : .white)
                                     
                                     if isFailure && !isCardio {
                                         Image(systemName: "xmark.octagon.fill")
-                                            .font(.system(size: 9))
+                                            .font(.system(size: 8))
                                             .foregroundColor(.red)
-                                            .padding(.trailing, 2)
-                                    }
-                                    
-                                    if isCompleted {
+                                    } else if isCompleted {
                                         Image(systemName: "checkmark.circle.fill")
-                                            .font(.system(size: 10, weight: .bold))
-                                            .foregroundColor(checkmarkColor)
-                                            .transition(.scale.combined(with: .opacity))
+                                            .font(.system(size: 8, weight: .bold))
+                                            .foregroundColor(isSelected ? .black : checkmarkColor)
                                     } else {
                                         Image(systemName: "circle")
-                                            .font(.system(size: 10))
-                                            .foregroundColor(.white.opacity(0.3))
+                                            .font(.system(size: 8))
+                                            .foregroundColor(isSelected ? .black.opacity(0.4) : .white.opacity(0.3))
                                     }
                                 }
-                                .padding(.vertical, 5)
-                                .padding(.horizontal, 8)
-                                .background(isSelected ? Color.white.opacity(0.08) : Color.white.opacity(0.02))
-                                .cornerRadius(8)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .stroke(isSelected ? Color.orange.opacity(0.5) : Color.white.opacity(0.04), lineWidth: 1)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 4)
+                                .background(
+                                    isSelected 
+                                    ? (isCompleted ? Color.green : Color.orange) 
+                                    : (isCompleted ? Color.green.opacity(0.15) : Color.white.opacity(0.04))
                                 )
-                                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isCompleted)
-                                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
+                                .cornerRadius(6)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .stroke(isSelected ? Color.white.opacity(0.8) : Color.white.opacity(0.06), lineWidth: 1)
+                                )
                             }
                             .buttonStyle(PlainButtonStyle())
                         }
                     }
+                    .padding(.vertical, 2)
                     
-                    Divider().background(Color.white.opacity(0.1))
+                    Divider().background(Color.white.opacity(0.08))
                     
-                    // Controls Area
-                    VStack(alignment: .leading, spacing: 8) {
+                    // 3. Ultra Compact Info & Quick Toggle Controls Area (Weights & Reps + Compact Toggle)
+                    VStack(spacing: 4) {
                         if isCardio {
                             cardioControls(exercise: exercise, exIndex: exIndex, selectedSetIdx: activeSetIdx)
                         } else {
                             strengthControls(exercise: exercise, exIndex: exIndex, selectedSetIdx: activeSetIdx)
                         }
                         
-                        // Solid Concluir Série Button
+                        // Solid Concluir/Desfazer button shrunk down
                         Button(action: {
                             let isCompleted = activeSetIdx < exercise.setsState.count ? exercise.setsState[activeSetIdx] : false
                             let isFailure = activeSetIdx < exercise.failureReport.count ? exercise.failureReport[activeSetIdx] : false
@@ -518,28 +541,23 @@ struct ActiveWorkoutView: View {
                             )
                         }) {
                             let isCompleted = activeSetIdx < exercise.setsState.count ? exercise.setsState[activeSetIdx] : false
-                            HStack {
-                                Spacer()
+                            HStack(spacing: 4) {
                                 Image(systemName: isCompleted ? "checkmark.circle.fill" : "play.circle.fill")
-                                    .font(.system(size: 12, weight: .bold))
+                                    .font(.system(size: 10, weight: .bold))
                                     .foregroundColor(isCompleted ? .white : .black)
-                                    .transition(.scale.combined(with: .opacity))
-                                Text(isCompleted ? "SÉRIE CONCLUÍDA" : "CONCLUIR SÉRIE")
-                                    .font(.system(size: 11, weight: .black))
+                                Text(isCompleted ? "CONCLUÍDO" : "CONCLUIR SÉRIE")
+                                    .font(.system(size: 9, weight: .black))
                                     .foregroundColor(isCompleted ? .white : .black)
-                                Spacer()
                             }
-                            .padding(.vertical, 10)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 6)
                             .background(isCompleted ? Color.gray.opacity(0.3) : Color.green)
-                            .cornerRadius(12)
-                            .shadow(color: isCompleted ? Color.clear : Color.green.opacity(0.3), radius: 4)
-                            .animation(.spring(response: 0.4, dampingFraction: 0.6), value: isCompleted)
+                            .cornerRadius(8)
                         }
                         .buttonStyle(PlainButtonStyle())
-                        .padding(.top, 4)
                     }
                 }
-                .padding(.horizontal, 6)
+                .padding(.horizontal, 4)
             } else {
                 Text("Nenhum exercício ativo")
                     .foregroundColor(.gray)
