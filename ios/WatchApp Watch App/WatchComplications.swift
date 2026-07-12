@@ -313,15 +313,19 @@ struct CornerWaterComplicationView: View {
     let entry: WaterComplicationEntry
     
     var body: some View {
-        let progress = entry.target > 0 ? Double(entry.current) / Double(entry.target) : 0.0
-        ZStack {
+        let percent = entry.target > 0 ? Double(entry.current) / Double(entry.target) : 0.0
+        
+        Gauge(value: min(percent, 1.0)) {
             Image(systemName: "drop.fill")
                 .foregroundColor(.blue)
-                .widgetLabel {
-                    Text("\(entry.current)ml")
-                        .foregroundColor(.blue)
-                }
+        } currentValueLabel: {
+            Text("\(entry.current)")
+        } minimumValueLabel: {
+            Text("0")
+        } maximumValueLabel: {
+            Text("\(entry.target)")
         }
+        .gaugeStyle(.accessoryCorner)
     }
 }
 
