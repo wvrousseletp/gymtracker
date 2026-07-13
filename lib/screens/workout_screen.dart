@@ -1091,7 +1091,17 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
       _timerActive = false;
     });
 
-    widget.provider.clearRestTimer();
+    if (!_timerIsPrep && settings != null) {
+      // Transition from Rest to Prep automatically when rest finishes naturally
+      widget.provider.startRestTimer(
+        settings.prepSeconds,
+        _timerNextExName,
+        _timerNextSetNum,
+        true,
+      );
+    } else {
+      widget.provider.clearRestTimer();
+    }
   }
 
   @override

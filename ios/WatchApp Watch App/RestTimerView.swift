@@ -41,36 +41,36 @@ struct RestTimerView: View {
                 Color.black.ignoresSafeArea()
             }
 
-            VStack(spacing: 2) {
+            VStack(spacing: 4) {
                 // Badge superior indicando o estado
-                Text(restTimer.isPrep ? "PREPARO" : "DESCANSO")
-                    .font(.system(size: 8, weight: .black, design: .rounded))
+                Text(restTimer.isPrep ? "PREPARE-SE" : "DESCANSO ATIVO")
+                    .font(.system(size: 9, weight: .bold, design: .rounded))
                     .foregroundColor(themeColor)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 1)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
                     .background(themeColor.opacity(0.15))
                     .cornerRadius(6)
                     .overlay(
                         RoundedRectangle(cornerRadius: 6)
-                            .stroke(themeColor.opacity(0.3), lineWidth: 1)
+                            .stroke(themeColor.opacity(0.35), lineWidth: 1)
                     )
 
                 // Texto informativo do próximo exercício
-                VStack(spacing: 0) {
-                    Text(restTimer.isPrep ? "Prepare-se para:" : "Próximo:")
-                        .font(.system(size: 8, weight: .medium))
-                        .foregroundColor(.gray)
+                VStack(spacing: 2) {
+                    Text(restTimer.isPrep ? "ENTRANDO EM:" : "PRÓXIMO EXERCÍCIO:")
+                        .font(.system(size: 7, weight: .black))
+                        .foregroundColor(.gray.opacity(0.8))
                     
                     Text("\(restTimer.nextExerciseName)")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.system(size: 13, weight: .black, design: .rounded))
                         .foregroundColor(.white)
                         .lineLimit(1)
                     
                     Text("Série \(restTimer.nextSetNum)")
-                        .font(.system(size: 8))
-                        .foregroundColor(.gray)
+                        .font(.system(size: 8, weight: .semibold, design: .rounded))
+                        .foregroundColor(themeColor)
                 }
-                .padding(.horizontal, 4)
+                .padding(.horizontal, 6)
                 .multilineTextAlignment(.center)
 
                 // Cronômetro Circular Moderno com Efeito Glow
