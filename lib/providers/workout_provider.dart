@@ -705,7 +705,10 @@ class WorkoutProvider extends ChangeNotifier {
     history.removeWhere((h) => h.id == id);
     _updateStreak();
     _save();
-    notifyListeners();
+    // Execute notification in a microtask to prevent concurrent build/paint exceptions
+    scheduleMicrotask(() {
+      notifyListeners();
+    });
     unawaited(_firebaseSync.deleteWorkoutLog(currentUserId, id));
   }
 
