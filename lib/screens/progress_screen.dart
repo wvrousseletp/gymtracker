@@ -604,7 +604,7 @@ class _HistoryTabState extends State<HistoryTab> {
           padding: const EdgeInsets.all(20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: SystemMouseCursors.click == SystemMouseCursors.click ? CrossAxisAlignment.stretch : CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Text(
                 "Excluir Log de Treino?",

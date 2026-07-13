@@ -443,11 +443,13 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black.withOpacity(0.4),
+      isScrollControlled: true,
       builder: (context) => ClipRRect(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
           child: Container(
+            height: MediaQuery.of(context).size.height * 0.65,
             decoration: BoxDecoration(
               color: const Color(0xff141416).withOpacity(0.65),
               borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -455,7 +457,6 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             ),
             padding: const EdgeInsets.all(20),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Center(
@@ -476,10 +477,11 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 const SizedBox(height: 12),
                 Expanded(
                   child: ListView.builder(
+                    physics: const BouncingScrollPhysics(),
                     itemCount: routine.exercises.length,
                     itemBuilder: (context, idx) {
                       final ex = routine.exercises[idx];
-                       final libEx = provider.library.firstWhere(
+                      final libEx = provider.library.firstWhere(
                         (l) => l.id == ex.exerciseId,
                         orElse: () => LibraryExercise(id: '', name: 'Deletado', muscle: '', measurementType: MeasurementType.reps),
                       );
@@ -497,6 +499,75 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                         ),
                       );
                     },
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      final nowUtc = DateTime.now().toUtc().toIso8601String();
+                      final totalSets = routine.exercises.fold<int>(0, (sum, ex) => sum + ex.sets);
+                      final totalWeight = routine.exercises.fold<double>(0, (sum, ex) => sum + (ex.sets * ex.weight));
+                      
+                      final List<LogExercise> logExercises = routine.exercises.map((re) {
+                        final lib = provider.library.firstWhere(
+                          (l) => l.id == re.exerciseId,
+                          orElse: () => LibraryExercise(id: '', name: 'Exercício', muscle: 'Geral', measurementType: MeasurementType.reps),
+                        );
+                        
+                        return LogExercise(
+                          name: lib.name,
+                          muscle: lib.muscle,
+                          sets: re.sets,
+                          completedSets: re.sets,
+                          reps: re.reps,
+                          weight: re.weight,
+                          rpe: 8,
+                          performedCardios: lib.muscle.toLowerCase().contains('cardio') 
+                              ? List.generate(re.sets, (i) => PerformedCardio(distanceKm: re.weight, durationSeconds: re.reps * 60))
+                              : [],
+                          failureReport: List.filled(re.sets, false),
+                          failureReps: List.filled(re.sets, null),
+                        );
+                      }).toList();
+
+                      final newLog = WorkoutLog(
+                        id: "l-${const Uuid().v4()}",
+                        name: routine.name,
+                        date: nowUtc,
+                        duration: 45 * 60, // tempo estimado de 45 minutos
+                        completedSets: totalSets,
+                        totalSets: totalSets,
+                        totalWeight: totalWeight,
+                        rpe: 8,
+                        notes: "Concluído manualmente sem celular",
+                        avgHeartRate: null,
+                        activeCalories: null,
+                        exercises: logExercises,
+                      );
+
+                      provider.addManualWorkoutLog(newLog);
+                      Navigator.pop(context);
+                      
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text("Treino '${routine.name}' concluído com sucesso!"),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.check_circle_outline, color: Colors.black, size: 18),
+                    label: const Text(
+                      "MARCAR COMO CONCLUÍDO",
+                      style: TextStyle(color: Colors.black, fontWeight: FontWeight.w900, fontSize: 12),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
                   ),
                 ),
               ],

@@ -759,8 +759,23 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
         final calories = w['calories'] as int;
         final date = w['date'] as String;
 
-        // Skip if already imported
+        // Skip if already imported by ID
         if (_workoutProvider!.history.any((log) => log.id == id)) continue;
+
+        // Skip if there is a local log registered at the exact same or very close time (±3 minutes)
+        try {
+          final workoutDateTime = DateTime.parse(date);
+          final bool isDuplicateOfLocal = _workoutProvider!.history.any((log) {
+            try {
+              final logDateTime = DateTime.parse(log.date);
+              final diffMinutes = logDateTime.difference(workoutDateTime).inMinutes.abs();
+              return diffMinutes <= 3; // Within 3 minutes
+            } catch (_) {
+              return false;
+            }
+          });
+          if (isDuplicateOfLocal) continue;
+        } catch (_) {}
 
         final newLog = WorkoutLog(
           id: id,

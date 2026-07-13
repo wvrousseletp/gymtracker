@@ -677,6 +677,7 @@ class WorkoutProvider extends ChangeNotifier {
 
     _updateStreak();
     _save();
+    notifyListeners();
     unawaited(_firebaseSync.syncWorkoutLog(currentUserId, log));
   }
 
@@ -704,6 +705,7 @@ class WorkoutProvider extends ChangeNotifier {
     history.removeWhere((h) => h.id == id);
     _updateStreak();
     _save();
+    notifyListeners();
     unawaited(_firebaseSync.deleteWorkoutLog(currentUserId, id));
   }
 
