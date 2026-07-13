@@ -1752,24 +1752,30 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
                                   failureRep: ex.failureReps[setIdx],
                                 );
                               },
-                              child: AnimatedScale(
-                                scale: isDone ? 1.0 : 0.92,
+                              child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 150),
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 150),
-                                  width: 22,
-                                  height: 22,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: isDone ? accentColor : Colors.transparent,
-                                    border: Border.all(
-                                      color: isDone ? accentColor : (isActive ? Colors.white54 : Colors.white24),
-                                      width: 2.0,
-                                    ),
+                                width: 44,
+                                height: 28,
+                                decoration: BoxDecoration(
+                                  color: isDone 
+                                      ? accentColor 
+                                      : (isActive ? accentColor.withOpacity(0.08) : Colors.transparent),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: isDone 
+                                        ? accentColor 
+                                        : (isActive ? accentColor.withOpacity(0.6) : Colors.white.withOpacity(0.18)),
+                                    width: 1.5,
                                   ),
+                                ),
+                                child: Center(
                                   child: isDone
-                                      ? const Icon(Icons.check, color: Colors.black, size: 13)
-                                      : null,
+                                      ? const Icon(Icons.check, color: Colors.black, size: 16, weight: 800)
+                                      : Icon(
+                                          Icons.check, 
+                                          color: isActive ? accentColor.withOpacity(0.7) : Colors.white24, 
+                                          size: 14
+                                        ),
                                 ),
                               ),
                             ),
