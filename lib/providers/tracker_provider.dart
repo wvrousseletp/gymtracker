@@ -362,7 +362,6 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     );
 
     if (result != null && result != localState) {
-      await _applyRemoteState(result, currentProfile);
       notifyListeners();
     }
   }
