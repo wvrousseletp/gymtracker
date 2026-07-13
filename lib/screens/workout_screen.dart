@@ -1133,11 +1133,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                       },
                       child: Text("Salvar", style: TextStyle(color: accentColor, fontWeight: FontWeight.bold)),
                     ),
-                      ],
-                    ),
                   ],
                 ),
-              ),
+              ],
             ),
           ),
         ),
@@ -1146,7 +1144,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   }
 
   void _promptPostponeOrCreateWorkout(BuildContext context, WorkoutProvider provider, VoidCallback onConfirmNewWorkout) {
-    final accentColor = ThemeUtils.getColor(provider.currentProfile.colorAccent);
+    final accentColor = ThemeUtils.getColor(provider.currentProfile?.colorAccent ?? 'Branco');
     showDialog(
       context: context,
       builder: (dialogCtx) => Dialog(
