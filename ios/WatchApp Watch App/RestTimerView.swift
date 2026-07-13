@@ -41,13 +41,13 @@ struct RestTimerView: View {
                 Color.black.ignoresSafeArea()
             }
 
-            VStack(spacing: 3) {
+            VStack(spacing: 2) {
                 // Badge superior indicando o estado
                 Text(restTimer.isPrep ? "PREPARO" : "DESCANSO")
                     .font(.system(size: 8, weight: .black, design: .rounded))
                     .foregroundColor(themeColor)
                     .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
+                    .padding(.vertical, 1)
                     .background(themeColor.opacity(0.15))
                     .cornerRadius(6)
                     .overlay(
@@ -70,7 +70,7 @@ struct RestTimerView: View {
                         .font(.system(size: 8))
                         .foregroundColor(.gray)
                 }
-                .padding(.horizontal, 6)
+                .padding(.horizontal, 4)
                 .multilineTextAlignment(.center)
 
                 // Cronômetro Circular Moderno com Efeito Glow
@@ -94,14 +94,14 @@ struct RestTimerView: View {
 
                     VStack(spacing: -3) {
                         Text("\(timeRemaining)")
-                            .font(.system(size: 20, weight: isLuminanceReduced ? .bold : .black, design: .rounded))
+                            .font(.system(size: 18, weight: isLuminanceReduced ? .bold : .black, design: .rounded))
                             .foregroundColor(isLuminanceReduced ? .gray : .white)
                         Text("seg")
                             .font(.system(size: 7, weight: .semibold))
                             .foregroundColor(.gray)
                     }
                 }
-                .frame(width: 56, height: 56)
+                .frame(width: 48, height: 48)
 
                 // Botão Pular de Visual Moderno (Pill Glass)
                 Button(action: {
@@ -110,12 +110,12 @@ struct RestTimerView: View {
                     HStack(spacing: 4) {
                         Image(systemName: "forward.fill")
                             .font(.system(size: 8))
-                        Text(restTimer.isPrep ? "Pular Preparo" : "Pular Descanso")
+                        Text(restTimer.isPrep ? "Pular" : "Pular")
                             .font(.system(size: 9, weight: .bold))
                     }
                     .foregroundColor(themeColor)
-                    .padding(.vertical, 5)
-                    .padding(.horizontal, 12)
+                    .padding(.vertical, 4)
+                    .padding(.horizontal, 10)
                     .background(Color.white.opacity(0.06))
                     .cornerRadius(12)
                     .overlay(
@@ -125,6 +125,8 @@ struct RestTimerView: View {
                 }
                 .buttonStyle(PlainButtonStyle())
             }
+            .ignoresSafeArea(.keyboard)
+            .padding(.bottom, 2)
         }
         .onAppear {
             didAutoSkip = false

@@ -401,6 +401,11 @@ struct WorkoutSelectionView: View {
                 .tag(2)
         }
         .tabViewStyle(PageTabViewStyle())
+        .onReceive(connectivityManager.$activeWorkout) { activeWorkout in
+            if activeWorkout != nil && !(activeWorkout?.postponed ?? false) {
+                activeTab = 0
+            }
+        }
         .onOpenURL { url in
             if url.host == "water" {
                 activeTab = 2
