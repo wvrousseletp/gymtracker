@@ -143,50 +143,76 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                   borderColor: accentColor.withOpacity(0.3),
                   opacity: 0.05,
                   padding: const EdgeInsets.all(16),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Icon(Icons.snooze, color: accentColor, size: 28),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              "TREINO ADIADO EM ANDAMENTO",
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.5,
-                              ),
+                      Row(
+                        children: [
+                          Icon(Icons.snooze, color: accentColor, size: 28),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  "TREINO ADIADO EM ANDAMENTO",
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  provider.activeWorkout!.name,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              provider.activeWorkout!.name,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                      ElevatedButton(
-                        onPressed: () {
-                          provider.resumeActiveWorkout();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: accentColor,
-                          foregroundColor: Colors.black,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          minimumSize: Size.zero,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        child: const Text(
-                          "Continuar",
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                        ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton.icon(
+                            onPressed: () {
+                              // Temporarily resume to trigger finish dialogue
+                              provider.resumeActiveWorkout();
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                _showFinishWorkoutDialog(context);
+                              });
+                            },
+                            icon: const Icon(Icons.check, size: 16, color: Colors.greenAccent),
+                            label: const Text(
+                              "Finalizar",
+                              style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          ElevatedButton(
+                            onPressed: () {
+                              provider.resumeActiveWorkout();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: accentColor,
+                              foregroundColor: Colors.black,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              minimumSize: Size.zero,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                            child: const Text(
+                              "Continuar",
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -305,11 +331,21 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                             const SizedBox(width: 16),
                             ElevatedButton(
                               onPressed: () {
-                                provider.startWorkout(
-                                  routine,
-                                  WorkoutRecovery(sleepOk: SleepQuality.okay, pain: [], warmUpDone: false),
-                                  false,
-                                );
+                                if (provider.activeWorkout != null) {
+                                  _promptPostponeOrCreateWorkout(context, provider, () {
+                                    provider.startWorkout(
+                                      routine,
+                                      WorkoutRecovery(sleepOk: SleepQuality.okay, pain: [], warmUpDone: false),
+                                      false,
+                                    );
+                                  });
+                                } else {
+                                  provider.startWorkout(
+                                    routine,
+                                    WorkoutRecovery(sleepOk: SleepQuality.okay, pain: [], warmUpDone: false),
+                                    false,
+                                  );
+                                }
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: isCompleted ? Colors.white.withOpacity(0.1) : accentColor,
@@ -361,11 +397,21 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 children: provider.routines.map((routine) {
                   return GestureDetector(
                     onTap: () {
-                      provider.startWorkout(
-                        routine,
-                        WorkoutRecovery(sleepOk: SleepQuality.okay, pain: [], warmUpDone: false),
-                        false,
-                      );
+                      if (provider.activeWorkout != null) {
+                        _promptPostponeOrCreateWorkout(context, provider, () {
+                          provider.startWorkout(
+                            routine,
+                            WorkoutRecovery(sleepOk: SleepQuality.okay, pain: [], warmUpDone: false),
+                            false,
+                          );
+                        });
+                      } else {
+                        provider.startWorkout(
+                          routine,
+                          WorkoutRecovery(sleepOk: SleepQuality.okay, pain: [], warmUpDone: false),
+                          false,
+                        );
+                      }
                     },
                     child: GlassCard(
                       padding: const EdgeInsets.all(10),
@@ -861,7 +907,13 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                               trailing: const Icon(Icons.play_arrow_rounded, color: Colors.white54),
                                               onTap: () {
                                                 Navigator.pop(context); // fecha modal
-                                                provider.startSingleExercise(ex);
+                                                if (provider.activeWorkout != null) {
+                                                  _promptPostponeOrCreateWorkout(context, provider, () {
+                                                    provider.startSingleExercise(ex);
+                                                  });
+                                                } else {
+                                                  provider.startSingleExercise(ex);
+                                                }
                                               },
                                             ),
                                           );
@@ -1089,6 +1141,69 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
         ),
       ),
     );
+  void _promptPostponeOrCreateWorkout(BuildContext context, WorkoutProvider provider, VoidCallback onConfirmNewWorkout) {
+    final accentColor = ThemeUtils.getColor(provider.currentProfile.colorAccent);
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: GlassCard(
+          useBlur: true,
+          borderColor: Colors.white.withOpacity(0.08),
+          borderRadius: 20,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                "Treino em Andamento ⏳",
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                "Você possui uma sessão ativa. O que deseja fazer com ela antes de iniciar a nova?",
+                style: TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogCtx),
+                    child: const Text("Voltar", style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () {
+                      provider.discardActiveWorkout();
+                      Navigator.pop(dialogCtx);
+                      onConfirmNewWorkout();
+                    },
+                    child: const Text("Descartar", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      provider.postponeActiveWorkout();
+                      Navigator.pop(dialogCtx);
+                      onConfirmNewWorkout();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: accentColor,
+                      foregroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                    child: const Text("Adiar", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -1207,14 +1322,29 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
     }
   }
 
+  bool _autoFinishDialogShowing = false;
+
   void _onProviderChange() {
     if (!mounted) return;
     final active = widget.provider.state?.activeWorkout;
-    if (active == null) return;
+    if (active == null) {
+      _autoFinishDialogShowing = false;
+      return;
+    }
 
     if (active.currentExerciseIndex != _currentExIdx) {
       setState(() {
         _currentExIdx = active.currentExerciseIndex;
+      });
+    }
+
+    // Auto-finalize workout when all sets of all exercises are completed
+    final bool allDone = active.exercises.every((ex) => ex.setsState.every((setDone) => setDone));
+    if (allDone && !_autoFinishDialogShowing) {
+      _autoFinishDialogShowing = true;
+      // Schedule dialog launch after current build frame to avoid layout errors
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showFinishWorkoutDialog(context);
       });
     }
 
