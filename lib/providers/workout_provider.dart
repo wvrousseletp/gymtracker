@@ -703,6 +703,54 @@ class WorkoutProvider extends ChangeNotifier {
 
   void deleteWorkoutLog(String id) {
     history.removeWhere((h) => h.id == id);
+    
+    // Recalculate PRs completely from the remaining logs in history
+    prs.clear();
+    // Process from oldest to newest log to properly calculate the best records
+    final reversedHistory = history.reversed.toList();
+    for (final log in reversedHistory) {
+      for (final ex in log.exercises) {
+        if (ex.completedSets == 0) continue;
+
+        final isCardio = ex.name.toLowerCase().contains('cardio') || ex.muscle.toLowerCase().contains('cardio');
+        double prWeight = ex.weight;
+        int prReps = ex.reps;
+
+        if (isCardio) {
+          if (ex.performedCardios != null && ex.performedCardios!.isNotEmpty) {
+            final completedList = ex.performedCardios!.where((c) => c != null).toList();
+            if (completedList.isNotEmpty) {
+              var maxCardio = completedList[0]!;
+              for (var p in completedList) {
+                if (p!.distanceKm > maxCardio.distanceKm) {
+                  maxCardio = p;
+                }
+              }
+              prWeight = maxCardio.distanceKm;
+              prReps = maxCardio.durationSeconds ~/ 60;
+            } else {
+              continue;
+            }
+          } else {
+            continue;
+          }
+        }
+
+        final libEx = library.firstWhere((l) => l.name == ex.name, orElse: () => LibraryExercise(id: '', name: '', muscle: '', measurementType: MeasurementType.reps));
+        if (libEx.id.isEmpty) continue;
+
+        final currentPr = prs[libEx.id];
+        if (currentPr == null || prWeight > currentPr.weight || (prWeight == currentPr.weight && prReps > currentPr.reps)) {
+          prs[libEx.id] = PersonalRecord(
+            weight: prWeight,
+            reps: prReps,
+            date: log.date,
+            routineName: log.name,
+          );
+        }
+      }
+    }
+
     _updateStreak();
     _save();
     // Execute notification in a microtask to prevent concurrent build/paint exceptions
