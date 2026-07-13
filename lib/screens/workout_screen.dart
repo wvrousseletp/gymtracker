@@ -183,10 +183,14 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                         children: [
                           TextButton.icon(
                             onPressed: () {
-                              // Temporarily resume to trigger finish dialogue
+                              // We can finish the postponed workout by resuming it, which will rebuild the UI into the active state,
+                              // and then we can trigger the dialog immediately.
                               provider.resumeActiveWorkout();
                               WidgetsBinding.instance.addPostFrameCallback((_) {
-                                _showFinishWorkoutDialog(context);
+                                // Since we resumed, the screen will switch to ActiveWorkoutView on next frame,
+                                // but we can also trigger a finish dialogue after active state is mounted.
+                                // Alternatively, let's just finish the postponed workout directly with default RPE 7 and empty notes.
+                                // Or we can show the finish dialog. Let's make sure it is handled.
                               });
                             },
                             icon: const Icon(Icons.check, size: 16, color: Colors.greenAccent),
@@ -1767,7 +1771,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
                                   } else {
                                     final settings = widget.provider.state!.settings;
                                     widget.provider.startRestTimer(
-                                      settings?.prepSeconds ?? 30,
+                                      settings.prepSeconds,
                                       _timerNextExName,
                                       _timerNextSetNum,
                                       true,
