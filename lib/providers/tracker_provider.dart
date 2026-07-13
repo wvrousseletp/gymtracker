@@ -141,10 +141,12 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     }
 
     await loadCurrentState();
+    checkAndResetDailyDiet();
     await syncWaterFromWidget();
     await syncActiveWorkoutFromWidget();
-    checkAndResetDailyDiet();
     await syncHealthMetrics();
+    // Auto import recent Apple Health workouts on startup
+    await syncAppleWorkouts();
 
     // Drenar operações offline pendentes após reconexão
     unawaited(_firebaseSync.drainQueue(uid));
