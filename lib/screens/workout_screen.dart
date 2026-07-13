@@ -696,6 +696,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                       );
 
                       provider.addManualWorkoutLog(newLog);
+                      if (!context.mounted) return;
                       Navigator.pop(context);
                       
                       ScaffoldMessenger.of(context).showSnackBar(
