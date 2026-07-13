@@ -1578,99 +1578,218 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
             ],
           ),
 
-          // OVERLAY DE DESCANSO / PREPARO ATIVO (CircularProgressTimer)
+          // OVERLAY DE DESCANSO / PREPARO ATIVO (CircularProgressTimer) - REDESENHO PREMIUM TELA CHEIA
           if (_timerActive)
             Positioned.fill(
-              child: Container(
-                color: Colors.black.withOpacity(0.92),
-                child: Center(
-                  child: GlassCard(
-                    padding: const EdgeInsets.all(24),
-                    borderColor: _timerIsPrep ? Colors.amber.withOpacity(0.3) : accentColor.withOpacity(0.3),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: Container(
+                  color: Colors.black.withOpacity(0.94),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+                  child: SafeArea(
                     child: Column(
-                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text(
-                          _timerIsPrep ? "TEMPO DE PREPARO" : "DESCANSO ATIVO",
-                          style: TextStyle(
-                            color: _timerIsPrep ? Colors.amber : accentColor,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.0,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _timerIsPrep
-                              ? "Prepare-se para: $_timerNextExName (Série $_timerNextSetNum)"
-                              : "Próximo: $_timerNextExName (Série $_timerNextSetNum)",
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(color: Colors.white70, fontSize: 12),
-                        ),
-                        const SizedBox(height: 24),
-
-                        // Relógio
-                        ValueListenableBuilder<int>(
-                          valueListenable: RestTimerService.instance.secondsRemaining,
-                          builder: (context, remaining, child) {
-                            return Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                SizedBox(
-                                  width: 140,
-                                  height: 140,
-                                  child: RepaintBoundary(
-                                    child: CircularProgressIndicator(
-                                      value: _countdownTotalSeconds > 0
-                                          ? (remaining / _countdownTotalSeconds)
-                                          : 0,
-                                      strokeWidth: 8,
-                                      backgroundColor: Colors.white.withOpacity(0.05),
-                                      valueColor: AlwaysStoppedAnimation<Color>(_timerIsPrep ? Colors.amber : accentColor),
-                                    ),
-                                  ),
+                        // Cabeçalho da tela de descanso
+                        Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: _timerIsPrep ? Colors.amber.withOpacity(0.12) : accentColor.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: _timerIsPrep ? Colors.amber.withOpacity(0.25) : accentColor.withOpacity(0.25),
+                                  width: 1.5,
                                 ),
-                                Text(
-                                  "$remaining",
-                                  style: const TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.w900),
+                              ),
+                              child: Text(
+                                _timerIsPrep ? "TEMPO DE PREPARO" : "DESCANSO ATIVO",
+                                style: TextStyle(
+                                  color: _timerIsPrep ? Colors.amber : accentColor,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1.5,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        // Painel Central com Timer e controles de acréscimo
+                        Column(
+                          children: [
+                            ValueListenableBuilder<int>(
+                              valueListenable: RestTimerService.instance.secondsRemaining,
+                              builder: (context, remaining, child) {
+                                return Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    // Anel de progresso grande e elegante
+                                    SizedBox(
+                                      width: 220,
+                                      height: 220,
+                                      child: CircularProgressIndicator(
+                                        value: _countdownTotalSeconds > 0
+                                            ? (remaining / _countdownTotalSeconds)
+                                            : 0,
+                                        strokeWidth: 6,
+                                        backgroundColor: Colors.white.withOpacity(0.04),
+                                        valueColor: AlwaysStoppedAnimation<Color>(
+                                            _timerIsPrep ? Colors.amber : accentColor),
+                                      ),
+                                    ),
+                                    Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          "$remaining",
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 72,
+                                            fontWeight: FontWeight.w900,
+                                            letterSpacing: -2.0,
+                                          ),
+                                        ),
+                                        const Text(
+                                          "segundos",
+                                          style: TextStyle(
+                                            color: Colors.white30,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 24),
+                            // Ajustes rápidos de tempo (+15s / -15s)
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                OutlinedButton(
+                                  onPressed: () {
+                                    final currentRemaining = RestTimerService.instance.secondsRemaining.value;
+                                    if (currentRemaining > 15) {
+                                      widget.provider.startRestTimer(
+                                        currentRemaining - 15,
+                                        _timerNextExName,
+                                        _timerNextSetNum,
+                                        _timerIsPrep,
+                                      );
+                                    }
+                                  },
+                                  style: OutlinedButton.styleFrom(
+                                    side: BorderSide(color: Colors.white.withOpacity(0.08)),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  ),
+                                  child: const Text("-15s", style: TextStyle(color: Colors.white60, fontSize: 13, fontWeight: FontWeight.bold)),
+                                ),
+                                const SizedBox(width: 16),
+                                OutlinedButton(
+                                  onPressed: () {
+                                    final currentRemaining = RestTimerService.instance.secondsRemaining.value;
+                                    widget.provider.startRestTimer(
+                                      currentRemaining + 15,
+                                      _timerNextExName,
+                                      _timerNextSetNum,
+                                      _timerIsPrep,
+                                    );
+                                  },
+                                  style: OutlinedButton.styleFrom(
+                                    side: BorderSide(color: Colors.white.withOpacity(0.08)),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  ),
+                                  child: const Text("+15s", style: TextStyle(color: Colors.white60, fontSize: 13, fontWeight: FontWeight.bold)),
                                 ),
                               ],
-                            );
-                          },
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 24),
 
-                        // Ação pular
-                        SizedBox(
-                          width: 140,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              // RestTimerService is cleared via clearRestTimer() or startRestTimer() below
-                              if (_timerIsPrep) {
-                                widget.provider.clearRestTimer();
-                              } else {
-                                final settings = widget.provider.state!.settings;
-                                widget.provider.startRestTimer(
-                                  settings.prepSeconds,
-                                  _timerNextExName,
-                                  _timerNextSetNum,
-                                  true,
-                                );
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white.withOpacity(0.06),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                side: BorderSide(color: Colors.white.withOpacity(0.12)),
+                        // Próximo Exercício e Botão de Pular no rodapé
+                        Column(
+                          children: [
+                            GlassCard(
+                              padding: const EdgeInsets.all(16),
+                              borderColor: Colors.white.withOpacity(0.06),
+                              borderRadius: 16,
+                              child: Column(
+                                children: [
+                                  Text(
+                                    _timerIsPrep ? "PREPARE-SE PARA A SÉRIE $_timerNextSetNum" : "PRÓXIMO EXERCÍCIO",
+                                    style: TextStyle(
+                                      color: _timerIsPrep ? Colors.amber.withOpacity(0.7) : accentColor.withOpacity(0.7),
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 1.0,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    _timerNextExName,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    "Série $_timerNextSetNum",
+                                    style: const TextStyle(
+                                      color: Colors.white38,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              elevation: 0,
                             ),
-                            child: Text(
-                              _timerIsPrep ? "Pular Preparo" : "Pular Descanso",
-                              style: TextStyle(color: _timerIsPrep ? Colors.amber : accentColor, fontSize: 12, fontWeight: FontWeight.bold),
+                            const SizedBox(height: 20),
+                            // Botão de Pular Premium
+                            SizedBox(
+                              width: double.infinity,
+                              height: 52,
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  if (_timerIsPrep) {
+                                    widget.provider.clearRestTimer();
+                                  } else {
+                                    final settings = widget.provider.state!.settings;
+                                    widget.provider.startRestTimer(
+                                      settings?.prepSeconds ?? 30,
+                                      _timerNextExName,
+                                      _timerNextSetNum,
+                                      true,
+                                    );
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: Colors.black,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  elevation: 0,
+                                ),
+                                child: Text(
+                                  _timerIsPrep ? "Iniciar Exercício Agora" : "Pular Descanso",
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
+                          ],
                         ),
                       ],
                     ),
