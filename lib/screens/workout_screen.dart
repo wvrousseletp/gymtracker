@@ -506,7 +506,103 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                   width: double.infinity,
                   height: 48,
                   child: ElevatedButton.icon(
-                    onPressed: () {
+                    onPressed: () async {
+                      // Check if there are any cardio exercises in this routine
+                      final hasCardio = routine.exercises.any((ex) {
+                        final libEx = provider.library.firstWhere(
+                          (l) => l.id == ex.exerciseId,
+                          orElse: () => LibraryExercise(id: '', name: '', muscle: '', measurementType: MeasurementType.reps),
+                        );
+                        return libEx.muscle.toLowerCase().contains('cardio');
+                      });
+
+                      double customDistance = 0.0;
+                      int customDurationMinutes = 30;
+
+                      if (hasCardio) {
+                        final result = await showDialog<Map<String, dynamic>>(
+                          context: context,
+                          builder: (dialogCtx) {
+                            final distCtrl = TextEditingController(text: "5.0");
+                            final durCtrl = TextEditingController(text: "30");
+                            return Dialog(
+                              backgroundColor: Colors.transparent,
+                              child: GlassCard(
+                                useBlur: true,
+                                borderColor: Colors.white.withOpacity(0.08),
+                                borderRadius: 20,
+                                padding: const EdgeInsets.all(20),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    const Text(
+                                      "Métricas de Cardio",
+                                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    const Text(
+                                      "Informe a distância e duração do seu treino de hoje:",
+                                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    TextField(
+                                      controller: distCtrl,
+                                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                      style: const TextStyle(color: Colors.white),
+                                      decoration: InputDecoration(
+                                        labelText: "Distância (km)",
+                                        labelStyle: const TextStyle(color: Colors.white70),
+                                        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white.withOpacity(0.12))),
+                                        focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.green)),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    TextField(
+                                      controller: durCtrl,
+                                      keyboardType: TextInputType.number,
+                                      style: const TextStyle(color: Colors.white),
+                                      decoration: InputDecoration(
+                                        labelText: "Duração (minutos)",
+                                        labelStyle: const TextStyle(color: Colors.white70),
+                                        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white.withOpacity(0.12))),
+                                        focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.green)),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 20),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(dialogCtx),
+                                          child: const Text("Cancelar", style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        TextButton(
+                                          onPressed: () {
+                                            final d = double.tryParse(distCtrl.text) ?? 0.0;
+                                            final t = int.tryParse(durCtrl.text) ?? 30;
+                                            Navigator.pop(dialogCtx, {"distance": d, "duration": t});
+                                          },
+                                          child: const Text("Salvar", style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        );
+
+                        if (result == null) {
+                          // User cancelled the cardio prompt
+                          return;
+                        }
+                        customDistance = result["distance"] as double;
+                        customDurationMinutes = result["duration"] as int;
+                      }
+
                       final nowUtc = DateTime.now().toUtc().toIso8601String();
                       final totalSets = routine.exercises.fold<int>(0, (sum, ex) => sum + ex.sets);
                       final totalWeight = routine.exercises.fold<double>(0, (sum, ex) => sum + (ex.sets * ex.weight));
@@ -517,16 +613,17 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                           orElse: () => LibraryExercise(id: '', name: 'Exercício', muscle: 'Geral', measurementType: MeasurementType.reps),
                         );
                         
+                        final isExCardio = lib.muscle.toLowerCase().contains('cardio');
                         return LogExercise(
                           name: lib.name,
                           muscle: lib.muscle,
                           sets: re.sets,
                           completedSets: re.sets,
-                          reps: re.reps,
-                          weight: re.weight,
+                          reps: isExCardio ? customDurationMinutes : re.reps,
+                          weight: isExCardio ? customDistance : re.weight,
                           rpe: 8,
-                          performedCardios: lib.muscle.toLowerCase().contains('cardio') 
-                              ? List.generate(re.sets, (i) => PerformedCardio(distanceKm: re.weight, durationSeconds: re.reps * 60))
+                          performedCardios: isExCardio 
+                              ? List.generate(re.sets, (i) => PerformedCardio(distanceKm: customDistance, durationSeconds: customDurationMinutes * 60))
                               : [],
                           failureReport: List.filled(re.sets, false),
                           failureReps: List.filled(re.sets, null),
@@ -537,10 +634,10 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                         id: "l-${const Uuid().v4()}",
                         name: routine.name,
                         date: nowUtc,
-                        duration: 45 * 60, // tempo estimado de 45 minutos
+                        duration: customDurationMinutes * 60, // custom card duration
                         completedSets: totalSets,
                         totalSets: totalSets,
-                        totalWeight: totalWeight,
+                        totalWeight: hasCardio ? 0.0 : totalWeight,
                         rpe: 8,
                         notes: "Concluído manualmente sem celular",
                         avgHeartRate: null,

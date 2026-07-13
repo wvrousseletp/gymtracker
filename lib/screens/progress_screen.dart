@@ -626,9 +626,8 @@ class _HistoryTabState extends State<HistoryTab> {
                   const SizedBox(width: 8),
                   TextButton(
                     onPressed: () {
-                      provider.deleteWorkoutLog(log.id);
                       Navigator.pop(dialogCtx);
-                      setState(() {});
+                      provider.deleteWorkoutLog(log.id);
                     },
                     child: const Text("Excluir", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
                   ),
