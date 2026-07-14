@@ -381,9 +381,9 @@ class FirebaseSyncService {
         final cloudRoutines = await fetchCloudRoutines(userId);
         
         final combinedState = remoteState.copyWith(
-          library: localState.library,
-          history: cloudWorkouts,
-          routines: cloudRoutines,
+          library: remoteState.library,
+          history: cloudWorkouts.isNotEmpty ? cloudWorkouts : remoteState.history,
+          routines: cloudRoutines.isNotEmpty ? cloudRoutines : remoteState.routines,
         );
 
         await onRemoteApplied?.call(combinedState, _readRemoteProfile(data));
@@ -396,9 +396,9 @@ class FirebaseSyncService {
         final cloudRoutines = await fetchCloudRoutines(userId);
         
         final combinedState = remoteState.copyWith(
-          library: localState.library,
-          history: cloudWorkouts,
-          routines: cloudRoutines,
+          library: remoteState.library,
+          history: cloudWorkouts.isNotEmpty ? cloudWorkouts : remoteState.history,
+          routines: cloudRoutines.isNotEmpty ? cloudRoutines : remoteState.routines,
         );
 
         await onRemoteApplied?.call(combinedState, _readRemoteProfile(data));
@@ -426,7 +426,7 @@ class FirebaseSyncService {
       final mergedWorkouts = <WorkoutLog>[];
       
       // Add cloud workouts first
-      mergedWorkouts.addAll(cloudWorkouts);
+      mergedWorkouts.addAll(cloudWorkouts.isNotEmpty ? cloudWorkouts : remoteState.history);
       
       // Add local workouts that aren't in cloud (to preserve unsynced data)
       for (final log in localState.history) {
@@ -445,7 +445,7 @@ class FirebaseSyncService {
       final mergedRoutines = <Routine>[];
       
       // Add cloud routines first
-      mergedRoutines.addAll(cloudRoutines);
+      mergedRoutines.addAll(cloudRoutines.isNotEmpty ? cloudRoutines : remoteState.routines);
       
       // Add local routines that aren't in cloud
       for (final routine in localState.routines) {
@@ -501,8 +501,8 @@ class FirebaseSyncService {
     Profile profile,
     DateTime clientUpdatedAt,
   ) async {
-    // Strip history from main JSON state to keep it light
-    final cleanState = state.copyWith(history: []);
+    // Strip history and routines from main JSON state to keep it light
+    final cleanState = state.copyWith(history: [], routines: []);
     
     await docRef.set({
       'jsonState': json.encode(cleanState.toJson()),

@@ -13,6 +13,7 @@ import '../services/state_persistence_service.dart';
 import '../services/firebase_sync_service.dart';
 import '../models/profile.dart';
 import '../utils/date_utils.dart';
+import '../utils/default_exercises_data.dart';
 import 'profile_provider.dart';
 
 class WorkoutProvider extends ChangeNotifier {
@@ -987,6 +988,13 @@ class WorkoutProvider extends ChangeNotifier {
       prepSeconds: prepSeconds,
     );
     _save();
+  }
+
+  void checkAndPopulateDefaultLibrary() {
+    if (library.isEmpty) {
+      library = List<LibraryExercise>.from(defaultLibraryExercises);
+      _save();
+    }
   }
 
   void refreshStreak() {

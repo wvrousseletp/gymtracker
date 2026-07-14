@@ -310,6 +310,8 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     // Re-compor após histórico carregado
     final completeState = state!;
     await _syncWithFirebase(completeState, forceDownload: forceDownload);
+    
+    _workoutProvider!.checkAndPopulateDefaultLibrary();
   }
 
   Future<void> saveState({bool immediateSync = false}) async {
@@ -374,6 +376,7 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<void> _applyRemoteState(PlannerState remoteState, Profile? remoteProfile) async {
     _applyStateToSubproviders(remoteState);
+    _workoutProvider!.checkAndPopulateDefaultLibrary();
     await _persistence.saveStateJson(
       currentUserId,
       _persistence.encodeState(remoteState),
