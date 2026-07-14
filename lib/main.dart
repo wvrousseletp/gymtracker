@@ -24,8 +24,14 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
-        ChangeNotifierProvider(create: (_) => WorkoutProvider()),
-        ChangeNotifierProvider(create: (_) => DietProvider()),
+        ChangeNotifierProxyProvider<ProfileProvider, WorkoutProvider>(
+          create: (_) => WorkoutProvider(),
+          update: (_, profile, workout) => workout!..updateProfile(profile),
+        ),
+        ChangeNotifierProxyProvider<ProfileProvider, DietProvider>(
+          create: (_) => DietProvider(),
+          update: (_, profile, diet) => diet!..updateProfile(profile),
+        ),
         ChangeNotifierProxyProvider3<ProfileProvider, WorkoutProvider, DietProvider, TrackerProvider>(
           create: (context) => TrackerProvider(),
           update: (context, profile, workout, diet, tracker) {
