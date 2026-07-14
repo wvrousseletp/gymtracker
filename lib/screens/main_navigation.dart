@@ -276,7 +276,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
   void _checkWhatsNew() async {
     final prefs = await SharedPreferences.getInstance();
-    const currentBuild = 71;
+    const currentBuild = 155;
     final lastSeenBuild = prefs.getInt('last_seen_whats_new_build') ?? 0;
     
     if (lastSeenBuild < currentBuild) {
@@ -322,24 +322,24 @@ class _MainNavigationState extends State<MainNavigation> {
                   ),
                   const SizedBox(height: 16),
                   _whatsNewItem(
-                    Icons.storage_rounded,
-                    Colors.greenAccent,
-                    "500+ Alimentos Locais 📦",
-                    "Base de dados inicial super completa com 500 alimentos comuns para buscas offline instantâneas.",
-                  ),
-                  const SizedBox(height: 12),
-                  _whatsNewItem(
-                    Icons.star_outline_rounded,
-                    Colors.amber,
-                    "Favoritos Personalizados",
-                    "Salve porções recorrentes de alimentos e registre-os com um só toque.",
-                  ),
-                  const SizedBox(height: 12),
-                  _whatsNewItem(
-                    Icons.local_cafe_outlined,
+                    Icons.timer_outlined,
                     Colors.blueAccent,
-                    "Combos de Alimentos (Presets)",
-                    "Salve grupos (como seu shake diário) para inserir de uma vez só.",
+                    "Descanso em Tela Cheia ⏱️",
+                    "Nova tela de descanso imersiva premium com botões rápidos de tempo (-15s / +15s) e visualização fácil do próximo exercício.",
+                  ),
+                  const SizedBox(height: 12),
+                  _whatsNewItem(
+                    Icons.history_toggle_off_rounded,
+                    Colors.greenAccent,
+                    "Histórico Seguro & Estável 💾",
+                    "Correção de sincronização que evita que o app esqueça o treino do dia ou zere o histórico local.",
+                  ),
+                  const SizedBox(height: 12),
+                  _whatsNewItem(
+                    Icons.favorite_outline_rounded,
+                    Colors.redAccent,
+                    "Fim de Treinos Duplicados 🛡️",
+                    "Integração inteligente com Apple Health para evitar conflito e treinos duplicados no mesmo dia.",
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton(
