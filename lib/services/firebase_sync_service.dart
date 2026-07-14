@@ -370,6 +370,25 @@ class FirebaseSyncService {
           PlannerState.fromJson(json.decode(data['jsonState'] as String));
       final remoteUpdatedAt = _readRemoteUpdatedAt(data);
 
+      // CRITICAL SAFETY SHIELD: If local state is empty/new but remote has data, 
+      // do NOT allow uploading/overwriting the remote state. Force download instead.
+      final isLocalEmpty = localState.routines.isEmpty && localState.history.isEmpty;
+      final isRemoteNotEmpty = remoteState.routines.isNotEmpty || remoteState.history.isNotEmpty;
+      
+      if (isLocalEmpty && isRemoteNotEmpty) {
+        debugPrint('[FirebaseSync] Empty local state detected. Safety shield triggered: forcing download from remote cloud.');
+        final cloudWorkouts = await fetchCloudWorkouts(userId);
+        final cloudRoutines = await fetchCloudRoutines(userId);
+        
+        final combinedState = remoteState.copyWith(
+          history: cloudWorkouts,
+          routines: cloudRoutines,
+        );
+
+        await onRemoteApplied?.call(combinedState, _readRemoteProfile(data));
+        return combinedState;
+      }
+
       if (forceDownload) {
         // Fetch incremental workouts and routines on clean install
         final cloudWorkouts = await fetchCloudWorkouts(userId);
