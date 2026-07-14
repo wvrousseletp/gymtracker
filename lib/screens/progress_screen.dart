@@ -449,9 +449,28 @@ class _HistoryTabState extends State<HistoryTab> {
                                       if (isCardio) {
                                         final doneCardios = (ex.performedCardios ?? []).where((c) => c != null).toList();
                                         if (doneCardios.isNotEmpty) {
-                                          subtitle = doneCardios.map((c) => "${c!.distanceKm.toStringAsFixed(1)}km em ${c.durationSeconds ~/ 60}m").join(', ');
+                                          subtitle = doneCardios.map((c) {
+                                            final d = c!.distanceKm;
+                                            final t = c.durationSeconds ~/ 60;
+                                            if (d > 0 && t > 0) {
+                                                final pace = t / d;
+                                                final m = pace.floor();
+                                                final s = ((pace - m) * 60).round();
+                                                return "${d.toStringAsFixed(1)}km em ${t}m (Pace: $m:${s.toString().padLeft(2, '0')})";
+                                            }
+                                            return "${d.toStringAsFixed(1)}km em ${t}m";
+                                          }).join('\n');
                                         } else {
-                                          subtitle = "${ex.weight}km em ${ex.reps}min";
+                                            final d = ex.weight;
+                                            final t = ex.reps;
+                                            if (d > 0 && t > 0) {
+                                                final pace = t / d;
+                                                final m = pace.floor();
+                                                final s = ((pace - m) * 60).round();
+                                                subtitle = "${d}km em ${t}min (Pace: $m:${s.toString().padLeft(2, '0')})";
+                                            } else {
+                                                subtitle = "${d}km em ${t}min";
+                                            }
                                         }
                                       } else {
                                         subtitle = "${ex.sets} séries x ${ex.reps} reps @ ${ex.weight.toStringAsFixed(1).replaceAll('.0', '')}kg";
@@ -1547,22 +1566,24 @@ class _PrsTabState extends State<PrsTab> {
 
     final prs = state.prs;
 
-    // Obter lista dos PRs com os nomes dos exercícios correspondentes
     final prItems = <Map<String, dynamic>>[];
-    prs.forEach((exId, pr) {
+    prs.forEach((key, pr) {
+      final isPacePr = key.endsWith('-pace');
+      final exId = isPacePr ? key.replaceAll('-pace', '') : key;
       final ex = state.library.firstWhere(
         (l) => l.id == exId,
         orElse: () => LibraryExercise(id: '', name: 'Exercício Deletado', muscle: '', measurementType: MeasurementType.reps),
       );
       prItems.add({
-        'exerciseId': exId,
-        'exerciseName': ex.name,
+        'exerciseId': key,
+        'exerciseName': ex.name + (isPacePr ? ' (Melhor Pace)' : ''),
         'muscle': ex.muscle,
         'measurementType': ex.measurementType,
         'weight': pr.weight,
         'reps': pr.reps,
         'date': pr.date,
         'routine': pr.routineName,
+        'isPacePr': isPacePr,
       });
     });
 
@@ -1607,6 +1628,38 @@ class _PrsTabState extends State<PrsTab> {
       }
     }
 
+    final now = DateTime.now();
+    final currentMonthLogs = state.history.where((log) {
+      final d = DateTime.tryParse(log.date);
+      return d != null && d.month == now.month && d.year == now.year;
+    }).toList();
+
+    final Map<String, Map<String, double>> cardioVolumeThisMonth = {}; 
+    
+    for (final log in currentMonthLogs) {
+      for (final ex in log.exercises) {
+        if (ex.completedSets > 0 && (ex.name.toLowerCase().contains('cardio') || ex.muscle.toLowerCase().contains('cardio'))) {
+          if (!cardioVolumeThisMonth.containsKey(ex.name)) {
+            cardioVolumeThisMonth[ex.name] = {'distance': 0.0, 'duration': 0.0};
+          }
+          
+          if (ex.performedCardios != null && ex.performedCardios!.isNotEmpty) {
+             for (final c in ex.performedCardios!) {
+                if (c != null && c.distanceKm > 0) {
+                    cardioVolumeThisMonth[ex.name]!['distance'] = cardioVolumeThisMonth[ex.name]!['distance']! + c.distanceKm;
+                    cardioVolumeThisMonth[ex.name]!['duration'] = cardioVolumeThisMonth[ex.name]!['duration']! + (c.durationSeconds / 60);
+                }
+             }
+          } else {
+             if (ex.weight > 0) {
+                cardioVolumeThisMonth[ex.name]!['distance'] = cardioVolumeThisMonth[ex.name]!['distance']! + ex.weight;
+                cardioVolumeThisMonth[ex.name]!['duration'] = cardioVolumeThisMonth[ex.name]!['duration']! + ex.reps;
+             }
+          }
+        }
+      }
+    }
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: ListView(
@@ -1617,6 +1670,65 @@ class _PrsTabState extends State<PrsTab> {
             const SizedBox(height: 16),
           ],
           
+          if (cardioVolumeThisMonth.isNotEmpty) ...[
+            const Padding(
+              padding: EdgeInsets.only(left: 4, bottom: 8),
+              child: Text(
+                "CARDIO NO MÊS ATUAL",
+                style: TextStyle(
+                  color: Colors.white54,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: cardioVolumeThisMonth.entries.map((entry) {
+                  final exName = entry.key;
+                  final distance = entry.value['distance']!;
+                  final duration = entry.value['duration']!;
+                  return Container(
+                    margin: const EdgeInsets.only(right: 12, bottom: 16),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.04),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white.withOpacity(0.08)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.directions_run, color: Colors.blueAccent, size: 16),
+                            const SizedBox(width: 6),
+                            Text(
+                              exName.toUpperCase(),
+                              style: const TextStyle(color: Colors.blueAccent, fontSize: 10, fontWeight: FontWeight.w900),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          "${distance.toStringAsFixed(1)} km",
+                          style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          "${duration.toInt()} minutos",
+                          style: const TextStyle(color: Colors.white54, fontSize: 10),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+
           const Padding(
             padding: EdgeInsets.only(left: 4, bottom: 8),
             child: Text(
@@ -1684,20 +1796,46 @@ class _PrsTabState extends State<PrsTab> {
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(color: widget.accentColor.withOpacity(0.25)),
                             ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  isCardio
-                                      ? "${item['weight'].toStringAsFixed(1)} km"
-                                      : "${item['weight'].toStringAsFixed(1).replaceAll('.0', '')} kg",
-                                  style: TextStyle(color: widget.accentColor, fontWeight: FontWeight.w900, fontSize: 14),
-                                ),
-                                Text(
-                                  isCardio ? "${item['reps']} min" : "${item['reps']} reps",
-                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10),
-                                ),
-                              ],
+                            child: Builder(
+                              builder: (context) {
+                                final isPacePr = item['isPacePr'] == true;
+                                String mainText = "";
+                                String subText = "";
+                                if (isCardio) {
+                                  if (isPacePr) {
+                                      double speed = item['weight'];
+                                      if (speed > 0) {
+                                          double pace = 60 / speed;
+                                          int m = pace.floor();
+                                          int s = ((pace - m) * 60).round();
+                                          mainText = "$m:${s.toString().padLeft(2, '0')} /km";
+                                      } else {
+                                          mainText = "--:-- /km";
+                                      }
+                                      subText = "${item['weight'].toStringAsFixed(1)} km/h";
+                                  } else {
+                                      mainText = "${item['weight'].toStringAsFixed(1)} km";
+                                      subText = "${item['reps']} min";
+                                  }
+                                } else {
+                                  mainText = "${item['weight'].toStringAsFixed(1).replaceAll('.0', '')} kg";
+                                  subText = "${item['reps']} reps";
+                                }
+
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      mainText,
+                                      style: TextStyle(color: widget.accentColor, fontWeight: FontWeight.w900, fontSize: 14),
+                                    ),
+                                    Text(
+                                      subText,
+                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10),
+                                    ),
+                                  ],
+                                );
+                              }
                             ),
                           ),
                           const SizedBox(width: 8),

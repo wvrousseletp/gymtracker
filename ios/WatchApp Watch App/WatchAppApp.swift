@@ -6,9 +6,19 @@
 //
 
 import SwiftUI
+import HealthKit
+
+class ExtensionDelegate: NSObject, WKExtensionDelegate {
+    func handle(_ workoutConfiguration: HKWorkoutConfiguration) {
+        // App launched by iOS app starting a workout
+        print("[WatchApp] Launched via HKWorkoutConfiguration from iOS")
+    }
+}
 
 @main
 struct WatchApp_Watch_AppApp: App {
+    @WKExtensionDelegateAdaptor(ExtensionDelegate.self) var delegate
+
     var body: some Scene {
         WindowGroup {
             WorkoutSelectionView()

@@ -254,7 +254,9 @@ class WatchService {
         break;
 
       case 'resumeWorkout':
-        _provider!.resumeActiveWorkout();
+        if (_provider!.postponedWorkouts.isNotEmpty) {
+          _provider!.resumePostponedWorkout(0);
+        }
         _channel.invokeMethod('workoutResumed');
         break;
 

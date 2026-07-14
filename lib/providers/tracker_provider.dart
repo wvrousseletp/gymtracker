@@ -45,6 +45,7 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
   bool get healthAuthorized => _healthAuthorized;
 
   bool get isLoading => _isLoading;
+  List<ActiveWorkoutState> get postponedWorkouts => _workoutProvider?.postponedWorkouts ?? [];
 
   // Facade delegations
   List<Profile> get profiles => _profileProvider?.profiles ?? [];
@@ -67,9 +68,11 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
       medidas: _workoutProvider!.medidas,
       settings: _workoutProvider!.settings,
       activeWorkout: _workoutProvider!.activeWorkout,
+      postponedWorkouts: _workoutProvider!.postponedWorkouts,
       diet: _dietProvider!.diet,
       dietHistory: _dietProvider!.dietHistory,
       streak: _workoutProvider!.streak,
+      deletedHealthWorkoutIds: _workoutProvider!.deletedHealthWorkoutIds,
     );
   }
 
@@ -143,6 +146,7 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
 
     await loadCurrentState();
     checkAndResetDailyDiet();
+    checkAndResetPostponedWorkouts();
     await syncWaterFromWidget();
     await syncActiveWorkoutFromWidget();
     await syncHealthMetrics();
@@ -279,6 +283,8 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     _workoutProvider!.medidas = state.medidas;
     _workoutProvider!.settings = state.settings;
     _workoutProvider!.activeWorkout = state.activeWorkout;
+    _workoutProvider!.postponedWorkouts = List<ActiveWorkoutState>.from(state.postponedWorkouts);
+    _workoutProvider!.deletedHealthWorkoutIds = List<String>.from(state.deletedHealthWorkoutIds);
     _workoutProvider!.streak = state.streak;
 
     _dietProvider!.diet = state.diet;
@@ -463,9 +469,14 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     _workoutProvider!.postponeActiveWorkout();
   }
 
-  void resumeActiveWorkout() {
+  void resumePostponedWorkout(int index) {
     if (_workoutProvider == null) return;
-    _workoutProvider!.resumeActiveWorkout();
+    _workoutProvider!.resumePostponedWorkout(index);
+  }
+  
+  void discardPostponedWorkout(int index) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.discardPostponedWorkout(index);
   }
 
   void updateHealthMetrics(int heartRate, int activeCalories) {
@@ -623,6 +634,31 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     _dietProvider!.checkAndResetDailyDiet();
   }
 
+  void checkAndResetPostponedWorkouts() {
+    if (_workoutProvider == null) return;
+    if (_workoutProvider!.postponedWorkouts.isEmpty) return;
+    
+    final now = DateTime.now();
+    final todayStr = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+    
+    // Remove any postponed workouts that were created on a previous day
+    final beforeCount = _workoutProvider!.postponedWorkouts.length;
+    _workoutProvider!.postponedWorkouts.removeWhere((workout) {
+      try {
+        final workoutDate = DateTime.fromMillisecondsSinceEpoch(workout.startTime).toLocal();
+        final workoutDateStr = "${workoutDate.year}-${workoutDate.month.toString().padLeft(2, '0')}-${workoutDate.day.toString().padLeft(2, '0')}";
+        return workoutDateStr != todayStr;
+      } catch (_) {
+        return true; // Remove if date can't be parsed
+      }
+    });
+    
+    if (_workoutProvider!.postponedWorkouts.length != beforeCount) {
+      debugPrint('[TrackerProvider] Limpou ${beforeCount - _workoutProvider!.postponedWorkouts.length} treino(s) adiado(s) de dias anteriores');
+      saveState();
+    }
+  }
+
   Future<void> updateProfile(String id, String name, String avatar, String color) {
     if (_profileProvider == null) return Future.value();
     return _profileProvider!.updateProfile(id, name, avatar, color);
@@ -666,6 +702,7 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
       syncWaterFromWidget();
       syncActiveWorkoutFromWidget();
       checkAndResetDailyDiet();
+      checkAndResetPostponedWorkouts();
       syncHealthMetrics();
     }
   }
@@ -769,6 +806,9 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
 
         // Skip if already imported by ID
         if (_workoutProvider!.history.any((log) => log.id == id)) continue;
+        
+        // Skip if it was imported and then deleted by the user
+        if (_workoutProvider!.deletedHealthWorkoutIds.contains(id)) continue;
 
         // Skip if there is a local log registered at the exact same or very close time (±3 minutes)
         try {

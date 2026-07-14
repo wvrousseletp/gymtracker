@@ -232,6 +232,8 @@ class PlannerState {
   final DietState diet;
   final WorkoutStreak streak;
   final Map<String, DietHistoryDay> dietHistory;
+  final List<String> deletedHealthWorkoutIds;
+  final List<ActiveWorkoutState> postponedWorkouts;
 
   PlannerState({
     required this.library,
@@ -242,10 +244,14 @@ class PlannerState {
     required this.medidas,
     required this.settings,
     this.activeWorkout,
+    List<ActiveWorkoutState>? postponedWorkouts,
     required this.diet,
     Map<String, DietHistoryDay>? dietHistory,
     WorkoutStreak? streak,
+    List<String>? deletedHealthWorkoutIds,
   }) : dietHistory = dietHistory ?? {},
+       deletedHealthWorkoutIds = deletedHealthWorkoutIds ?? [],
+       postponedWorkouts = postponedWorkouts ?? [],
        streak = streak ??
             WorkoutStreak(
               currentWeekCount: 0,
@@ -262,10 +268,12 @@ class PlannerState {
     List<BodyMeasurement>? medidas,
     SettingsState? settings,
     ActiveWorkoutState? activeWorkout,
+    List<ActiveWorkoutState>? postponedWorkouts,
     bool clearActiveWorkout = false,
     DietState? diet,
     WorkoutStreak? streak,
     Map<String, DietHistoryDay>? dietHistory,
+    List<String>? deletedHealthWorkoutIds,
   }) {
     return PlannerState(
       library: library ?? this.library,
@@ -276,9 +284,11 @@ class PlannerState {
       medidas: medidas ?? this.medidas,
       settings: settings ?? this.settings,
       activeWorkout: clearActiveWorkout ? null : (activeWorkout ?? this.activeWorkout),
+      postponedWorkouts: postponedWorkouts ?? this.postponedWorkouts,
       diet: diet ?? this.diet,
       streak: streak ?? this.streak,
       dietHistory: dietHistory ?? this.dietHistory,
+      deletedHealthWorkoutIds: deletedHealthWorkoutIds ?? this.deletedHealthWorkoutIds,
     );
   }
 
@@ -291,9 +301,11 @@ class PlannerState {
     'medidas': medidas.map((m) => m.toJson()).toList(),
     'settings': settings.toJson(),
     'activeWorkout': activeWorkout?.toJson(),
+    'postponedWorkouts': postponedWorkouts.map((w) => w.toJson()).toList(),
     'diet': diet.toJson(),
     'streak': streak.toJson(),
     'dietHistory': dietHistory.map((k, v) => MapEntry(k, v.toJson())),
+    'deletedHealthWorkoutIds': deletedHealthWorkoutIds,
   };
 
   factory PlannerState.fromJson(Map<String, dynamic> json) {
@@ -342,6 +354,11 @@ class PlannerState {
       activeWorkout: json['activeWorkout'] != null
           ? ActiveWorkoutState.fromJson(json['activeWorkout'])
           : null,
+      postponedWorkouts: json['postponedWorkouts'] != null
+          ? (json['postponedWorkouts'] as List).map((w) => ActiveWorkoutState.fromJson(w)).toList()
+          : (json['postponedWorkout'] != null 
+              ? [ActiveWorkoutState.fromJson(json['postponedWorkout'])]
+              : []),
       diet: json['diet'] != null
           ? DietState.fromJson(json['diet'])
           : DietState(
@@ -360,6 +377,9 @@ class PlannerState {
           ? WorkoutStreak.fromJson(Map<String, dynamic>.from(json['streak']))
           : WorkoutStreak(currentWeekCount: 0, consecutiveWeeks: 0, lastWorkoutDate: ''),
       dietHistory: dietHistoryMap,
+      deletedHealthWorkoutIds: json['deletedHealthWorkoutIds'] != null 
+          ? List<String>.from(json['deletedHealthWorkoutIds'])
+          : [],
     );
   }
 }

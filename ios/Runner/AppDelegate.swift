@@ -188,6 +188,18 @@ import WidgetKit
         sharedDefaults?.set(json, forKey: "activeWorkoutJson")
         sharedDefaults?.synchronize()
         self.updateLiveActivity(workoutJson: json)
+        
+        if HKHealthStore.isHealthDataAvailable() {
+            let configuration = HKWorkoutConfiguration()
+            configuration.activityType = .traditionalStrengthTraining
+            configuration.locationType = .unknown
+            self.healthStore.startWatchApp(with: configuration) { success, error in
+                if let error = error {
+                    print("[AppDelegate] Failed to start watch app: \(error.localizedDescription)")
+                }
+            }
+        }
+        
         result(nil)
       } else {
         result(FlutterError(code: "INVALID_ARGUMENT", message: "Expected JSON string for active workout", details: nil))

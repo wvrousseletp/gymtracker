@@ -28,6 +28,8 @@ class WorkoutProvider extends ChangeNotifier {
   List<BodyMeasurement> medidas = [];
   SettingsState settings = SettingsState(sound: true, vibration: true, prepSeconds: 5);
   ActiveWorkoutState? activeWorkout;
+  List<ActiveWorkoutState> postponedWorkouts = [];
+  List<String> deletedHealthWorkoutIds = [];
   WorkoutStreak streak = WorkoutStreak(currentWeekCount: 0, consecutiveWeeks: 0, lastWorkoutDate: '');
   
   bool historyLoaded = false;
@@ -475,21 +477,37 @@ class WorkoutProvider extends ChangeNotifier {
     if (activeWorkout == null) return;
     RestTimerService.instance.clear();
     final active = activeWorkout!;
-    activeWorkout = active.copyWith(
+    postponedWorkouts.add(active.copyWith(
       paused: true,
       postponed: true,
-    );
+    ));
+    activeWorkout = null;
     _save();
   }
 
-  void resumeActiveWorkout() {
-    if (activeWorkout == null) return;
-    final active = activeWorkout!;
-    activeWorkout = active.copyWith(
-      startTime: DateTime.now().millisecondsSinceEpoch - (active.elapsedSeconds * 1000),
+  void resumePostponedWorkout(int index) {
+    if (index < 0 || index >= postponedWorkouts.length) return;
+    if (activeWorkout != null) return; // Can't resume if there's already an active one
+
+    final workout = postponedWorkouts[index];
+    postponedWorkouts.removeAt(index);
+    activeWorkout = workout.copyWith(
+      startTime: DateTime.now().millisecondsSinceEpoch - (workout.elapsedSeconds * 1000),
       paused: false,
       postponed: false,
     );
+    _save();
+  }
+  
+  void discardPostponedWorkout(int index) {
+    if (index < 0 || index >= postponedWorkouts.length) return;
+    postponedWorkouts.removeAt(index);
+    _save();
+  }
+
+  void clearAllPostponedWorkouts() {
+    if (postponedWorkouts.isEmpty) return;
+    postponedWorkouts.clear();
     _save();
   }
 
@@ -580,44 +598,7 @@ class WorkoutProvider extends ChangeNotifier {
 
     // Update PRs
     final List<String> prExerciseNames = [];
-    for (var ex in active.exercises) {
-      final done = ex.setsState.where((s) => s).length;
-      if (done == 0) continue;
-
-      final isCardio = ex.name.toLowerCase().contains('cardio') || ex.muscle.toLowerCase().contains('cardio');
-      double prWeight = ex.weight;
-      int prReps = ex.reps;
-
-      if (isCardio) {
-        final completedList = ex.performedCardios.where((c) => c != null).toList();
-        if (completedList.isNotEmpty) {
-          var maxCardio = completedList[0]!;
-          for (var p in completedList) {
-            if (p!.distanceKm > maxCardio.distanceKm) {
-              maxCardio = p;
-            }
-          }
-          prWeight = maxCardio.distanceKm;
-          prReps = maxCardio.durationSeconds ~/ 60;
-        } else {
-          continue;
-        }
-      }
-
-      final libEx = library.firstWhere((l) => l.name == ex.name, orElse: () => LibraryExercise(id: '', name: '', muscle: '', measurementType: MeasurementType.reps));
-      if (libEx.id.isEmpty) continue;
-
-      final currentPr = prs[libEx.id];
-      if (currentPr == null || prWeight > currentPr.weight || (prWeight == currentPr.weight && prReps > currentPr.reps)) {
-        prs[libEx.id] = PersonalRecord(
-          weight: prWeight,
-          reps: prReps,
-          date: DateTime.now().toUtc().toIso8601String(),
-          routineName: active.name,
-        );
-        prExerciseNames.add(ex.name);
-      }
-    }
+    _updatePersonalRecordsForLog(log, prExerciseNames);
 
     if (prExerciseNames.isNotEmpty) {
       WatchService.instance.sendPrCelebration(prExerciseNames);
@@ -635,46 +616,7 @@ class WorkoutProvider extends ChangeNotifier {
     history = List.from(history)..insert(0, log);
 
     // Update PRs
-    for (var ex in log.exercises) {
-      if (ex.completedSets == 0) continue;
-
-      final isCardio = ex.name.toLowerCase().contains('cardio') || ex.muscle.toLowerCase().contains('cardio');
-      double prWeight = ex.weight;
-      int prReps = ex.reps;
-
-      if (isCardio) {
-        if (ex.performedCardios != null && ex.performedCardios!.isNotEmpty) {
-          final completedList = ex.performedCardios!.where((c) => c != null).toList();
-          if (completedList.isNotEmpty) {
-            var maxCardio = completedList[0]!;
-            for (var p in completedList) {
-              if (p!.distanceKm > maxCardio.distanceKm) {
-                maxCardio = p;
-              }
-            }
-            prWeight = maxCardio.distanceKm;
-            prReps = maxCardio.durationSeconds ~/ 60;
-          } else {
-            continue;
-          }
-        } else {
-          continue;
-        }
-      }
-
-      final libEx = library.firstWhere((l) => l.name == ex.name, orElse: () => LibraryExercise(id: '', name: '', muscle: '', measurementType: MeasurementType.reps));
-      if (libEx.id.isEmpty) continue;
-
-      final currentPr = prs[libEx.id];
-      if (currentPr == null || prWeight > currentPr.weight || (prWeight == currentPr.weight && prReps > currentPr.reps)) {
-        prs[libEx.id] = PersonalRecord(
-          weight: prWeight,
-          reps: prReps,
-          date: log.date,
-          routineName: log.name,
-        );
-      }
-    }
+    _updatePersonalRecordsForLog(log, null);
 
     _updateStreak();
     _save();
@@ -703,6 +645,13 @@ class WorkoutProvider extends ChangeNotifier {
   }
 
   void deleteWorkoutLog(String id) {
+    final logToDelete = history.firstWhere((h) => h.id == id, orElse: () => WorkoutLog(id: '', name: '', date: '', duration: 0, completedSets: 0, totalSets: 0, totalWeight: 0, rpe: 0, exercises: [], notes: ''));
+    if (logToDelete.id.isNotEmpty && logToDelete.notes == "Importado do Apple Health") {
+      if (!deletedHealthWorkoutIds.contains(id)) {
+        deletedHealthWorkoutIds.add(id);
+      }
+    }
+
     history.removeWhere((h) => h.id == id);
     
     // Recalculate PRs completely from the remaining logs in history
@@ -710,52 +659,80 @@ class WorkoutProvider extends ChangeNotifier {
     // Process from oldest to newest log to properly calculate the best records
     final reversedHistory = history.reversed.toList();
     for (final log in reversedHistory) {
-      for (final ex in log.exercises) {
-        if (ex.completedSets == 0) continue;
-
-        final isCardio = ex.name.toLowerCase().contains('cardio') || ex.muscle.toLowerCase().contains('cardio');
-        double prWeight = ex.weight;
-        int prReps = ex.reps;
-
-        if (isCardio) {
-          if (ex.performedCardios != null && ex.performedCardios!.isNotEmpty) {
-            final completedList = ex.performedCardios!.where((c) => c != null).toList();
-            if (completedList.isNotEmpty) {
-              var maxCardio = completedList[0]!;
-              for (var p in completedList) {
-                if (p!.distanceKm > maxCardio.distanceKm) {
-                  maxCardio = p;
-                }
-              }
-              prWeight = maxCardio.distanceKm;
-              prReps = maxCardio.durationSeconds ~/ 60;
-            } else {
-              continue;
-            }
-          } else {
-            continue;
-          }
-        }
-
-        final libEx = library.firstWhere((l) => l.name == ex.name, orElse: () => LibraryExercise(id: '', name: '', muscle: '', measurementType: MeasurementType.reps));
-        if (libEx.id.isEmpty) continue;
-
-        final currentPr = prs[libEx.id];
-        if (currentPr == null || prWeight > currentPr.weight || (prWeight == currentPr.weight && prReps > currentPr.reps)) {
-          prs[libEx.id] = PersonalRecord(
-            weight: prWeight,
-            reps: prReps,
-            date: log.date,
-            routineName: log.name,
-          );
-        }
-      }
+      _updatePersonalRecordsForLog(log, null);
     }
 
     _updateStreak();
     _save();
     notifyListeners();
     unawaited(_firebaseSync.deleteWorkoutLog(currentUserId, id));
+  }
+
+  // --- PERSONAL RECORDS HELPER ---
+  void _updatePersonalRecordsForLog(WorkoutLog log, List<String>? prExerciseNamesToNotify) {
+    for (final ex in log.exercises) {
+      if (ex.completedSets == 0) continue;
+
+      final isCardio = ex.name.toLowerCase().contains('cardio') || ex.muscle.toLowerCase().contains('cardio');
+      final libEx = library.firstWhere((l) => l.name == ex.name, orElse: () => LibraryExercise(id: '', name: '', muscle: '', measurementType: MeasurementType.reps));
+      if (libEx.id.isEmpty) continue;
+
+      if (isCardio) {
+        if (ex.performedCardios != null && ex.performedCardios!.isNotEmpty) {
+          final completedList = ex.performedCardios!.where((c) => c != null).toList();
+          if (completedList.isNotEmpty) {
+            var maxDistanceCardio = completedList[0]!;
+            var bestPaceCardio = completedList[0]!;
+            
+            for (var p in completedList) {
+              if (p!.distanceKm > maxDistanceCardio.distanceKm) {
+                maxDistanceCardio = p;
+              }
+              if (p.distanceKm > 0 && p.durationSeconds > 0) {
+                double speed = p.distanceKm / (p.durationSeconds / 3600);
+                double currentBest = bestPaceCardio.distanceKm == 0 || bestPaceCardio.durationSeconds == 0 
+                    ? 0 : (bestPaceCardio.distanceKm / (bestPaceCardio.durationSeconds / 3600));
+                
+                if (speed > currentBest || bestPaceCardio.distanceKm == 0) {
+                  bestPaceCardio = p;
+                }
+              }
+            }
+
+            // Maior Distancia PR
+            double prWeight = maxDistanceCardio.distanceKm;
+            int prReps = maxDistanceCardio.durationSeconds ~/ 60;
+            final currentPr = prs[libEx.id];
+            if (currentPr == null || prWeight > currentPr.weight || (prWeight == currentPr.weight && prReps > currentPr.reps)) {
+              prs[libEx.id] = PersonalRecord(weight: prWeight, reps: prReps, date: log.date, routineName: log.name);
+              prExerciseNamesToNotify?.add(ex.name);
+            }
+
+            // Melhor Pace/Velocidade PR (Usando o ID com sufixo -pace)
+            double prSpeed = 0.0;
+            if (bestPaceCardio.distanceKm > 0 && bestPaceCardio.durationSeconds > 0) {
+              prSpeed = bestPaceCardio.distanceKm / (bestPaceCardio.durationSeconds / 3600);
+            }
+            if (prSpeed > 0) {
+              final pacePrKey = '${libEx.id}-pace';
+              final currentPacePr = prs[pacePrKey];
+              if (currentPacePr == null || prSpeed > currentPacePr.weight) {
+                prs[pacePrKey] = PersonalRecord(weight: prSpeed, reps: bestPaceCardio.distanceKm.toInt(), date: log.date, routineName: log.name);
+              }
+            }
+          }
+        }
+      } else {
+        // Strength PR
+        double prWeight = ex.weight;
+        int prReps = ex.reps;
+        final currentPr = prs[libEx.id];
+        if (currentPr == null || prWeight > currentPr.weight || (prWeight == currentPr.weight && prReps > currentPr.reps)) {
+          prs[libEx.id] = PersonalRecord(weight: prWeight, reps: prReps, date: log.date, routineName: log.name);
+          prExerciseNamesToNotify?.add(ex.name);
+        }
+      }
+    }
   }
 
   // --- STREAK TRACKING ---

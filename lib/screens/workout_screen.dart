@@ -74,7 +74,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     final activeWorkout = provider.activeWorkout;
 
     // Alternar visualização com base na presença de um treino ativo
-    if (activeWorkout != null && !activeWorkout.postponed) {
+    if (activeWorkout != null) {
       final trackerProvider = Provider.of<TrackerProvider>(context, listen: true);
       return ActiveWorkoutView(activeWorkout: activeWorkout, provider: trackerProvider);
     } else {
@@ -135,93 +135,83 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Banner de Treino Adiado
-            if (provider.activeWorkout != null && provider.activeWorkout!.postponed)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
+            // Banners de Treinos Adiados
+            ...provider.postponedWorkouts.asMap().entries.map((entry) {
+              final index = entry.key;
+              final postponed = entry.value;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
                 child: GlassCard(
                   borderColor: accentColor.withOpacity(0.3),
                   opacity: 0.05,
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                  padding: const EdgeInsets.all(14),
+                  child: Row(
                     children: [
-                      Row(
-                        children: [
-                          Icon(Icons.snooze, color: accentColor, size: 28),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  "TREINO ADIADO EM ANDAMENTO",
-                                  style: TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  provider.activeWorkout!.name,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
+                      Icon(Icons.snooze, color: accentColor, size: 24),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "TREINO ADIADO ${provider.postponedWorkouts.length > 1 ? '(${index + 1}/${provider.postponedWorkouts.length})' : ''}",
+                              style: const TextStyle(
+                                color: Colors.white54,
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 2),
+                            Text(
+                              postponed.name,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          TextButton.icon(
-                            onPressed: () {
-                              // We can finish the postponed workout by resuming it, which will rebuild the UI into the active state,
-                              // and then we can trigger the dialog immediately.
-                              provider.resumeActiveWorkout();
-                              WidgetsBinding.instance.addPostFrameCallback((_) {
-                                // Since we resumed, the screen will switch to ActiveWorkoutView on next frame,
-                                // but we can also trigger a finish dialogue after active state is mounted.
-                                // Alternatively, let's just finish the postponed workout directly with default RPE 7 and empty notes.
-                                // Or we can show the finish dialog. Let's make sure it is handled.
-                              });
-                            },
-                            icon: const Icon(Icons.check, size: 16, color: Colors.greenAccent),
-                            label: const Text(
-                              "Finalizar",
-                              style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold, fontSize: 13),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          ElevatedButton(
-                            onPressed: () {
-                              provider.resumeActiveWorkout();
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: accentColor,
-                              foregroundColor: Colors.black,
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              minimumSize: Size.zero,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            ),
-                            child: const Text(
-                              "Continuar",
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                            ),
-                          ),
-                        ],
+                      IconButton(
+                        onPressed: () => provider.discardPostponedWorkout(index),
+                        icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                        tooltip: "Descartar",
+                        constraints: const BoxConstraints(),
+                        padding: const EdgeInsets.all(6),
+                      ),
+                      const SizedBox(width: 4),
+                      ElevatedButton(
+                        onPressed: () {
+                          if (provider.activeWorkout != null) {
+                            // If there's an active workout, postpone it first, then resume this one
+                            provider.postponeActiveWorkout();
+                            // After postpone, resume this one (index might shift since we added to the list)
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              provider.resumePostponedWorkout(index);
+                            });
+                          } else {
+                            provider.resumePostponedWorkout(index);
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: accentColor,
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          minimumSize: Size.zero,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        child: const Text(
+                          "Retomar",
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+                        ),
                       ),
                     ],
                   ),
                 ),
-              ),
+              );
+            }),
 
             // Cabeçalho de treinos de hoje
             Row(
@@ -1592,13 +1582,19 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
                 filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                 child: Container(
                   color: Colors.black.withOpacity(0.94),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
                   child: SafeArea(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        // Cabeçalho da tela de descanso
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        return SingleChildScrollView(
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  // Cabeçalho da tela de descanso
                         Column(
                           children: [
                             Container(
@@ -1802,9 +1798,14 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
                     ),
                   ),
                 ),
-              ),
-            ),
-        ],
+              );
+            },
+          ),
+        ),
+      ),
+    ),
+  ),
+],
       ),
     );
   }
@@ -2415,6 +2416,22 @@ class _CardioSetRowState extends State<_CardioSetRow> {
   @override
   Widget build(BuildContext context) {
     final isDone = widget.isDone;
+    
+    final dist = double.tryParse(_distCtrl.text.replaceAll(',', '.')) ?? 0.0;
+    final dur = int.tryParse(_durCtrl.text.trim()) ?? 0;
+    
+    String paceStr = "--:-- /km";
+    String speedStr = "-- km/h";
+    if (dist > 0 && dur > 0) {
+      final paceMinutesPerKm = dur / dist;
+      final speedKmH = dist / (dur / 60);
+      
+      int paceM = paceMinutesPerKm.floor();
+      int paceS = ((paceMinutesPerKm - paceM) * 60).round();
+      paceStr = "$paceM:${paceS.toString().padLeft(2, '0')} /km";
+      speedStr = "${speedKmH.toStringAsFixed(1)} km/h";
+    }
+
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 6),
       padding: const EdgeInsets.all(10),
@@ -2427,98 +2444,125 @@ class _CardioSetRowState extends State<_CardioSetRow> {
               : Colors.white.withOpacity(0.06),
         ),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Sessão ${widget.setIndex + 1}',
-            style: const TextStyle(
-                color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(width: 12),
-
-          // Input Km
-          Expanded(
-            child: TextField(
-              controller: _distCtrl,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              style: const TextStyle(color: Colors.white, fontSize: 12),
-              decoration: InputDecoration(
-                labelText: 'Km',
-                labelStyle: const TextStyle(color: Colors.white38, fontSize: 11),
-                filled: true,
-                fillColor: Colors.white.withOpacity(0.04),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Colors.blueAccent),
-                ),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                isDense: true,
+          Row(
+            children: [
+              Text(
+                'Sessão ${widget.setIndex + 1}',
+                style: const TextStyle(
+                    color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
               ),
-              onChanged: (val) {
-                final dist = double.tryParse(val) ?? 0.0;
-                final dur = int.tryParse(_durCtrl.text.trim()) ?? 0;
-                widget.onChanged(dist, dur, isDone);
-              },
-            ),
-          ),
-          const SizedBox(width: 8),
+              const SizedBox(width: 12),
 
-          // Input Minutos
-          Expanded(
-            child: TextField(
-              controller: _durCtrl,
-              keyboardType: TextInputType.number,
-              style: const TextStyle(color: Colors.white, fontSize: 12),
-              decoration: InputDecoration(
-                labelText: 'Minutos',
-                labelStyle: const TextStyle(color: Colors.white38, fontSize: 11),
-                filled: true,
-                fillColor: Colors.white.withOpacity(0.04),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+              // Input Km
+              Expanded(
+                child: TextField(
+                  controller: _distCtrl,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                  decoration: InputDecoration(
+                    labelText: 'Km',
+                    labelStyle: const TextStyle(color: Colors.white38, fontSize: 11),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.04),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Colors.blueAccent),
+                    ),
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    isDense: true,
+                  ),
+                  onChanged: (val) {
+                    setState(() {});
+                    final d = double.tryParse(val.replaceAll(',', '.')) ?? 0.0;
+                    final t = int.tryParse(_durCtrl.text.trim()) ?? 0;
+                    widget.onChanged(d, t, isDone);
+                  },
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Colors.blueAccent),
-                ),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                isDense: true,
               ),
-              onChanged: (val) {
-                final dist = double.tryParse(_distCtrl.text.trim()) ?? 0.0;
-                final dur = int.tryParse(val) ?? 0;
-                widget.onChanged(dist, dur, isDone);
-              },
-            ),
-          ),
-          const SizedBox(width: 12),
+              const SizedBox(width: 8),
 
-          // Checkbox Concluir
-          Checkbox(
-            value: isDone,
-            activeColor: Colors.blueAccent,
-            onChanged: (val) {
-              final dist = double.tryParse(_distCtrl.text.trim()) ?? 0.0;
-              final dur = int.tryParse(_durCtrl.text.trim()) ?? 0;
-              widget.onChanged(dist, dur, val ?? false);
-            },
+              // Input Minutos
+              Expanded(
+                child: TextField(
+                  controller: _durCtrl,
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                  decoration: InputDecoration(
+                    labelText: 'Minutos',
+                    labelStyle: const TextStyle(color: Colors.white38, fontSize: 11),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.04),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Colors.blueAccent),
+                    ),
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    isDense: true,
+                  ),
+                  onChanged: (val) {
+                    setState(() {});
+                    final d = double.tryParse(_distCtrl.text.replaceAll(',', '.')) ?? 0.0;
+                    final t = int.tryParse(val.trim()) ?? 0;
+                    widget.onChanged(d, t, isDone);
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+
+              // Checkbox Concluir
+              Checkbox(
+                value: isDone,
+                activeColor: Colors.blueAccent,
+                onChanged: (val) {
+                  final d = double.tryParse(_distCtrl.text.replaceAll(',', '.')) ?? 0.0;
+                  final t = int.tryParse(_durCtrl.text.trim()) ?? 0;
+                  widget.onChanged(d, t, val ?? false);
+                },
+              ),
+            ],
           ),
+          if (dist > 0 && dur > 0) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Icon(Icons.speed, size: 14, color: Colors.blueAccent),
+                const SizedBox(width: 4),
+                Text(
+                  "Pace: $paceStr",
+                  style: const TextStyle(color: Colors.blueAccent, fontSize: 11, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(width: 16),
+                const Icon(Icons.electric_bolt, size: 14, color: Colors.orangeAccent),
+                const SizedBox(width: 4),
+                Text(
+                  "Vel: $speedStr",
+                  style: const TextStyle(color: Colors.orangeAccent, fontSize: 11, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ]
         ],
       ),
     );
