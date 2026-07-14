@@ -345,4 +345,26 @@ final List<LibraryExercise> defaultLibraryExercises = [
     executionType: "Livre",
     notes: "Alta intensidade e condicionamento metabólico.",
   ),
+  // ADICIONAIS MAIS COMUNS
+  LibraryExercise(id: "def_peito_7", name: "Voador (Peck Deck)", muscle: "Peito", measurementType: MeasurementType.reps, executionType: "Máquina", notes: "Contração máxima no centro do peito."),
+  LibraryExercise(id: "def_peito_8", name: "Supino Reto na Máquina", muscle: "Peito", measurementType: MeasurementType.reps, executionType: "Máquina", notes: "Maior estabilidade e segurança."),
+  
+  LibraryExercise(id: "def_costas_7", name: "Pulldown com Corda", muscle: "Costas", measurementType: MeasurementType.reps, executionType: "Máquina", notes: "Foco no latíssimo do dorso com braços estendidos."),
+  LibraryExercise(id: "def_costas_8", name: "Remada Articulada (Máquina)", muscle: "Costas", measurementType: MeasurementType.reps, executionType: "Máquina", notes: "Trabalho forte no meio das costas e dorsais."),
+  
+  LibraryExercise(id: "def_pernas_7", name: "Elevação Pélvica", muscle: "Pernas", measurementType: MeasurementType.reps, executionType: "Livre", notes: "O melhor exercício isolador para glúteos."),
+  LibraryExercise(id: "def_pernas_8", name: "Cadeira Abdutora", muscle: "Pernas", measurementType: MeasurementType.reps, executionType: "Máquina", notes: "Foco nos glúteos médio e mínimo."),
+  LibraryExercise(id: "def_pernas_9", name: "Cadeira Adutora", muscle: "Pernas", measurementType: MeasurementType.reps, executionType: "Máquina", notes: "Trabalho da parte interna da coxa (adutores)."),
+  LibraryExercise(id: "def_pernas_10", name: "Hack Squat (Agachamento Hack)", muscle: "Pernas", measurementType: MeasurementType.reps, executionType: "Máquina", notes: "Agachamento guiado com foco forte no quadríceps."),
+  
+  LibraryExercise(id: "def_ombros_6", name: "Desenvolvimento Máquina", muscle: "Ombros", measurementType: MeasurementType.reps, executionType: "Máquina", notes: "Estabilidade superior para empurrar mais carga."),
+  LibraryExercise(id: "def_ombros_7", name: "Elevação Lateral na Polia", muscle: "Ombros", measurementType: MeasurementType.reps, executionType: "Máquina", notes: "Tensão constante durante todo o movimento do deltoide lateral."),
+  
+  LibraryExercise(id: "def_biceps_6", name: "Rosca na Polia Baixa", muscle: "Bíceps", measurementType: MeasurementType.reps, executionType: "Máquina", notes: "Tensão contínua, excelente para pump."),
+  LibraryExercise(id: "def_biceps_7", name: "Rosca Inversa com Barra", muscle: "Bíceps", measurementType: MeasurementType.reps, executionType: "Livre", notes: "Foco no braquiorradial e fortalecimento do antebraço."),
+  
+  LibraryExercise(id: "def_triceps_6", name: "Tríceps Testa na Polia", muscle: "Tríceps", measurementType: MeasurementType.reps, executionType: "Máquina", notes: "Menor estresse nos cotovelos que a versão livre."),
+  LibraryExercise(id: "def_triceps_7", name: "Tríceps Máquina", muscle: "Tríceps", measurementType: MeasurementType.reps, executionType: "Máquina", notes: "Isolamento guiado excelente para controle de carga."),
+  
+  LibraryExercise(id: "def_abdo_5", name: "Abdominal na Polia com Corda", muscle: "Abdômen", measurementType: MeasurementType.reps, executionType: "Máquina", notes: "Permite progressão de carga real no abdômen."),
 ];

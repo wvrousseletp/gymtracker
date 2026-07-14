@@ -754,10 +754,7 @@ class WorkoutProvider extends ChangeNotifier {
 
     _updateStreak();
     _save();
-    // Execute notification in a microtask to prevent concurrent build/paint exceptions
-    scheduleMicrotask(() {
-      notifyListeners();
-    });
+    notifyListeners();
     unawaited(_firebaseSync.deleteWorkoutLog(currentUserId, id));
   }
 
@@ -991,8 +988,19 @@ class WorkoutProvider extends ChangeNotifier {
   }
 
   void checkAndPopulateDefaultLibrary() {
+    bool changed = false;
     if (library.isEmpty) {
       library = List<LibraryExercise>.from(defaultLibraryExercises);
+      changed = true;
+    } else {
+      for (final defEx in defaultLibraryExercises) {
+        if (!library.any((l) => l.id == defEx.id)) {
+          library.add(defEx);
+          changed = true;
+        }
+      }
+    }
+    if (changed) {
       _save();
     }
   }
