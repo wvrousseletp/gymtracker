@@ -381,6 +381,7 @@ class FirebaseSyncService {
         final cloudRoutines = await fetchCloudRoutines(userId);
         
         final combinedState = remoteState.copyWith(
+          library: localState.library,
           history: cloudWorkouts,
           routines: cloudRoutines,
         );
@@ -395,6 +396,7 @@ class FirebaseSyncService {
         final cloudRoutines = await fetchCloudRoutines(userId);
         
         final combinedState = remoteState.copyWith(
+          library: localState.library,
           history: cloudWorkouts,
           routines: cloudRoutines,
         );
@@ -454,7 +456,17 @@ class FirebaseSyncService {
         }
       }
 
+      // Merge exercise libraries to prevent preset catalog or custom exercises from being wiped
+      final localLibraryIds = localState.library.map((l) => l.id).toSet();
+      final mergedLibrary = List<LibraryExercise>.from(localState.library);
+      for (final ex in remoteState.library) {
+        if (!localLibraryIds.contains(ex.id)) {
+          mergedLibrary.add(ex);
+        }
+      }
+
       final combinedState = remoteState.copyWith(
+        library: mergedLibrary,
         history: mergedWorkouts,
         routines: mergedRoutines,
       );

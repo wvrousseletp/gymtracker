@@ -320,6 +320,11 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
       currentUserId,
       _persistence.encodeState(compiledState),
     );
+    
+    await _persistence.saveWorkoutsHistoryJson(
+      currentUserId,
+      json.encode(compiledState.history.map((h) => h.toJson()).toList()),
+    );
 
     WatchService.instance.sendRoutines(compiledState.routines);
     WatchService.instance.sendLibrary(compiledState.library);
