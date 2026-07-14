@@ -18,6 +18,7 @@ import '../services/health_service.dart';
 import '../services/food_service.dart';
 import '../services/analytics_service.dart';
 import '../utils/food_presets_data.dart';
+import '../utils/default_exercises_data.dart';
 export '../utils/date_utils.dart';
 import 'profile_provider.dart';
 import 'workout_provider.dart';
@@ -622,7 +623,7 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
   // --- INITIALIZERS FOR DEFAULT STATE ---
   PlannerState _getDefaultState() {
     return PlannerState(
-      library: [],
+      library: List.from(defaultLibraryExercises),
       routines: [],
       planner: {
         "seg": [],
