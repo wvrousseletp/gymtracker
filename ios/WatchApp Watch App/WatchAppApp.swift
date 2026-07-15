@@ -12,6 +12,9 @@ class ExtensionDelegate: NSObject, WKExtensionDelegate {
     func handle(_ workoutConfiguration: HKWorkoutConfiguration) {
         // App launched by iOS app starting a workout
         print("[WatchApp] Launched via HKWorkoutConfiguration from iOS")
+        DispatchQueue.main.async {
+            WorkoutManager.shared.startWorkout()
+        }
     }
 }
 

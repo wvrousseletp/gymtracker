@@ -1589,7 +1589,12 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
                           child: ConstrainedBox(
                             constraints: BoxConstraints(minHeight: constraints.maxHeight),
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                              padding: EdgeInsets.only(
+                                left: 24, 
+                                right: 24, 
+                                top: 24, 
+                                bottom: 24 + 88 + MediaQuery.of(context).padding.bottom,
+                              ),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 crossAxisAlignment: CrossAxisAlignment.center,
