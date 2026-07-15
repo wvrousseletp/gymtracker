@@ -2019,74 +2019,86 @@ class _MedidasTabState extends State<MedidasTab> {
 
     final dateStr = DateTime.now().toLocal().toString().substring(0, 10); // "YYYY-MM-DD"
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (dialogCtx) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: GlassCard(
-          useBlur: true,
-          borderColor: Colors.white.withOpacity(0.08),
-          borderRadius: 20,
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(
-                "Registrar Medidas",
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                height: MediaQuery.of(context).size.height * 0.5,
-                width: double.maxFinite,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _buildFormInput("Peso (kg)", weightCtrl),
-                      _buildFormInput("Gordura (%)", fatCtrl),
-                      _buildFormInput("Pescoço (cm)", neckCtrl),
-                      _buildFormInput("Ombros (cm)", shouldersCtrl),
-                      _buildFormInput("Peito (cm)", chestCtrl),
-                      _buildFormInput("Cintura (cm)", waistCtrl),
-                      _buildFormInput("Abdômen (cm)", abdomenCtrl),
-                      _buildFormInput("Quadril (cm)", hipsCtrl),
-                      Row(
-                        children: [
-                          Expanded(child: _buildFormInput("Braço Esq (cm)", bEsqCtrl)),
-                          const SizedBox(width: 8),
-                          Expanded(child: _buildFormInput("Braço Dir (cm)", bDirCtrl)),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          Expanded(child: _buildFormInput("Coxa Esq (cm)", cEsqCtrl)),
-                          const SizedBox(width: 8),
-                          Expanded(child: _buildFormInput("Coxa Dir (cm)", cDirCtrl)),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          Expanded(child: _buildFormInput("Pant. Esq (cm)", pEsqCtrl)),
-                          const SizedBox(width: 8),
-                          Expanded(child: _buildFormInput("Pant. Dir (cm)", pDirCtrl)),
-                        ],
-                      ),
-                    ],
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (bottomSheetCtx) => GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Container(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(bottomSheetCtx).viewInsets.bottom,
+          ),
+          decoration: BoxDecoration(
+            color: const Color(0xFF141414).withOpacity(0.95),
+            border: Border(top: BorderSide(color: Colors.white.withOpacity(0.1))),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 24),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(dialogCtx),
-                    child: const Text("Cancelar", style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+                const Text(
+                  "Registrar Medidas",
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 20),
+                ),
+                const SizedBox(height: 24),
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildFormInput("Peso (kg)", weightCtrl),
+                        _buildFormInput("Gordura (%)", fatCtrl),
+                        _buildFormInput("Pescoço (cm)", neckCtrl),
+                        _buildFormInput("Ombros (cm)", shouldersCtrl),
+                        _buildFormInput("Peito (cm)", chestCtrl),
+                        _buildFormInput("Cintura (cm)", waistCtrl),
+                        _buildFormInput("Abdômen (cm)", abdomenCtrl),
+                        _buildFormInput("Quadril (cm)", hipsCtrl),
+                        Row(
+                          children: [
+                            Expanded(child: _buildFormInput("Braço Esq (cm)", bEsqCtrl)),
+                            const SizedBox(width: 12),
+                            Expanded(child: _buildFormInput("Braço Dir (cm)", bDirCtrl)),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            Expanded(child: _buildFormInput("Coxa Esq (cm)", cEsqCtrl)),
+                            const SizedBox(width: 12),
+                            Expanded(child: _buildFormInput("Coxa Dir (cm)", cDirCtrl)),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            Expanded(child: _buildFormInput("Pant. Esq (cm)", pEsqCtrl)),
+                            const SizedBox(width: 12),
+                            Expanded(child: _buildFormInput("Pant. Dir (cm)", pDirCtrl)),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(width: 8),
-                  TextButton(
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
                     onPressed: () {
                       final m = BodyMeasurement(
                         id: "med-${DateTime.now().millisecondsSinceEpoch}",
@@ -2107,14 +2119,20 @@ class _MedidasTabState extends State<MedidasTab> {
                         panturrilhaDir: double.tryParse(pDirCtrl.text.trim()) ?? 0.0,
                       );
                       provider.addMeasurement(m);
-                      Navigator.pop(dialogCtx);
+                      Navigator.pop(bottomSheetCtx);
                       setState(() {});
                     },
-                    child: Text("Registrar", style: TextStyle(color: widget.accentColor, fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: widget.accentColor,
+                      foregroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      elevation: 0,
+                    ),
+                    child: const Text("Registrar", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
                   ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -2141,75 +2159,87 @@ class _MedidasTabState extends State<MedidasTab> {
 
     final dateCtrl = TextEditingController(text: measurement.date);
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (dialogCtx) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: GlassCard(
-          useBlur: true,
-          borderColor: Colors.white.withOpacity(0.08),
-          borderRadius: 20,
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(
-                "Editar Medidas",
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                height: MediaQuery.of(context).size.height * 0.5,
-                width: double.maxFinite,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _buildFormInput("Data (AAAA-MM-DD)", dateCtrl),
-                      _buildFormInput("Peso (kg)", weightCtrl),
-                      _buildFormInput("Gordura (%)", fatCtrl),
-                      _buildFormInput("Pescoço (cm)", neckCtrl),
-                      _buildFormInput("Ombros (cm)", shouldersCtrl),
-                      _buildFormInput("Peito (cm)", chestCtrl),
-                      _buildFormInput("Cintura (cm)", waistCtrl),
-                      _buildFormInput("Abdômen (cm)", abdomenCtrl),
-                      _buildFormInput("Quadril (cm)", hipsCtrl),
-                      Row(
-                        children: [
-                          Expanded(child: _buildFormInput("Braço Esq (cm)", bEsqCtrl)),
-                          const SizedBox(width: 8),
-                          Expanded(child: _buildFormInput("Braço Dir (cm)", bDirCtrl)),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          Expanded(child: _buildFormInput("Coxa Esq (cm)", cEsqCtrl)),
-                          const SizedBox(width: 8),
-                          Expanded(child: _buildFormInput("Coxa Dir (cm)", cDirCtrl)),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          Expanded(child: _buildFormInput("Pant. Esq (cm)", pEsqCtrl)),
-                          const SizedBox(width: 8),
-                          Expanded(child: _buildFormInput("Pant. Dir (cm)", pDirCtrl)),
-                        ],
-                      ),
-                    ],
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (bottomSheetCtx) => GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Container(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(bottomSheetCtx).viewInsets.bottom,
+          ),
+          decoration: BoxDecoration(
+            color: const Color(0xFF141414).withOpacity(0.95),
+            border: Border(top: BorderSide(color: Colors.white.withOpacity(0.1))),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 24),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(dialogCtx),
-                    child: const Text("Cancelar", style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+                const Text(
+                  "Editar Medidas",
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 20),
+                ),
+                const SizedBox(height: 24),
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildFormInput("Data (AAAA-MM-DD)", dateCtrl),
+                        _buildFormInput("Peso (kg)", weightCtrl),
+                        _buildFormInput("Gordura (%)", fatCtrl),
+                        _buildFormInput("Pescoço (cm)", neckCtrl),
+                        _buildFormInput("Ombros (cm)", shouldersCtrl),
+                        _buildFormInput("Peito (cm)", chestCtrl),
+                        _buildFormInput("Cintura (cm)", waistCtrl),
+                        _buildFormInput("Abdômen (cm)", abdomenCtrl),
+                        _buildFormInput("Quadril (cm)", hipsCtrl),
+                        Row(
+                          children: [
+                            Expanded(child: _buildFormInput("Braço Esq (cm)", bEsqCtrl)),
+                            const SizedBox(width: 12),
+                            Expanded(child: _buildFormInput("Braço Dir (cm)", bDirCtrl)),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            Expanded(child: _buildFormInput("Coxa Esq (cm)", cEsqCtrl)),
+                            const SizedBox(width: 12),
+                            Expanded(child: _buildFormInput("Coxa Dir (cm)", cDirCtrl)),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            Expanded(child: _buildFormInput("Pant. Esq (cm)", pEsqCtrl)),
+                            const SizedBox(width: 12),
+                            Expanded(child: _buildFormInput("Pant. Dir (cm)", pDirCtrl)),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(width: 8),
-                  TextButton(
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
                     onPressed: () {
                       final m = BodyMeasurement(
                         id: measurement.id,
@@ -2230,14 +2260,20 @@ class _MedidasTabState extends State<MedidasTab> {
                         panturrilhaDir: double.tryParse(pDirCtrl.text.trim()) ?? 0.0,
                       );
                       provider.updateMeasurement(m);
-                      Navigator.pop(dialogCtx);
+                      Navigator.pop(bottomSheetCtx);
                       setState(() {});
                     },
-                    child: Text("Salvar", style: TextStyle(color: widget.accentColor, fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: widget.accentColor,
+                      foregroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      elevation: 0,
+                    ),
+                    child: const Text("Salvar Mudanças", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
                   ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

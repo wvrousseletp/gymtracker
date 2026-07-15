@@ -7,14 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		D39999992FE20CC4008A99A0 /* HealthKitWorkoutManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A99A1 /* HealthKitWorkoutManager.swift */; };
-		D39999992FE20CC4008A99A2 /* WatchBackgroundSyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A99A3 /* WatchBackgroundSyncManager.swift */; };
-		D39999992FE20CC4008A99A6 /* WatchCloudBackupManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A99A7 /* WatchCloudBackupManager.swift */; };
-		D39999992FE20CC4008A99A4 /* WatchBatterySaverManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A99A5 /* WatchBatterySaverManager.swift */; };
-		D39999992FE20CC4008A99AA /* WatchHapticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A99AB /* WatchHapticManager.swift */; };
-
-		D39999992FE20CC4008A999A /* WatchLocalWorkoutManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A999B /* WatchLocalWorkoutManager.swift */; };
-		D39999992FE20CC4008A999C /* WatchDataCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A999D /* WatchDataCache.swift */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
@@ -53,6 +45,13 @@
 		D39999992FE20CC4008A95D3 /* WatchPlannerHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A95C3 /* WatchPlannerHelper.swift */; };
 		D39999992FE20CC4008A95D4 /* FinishWorkoutSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A95C4 /* FinishWorkoutSheet.swift */; };
 		D39999992FE20CC4008A95FE /* WorkoutSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A95FF /* WorkoutSetupView.swift */; };
+		D39999992FE20CC4008A999A /* WatchLocalWorkoutManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A999B /* WatchLocalWorkoutManager.swift */; };
+		D39999992FE20CC4008A999C /* WatchDataCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A999D /* WatchDataCache.swift */; };
+		D39999992FE20CC4008A99A0 /* HealthKitWorkoutManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A99A1 /* HealthKitWorkoutManager.swift */; };
+		D39999992FE20CC4008A99A2 /* WatchBackgroundSyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A99A3 /* WatchBackgroundSyncManager.swift */; };
+		D39999992FE20CC4008A99A4 /* WatchBatterySaverManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A99A5 /* WatchBatterySaverManager.swift */; };
+		D39999992FE20CC4008A99A6 /* WatchCloudBackupManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A99A7 /* WatchCloudBackupManager.swift */; };
+		D39999992FE20CC4008A99AA /* WatchHapticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A99AB /* WatchHapticManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -147,13 +146,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		D39999992FE20CC4008A999B /* WatchLocalWorkoutManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchLocalWorkoutManager.swift; sourceTree = "<group>"; };
-		D39999992FE20CC4008A999D /* WatchDataCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchDataCache.swift; sourceTree = "<group>"; };
-		D39999992FE20CC4008A99A1 /* HealthKitWorkoutManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitWorkoutManager.swift; sourceTree = "<group>"; };
-		D39999992FE20CC4008A99A3 /* WatchBackgroundSyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchBackgroundSyncManager.swift; sourceTree = "<group>"; };
-		D39999992FE20CC4008A99A5 /* WatchBatterySaverManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchBatterySaverManager.swift; sourceTree = "<group>"; };
-		D39999992FE20CC4008A99A7 /* WatchCloudBackupManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchCloudBackupManager.swift; sourceTree = "<group>"; };
-		D39999992FE20CC4008A99AB /* WatchHapticManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchHapticManager.swift; sourceTree = "<group>"; };
 		0F4CA5F9253FB5F3284C12B3 /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
@@ -206,6 +198,13 @@
 		D39999992FE20CC4008A95C3 /* WatchPlannerHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchPlannerHelper.swift; sourceTree = "<group>"; };
 		D39999992FE20CC4008A95C4 /* FinishWorkoutSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinishWorkoutSheet.swift; sourceTree = "<group>"; };
 		D39999992FE20CC4008A95FF /* WorkoutSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutSetupView.swift; sourceTree = "<group>"; };
+		D39999992FE20CC4008A999B /* WatchLocalWorkoutManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchLocalWorkoutManager.swift; sourceTree = "<group>"; };
+		D39999992FE20CC4008A999D /* WatchDataCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchDataCache.swift; sourceTree = "<group>"; };
+		D39999992FE20CC4008A99A1 /* HealthKitWorkoutManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitWorkoutManager.swift; sourceTree = "<group>"; };
+		D39999992FE20CC4008A99A3 /* WatchBackgroundSyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchBackgroundSyncManager.swift; sourceTree = "<group>"; };
+		D39999992FE20CC4008A99A5 /* WatchBatterySaverManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchBatterySaverManager.swift; sourceTree = "<group>"; };
+		D39999992FE20CC4008A99A7 /* WatchCloudBackupManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchCloudBackupManager.swift; sourceTree = "<group>"; };
+		D39999992FE20CC4008A99AB /* WatchHapticManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchHapticManager.swift; sourceTree = "<group>"; };
 		D4A6FF054925EBF1FC36E777 /* Pods-RunnerTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.release.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.release.xcconfig"; sourceTree = "<group>"; };
 		FE1A75646B124E09E7C2FF93 /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -372,8 +371,6 @@
 				D39999992FE20CC4008A99A5 /* WatchBatterySaverManager.swift */,
 				D39999992FE20CC4008A99A7 /* WatchCloudBackupManager.swift */,
 				D39999992FE20CC4008A99AB /* WatchHapticManager.swift */,
-
-
 				D39999992FE20CC4008A999B /* WatchLocalWorkoutManager.swift */,
 				D39999992FE20CC4008A999D /* WatchDataCache.swift */,
 				D39999992FE20CC4008A94F4 /* RestTimerView.swift */,
@@ -1578,8 +1575,8 @@
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
-				CODE_SIGN_STYLE = Automatic;
 				CODE_SIGN_ENTITLEMENTS = "WatchApp Watch App/WatchWidgetExtension/WatchWidgetExtension.entitlements";
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = PJ32UPL29J;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -1616,9 +1613,9 @@
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_ENTITLEMENTS = "WatchApp Watch App/WatchWidgetExtension/WatchWidgetExtension.entitlements";
 				"CODE_SIGN_IDENTITY[sdk=watchos*]" = "Apple Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CODE_SIGN_ENTITLEMENTS = "WatchApp Watch App/WatchWidgetExtension/WatchWidgetExtension.entitlements";
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = PJ32UPL29J;
 				GCC_C_LANGUAGE_STANDARD = gnu11;

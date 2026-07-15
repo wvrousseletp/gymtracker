@@ -399,6 +399,7 @@ class FirebaseSyncService {
           library: remoteState.library,
           history: cloudWorkouts.isNotEmpty ? cloudWorkouts : remoteState.history,
           routines: cloudRoutines.isNotEmpty ? cloudRoutines : remoteState.routines,
+          deletedHealthWorkoutIds: {...localState.deletedHealthWorkoutIds, ...remoteState.deletedHealthWorkoutIds}.toList(),
         );
 
         await onRemoteApplied?.call(combinedState, _readRemoteProfile(data));
@@ -469,6 +470,7 @@ class FirebaseSyncService {
         library: mergedLibrary,
         history: mergedWorkouts,
         routines: mergedRoutines,
+        deletedHealthWorkoutIds: {...localState.deletedHealthWorkoutIds, ...remoteState.deletedHealthWorkoutIds}.toList(),
       );
 
       await onRemoteApplied?.call(combinedState, _readRemoteProfile(data));
