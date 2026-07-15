@@ -457,8 +457,13 @@ class FirebaseSyncService {
         return localState;
       }
 
-      final remoteState =
-          PlannerState.fromJson(json.decode(data['jsonState'] as String));
+      PlannerState remoteState;
+      try {
+        remoteState = PlannerState.fromJson(json.decode(data['jsonState'] as String));
+      } catch (e) {
+        debugPrint('[FirebaseSync] Error parsing jsonState, falling back to initial: $e');
+        remoteState = localState;
+      }
       final remoteUpdatedAt = _readRemoteUpdatedAt(data);
 
       // CRITICAL SAFETY SHIELD: If local state is empty/new but remote has data, 

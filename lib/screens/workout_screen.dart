@@ -1,10 +1,7 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../providers/tracker_provider.dart';
@@ -17,6 +14,7 @@ import '../models/planner_state.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/profile_avatar.dart';
 import '../services/rest_timer_service.dart';
+import 'notification_settings_dialog.dart';
 
 class WorkoutScreen extends StatefulWidget {
   const WorkoutScreen({super.key});
@@ -1055,42 +1053,14 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 ),
                 
                 const SizedBox(height: 16),
-                const Divider(color: Colors.white10),
-                const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text("Backup de Dados", style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                    const Text("Notificações", style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
                     ElevatedButton.icon(
-                      onPressed: () async {
-                        try {
-                          final jsonStr = json.encode(provider.state?.toJson() ?? {});
-                          await Clipboard.setData(ClipboardData(text: jsonStr));
-                          final dir = await getApplicationDocumentsDirectory();
-                          final file = File('${dir.path}/los_mooscles_backup.json');
-                          await file.writeAsString(jsonStr);
-                          
-                          if (dialogCtx.mounted) {
-                            ScaffoldMessenger.of(dialogCtx).showSnackBar(
-                              SnackBar(
-                                backgroundColor: const Color(0xff1c1c1e),
-                                content: Text(
-                                  "Backup salvo em ${file.path.split('/').last} e copiado para a área de transferência!",
-                                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                                ),
-                              ),
-                            );
-                          }
-                        } catch (e) {
-                          if (dialogCtx.mounted) {
-                            ScaffoldMessenger.of(dialogCtx).showSnackBar(
-                              SnackBar(
-                                backgroundColor: Colors.redAccent,
-                                content: Text("Erro ao exportar dados: $e"),
-                              ),
-                            );
-                          }
-                        }
+                      onPressed: () {
+                        Navigator.pop(dialogCtx);
+                        showNotificationSettingsDialog(context);
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white.withOpacity(0.05),
@@ -1101,8 +1071,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                           side: BorderSide(color: accentColor.withOpacity(0.3)),
                         ),
                       ),
-                      icon: const Icon(Icons.download_rounded, size: 16),
-                      label: const Text("Exportar", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      icon: const Icon(Icons.notifications_active_outlined, size: 16),
+                      label: const Text("Configurar", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),
