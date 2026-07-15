@@ -20,113 +20,105 @@ struct RestTimerView: View {
 
     var body: some View {
         ZStack {
-            // Ambient pulsing radial gradient background
+            // Fundo escuro premium (Black)
+            Color.black.ignoresSafeArea()
+
+            // Efeito de brilho radial sutil
             if !isLuminanceReduced {
                 RadialGradient(
-                    colors: [themeColor.opacity(0.18), Color.black],
+                    colors: [themeColor.opacity(0.15), Color.black],
                     center: .center,
-                    startRadius: 5,
-                    endRadius: 90
+                    startRadius: 20,
+                    endRadius: WKInterfaceDevice.current().screenBounds.width / 1.2
                 )
                 .ignoresSafeArea()
                 .scaleEffect(pulseScale)
                 .opacity(pulseOpacity)
                 .onAppear {
-                    withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
-                        pulseScale = 1.15
-                        pulseOpacity = 0.75
+                    withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
+                        pulseScale = 1.05
+                        pulseOpacity = 0.8
                     }
                 }
-            } else {
-                Color.black.ignoresSafeArea()
+            }
+            
+            // Anel de progresso que ocupa quase a tela toda (estilo iOS)
+            if !isLuminanceReduced {
+                Circle()
+                    .stroke(Color.white.opacity(0.05), lineWidth: 4)
+                    .padding(4)
+                
+                Circle()
+                    .trim(from: 0.0, to: restTimer.totalSeconds > 0 ? CGFloat(timeRemaining) / CGFloat(restTimer.totalSeconds) : 0)
+                    .stroke(
+                        themeColor,
+                        style: StrokeStyle(lineWidth: 4, lineCap: .round)
+                    )
+                    .rotationEffect(Angle(degrees: -90))
+                    .padding(4)
+                    .shadow(color: themeColor.opacity(0.5), radius: 6)
+                    .animation(.linear(duration: 0.5), value: timeRemaining)
             }
 
-            VStack(spacing: 4) {
-                // Badge superior indicando o estado
-                Text(restTimer.isPrep ? "PREPARE-SE" : "DESCANSO ATIVO")
-                    .font(.system(size: 9, weight: .bold, design: .rounded))
+            VStack(spacing: 0) {
+                Spacer(minLength: 8)
+                
+                // Título: PREPARE-SE ou DESCANSO
+                Text(restTimer.isPrep ? "PREPARE-SE" : "DESCANSO")
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
                     .foregroundColor(themeColor)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 2)
-                    .background(themeColor.opacity(0.15))
-                    .cornerRadius(6)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 6)
-                            .stroke(themeColor.opacity(0.35), lineWidth: 1)
-                    )
+                    .tracking(1.0)
+                    .padding(.bottom, -2)
 
-                // Texto informativo do próximo exercício
+                // Contagem regressiva GIGANTE (premium)
+                Text("\(timeRemaining)")
+                    .font(.system(size: 64, weight: .heavy, design: .rounded))
+                    .foregroundColor(isLuminanceReduced ? .gray : .white)
+                    .tracking(-2.0) // Aproximar os números (estilo iOS)
+                    .minimumScaleFactor(0.7)
+                    .lineLimit(1)
+                    .shadow(color: .black.opacity(0.5), radius: 2, x: 0, y: 2)
+
+                // Próximo Exercício (Glass style sutil)
                 VStack(spacing: 2) {
-                    Text(restTimer.isPrep ? "ENTRANDO EM:" : "PRÓXIMO EXERCÍCIO:")
-                        .font(.system(size: 7, weight: .black))
-                        .foregroundColor(.gray.opacity(0.8))
-                    
-                    Text("\(restTimer.nextExerciseName)")
-                        .font(.system(size: 13, weight: .black, design: .rounded))
+                    Text(restTimer.nextExerciseName)
+                        .font(.system(size: 13, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
                         .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                     
                     Text("Série \(restTimer.nextSetNum)")
-                        .font(.system(size: 8, weight: .semibold, design: .rounded))
-                        .foregroundColor(themeColor)
+                        .font(.system(size: 10, weight: .semibold, design: .rounded))
+                        .foregroundColor(.gray)
                 }
-                .padding(.horizontal, 6)
-                .multilineTextAlignment(.center)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(Color.white.opacity(0.08))
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.white.opacity(0.15), lineWidth: 0.5)
+                )
+                .padding(.bottom, 8)
+                
+                Spacer(minLength: 4)
 
-                // Cronômetro Circular Moderno com Efeito Glow
-                ZStack {
-                    if !isLuminanceReduced {
-                        Circle()
-                            .stroke(lineWidth: 2.5)
-                            .opacity(0.08)
-                            .foregroundColor(.white)
-
-                        Circle()
-                            .trim(from: 0.0, to: restTimer.totalSeconds > 0 ? CGFloat(timeRemaining) / CGFloat(restTimer.totalSeconds) : 0)
-                            .stroke(style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
-                            .foregroundColor(themeColor)
-                            .rotationEffect(Angle(degrees: 270.0))
-                            .shadow(color: themeColor.opacity(0.6), radius: 3)
-                    } else {
-                        Circle()
-                            .stroke(themeColor.opacity(0.3), lineWidth: 1.5)
-                    }
-
-                    VStack(spacing: -3) {
-                        Text("\(timeRemaining)")
-                            .font(.system(size: 18, weight: isLuminanceReduced ? .bold : .black, design: .rounded))
-                            .foregroundColor(isLuminanceReduced ? .gray : .white)
-                        Text("seg")
-                            .font(.system(size: 7, weight: .semibold))
-                            .foregroundColor(.gray)
-                    }
-                }
-                .frame(width: 48, height: 48)
-
-                // Botão Pular de Visual Moderno (Pill Glass)
+                // Botão de Pular grande e chamativo
                 Button(action: {
                     connectivityManager.skipRest()
                 }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "forward.fill")
-                            .font(.system(size: 8))
-                        Text(restTimer.isPrep ? "Pular" : "Pular")
-                            .font(.system(size: 9, weight: .bold))
-                    }
-                    .foregroundColor(themeColor)
-                    .padding(.vertical, 4)
-                    .padding(.horizontal, 10)
-                    .background(Color.white.opacity(0.06))
-                    .cornerRadius(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                    )
+                    Text(restTimer.isPrep ? "Iniciar Agora" : "Pular")
+                        .font(.system(size: 14, weight: .black, design: .rounded))
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 38)
+                        .background(isLuminanceReduced ? Color.gray : Color.white)
+                        .cornerRadius(19)
                 }
                 .buttonStyle(PlainButtonStyle())
+                .padding(.horizontal, 12)
+                .padding(.bottom, 8)
             }
-            .ignoresSafeArea(.keyboard)
-            .padding(.bottom, 2)
         }
         .onAppear {
             didAutoSkip = false
