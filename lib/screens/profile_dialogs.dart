@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../providers/tracker_provider.dart';
 import '../models/profile.dart';
 import '../widgets/profile_avatar.dart';
+import 'notification_settings_dialog.dart';
 
 void showProfileManagerDialog(BuildContext context) {
   showModalBottomSheet(
@@ -183,6 +184,22 @@ class _ProfileManagerSheetState extends State<ProfileManagerSheet> {
                   label: Text(
                     "Editar Perfil",
                     style: TextStyle(color: accentColor, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // Notification Settings Button
+              SizedBox(
+                width: double.infinity,
+                child: TextButton.icon(
+                  onPressed: () {
+                    showNotificationSettingsDialog(context);
+                  },
+                  icon: Icon(Icons.notifications_active_outlined, color: Colors.white),
+                  label: const Text(
+                    "Notificações",
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
                   ),
                 ),
               ),

@@ -8,6 +8,7 @@ import 'providers/profile_provider.dart';
 import 'providers/workout_provider.dart';
 import 'providers/diet_provider.dart';
 import 'providers/tracker_provider.dart';
+import 'providers/notification_provider.dart';
 import 'screens/main_navigation.dart';
 import 'screens/login_screen.dart';
 import 'widgets/offline_banner_wrapper.dart';
@@ -24,6 +25,7 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProxyProvider<ProfileProvider, WorkoutProvider>(
           create: (_) => WorkoutProvider(),
           update: (_, profile, workout) => workout!..updateProfile(profile),

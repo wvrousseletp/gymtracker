@@ -5,6 +5,7 @@ import '../models/routine.dart';
 import '../models/exercise.dart';
 import '../models/planner_state.dart';
 import '../models/workout_log.dart';
+import '../models/notification_preferences.dart';
 import '../providers/tracker_provider.dart';
 
 class WatchService {
@@ -35,6 +36,14 @@ class WatchService {
         sendActiveWorkout(provider.state!.activeWorkout!);
       }
       syncWidgetData();
+    }
+  }
+
+  Future<void> syncNotificationPreferences(NotificationPreferences prefs) async {
+    try {
+      await _channel.invokeMethod('syncNotificationPreferences', prefs.toMap());
+    } catch (e) {
+      debugPrint('[WatchService] Error syncing notification preferences: $e');
     }
   }
 

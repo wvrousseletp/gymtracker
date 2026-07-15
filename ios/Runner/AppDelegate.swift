@@ -247,6 +247,23 @@ import WidgetKit
       self.clearRestTimerNotification()
       self.clearLiveActivityRestTimer()
       result(nil)
+    case "syncNotificationPreferences":
+      if let args = call.arguments as? [String: Any] {
+        let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles")
+        if let hydrationAggressiveness = args["hydrationAggressiveness"] as? String {
+          sharedDefaults?.set(hydrationAggressiveness, forKey: "hydrationAggressiveness")
+        }
+        if let silenceHydrationAtNight = args["silenceHydrationAtNight"] as? Bool {
+          sharedDefaults?.set(silenceHydrationAtNight, forKey: "silenceHydrationAtNight")
+        }
+        if let restTimerMode = args["restTimerMode"] as? String {
+          sharedDefaults?.set(restTimerMode, forKey: "restTimerMode")
+        }
+        sharedDefaults?.synchronize()
+        result(nil)
+      } else {
+        result(FlutterError(code: "INVALID_ARGUMENT", message: "Expected dictionary", details: nil))
+      }
     case "updateWidgetData":
       if let args = call.arguments as? [String: Any] {
         let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles")
@@ -597,6 +614,12 @@ import WidgetKit
   private func scheduleRestTimerNotification(seconds: Int, isPrep: Bool, nextExName: String) {
     // Cancel any previous rest timer notification
     UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [restTimerNotificationId])
+    
+    let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles")
+    let mode = sharedDefaults?.string(forKey: "restTimerMode") ?? "all"
+    if mode == "liveActivityOnly" {
+        return // Skip banner scheduling, Live Activity is handled separately
+    }
 
     guard seconds > 0 else { return }
 
@@ -634,7 +657,21 @@ import WidgetKit
     
     guard waterIntake < waterGoal else { return }
     
-    let intervals: [TimeInterval] = [7200, 14400, 21600] // 2h, 4h, 6h
+    let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles")
+    let agg = sharedDefaults?.string(forKey: "hydrationAggressiveness") ?? "standard"
+    if agg == "disabled" { return }
+    
+    var intervals: [TimeInterval] = []
+    if agg == "aggressive" {
+        intervals = [3600, 7200, 10800] // 1h, 2h, 3h
+    } else if agg == "relaxed" {
+        intervals = [14400, 28800] // 4h, 8h
+    } else {
+        intervals = [7200, 14400, 21600] // 2h, 4h, 6h
+    }
+    
+    let silenceAtNight = sharedDefaults?.bool(forKey: "silenceHydrationAtNight") ?? true
+    
     let messages = [
       "Que tal um gole d'água? Você bebeu \(waterIntake)ml de \(waterGoal)ml hoje. Vamos bater a meta!",
       "Lembrete de hidratação: beba um copo de água para manter o foco e energia!",
@@ -647,7 +684,27 @@ import WidgetKit
       content.body = messages[i]
       content.sound = UNNotificationSound.default
       
-      let trigger = UNTimeIntervalNotificationTrigger(timeInterval: intervals[i], repeats: false)
+      let triggerDate = Date().addingTimeInterval(intervals[i])
+      var components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: triggerDate)
+      
+      if silenceAtNight {
+         if let hour = components.hour, (hour >= 22 || hour < 8) {
+            // Push to next morning 8 AM
+            if hour >= 22 {
+               if let nextDay = Calendar.current.date(byAdding: .day, value: 1, to: triggerDate) {
+                  let nextComponents = Calendar.current.dateComponents([.year, .month, .day], from: nextDay)
+                  components.year = nextComponents.year
+                  components.month = nextComponents.month
+                  components.day = nextComponents.day
+               }
+            }
+            components.hour = 8
+            components.minute = 0
+            components.second = 0
+         }
+      }
+      
+      let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
       let request = UNNotificationRequest(
         identifier: hydrationNotificationIds[i],
         content: content,
