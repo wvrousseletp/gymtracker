@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Tipos de operações que podem ser enfileiradas para retry offline.
-enum SyncOpType { syncWorkoutLog, deleteWorkoutLog, syncRoutine, deleteRoutine }
+enum SyncOpType { syncWorkoutLog, deleteWorkoutLog, syncRoutine, deleteRoutine, syncLibraryExercise, deleteLibraryExercise }
 
 /// Uma operação pendente de sincronização com o Firebase.
 class SyncOp {
@@ -127,6 +127,8 @@ class SyncQueueService {
         return 'id';
       case SyncOpType.syncRoutine:
       case SyncOpType.deleteRoutine:
+      case SyncOpType.syncLibraryExercise:
+      case SyncOpType.deleteLibraryExercise:
         return 'id';
     }
   }

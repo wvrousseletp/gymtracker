@@ -205,6 +205,41 @@ class _ProfileManagerSheetState extends State<ProfileManagerSheet> {
               ),
               const SizedBox(height: 8),
 
+              // Force Sync Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    Navigator.pop(context); // Fecha o dialog
+                    final tracker = Provider.of<TrackerProvider>(context, listen: false);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Sincronizando com a nuvem...')),
+                    );
+                    await tracker.forceCloudSync();
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Sincronização concluída!')),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blueAccent.withOpacity(0.1),
+                    foregroundColor: Colors.blueAccent,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(color: Colors.blueAccent.withOpacity(0.15)),
+                    ),
+                  ),
+                  icon: const Icon(Icons.cloud_download, size: 18),
+                  label: const Text(
+                    "FORÇAR DOWNLOAD DA NUVEM",
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+
               // Logout Button
               SizedBox(
                 width: double.infinity,

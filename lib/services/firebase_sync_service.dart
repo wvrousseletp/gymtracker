@@ -218,6 +218,39 @@ class FirebaseSyncService {
     }
   }
 
+  Future<void> syncLibraryExercise(String userId, LibraryExercise ex) async {
+    if (userId.isEmpty || userId.length > 128 || ex.id.isEmpty || ex.id.length > 128) return;
+    try {
+      await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('library')
+          .doc(ex.id)
+          .set({
+        ...ex.toJson(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      unawaited(drainQueue(userId));
+    } catch (e) {
+      debugPrint('[FirebaseSync] syncLibraryExercise error: $e');
+    }
+  }
+
+  Future<void> deleteLibraryExercise(String userId, String exId) async {
+    if (userId.isEmpty || exId.isEmpty) return;
+    try {
+      await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('library')
+          .doc(exId)
+          .delete();
+      unawaited(drainQueue(userId));
+    } catch (e) {
+      debugPrint('[FirebaseSync] deleteLibraryExercise error: $e');
+    }
+  }
+
   // --- OFFLINE SYNC QUEUE ---
 
   bool _isDraining = false;
@@ -273,6 +306,24 @@ class FirebaseSyncService {
                   .doc(id)
                   .delete();
               completed.add(op);
+            case SyncOpType.syncLibraryExercise:
+              final ex = LibraryExercise.fromJson(op.payload);
+              await _firestore
+                  .collection('users')
+                  .doc(userId)
+                  .collection('library')
+                  .doc(ex.id)
+                  .set({...ex.toJson(), 'updatedAt': FieldValue.serverTimestamp()});
+              completed.add(op);
+            case SyncOpType.deleteLibraryExercise:
+              final id = op.payload['id'] as String;
+              await _firestore
+                  .collection('users')
+                  .doc(userId)
+                  .collection('library')
+                  .doc(id)
+                  .delete();
+              completed.add(op);
           }
         } catch (e) {
           // Falhou novamente — para o drain (ainda offline). Tenta no próximo ciclo.
@@ -303,9 +354,16 @@ class FirebaseSyncService {
           .doc(userId)
           .collection('workouts')
           .get();
-      return snapshot.docs
-          .map((doc) => WorkoutLog.fromJson(doc.data()))
-          .toList();
+          
+      final List<WorkoutLog> logs = [];
+      for (var doc in snapshot.docs) {
+        try {
+          logs.add(WorkoutLog.fromJson(doc.data()));
+        } catch (e) {
+          debugPrint('[FirebaseSync] Error parsing workout ${doc.id}: $e');
+        }
+      }
+      return logs;
     } catch (e) {
       debugPrint('[FirebaseSync] fetchCloudWorkouts error: $e');
       return [];
@@ -319,11 +377,41 @@ class FirebaseSyncService {
           .doc(userId)
           .collection('routines')
           .get();
-      return snapshot.docs
-          .map((doc) => Routine.fromJson(doc.data()))
-          .toList();
+          
+      final List<Routine> routines = [];
+      for (var doc in snapshot.docs) {
+        try {
+          routines.add(Routine.fromJson(doc.data()));
+        } catch (e) {
+          debugPrint('[FirebaseSync] Error parsing routine ${doc.id}: $e');
+        }
+      }
+      return routines;
     } catch (e) {
       debugPrint('[FirebaseSync] fetchCloudRoutines error: $e');
+      return [];
+    }
+  }
+
+  Future<List<LibraryExercise>> fetchCloudLibrary(String userId) async {
+    try {
+      final snapshot = await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('library')
+          .get();
+          
+      final List<LibraryExercise> library = [];
+      for (var doc in snapshot.docs) {
+        try {
+          library.add(LibraryExercise.fromJson(doc.data()));
+        } catch (e) {
+          debugPrint('[FirebaseSync] Error parsing library exercise ${doc.id}: $e');
+        }
+      }
+      return library;
+    } catch (e) {
+      debugPrint('[FirebaseSync] fetchCloudLibrary error: $e');
       return [];
     }
   }
@@ -363,6 +451,9 @@ class FirebaseSyncService {
         for (final log in localState.history) {
           unawaited(syncWorkoutLog(userId, log));
         }
+        for (final ex in localState.library) {
+          unawaited(syncLibraryExercise(userId, ex));
+        }
         return localState;
       }
 
@@ -379,9 +470,10 @@ class FirebaseSyncService {
         debugPrint('[FirebaseSync] Empty local state detected. Safety shield triggered: forcing download from remote cloud.');
         final cloudWorkouts = await fetchCloudWorkouts(userId);
         final cloudRoutines = await fetchCloudRoutines(userId);
+        final cloudLibrary = await fetchCloudLibrary(userId);
         
         final combinedState = remoteState.copyWith(
-          library: remoteState.library,
+          library: cloudLibrary.isNotEmpty ? cloudLibrary : remoteState.library,
           history: cloudWorkouts.isNotEmpty ? cloudWorkouts : remoteState.history,
           routines: cloudRoutines.isNotEmpty ? cloudRoutines : remoteState.routines,
         );
@@ -391,12 +483,22 @@ class FirebaseSyncService {
       }
 
       if (forceDownload) {
-        // Fetch incremental workouts and routines on clean install
+        // Fetch incremental workouts, routines and library on clean install
         final cloudWorkouts = await fetchCloudWorkouts(userId);
         final cloudRoutines = await fetchCloudRoutines(userId);
+        final cloudLibrary = await fetchCloudLibrary(userId);
         
+        // Merge cloudLibrary with remoteState.library (in case some were not uploaded to subcollection yet)
+        final combinedLibrary = <LibraryExercise>[...cloudLibrary];
+        final cloudLibIds = cloudLibrary.map((e) => e.id).toSet();
+        for (final ex in remoteState.library) {
+          if (!cloudLibIds.contains(ex.id)) {
+            combinedLibrary.add(ex);
+          }
+        }
+
         final combinedState = remoteState.copyWith(
-          library: remoteState.library,
+          library: combinedLibrary.isNotEmpty ? combinedLibrary : remoteState.library,
           history: cloudWorkouts.isNotEmpty ? cloudWorkouts : remoteState.history,
           routines: cloudRoutines.isNotEmpty ? cloudRoutines : remoteState.routines,
           deletedHealthWorkoutIds: {...localState.deletedHealthWorkoutIds, ...remoteState.deletedHealthWorkoutIds}.toList(),
@@ -414,55 +516,60 @@ class FirebaseSyncService {
         for (final log in localState.history) {
           unawaited(syncWorkoutLog(userId, log));
         }
+        for (final ex in localState.library) {
+          unawaited(syncLibraryExercise(userId, ex));
+        }
         return localState;
       }
 
-      // Merge and apply remote state (but read workouts/routines incrementally too)
+      // Merge and apply remote state (but read workouts/routines/library incrementally too)
       final cloudWorkouts = await fetchCloudWorkouts(userId);
       final cloudRoutines = await fetchCloudRoutines(userId);
+      final cloudLibrary = await fetchCloudLibrary(userId);
 
       // Merge local and cloud workouts to prevent data loss
-      // Keep both local and cloud workouts, deduplicating by ID
       final cloudWorkoutIds = cloudWorkouts.map((w) => w.id).toSet();
       final mergedWorkouts = <WorkoutLog>[];
       
-      // Add cloud workouts first
       mergedWorkouts.addAll(cloudWorkouts.isNotEmpty ? cloudWorkouts : remoteState.history);
-      
-      // Add local workouts that aren't in cloud (to preserve unsynced data)
       for (final log in localState.history) {
         if (!cloudWorkoutIds.contains(log.id)) {
           mergedWorkouts.add(log);
-          // Upload local workout to cloud in background
           unawaited(syncWorkoutLog(userId, log));
         }
       }
-      
-      // Sort by date descending
       mergedWorkouts.sort((a, b) => b.date.compareTo(a.date));
 
-      // Merge routines similarly to prevent data loss
       final cloudRoutineIds = cloudRoutines.map((r) => r.id).toSet();
       final mergedRoutines = <Routine>[];
       
-      // Add cloud routines first
       mergedRoutines.addAll(cloudRoutines.isNotEmpty ? cloudRoutines : remoteState.routines);
-      
-      // Add local routines that aren't in cloud
       for (final routine in localState.routines) {
         if (!cloudRoutineIds.contains(routine.id)) {
           mergedRoutines.add(routine);
-          // Upload local routine to cloud in background
           unawaited(syncRoutine(userId, routine));
         }
       }
 
       // Merge exercise libraries to prevent preset catalog or custom exercises from being wiped
-      final localLibraryIds = localState.library.map((l) => l.id).toSet();
-      final mergedLibrary = List<LibraryExercise>.from(localState.library);
+      final cloudLibraryIds = cloudLibrary.map((l) => l.id).toSet();
+      
+      final mergedLibrary = <LibraryExercise>[];
+      // Start with cloud subcollection
+      mergedLibrary.addAll(cloudLibrary);
+      // Add remoteState library (migration from old schema)
       for (final ex in remoteState.library) {
-        if (!localLibraryIds.contains(ex.id)) {
+        if (!cloudLibraryIds.contains(ex.id)) {
           mergedLibrary.add(ex);
+          unawaited(syncLibraryExercise(userId, ex)); // migrate to subcollection
+        }
+      }
+      // Add local library
+      final currentCloudIds = mergedLibrary.map((e) => e.id).toSet();
+      for (final ex in localState.library) {
+        if (!currentCloudIds.contains(ex.id)) {
+          mergedLibrary.add(ex);
+          unawaited(syncLibraryExercise(userId, ex));
         }
       }
 
@@ -477,6 +584,9 @@ class FirebaseSyncService {
       return combinedState;
     } catch (e) {
       debugPrint('[FirebaseSync] sync error: $e');
+      if (forceDownload) {
+         return null; // Return null so TrackerProvider doesn't wipe state on download failure
+      }
       return localState;
     }
   }
@@ -503,8 +613,8 @@ class FirebaseSyncService {
     Profile profile,
     DateTime clientUpdatedAt,
   ) async {
-    // Strip history and routines from main JSON state to keep it light
-    final cleanState = state.copyWith(history: [], routines: []);
+    // Strip history, routines and library from main JSON state to keep it light
+    final cleanState = state.copyWith(history: [], routines: [], library: []);
     
     await docRef.set({
       'jsonState': json.encode(cleanState.toJson()),

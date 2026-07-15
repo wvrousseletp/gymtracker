@@ -1,6 +1,15 @@
 # Changelog — Los Mooscles
 
-## 2.2.0 (Build 170) — 15/07/2025
+## 2.2.0 (Build 172) — 15/07/2026
+
+### 🛡 Recuperação de Dados e Sincronização
+- **Recuperação de Emergência**: Novo botão "Forçar Download da Nuvem" no Perfil para resgatar treinos e rotinas órfãos em caso de falha local.
+- **Sincronização Blindada**: Parsing de dados na nuvem reescrito com proteção (try-catch) bloco a bloco, garantindo que um treino corrompido nunca mais apague o histórico inteiro.
+- **Biblioteca Segura**: A Biblioteca de Exercícios agora também é sincronizada em uma subcoleção isolada na nuvem (junto com treinos e modelos), protegendo-a contra perdas locais.
+
+---
+
+## 2.2.0 (Build 170) — 15/07/2026
 
 ### ✨ Novidades
 - **Central de Notificações**: Novo painel dentro do Perfil para controle total das suas notificações:

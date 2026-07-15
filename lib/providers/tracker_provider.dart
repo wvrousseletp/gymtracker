@@ -364,6 +364,13 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     return _firebaseSync.fetchCloudProfile(profileId);
   }
 
+  Future<void> forceCloudSync() async {
+    final s = state;
+    if (s != null) {
+      await _syncWithFirebase(s, forceDownload: true);
+    }
+  }
+
   Future<void> _syncWithFirebase(PlannerState localState, {required bool forceDownload}) async {
     if (currentUserId.isEmpty) return;
 
