@@ -1259,6 +1259,7 @@
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Este aplicativo precisa ler seus dados de saúde (como treinos e batimentos cardíacos) para acompanhar seu progresso físico e histórico de exercícios.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Este aplicativo precisa salvar seus treinos e dados de exercícios no aplicativo Saúde para manter seu histórico de atividades atualizado.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_UIBackgroundModes = "workout-processing";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.vicente.losmooscles;
 				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = NO;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1311,6 +1312,7 @@
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Este aplicativo precisa ler seus dados de saúde (como treinos e batimentos cardíacos) para acompanhar seu progresso físico e histórico de exercícios.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Este aplicativo precisa salvar seus treinos e dados de exercícios no aplicativo Saúde para manter seu histórico de atividades atualizado.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_UIBackgroundModes = "workout-processing";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.vicente.losmooscles;
 				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = NO;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1360,6 +1362,7 @@
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Este aplicativo precisa ler seus dados de saúde (como treinos e batimentos cardíacos) para acompanhar seu progresso físico e histórico de exercícios.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Este aplicativo precisa salvar seus treinos e dados de exercícios no aplicativo Saúde para manter seu histórico de atividades atualizado.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_UIBackgroundModes = "workout-processing";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.vicente.losmooscles;
 				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = NO;
 				LD_RUNPATH_SEARCH_PATHS = (

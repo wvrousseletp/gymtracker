@@ -359,30 +359,41 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     // MARK: - Actions Sent to iPhone
 
     func startWorkout(routineId: String, customExercises: [[String: Any]]? = nil) {
-        if isReachable {
-            var msg: [String: Any] = [
-                "action": "startWorkout",
-                "routineId": routineId
-            ]
-            if let custom = customExercises {
-                msg["customExercises"] = custom
-            }
-            sendToiPhone(msg)
-        } else {
-            isLocalWorkout = true
-            if let workout = localWorkoutManager.startLocalWorkout(routineId: routineId, customExercises: customExercises, routines: routines, library: library) {
-                self.activeWorkout = workout
+        // Start the HealthKit session first to ensure isReachable becomes true if the iOS app is in the background
+        WorkoutManager.shared.startWorkout()
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            guard let self = self else { return }
+            if self.isReachable {
+                var msg: [String: Any] = [
+                    "action": "startWorkout",
+                    "routineId": routineId
+                ]
+                if let custom = customExercises {
+                    msg["customExercises"] = custom
+                }
+                self.sendToiPhone(msg)
+            } else {
+                self.isLocalWorkout = true
+                if let workout = self.localWorkoutManager.startLocalWorkout(routineId: routineId, customExercises: customExercises, routines: self.routines, library: self.library) {
+                    self.activeWorkout = workout
+                }
             }
         }
     }
 
     func startSingleExercise(exerciseId: String) {
-        if isReachable {
-            sendToiPhone(["action": "startSingleExercise", "exerciseId": exerciseId])
-        } else {
-            isLocalWorkout = true
-            if let workout = localWorkoutManager.startLocalSingleExercise(exerciseId: exerciseId, library: library) {
-                self.activeWorkout = workout
+        WorkoutManager.shared.startWorkout()
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            guard let self = self else { return }
+            if self.isReachable {
+                self.sendToiPhone(["action": "startSingleExercise", "exerciseId": exerciseId])
+            } else {
+                self.isLocalWorkout = true
+                if let workout = self.localWorkoutManager.startLocalSingleExercise(exerciseId: exerciseId, library: self.library) {
+                    self.activeWorkout = workout
+                }
             }
         }
     }

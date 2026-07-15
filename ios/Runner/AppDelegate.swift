@@ -530,8 +530,12 @@ import WidgetKit
       case "updateActiveWorkout":
         // Watch is pushing its current in-progress workout state (e.g. after reconnect
         // or while in offline/local mode). Forward it to Flutter so iOS can reconcile.
-        if let workoutJson = data["activeWorkout"] as? String {
+        if let workoutJson = data["workoutJson"] as? String {
           self.invokeOrQueue(method: "updateActiveWorkoutFromWatch", arguments: workoutJson)
+          let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles")
+          sharedDefaults?.set(workoutJson, forKey: "activeWorkoutJson")
+          sharedDefaults?.synchronize()
+          self.updateLiveActivity(workoutJson: workoutJson)
         }
       case "updateHealthMetrics":
         if let heartRate = data["heartRate"] as? Double,
