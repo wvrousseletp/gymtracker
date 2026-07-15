@@ -226,7 +226,6 @@ class NotificationSettingsSheet extends StatelessWidget {
   }
 
   Color _getAccentColor(Profile profile) {
-    if (profile == null) return Colors.white;
     switch (profile.colorAccent) {
       case 'Vermelho': return const Color(0xffFF3B30);
       case 'Azul': return const Color(0xff0A84FF);
