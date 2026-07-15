@@ -1,13 +1,26 @@
-# Changelog
+# Changelog — Los Mooscles
 
-## [2.1.0+164] - 2026-07-14
+## 2.2.0 (Build 170) — 15/07/2025
 
-### Adicionado
-- **Suporte a Múltiplos Treinos Adiados:** Agora é possível ter várias sessões salvas temporariamente sem que uma sobreponha a outra. Cada uma aparece em um banner interativo com opções de retomar ou descartar na tela principal.
-- **Sincronização Ativa Phone/Watch:** Adicionado suporte ao `HKHealthStore.startWatchApp` para abrir o aplicativo no Apple Watch de forma automática quando um treino é iniciado no iOS.
-- **Estrutura WKExtensionDelegate no WatchOS:** Implementado o receptor nativo no relógio para processar as solicitações de abertura rápida vindas do celular.
+### ✨ Novidades
+- **Central de Notificações**: Novo painel dentro do Perfil para controle total das suas notificações:
+  - **Lembretes de Água** com 4 níveis de intensidade: Agressivo (1h), Padrão (2h), Suave (4h) ou Desativado.
+  - Opção de **Silenciar à Noite** — nenhum aviso de água entre 22h e 08h.
+  - **Notificações de Descanso** configuráveis: banners completos ou apenas a Ilha Dinâmica (sem barulho, sem banner intrusivo).
+  - **Lembretes Motivacionais** (treino) com chave on/off.
 
-### Corrigido
-- **Reset Diário de Treinos Adiados:** Lógica implementada junto ao reset diário de dieta e água para limpar a lista de treinos adiados na virada do dia (meia-noite).
-- **Problema de Atualização do WatchOS:** Corrigido o conflito onde as versões de compilação do Watch App ficavam estáticas e dessincronizadas em relação ao iOS, gerando falhas ao instalar atualizações via TestFlight/App Store.
-- **Ajuste de Layout no Temporizador de Descanso:** Resolvido o problema de redimensionamento e overflow na tela cheia de descanso ativo.
+### 🎨 Melhorias de Design
+- **Tela de Descanso no Apple Watch** totalmente redesenhada no padrão Premium:
+  - Contagem regressiva enorme e centralizada.
+  - Anel de progresso de borda a borda com efeito Glow.
+  - Card glassmorphism para o próximo exercício.
+  - Animação de "respiração" no fundo.
+  - Botão de pular maior e mais fácil de tocar durante o treino.
+
+### 🐛 Correções
+- Corrigido erro de compilação na nova tela de configurações de notificações.
+
+---
+
+## 2.1.0 (Build 168)
+- Configurações de notificação (base), sincronização iOS/WatchOS, launch screen sem flash branco.

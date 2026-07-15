@@ -196,7 +196,7 @@ class _ProfileManagerSheetState extends State<ProfileManagerSheet> {
                   onPressed: () {
                     showNotificationSettingsDialog(context);
                   },
-                  icon: Icon(Icons.notifications_active_outlined, color: Colors.white),
+                  icon: const Icon(Icons.notifications_active_outlined, color: Colors.white),
                   label: const Text(
                     "Notificações",
                     style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),

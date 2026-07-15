@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/notification_preferences.dart';
+import '../models/profile.dart';
 import '../providers/notification_provider.dart';
 import '../providers/tracker_provider.dart';
-import '../models/profile.dart';
 
 void showNotificationSettingsDialog(BuildContext context) {
   showModalBottomSheet(
@@ -23,7 +23,7 @@ class NotificationSettingsSheet extends StatelessWidget {
     final prefs = provider.preferences;
     
     final tracker = context.watch<TrackerProvider>();
-    final accentColor = _getAccentColor(tracker.state?.profile);
+    final accentColor = _getAccentColor(tracker.currentProfile);
 
     return Container(
       decoration: BoxDecoration(
@@ -225,7 +225,7 @@ class NotificationSettingsSheet extends StatelessWidget {
     return Divider(height: 1, color: Colors.white.withOpacity(0.1), indent: 16, endIndent: 16);
   }
 
-  Color _getAccentColor(Profile? profile) {
+  Color _getAccentColor(Profile profile) {
     if (profile == null) return Colors.white;
     switch (profile.colorAccent) {
       case 'Vermelho': return const Color(0xffFF3B30);
