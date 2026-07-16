@@ -39,12 +39,15 @@ class LibraryExercise {
 class RoutineExercise {
   final String id;
   final String exerciseId;
-  final int sets;
+  final int sets; // Para cardio tradicional, pode ser 0 ou 1 (único segmento)
   final int reps; // Segundos para isometria/tempo, ou contagem de repetições
   final int rest; // Descanso em segundos
   final double weight;
   final List<double>? weightsPerSet;
   final List<int>? repsPerSet;
+  // Cardio-specific fields
+  final bool isCardio; // Se true, usa distance/duration em vez de sets/reps
+  final bool allowCardioSets; // Se true, permite múltiplos sets (para HIIT)
 
   RoutineExercise({
     required this.id,
@@ -55,6 +58,8 @@ class RoutineExercise {
     required this.weight,
     this.weightsPerSet,
     this.repsPerSet,
+    this.isCardio = false,
+    this.allowCardioSets = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -66,6 +71,8 @@ class RoutineExercise {
     'weight': weight,
     'weightsPerSet': weightsPerSet,
     'repsPerSet': repsPerSet,
+    'isCardio': isCardio,
+    'allowCardioSets': allowCardioSets,
   };
 
   factory RoutineExercise.fromJson(Map<String, dynamic> json) {
@@ -82,6 +89,8 @@ class RoutineExercise {
       repsPerSet: json['repsPerSet'] != null
           ? (json['repsPerSet'] as List).map<int>((r) => (r as num).toInt()).toList()
           : null,
+      isCardio: json['isCardio'] ?? false,
+      allowCardioSets: json['allowCardioSets'] ?? false,
     );
   }
 }
@@ -124,6 +133,11 @@ class ActiveExercise {
   final List<int?> failureReps;
   final List<double>? weightsPerSet;
   final List<int>? repsPerSet;
+  // Cardio-specific fields
+  final bool isCardio;
+  final bool allowCardioSets;
+  // Single cardio session data (for non-set cardio)
+  PerformedCardio? singleCardioSession;
 
   ActiveExercise({
     required this.id,
@@ -141,6 +155,9 @@ class ActiveExercise {
     List<int?>? failureReps,
     this.weightsPerSet,
     this.repsPerSet,
+    this.isCardio = false,
+    this.allowCardioSets = false,
+    this.singleCardioSession,
   }) : failureReps = failureReps ?? List<int?>.filled(sets, null);
 
   Map<String, dynamic> toJson() => {
@@ -159,6 +176,9 @@ class ActiveExercise {
     'performedCardios': performedCardios.map((c) => c?.toJson()).toList(),
     'failureReport': failureReport,
     'failureReps': failureReps,
+    'isCardio': isCardio,
+    'allowCardioSets': allowCardioSets,
+    'singleCardioSession': singleCardioSession?.toJson(),
   };
 
   factory ActiveExercise.fromJson(Map<String, dynamic> json) {
@@ -187,6 +207,11 @@ class ActiveExercise {
       failureReps: json['failureReps'] != null
           ? List<int?>.from(json['failureReps'])
           : List<int?>.filled(setsVal, null),
+      isCardio: json['isCardio'] ?? false,
+      allowCardioSets: json['allowCardioSets'] ?? false,
+      singleCardioSession: json['singleCardioSession'] != null
+          ? PerformedCardio.fromJson(json['singleCardioSession'])
+          : null,
     );
   }
 }

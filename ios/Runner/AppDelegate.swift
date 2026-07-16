@@ -396,6 +396,13 @@ import WidgetKit
     case "getRecentWorkouts":
       self.getRecentWorkouts(result: result)
 
+    case "saveWorkoutToHealthKit":
+      if let args = call.arguments as? [String: Any] {
+        self.saveWorkoutToHealthKit(args: args, result: result)
+      } else {
+        result(FlutterError(code: "INVALID_ARGUMENT", message: "Expected dictionary with workout data", details: nil))
+      }
+
     default:
       result(FlutterMethodNotImplemented)
     }
@@ -959,8 +966,9 @@ extension AppDelegate {
     
     let workout = HKObjectType.workoutType()
     let readTypes: Set<HKObjectType> = [steps, calories, heartRate, workout]
+    let shareTypes: Set<HKSampleType> = [workout]
     
-    healthStore.requestAuthorization(toShare: nil, read: readTypes) { success, error in
+    healthStore.requestAuthorization(toShare: shareTypes, read: readTypes) { success, error in
       DispatchQueue.main.async {
         if let error = error {
           result(FlutterError(code: "AUTH_ERROR", message: error.localizedDescription, details: nil))
@@ -1094,6 +1102,7 @@ extension AppDelegate {
           case .soccer: activityName = "Futebol"
           case .running: activityName = "Corrida"
           case .cycling: activityName = "Ciclismo"
+          case .indoorCycling: activityName = "Bicicleta Ergométrica"
           case .swimming: activityName = "Natação"
           case .walking: activityName = "Caminhada"
           case .traditionalStrengthTraining: activityName = "Musculação"
@@ -1105,6 +1114,14 @@ extension AppDelegate {
           case .hiking: activityName = "Trilha"
           case .rowing: activityName = "Remo"
           case .tennis: activityName = "Tênis"
+          case .elliptical: activityName = "Elíptico"
+          case .stairClimbing: activityName = "Escada"
+          case .highIntensityIntervalTraining: activityName = "HIIT"
+          case .flexibility: activityName = "Flexibilidade"
+          case .mixedCardio: activityName = "Cardio Misto"
+          case .preparationAndRecovery: activityName = "Preparação e Recuperação"
+          case .wheelchairRunPace: activityName = "Cadeira de Rodas"
+          case .wheelchairWalkPace: activityName = "Cadeira de Rodas"
           default:
             activityName = "Exercício Apple (\(workout.workoutActivityType.rawValue))"
           }
@@ -1131,6 +1148,92 @@ extension AppDelegate {
       }
     }
     healthStore.execute(query)
+  }
+
+  private func saveWorkoutToHealthKit(args: [String: Any], result: @escaping FlutterResult) {
+    guard HKHealthStore.isHealthDataAvailable() else {
+      result(FlutterError(code: "UNAVAILABLE", message: "HealthKit is not available", details: nil))
+      return
+    }
+
+    guard let name = args["name"] as? String,
+          let duration = args["duration"] as? Int,
+          let dateStr = args["date"] as? String else {
+      result(FlutterError(code: "INVALID_ARGUMENT", message: "Missing required fields", details: nil))
+      return
+    }
+
+    let formatter = ISO8601DateFormatter()
+    guard let startDate = formatter.date(from: dateStr) else {
+      result(FlutterError(code: "INVALID_DATE", message: "Invalid date format", details: nil))
+      return
+    }
+
+    let endDate = startDate.addingTimeInterval(TimeInterval(duration))
+
+    // Map workout name to HKWorkoutActivityType
+    let activityType: HKWorkoutActivityType
+    let lowerName = name.lowercased()
+
+    if lowerName.contains("musculação") || lowerName.contains("musculacao") || lowerName.contains("força") {
+      activityType = .traditionalStrengthTraining
+    } else if lowerName.contains("corrida") || lowerName.contains("run") {
+      activityType = .running
+    } else if lowerName.contains("ciclismo") || lowerName.contains("bike") || lowerName.contains("bicicleta") {
+      activityType = .cycling
+    } else if lowerName.contains("ergométrica") || lowerName.contains("indoor") {
+      activityType = .indoorCycling
+    } else if lowerName.contains("natação") || lowerName.contains("swim") {
+      activityType = .swimming
+    } else if lowerName.contains("caminhada") || lowerName.contains("walk") {
+      activityType = .walking
+    } else if lowerName.contains("funcional") {
+      activityType = .functionalStrengthTraining
+    } else if lowerName.contains("crossfit") {
+      activityType = .crossTraining
+    } else if lowerName.contains("yoga") {
+      activityType = .yoga
+    } else if lowerName.contains("hiit") {
+      activityType = .highIntensityIntervalTraining
+    } else if lowerName.contains("elíptico") || lowerName.contains("eliptico") {
+      activityType = .elliptical
+    } else {
+      activityType = .other
+    }
+
+    // Create workout
+    var workout: HKWorkout
+    let calories = args["calories"] as? Int ?? 0
+
+    if calories > 0 {
+      let energyBurned = HKQuantity(unit: HKUnit.kilocalorie(), doubleValue: Double(calories))
+      workout = HKWorkout(
+        activityType: activityType,
+        start: startDate,
+        end: endDate,
+        duration: TimeInterval(duration),
+        totalEnergyBurned: energyBurned
+      )
+    } else {
+      workout = HKWorkout(
+        activityType: activityType,
+        start: startDate,
+        end: endDate,
+        duration: TimeInterval(duration)
+      )
+    }
+
+    healthStore.save(workout) { success, error in
+      DispatchQueue.main.async {
+        if let error = error {
+          print("[AppDelegate] Error saving workout to HealthKit: \(error.localizedDescription)")
+          result(FlutterError(code: "SAVE_ERROR", message: error.localizedDescription, details: nil))
+        } else {
+          print("[AppDelegate] Successfully saved workout to HealthKit: \(name)")
+          result(success)
+        }
+      }
+    }
   }
 }
 

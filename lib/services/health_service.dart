@@ -45,4 +45,26 @@ class HealthService {
       return [];
     }
   }
+
+  /// Saves a workout to Apple Health / HealthKit.
+  Future<bool> saveWorkoutToHealthKit({
+    required String name,
+    required int duration,
+    required String date,
+    int? calories,
+  }) async {
+    try {
+      final args = <String, dynamic>{
+        'name': name,
+        'duration': duration,
+        'date': date,
+        if (calories != null) 'calories': calories,
+      };
+      final bool? success = await _channel.invokeMethod<bool>('saveWorkoutToHealthKit', args);
+      return success ?? false;
+    } on PlatformException catch (e) {
+      debugPrint("[HealthService] Erro ao salvar treino no HealthKit: $e");
+      return false;
+    }
+  }
 }

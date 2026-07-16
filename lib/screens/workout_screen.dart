@@ -1786,7 +1786,8 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
   }
 
   Widget _buildExerciseCard(ActiveExercise ex, int exIdx, Color accentColor) {
-    final isCardio = ex.muscle.toLowerCase().contains('cardio');
+    final isCardio = ex.isCardio;
+    final isSingleCardio = isCardio && !ex.allowCardioSets;
 
     return GlassCard(
       padding: const EdgeInsets.all(16),
@@ -1806,9 +1807,33 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
           ),
           const SizedBox(height: 16),
 
-          // Lista de Séries
+          // Lista de Séries ou Sessão de Cardio Única
           Builder(
             builder: (context) {
+              // For single cardio sessions, show one input instead of multiple sets
+              if (isSingleCardio) {
+                final pc = ex.singleCardioSession;
+                final isDone = ex.setsState.isNotEmpty && ex.setsState[0];
+                return Opacity(
+                  opacity: isDone ? 0.65 : 1.0,
+                  child: _CardioSetRow(
+                    key: ValueKey('cardio_${exIdx}_single'),
+                    setIndex: 0,
+                    isDone: isDone,
+                    initialDistance: pc?.distanceKm,
+                    initialMinutes: pc != null ? pc.durationSeconds ~/ 60 : null,
+                    onChanged: (dist, durMinutes, done) {
+                      widget.provider.completeSet(
+                        exIdx, 0, done,
+                        distance: dist,
+                        duration: durMinutes * 60,
+                      );
+                    },
+                  ),
+                );
+              }
+
+              // Traditional sets or cardio with sets (HIIT)
               final activeSetIdx = ex.setsState.indexOf(false);
               return ListView.builder(
                 shrinkWrap: true,
@@ -1820,7 +1845,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
                   final isActive = (setIdx == activeSetIdx);
 
                   if (isCardio) {
-                    // RENDERIZAR SESSÃO DE CARDIO
+                    // RENDERIZAR SESSÃO DE CARDIO COM SETS (HIIT)
                     final pc = ex.performedCardios[setIdx];
                     return Opacity(
                       opacity: isDone ? 0.65 : 1.0,

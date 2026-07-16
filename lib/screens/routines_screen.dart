@@ -12,6 +12,19 @@ import '../widgets/profile_avatar.dart';
 
 import 'planner_screen.dart';
 
+String _getMeasurementTypeLabelStatic(MeasurementType type) {
+  switch (type) {
+    case MeasurementType.cardio:
+      return 'Cardio (distância + tempo)';
+    case MeasurementType.distance:
+      return 'Distância';
+    case MeasurementType.time:
+      return 'Isometria';
+    case MeasurementType.reps:
+      return 'Repetições';
+  }
+}
+
 class RoutinesScreen extends StatefulWidget {
   const RoutinesScreen({super.key});
 
@@ -575,7 +588,7 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                               (l) => l.id == ex.exerciseId,
                               orElse: () => LibraryExercise(id: '', name: 'Deletado', muscle: '', measurementType: MeasurementType.reps),
                             );
-                            final isCardio = ref.muscle.toLowerCase().contains('cardio');
+                            final isCardio = ref.measurementType == MeasurementType.cardio || ref.measurementType == MeasurementType.distance;
                             return Container(
                               margin: const EdgeInsets.only(bottom: 10),
                               padding: const EdgeInsets.all(12),
@@ -627,18 +640,108 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                                     ],
                                   ),
                                   const SizedBox(height: 12),
+                                  // Cardio mode toggle
+                                  if (isCardio) ...[
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: GestureDetector(
+                                            onTap: () {
+                                              setState(() {
+                                                _updateExerciseField(idx, sets: 1);
+                                                _exercises[idx] = RoutineExercise(
+                                                  id: ex.id,
+                                                  exerciseId: ex.exerciseId,
+                                                  sets: 1,
+                                                  reps: ex.reps,
+                                                  rest: ex.rest,
+                                                  weight: ex.weight,
+                                                  weightsPerSet: ex.weightsPerSet,
+                                                  repsPerSet: ex.repsPerSet,
+                                                  isCardio: true,
+                                                  allowCardioSets: false,
+                                                );
+                                              });
+                                            },
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(vertical: 10),
+                                              decoration: BoxDecoration(
+                                                color: !ex.allowCardioSets ? accentColor.withOpacity(0.15) : Colors.white.withOpacity(0.04),
+                                                borderRadius: BorderRadius.circular(8),
+                                                border: Border.all(
+                                                  color: !ex.allowCardioSets ? accentColor.withOpacity(0.5) : Colors.white.withOpacity(0.08),
+                                                ),
+                                              ),
+                                              child: Text(
+                                                "Sessão Única",
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                  color: !ex.allowCardioSets ? accentColor : Colors.white60,
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: GestureDetector(
+                                            onTap: () {
+                                              setState(() {
+                                                _updateExerciseField(idx, sets: ex.sets > 0 ? ex.sets : 3);
+                                                _exercises[idx] = RoutineExercise(
+                                                  id: ex.id,
+                                                  exerciseId: ex.exerciseId,
+                                                  sets: ex.sets > 0 ? ex.sets : 3,
+                                                  reps: ex.reps,
+                                                  rest: ex.rest,
+                                                  weight: ex.weight,
+                                                  weightsPerSet: ex.weightsPerSet,
+                                                  repsPerSet: ex.repsPerSet,
+                                                  isCardio: true,
+                                                  allowCardioSets: true,
+                                                );
+                                              });
+                                            },
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(vertical: 10),
+                                              decoration: BoxDecoration(
+                                                color: ex.allowCardioSets ? accentColor.withOpacity(0.15) : Colors.white.withOpacity(0.04),
+                                                borderRadius: BorderRadius.circular(8),
+                                                border: Border.all(
+                                                  color: ex.allowCardioSets ? accentColor.withOpacity(0.5) : Colors.white.withOpacity(0.08),
+                                                ),
+                                              ),
+                                              child: Text(
+                                                "Múltiplas Séries (HIIT)",
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                  color: ex.allowCardioSets ? accentColor : Colors.white60,
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                  ],
                                   Row(
                                     children: [
-                                      Expanded(
-                                        child: _buildInputRow(
-                                          label: isCardio ? "Repet." : "Séries",
-                                          value: ex.sets.toString(),
-                                          onChanged: (val) {
-                                            _updateExerciseField(idx, sets: int.tryParse(val) ?? 0);
-                                          },
+                                      if (!isCardio || ex.allowCardioSets)
+                                        Expanded(
+                                          child: _buildInputRow(
+                                            label: isCardio ? "Séries" : "Séries",
+                                            value: ex.sets.toString(),
+                                            onChanged: (val) {
+                                              _updateExerciseField(idx, sets: int.tryParse(val) ?? 0);
+                                            },
+                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(width: 8),
+                                      if (!isCardio || ex.allowCardioSets) const SizedBox(width: 8),
                                       Expanded(
                                         child: _buildInputRow(
                                           label: isCardio ? "Minutos" : (ref.measurementType == MeasurementType.time ? "Segundos" : "Reps"),
@@ -700,9 +803,18 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                         // Validar se há exercícios com 0 séries ou reps
                         bool anyInvalid = false;
                         for (var ex in _exercises) {
-                          if (ex.sets <= 0 || ex.reps <= 0) {
-                            anyInvalid = true;
-                            break;
+                          // For cardio with single session, sets can be 1 and reps can be 0
+                          if (ex.isCardio && !ex.allowCardioSets) {
+                            if (ex.sets <= 0) {
+                              anyInvalid = true;
+                              break;
+                            }
+                          } else {
+                            // For traditional exercises or cardio with sets
+                            if (ex.sets <= 0 || ex.reps <= 0) {
+                              anyInvalid = true;
+                              break;
+                            }
                           }
                         }
                         if (anyInvalid) {
@@ -800,6 +912,8 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
       reps: reps ?? cur.reps,
       weight: weight ?? cur.weight,
       rest: rest ?? cur.rest,
+      isCardio: cur.isCardio,
+      allowCardioSets: cur.allowCardioSets,
     );
   }
 
@@ -980,7 +1094,7 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                                     subtitle: Padding(
                                       padding: const EdgeInsets.only(top: 3.0),
                                       child: Text(
-                                        ex.measurementType == MeasurementType.time ? 'Isometria' : 'Repetições',
+                                        _getMeasurementTypeLabelStatic(ex.measurementType),
                                         style: TextStyle(color: Colors.white.withOpacity(0.35), fontSize: 11),
                                       ),
                                     ),

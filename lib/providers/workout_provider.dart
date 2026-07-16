@@ -11,6 +11,7 @@ import '../services/watch_service.dart';
 import '../services/rest_timer_service.dart';
 import '../services/state_persistence_service.dart';
 import '../services/firebase_sync_service.dart';
+import '../services/health_service.dart';
 import '../models/profile.dart';
 import '../utils/date_utils.dart';
 import '../utils/default_exercises_data.dart';
@@ -82,21 +83,26 @@ class WorkoutProvider extends ChangeNotifier {
         ),
       );
 
+      // For cardio exercises without sets, use 1 set for UI consistency
+      final effectiveSets = (ex.isCardio && !ex.allowCardioSets) ? 1 : ex.sets;
+
       return ActiveExercise(
         id: ex.id,
         name: ref.name,
         muscle: ref.muscle,
         executionType: ref.executionType,
         measurementType: ref.measurementType,
-        sets: ex.sets,
+        sets: effectiveSets,
         reps: ex.reps,
         rest: ex.rest,
         weight: ex.weight,
         weightsPerSet: ex.weightsPerSet,
         repsPerSet: ex.repsPerSet,
-        setsState: List<bool>.filled(ex.sets, false),
-        performedCardios: List<PerformedCardio?>.filled(ex.sets, null),
-        failureReport: List<bool>.filled(ex.sets, false),
+        setsState: List<bool>.filled(effectiveSets, false),
+        performedCardios: List<PerformedCardio?>.filled(effectiveSets, null),
+        failureReport: List<bool>.filled(effectiveSets, false),
+        isCardio: ex.isCardio,
+        allowCardioSets: ex.allowCardioSets,
       );
     }).toList();
 
@@ -115,6 +121,10 @@ class WorkoutProvider extends ChangeNotifier {
   }
 
   void startSingleExercise(LibraryExercise exercise) {
+    // Determine if this is a cardio exercise based on measurement type
+    final isCardio = exercise.measurementType == MeasurementType.cardio ||
+                     exercise.measurementType == MeasurementType.distance;
+
     final tempRoutine = Routine(
       id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
       name: exercise.name,
@@ -124,10 +134,12 @@ class WorkoutProvider extends ChangeNotifier {
         RoutineExercise(
           id: 'temp_ex_${DateTime.now().millisecondsSinceEpoch}',
           exerciseId: exercise.id,
-          sets: 3,
-          reps: 10,
+          sets: isCardio ? 1 : 3, // Cardio uses 1 set by default
+          reps: isCardio ? 0 : 10, // Cardio doesn't use reps
           rest: 60,
           weight: 0.0,
+          isCardio: isCardio,
+          allowCardioSets: false, // Single exercise defaults to no sets
         )
       ],
     );
@@ -136,12 +148,41 @@ class WorkoutProvider extends ChangeNotifier {
 
   void completeSet(int exIndex, int setIndex, bool isDone, {double? distance, int? duration, bool isFailure = false, int? failureRep}) {
     if (activeWorkout == null) return;
-    
+
     HapticFeedback.lightImpact();
 
     final active = activeWorkout!;
     final exercises = List<ActiveExercise>.from(active.exercises);
     final ex = exercises[exIndex];
+
+    // For cardio exercises without sets, store in singleCardioSession instead
+    if (ex.isCardio && !ex.allowCardioSets) {
+      if (distance != null && duration != null) {
+        exercises[exIndex] = ActiveExercise(
+          id: ex.id,
+          name: ex.name,
+          muscle: ex.muscle,
+          executionType: ex.executionType,
+          measurementType: ex.measurementType,
+          sets: ex.sets,
+          reps: ex.reps,
+          rest: ex.rest,
+          weight: ex.weight,
+          weightsPerSet: ex.weightsPerSet,
+          repsPerSet: ex.repsPerSet,
+          setsState: List<bool>.filled(1, true), // Mark as completed
+          performedCardios: List<PerformedCardio?>.filled(1, null),
+          failureReport: List<bool>.filled(1, false),
+          failureReps: List<int?>.filled(1, null),
+          isCardio: ex.isCardio,
+          allowCardioSets: ex.allowCardioSets,
+          singleCardioSession: PerformedCardio(distanceKm: distance, durationSeconds: duration),
+        );
+        activeWorkout = active.copyWith(exercises: exercises);
+        _save();
+        return;
+      }
+    }
 
     final newSetsState = List<bool>.from(ex.setsState);
     newSetsState[setIndex] = isDone;
@@ -173,6 +214,9 @@ class WorkoutProvider extends ChangeNotifier {
       performedCardios: newCardios,
       failureReport: newFailure,
       failureReps: newFailureReps,
+      isCardio: ex.isCardio,
+      allowCardioSets: ex.allowCardioSets,
+      singleCardioSession: ex.singleCardioSession,
     );
 
     WatchRestTimer? computedRestTimer = active.restTimer;
@@ -609,6 +653,14 @@ class WorkoutProvider extends ChangeNotifier {
     _save();
 
     unawaited(_firebaseSync.syncWorkoutLog(currentUserId, log));
+
+    // Save to HealthKit
+    unawaited(HealthService.instance.saveWorkoutToHealthKit(
+      name: log.name,
+      duration: log.duration,
+      date: log.date,
+      calories: log.activeCalories,
+    ));
   }
 
   void addManualWorkoutLog(WorkoutLog log) {
@@ -622,6 +674,16 @@ class WorkoutProvider extends ChangeNotifier {
     _save();
     notifyListeners();
     unawaited(_firebaseSync.syncWorkoutLog(currentUserId, log));
+
+    // Save to HealthKit (skip if it's already from HealthKit)
+    if (!log.id.startsWith("healthkit-")) {
+      unawaited(HealthService.instance.saveWorkoutToHealthKit(
+        name: log.name,
+        duration: log.duration,
+        date: log.date,
+        calories: log.activeCalories,
+      ));
+    }
   }
 
   Future<List<WorkoutLog>> loadWorkoutHistory() async {
@@ -646,7 +708,8 @@ class WorkoutProvider extends ChangeNotifier {
 
   void deleteWorkoutLog(String id) {
     final logToDelete = history.firstWhere((h) => h.id == id, orElse: () => WorkoutLog(id: '', name: '', date: '', duration: 0, completedSets: 0, totalSets: 0, totalWeight: 0, rpe: 0, exercises: [], notes: ''));
-    if (logToDelete.id.isNotEmpty && logToDelete.notes == "Importado do Apple Health") {
+    // Add to deletedHealthWorkoutIds if it's a HealthKit workout (starts with "healthkit-")
+    if (logToDelete.id.isNotEmpty && logToDelete.id.startsWith("healthkit-")) {
       if (!deletedHealthWorkoutIds.contains(id)) {
         deletedHealthWorkoutIds.add(id);
       }

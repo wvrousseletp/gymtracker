@@ -5,8 +5,10 @@ enum SleepQuality {
 }
 
 enum MeasurementType {
-  reps, // 'reps'
-  time, // 'time'
+  reps, // 'reps' - weight & reps (musculação tradicional)
+  time, // 'time' - duration based (prancha, isometria)
+  cardio, // 'cardio' - distance & duration (corrida, ciclismo)
+  distance, // 'distance' - distance only (remo, natação)
 }
 
 SleepQuality sleepQualityFromString(String val) {
@@ -33,16 +35,27 @@ String sleepQualityToString(SleepQuality q) {
 }
 
 MeasurementType measurementTypeFromString(String val) {
-  if (val.toLowerCase() == 'time') {
-    return MeasurementType.time;
+  switch (val.toLowerCase()) {
+    case 'time':
+      return MeasurementType.time;
+    case 'cardio':
+      return MeasurementType.cardio;
+    case 'distance':
+      return MeasurementType.distance;
+    case 'reps':
+    default:
+      return MeasurementType.reps;
   }
-  return MeasurementType.reps;
 }
 
 String measurementTypeToString(MeasurementType t) {
   switch (t) {
     case MeasurementType.time:
       return 'time';
+    case MeasurementType.cardio:
+      return 'cardio';
+    case MeasurementType.distance:
+      return 'distance';
     case MeasurementType.reps:
       return 'reps';
   }
