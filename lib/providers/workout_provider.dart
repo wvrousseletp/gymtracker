@@ -123,7 +123,8 @@ class WorkoutProvider extends ChangeNotifier {
   void startSingleExercise(LibraryExercise exercise) {
     // Determine if this is a cardio exercise based on measurement type
     final isCardio = exercise.measurementType == MeasurementType.cardio ||
-                     exercise.measurementType == MeasurementType.distance;
+                     exercise.measurementType == MeasurementType.distance ||
+                     exercise.measurementType == MeasurementType.time;
 
     final tempRoutine = Routine(
       id: 'temp_${DateTime.now().millisecondsSinceEpoch}',

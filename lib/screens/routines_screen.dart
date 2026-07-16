@@ -588,7 +588,9 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                               (l) => l.id == ex.exerciseId,
                               orElse: () => LibraryExercise(id: '', name: 'Deletado', muscle: '', measurementType: MeasurementType.reps),
                             );
-                            final isCardio = ref.measurementType == MeasurementType.cardio || ref.measurementType == MeasurementType.distance;
+                            final isCardio = ref.measurementType == MeasurementType.cardio || 
+                                           ref.measurementType == MeasurementType.distance ||
+                                           ref.measurementType == MeasurementType.time;
                             return Container(
                               margin: const EdgeInsets.only(bottom: 10),
                               padding: const EdgeInsets.all(12),
@@ -1130,13 +1132,18 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                         onPressed: () {
                           setState(() {
                             for (final ex in selectedExercises) {
+                              final isCardioEx = ex.measurementType == MeasurementType.cardio || 
+                                               ex.measurementType == MeasurementType.distance ||
+                                               ex.measurementType == MeasurementType.time;
                               _exercises.add(RoutineExercise(
                                 id: "e-${const Uuid().v4()}",
                                 exerciseId: ex.id,
-                                sets: 3,
-                                reps: ex.measurementType == MeasurementType.time ? 45 : 10,
+                                sets: isCardioEx ? 1 : 3,
+                                reps: isCardioEx ? 0 : (ex.measurementType == MeasurementType.time ? 45 : 10),
                                 rest: int.tryParse(_restController.text.trim()) ?? 60,
                                 weight: 0,
+                                isCardio: isCardioEx,
+                                allowCardioSets: false, // Default to single session for cardio
                               ));
                             }
                           });
@@ -1347,7 +1354,7 @@ class _LibraryTabState extends State<LibraryTab> {
                                           ),
                                           const SizedBox(height: 2),
                                           Text(
-                                            "${ex.muscle} • ${ex.measurementType == MeasurementType.time ? 'Isometria' : 'Repetições'}",
+                                            "${ex.muscle} • ${_getMeasurementTypeLabelStatic(ex.measurementType)}",
                                             style: const TextStyle(color: Colors.white38, fontSize: 11),
                                           ),
                                           if (ex.notes != null && ex.notes!.trim().isNotEmpty) ...[
@@ -1452,6 +1459,15 @@ class _LibraryTabState extends State<LibraryTab> {
     String measurement = existing != null
         ? (existing.measurementType == MeasurementType.time ? "Tempo de Isometria" : "Repetições")
         : "Repetições";
+    if (existing != null && existing.muscle == "Cardio") {
+      if (existing.measurementType == MeasurementType.cardio) {
+        measurement = "Cardio (distância + tempo)";
+      } else if (existing.measurementType == MeasurementType.distance) {
+        measurement = "Distância";
+      } else if (existing.measurementType == MeasurementType.time) {
+        measurement = "Tempo";
+      }
+    }
     final notesCtrl = TextEditingController(text: existing?.notes ?? "");
 
     showDialog(
@@ -1721,24 +1737,98 @@ class _LibraryTabState extends State<LibraryTab> {
                       if (category == "Cardio") ...[
                         const Text("Tipo de Medição", style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 8),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.02),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.white.withOpacity(0.06)),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(Icons.flash_on_rounded, color: widget.accentColor, size: 16),
-                              const SizedBox(width: 8),
-                              const Text(
-                                "Distância + Tempo (Automático)",
-                                style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => setState(() => measurement = "Cardio (distância + tempo)"),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: measurement == "Cardio (distância + tempo)"
+                                        ? widget.accentColor.withOpacity(0.12)
+                                        : Colors.white.withOpacity(0.03),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: measurement == "Cardio (distância + tempo)"
+                                          ? widget.accentColor.withOpacity(0.4)
+                                          : Colors.white.withOpacity(0.08),
+                                    ),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      "Distância + Tempo",
+                                      style: TextStyle(
+                                        color: measurement == "Cardio (distância + tempo)" ? Colors.white : Colors.white60,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ],
-                          ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => setState(() => measurement = "Distância"),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: measurement == "Distância"
+                                        ? widget.accentColor.withOpacity(0.12)
+                                        : Colors.white.withOpacity(0.03),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: measurement == "Distância"
+                                          ? widget.accentColor.withOpacity(0.4)
+                                          : Colors.white.withOpacity(0.08),
+                                    ),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      "Apenas Distância",
+                                      style: TextStyle(
+                                        color: measurement == "Distância" ? Colors.white : Colors.white60,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => setState(() => measurement = "Tempo"),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: measurement == "Tempo"
+                                        ? widget.accentColor.withOpacity(0.12)
+                                        : Colors.white.withOpacity(0.03),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: measurement == "Tempo"
+                                          ? widget.accentColor.withOpacity(0.4)
+                                          : Colors.white.withOpacity(0.08),
+                                    ),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      "Apenas Tempo",
+                                      style: TextStyle(
+                                        color: measurement == "Tempo" ? Colors.white : Colors.white60,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 16),
                       ],
@@ -1785,9 +1875,20 @@ class _LibraryTabState extends State<LibraryTab> {
                                 final name = nameCtrl.text.trim();
                                 if (name.isNotEmpty) {
                                   final isCardioEx = category == "Cardio";
-                                  final mType = isCardioEx
-                                      ? "time"
-                                      : (measurement == "Tempo de Isometria" ? "time" : "reps");
+                                  String mType;
+                                  if (isCardioEx) {
+                                    if (measurement == "Cardio (distância + tempo)") {
+                                      mType = "cardio";
+                                    } else if (measurement == "Distância") {
+                                      mType = "distance";
+                                    } else if (measurement == "Tempo") {
+                                      mType = "time";
+                                    } else {
+                                      mType = "cardio"; // Default
+                                    }
+                                  } else {
+                                    mType = measurement == "Tempo de Isometria" ? "time" : "reps";
+                                  }
                                   final execType = isCardioEx
                                       ? "Livre"
                                       : equipment;
