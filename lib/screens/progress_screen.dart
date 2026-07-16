@@ -2103,20 +2103,20 @@ class _MedidasTabState extends State<MedidasTab> {
                       final m = BodyMeasurement(
                         id: "med-${DateTime.now().millisecondsSinceEpoch}",
                         date: dateStr,
-                        peso: double.tryParse(weightCtrl.text.trim()) ?? 0.0,
-                        gordura: double.tryParse(fatCtrl.text.trim()) ?? 0.0,
-                        pescoco: double.tryParse(neckCtrl.text.trim()) ?? 0.0,
-                        ombros: double.tryParse(shouldersCtrl.text.trim()) ?? 0.0,
-                        peito: double.tryParse(chestCtrl.text.trim()) ?? 0.0,
-                        cintura: double.tryParse(waistCtrl.text.trim()) ?? 0.0,
-                        abdomen: double.tryParse(abdomenCtrl.text.trim()) ?? 0.0,
-                        quadril: double.tryParse(hipsCtrl.text.trim()) ?? 0.0,
-                        bracoEsq: double.tryParse(bEsqCtrl.text.trim()) ?? 0.0,
-                        bracoDir: double.tryParse(bDirCtrl.text.trim()) ?? 0.0,
-                        coxaEsq: double.tryParse(cEsqCtrl.text.trim()) ?? 0.0,
-                        coxaDir: double.tryParse(cDirCtrl.text.trim()) ?? 0.0,
-                        panturrilhaEsq: double.tryParse(pEsqCtrl.text.trim()) ?? 0.0,
-                        panturrilhaDir: double.tryParse(pDirCtrl.text.trim()) ?? 0.0,
+                        peso: _parseDouble(weightCtrl.text),
+                        gordura: _parseDouble(fatCtrl.text),
+                        pescoco: _parseDouble(neckCtrl.text),
+                        ombros: _parseDouble(shouldersCtrl.text),
+                        peito: _parseDouble(chestCtrl.text),
+                        cintura: _parseDouble(waistCtrl.text),
+                        abdomen: _parseDouble(abdomenCtrl.text),
+                        quadril: _parseDouble(hipsCtrl.text),
+                        bracoEsq: _parseDouble(bEsqCtrl.text),
+                        bracoDir: _parseDouble(bDirCtrl.text),
+                        coxaEsq: _parseDouble(cEsqCtrl.text),
+                        coxaDir: _parseDouble(cDirCtrl.text),
+                        panturrilhaEsq: _parseDouble(pEsqCtrl.text),
+                        panturrilhaDir: _parseDouble(pDirCtrl.text),
                       );
                       provider.addMeasurement(m);
                       Navigator.pop(bottomSheetCtx);
@@ -2244,20 +2244,20 @@ class _MedidasTabState extends State<MedidasTab> {
                       final m = BodyMeasurement(
                         id: measurement.id,
                         date: dateCtrl.text.trim().isNotEmpty ? dateCtrl.text.trim() : measurement.date,
-                        peso: double.tryParse(weightCtrl.text.trim()) ?? 0.0,
-                        gordura: double.tryParse(fatCtrl.text.trim()) ?? 0.0,
-                        pescoco: double.tryParse(neckCtrl.text.trim()) ?? 0.0,
-                        ombros: double.tryParse(shouldersCtrl.text.trim()) ?? 0.0,
-                        peito: double.tryParse(chestCtrl.text.trim()) ?? 0.0,
-                        cintura: double.tryParse(waistCtrl.text.trim()) ?? 0.0,
-                        abdomen: double.tryParse(abdomenCtrl.text.trim()) ?? 0.0,
-                        quadril: double.tryParse(hipsCtrl.text.trim()) ?? 0.0,
-                        bracoEsq: double.tryParse(bEsqCtrl.text.trim()) ?? 0.0,
-                        bracoDir: double.tryParse(bDirCtrl.text.trim()) ?? 0.0,
-                        coxaEsq: double.tryParse(cEsqCtrl.text.trim()) ?? 0.0,
-                        coxaDir: double.tryParse(cDirCtrl.text.trim()) ?? 0.0,
-                        panturrilhaEsq: double.tryParse(pEsqCtrl.text.trim()) ?? 0.0,
-                        panturrilhaDir: double.tryParse(pDirCtrl.text.trim()) ?? 0.0,
+                        peso: _parseDouble(weightCtrl.text),
+                        gordura: _parseDouble(fatCtrl.text),
+                        pescoco: _parseDouble(neckCtrl.text),
+                        ombros: _parseDouble(shouldersCtrl.text),
+                        peito: _parseDouble(chestCtrl.text),
+                        cintura: _parseDouble(waistCtrl.text),
+                        abdomen: _parseDouble(abdomenCtrl.text),
+                        quadril: _parseDouble(hipsCtrl.text),
+                        bracoEsq: _parseDouble(bEsqCtrl.text),
+                        bracoDir: _parseDouble(bDirCtrl.text),
+                        coxaEsq: _parseDouble(cEsqCtrl.text),
+                        coxaDir: _parseDouble(cDirCtrl.text),
+                        panturrilhaEsq: _parseDouble(pEsqCtrl.text),
+                        panturrilhaDir: _parseDouble(pDirCtrl.text),
                       );
                       provider.updateMeasurement(m);
                       Navigator.pop(bottomSheetCtx);
@@ -2278,6 +2278,12 @@ class _MedidasTabState extends State<MedidasTab> {
         ),
       ),
     );
+  }
+
+  double _parseDouble(String value) {
+    // Replace comma with point for decimal parsing (Brazilian locale support)
+    final normalized = value.trim().replaceAll(',', '.');
+    return double.tryParse(normalized) ?? 0.0;
   }
 
   Widget _buildFormInput(String label, TextEditingController ctrl) {

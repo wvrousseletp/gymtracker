@@ -889,6 +889,7 @@ class WorkoutProvider extends ChangeNotifier {
     }).toList();
 
     _save();
+    unawaited(_firebaseSync.deleteLibraryExercise(currentUserId, id));
   }
 
   // --- ROUTINE OPERATIONS ---

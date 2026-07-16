@@ -61,4 +61,12 @@ class NotificationProvider extends ChangeNotifier {
   Future<void> setMotivationRemindersEnabled(bool value) async {
     await updatePreferences(_preferences.copyWith(motivationRemindersEnabled: value));
   }
+
+  Future<void> setSilentNightStartHour(String value) async {
+    await updatePreferences(_preferences.copyWith(silentNightStartHour: value));
+  }
+
+  Future<void> setSilentNightEndHour(String value) async {
+    await updatePreferences(_preferences.copyWith(silentNightEndHour: value));
+  }
 }

@@ -69,12 +69,35 @@ class NotificationSettingsSheet extends StatelessWidget {
             const SizedBox(height: 12),
             SwitchListTile(
               title: const Text("Silenciar à noite", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-              subtitle: const Text("Não notificar entre 22h e 08h", style: TextStyle(color: Colors.white54, fontSize: 12)),
+              subtitle: Text(
+                prefs.silenceHydrationAtNight 
+                    ? "Não notificar entre ${prefs.silentNightStartHour}h e ${prefs.silentNightEndHour}h"
+                    : "Desativado",
+                style: const TextStyle(color: Colors.white54, fontSize: 12),
+              ),
               value: prefs.silenceHydrationAtNight,
               activeColor: accentColor,
               contentPadding: EdgeInsets.zero,
               onChanged: (val) => provider.setSilenceHydrationAtNight(val),
             ),
+            if (prefs.silenceHydrationAtNight) ...[
+              const SizedBox(height: 8),
+              _buildTimeSelector(
+                context,
+                "Horário de início",
+                prefs.silentNightStartHour,
+                accentColor,
+                (time) => provider.setSilentNightStartHour(time),
+              ),
+              const SizedBox(height: 8),
+              _buildTimeSelector(
+                context,
+                "Horário de fim",
+                prefs.silentNightEndHour,
+                accentColor,
+                (time) => provider.setSilentNightEndHour(time),
+              ),
+            ],
             const SizedBox(height: 32),
 
             // Workout Settings
@@ -223,6 +246,122 @@ class NotificationSettingsSheet extends StatelessWidget {
 
   Widget _buildDivider() {
     return Divider(height: 1, color: Colors.white.withOpacity(0.1), indent: 16, endIndent: 16);
+  }
+
+  Widget _buildTimeSelector(
+    BuildContext context,
+    String label,
+    String currentHour,
+    Color accentColor,
+    Function(String) onTimeChanged,
+  ) {
+    return InkWell(
+      onTap: () async {
+        final selected = await _showTimePickerDialog(context, currentHour, accentColor);
+        if (selected != null) {
+          onTimeChanged(selected);
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withOpacity(0.1)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+            ),
+            Row(
+              children: [
+                Text(
+                  "${currentHour}h",
+                  style: TextStyle(color: accentColor, fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.chevron_right, color: Colors.white54, size: 20),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<String?> _showTimePickerDialog(
+    BuildContext context,
+    String currentHour,
+    Color accentColor,
+  ) async {
+    int initialHour = int.tryParse(currentHour) ?? 22;
+    
+    return showDialog<String>(
+      context: context,
+      builder: (dialogCtx) => Dialog(
+        backgroundColor: const Color(0xff1c1c1e),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                "Selecione a hora",
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                height: 200,
+                child: ListWheelScrollView.useDelegate(
+                  itemExtent: 50,
+                  physics: const FixedExtentScrollPhysics(),
+                  onSelectedItemChanged: (index) {
+                    initialHour = index;
+                  },
+                  controller: FixedExtentScrollController(initialItem: initialHour),
+                  childDelegate: ListWheelChildBuilderDelegate(
+                    builder: (context, index) {
+                      final isSelected = index == initialHour;
+                      return Center(
+                        child: Text(
+                          "${index.toString().padLeft(2, '0')}h",
+                          style: TextStyle(
+                            color: isSelected ? accentColor : Colors.white54,
+                            fontSize: isSelected ? 24 : 16,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                      );
+                    },
+                    childCount: 24,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogCtx),
+                    child: const Text("Cancelar", style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogCtx, initialHour.toString().padLeft(2, '0')),
+                    style: TextButton.styleFrom(backgroundColor: accentColor, foregroundColor: Colors.black),
+                    child: const Text("Confirmar", style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Color _getAccentColor(Profile profile) {

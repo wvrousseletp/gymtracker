@@ -17,12 +17,16 @@ class NotificationPreferences {
   final bool silenceHydrationAtNight;
   final RestTimerMode restTimerMode;
   final bool motivationRemindersEnabled;
+  final String silentNightStartHour; // Format: "22" for 10 PM
+  final String silentNightEndHour; // Format: "08" for 8 AM
 
   const NotificationPreferences({
     this.hydrationAggressiveness = HydrationAggressiveness.standard,
     this.silenceHydrationAtNight = true,
     this.restTimerMode = RestTimerMode.all,
     this.motivationRemindersEnabled = true,
+    this.silentNightStartHour = "22",
+    this.silentNightEndHour = "08",
   });
 
   NotificationPreferences copyWith({
@@ -30,12 +34,16 @@ class NotificationPreferences {
     bool? silenceHydrationAtNight,
     RestTimerMode? restTimerMode,
     bool? motivationRemindersEnabled,
+    String? silentNightStartHour,
+    String? silentNightEndHour,
   }) {
     return NotificationPreferences(
       hydrationAggressiveness: hydrationAggressiveness ?? this.hydrationAggressiveness,
       silenceHydrationAtNight: silenceHydrationAtNight ?? this.silenceHydrationAtNight,
       restTimerMode: restTimerMode ?? this.restTimerMode,
       motivationRemindersEnabled: motivationRemindersEnabled ?? this.motivationRemindersEnabled,
+      silentNightStartHour: silentNightStartHour ?? this.silentNightStartHour,
+      silentNightEndHour: silentNightEndHour ?? this.silentNightEndHour,
     );
   }
 
@@ -45,6 +53,8 @@ class NotificationPreferences {
       'silenceHydrationAtNight': silenceHydrationAtNight,
       'restTimerMode': restTimerMode.name,
       'motivationRemindersEnabled': motivationRemindersEnabled,
+      'silentNightStartHour': silentNightStartHour,
+      'silentNightEndHour': silentNightEndHour,
     };
   }
 
@@ -60,6 +70,8 @@ class NotificationPreferences {
         orElse: () => RestTimerMode.all,
       ),
       motivationRemindersEnabled: map['motivationRemindersEnabled'] ?? true,
+      silentNightStartHour: map['silentNightStartHour'] ?? "22",
+      silentNightEndHour: map['silentNightEndHour'] ?? "08",
     );
   }
 

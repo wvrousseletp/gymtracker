@@ -262,28 +262,33 @@ class DietProvider extends ChangeNotifier {
     final now = DateTime.now();
     final todayStr = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
     
-    if (diet.lastDietDate != todayStr) {
-      int totalCals = diet.meals.fold<int>(0, (sum, m) => sum + m.calories);
-      double totalProt = diet.meals.fold<double>(0, (sum, m) => sum + m.protein);
-      double totalCarbs = diet.meals.fold<double>(0, (sum, m) => sum + m.carbs);
-      double totalFat = diet.meals.fold<double>(0, (sum, m) => sum + m.fat);
-      
-      final historyDay = DietHistoryDay(
-        date: diet.lastDietDate,
-        caloriesGoal: diet.caloriesGoal,
-        caloriesIntake: totalCals,
-        proteinGoal: diet.proteinGoal,
-        proteinIntake: totalProt,
-        carbsGoal: diet.carbsGoal,
-        carbsIntake: totalCarbs,
-        fatGoal: diet.fatGoal,
-        fatIntake: totalFat,
-        waterGoalMl: diet.waterGoalMl,
-        waterIntakeMl: diet.waterIntakeMl,
-      );
-      
-      final newHistory = Map<String, DietHistoryDay>.from(dietHistory);
-      newHistory[diet.lastDietDate] = historyDay;
+    // Force reset if lastDietDate is empty, invalid, or different from today
+    if (diet.lastDietDate.isEmpty || diet.lastDietDate != todayStr) {
+      // Only save history if lastDietDate is a valid date (not empty)
+      if (diet.lastDietDate.isNotEmpty && _isValidDateFormat(diet.lastDietDate)) {
+        int totalCals = diet.meals.fold<int>(0, (sum, m) => sum + m.calories);
+        double totalProt = diet.meals.fold<double>(0, (sum, m) => sum + m.protein);
+        double totalCarbs = diet.meals.fold<double>(0, (sum, m) => sum + m.carbs);
+        double totalFat = diet.meals.fold<double>(0, (sum, m) => sum + m.fat);
+        
+        final historyDay = DietHistoryDay(
+          date: diet.lastDietDate,
+          caloriesGoal: diet.caloriesGoal,
+          caloriesIntake: totalCals,
+          proteinGoal: diet.proteinGoal,
+          proteinIntake: totalProt,
+          carbsGoal: diet.carbsGoal,
+          carbsIntake: totalCarbs,
+          fatGoal: diet.fatGoal,
+          fatIntake: totalFat,
+          waterGoalMl: diet.waterGoalMl,
+          waterIntakeMl: diet.waterIntakeMl,
+        );
+        
+        final newHistory = Map<String, DietHistoryDay>.from(dietHistory);
+        newHistory[diet.lastDietDate] = historyDay;
+        dietHistory = newHistory;
+      }
       
       diet = DietState(
         caloriesGoal: diet.caloriesGoal,
@@ -298,8 +303,29 @@ class DietProvider extends ChangeNotifier {
         lastDietDate: todayStr,
       );
       
-      dietHistory = newHistory;
       _save();
+    }
+  }
+
+  bool _isValidDateFormat(String dateStr) {
+    // Simple validation for YYYY-MM-DD format
+    final regex = RegExp(r'^\d{4}-\d{2}-\d{2}$');
+    if (!regex.hasMatch(dateStr)) return false;
+    
+    try {
+      final parts = dateStr.split('-');
+      final year = int.parse(parts[0]);
+      final month = int.parse(parts[1]);
+      final day = int.parse(parts[2]);
+      
+      // Basic validation
+      if (year < 2020 || year > 2100) return false;
+      if (month < 1 || month > 12) return false;
+      if (day < 1 || day > 31) return false;
+      
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 }

@@ -532,11 +532,36 @@ class FirebaseSyncService {
       final cloudRoutines = await fetchCloudRoutines(userId);
       final cloudLibrary = await fetchCloudLibrary(userId);
 
-      // Merge local and cloud workouts to prevent data loss
+      // Get local IDs to detect deletions
+      final localWorkoutIds = localState.history.map((w) => w.id).toSet();
+      final localRoutineIds = localState.routines.map((r) => r.id).toSet();
+      final localLibraryIds = localState.library.map((l) => l.id).toSet();
+
+      // Merge local and cloud workouts to prevent data loss, but respect local deletions
       final cloudWorkoutIds = cloudWorkouts.map((w) => w.id).toSet();
       final mergedWorkouts = <WorkoutLog>[];
       
-      mergedWorkouts.addAll(cloudWorkouts.isNotEmpty ? cloudWorkouts : remoteState.history);
+      // Add cloud workouts that are not in deletedHealthWorkoutIds
+      final deletedIdsSet = localState.deletedHealthWorkoutIds.toSet();
+      for (final log in cloudWorkouts.isNotEmpty ? cloudWorkouts : remoteState.history) {
+        // Skip if this workout was deleted by user (Apple Health import)
+        if (deletedIdsSet.contains(log.id)) continue;
+        // Skip if it exists in cloud but was deleted locally
+        if (!localWorkoutIds.contains(log.id) && cloudWorkoutIds.contains(log.id)) {
+          // This item exists in cloud but not locally - it might have been deleted
+          // Only add it if it's a new item from another device
+          final localUpdatedAt = await _persistence.loadClientUpdatedAt(userId) ?? DateTime.fromMillisecondsSinceEpoch(0);
+          final remoteUpdatedAt = _readRemoteUpdatedAt(data);
+          // Only add cloud item if remote is newer (sync from another device)
+          if (remoteUpdatedAt.isAfter(localUpdatedAt)) {
+            mergedWorkouts.add(log);
+          }
+        } else {
+          mergedWorkouts.add(log);
+        }
+      }
+      
+      // Add local workouts that don't exist in cloud
       for (final log in localState.history) {
         if (!cloudWorkoutIds.contains(log.id)) {
           mergedWorkouts.add(log);
@@ -545,10 +570,25 @@ class FirebaseSyncService {
       }
       mergedWorkouts.sort((a, b) => b.date.compareTo(a.date));
 
+      // Merge routines, but respect local deletions
       final cloudRoutineIds = cloudRoutines.map((r) => r.id).toSet();
       final mergedRoutines = <Routine>[];
       
-      mergedRoutines.addAll(cloudRoutines.isNotEmpty ? cloudRoutines : remoteState.routines);
+      // Add cloud routines that weren't deleted locally
+      for (final routine in cloudRoutines.isNotEmpty ? cloudRoutines : remoteState.routines) {
+        // Only add if it exists locally OR if remote is newer (sync from another device)
+        if (localRoutineIds.contains(routine.id)) {
+          mergedRoutines.add(routine);
+        } else {
+          final localUpdatedAt = await _persistence.loadClientUpdatedAt(userId) ?? DateTime.fromMillisecondsSinceEpoch(0);
+          final remoteUpdatedAt = _readRemoteUpdatedAt(data);
+          if (remoteUpdatedAt.isAfter(localUpdatedAt)) {
+            mergedRoutines.add(routine);
+          }
+        }
+      }
+      
+      // Add local routines that don't exist in cloud
       for (final routine in localState.routines) {
         if (!cloudRoutineIds.contains(routine.id)) {
           mergedRoutines.add(routine);
@@ -560,15 +600,37 @@ class FirebaseSyncService {
       final cloudLibraryIds = cloudLibrary.map((l) => l.id).toSet();
       
       final mergedLibrary = <LibraryExercise>[];
-      // Start with cloud subcollection
-      mergedLibrary.addAll(cloudLibrary);
-      // Add remoteState library (migration from old schema)
-      for (final ex in remoteState.library) {
-        if (!cloudLibraryIds.contains(ex.id)) {
+      // Start with cloud subcollection, but respect local deletions
+      for (final ex in cloudLibrary) {
+        // Only add if it exists locally OR if remote is newer
+        if (localLibraryIds.contains(ex.id)) {
           mergedLibrary.add(ex);
-          unawaited(syncLibraryExercise(userId, ex)); // migrate to subcollection
+        } else {
+          final localUpdatedAt = await _persistence.loadClientUpdatedAt(userId) ?? DateTime.fromMillisecondsSinceEpoch(0);
+          final remoteUpdatedAt = _readRemoteUpdatedAt(data);
+          if (remoteUpdatedAt.isAfter(localUpdatedAt)) {
+            mergedLibrary.add(ex);
+          }
         }
       }
+      
+      // Add remoteState library (migration from old schema) with same logic
+      for (final ex in remoteState.library) {
+        if (!cloudLibraryIds.contains(ex.id)) {
+          if (localLibraryIds.contains(ex.id)) {
+            mergedLibrary.add(ex);
+            unawaited(syncLibraryExercise(userId, ex)); // migrate to subcollection
+          } else {
+            final localUpdatedAt = await _persistence.loadClientUpdatedAt(userId) ?? DateTime.fromMillisecondsSinceEpoch(0);
+            final remoteUpdatedAt = _readRemoteUpdatedAt(data);
+            if (remoteUpdatedAt.isAfter(localUpdatedAt)) {
+              mergedLibrary.add(ex);
+              unawaited(syncLibraryExercise(userId, ex)); // migrate to subcollection
+            }
+          }
+        }
+      }
+      
       // Add local library
       final currentCloudIds = mergedLibrary.map((e) => e.id).toSet();
       for (final ex in localState.library) {
