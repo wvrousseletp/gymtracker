@@ -1095,8 +1095,10 @@ extension AppDelegate {
       var workoutsList: [[String: Any]] = []
       
       if let workoutSamples = samples as? [HKWorkout] {
+        print("[AppDelegate] Found \(workoutSamples.count) workouts from HealthKit")
         let formatter = ISO8601DateFormatter()
         for workout in workoutSamples {
+          print("[AppDelegate] Processing workout: type=\(workout.workoutActivityType.rawValue), duration=\(workout.duration), date=\(workout.startDate)")
           var activityName = "Exercício"
           switch workout.workoutActivityType {
           case .soccer: activityName = "Futebol"
@@ -1122,7 +1124,12 @@ extension AppDelegate {
           case .wheelchairRunPace: activityName = "Cadeira de Rodas"
           case .wheelchairWalkPace: activityName = "Cadeira de Rodas"
           default:
-            activityName = "Exercício Apple (\(workout.workoutActivityType.rawValue))"
+            // Handle indoor cycling by checking raw value
+            if workout.workoutActivityType.rawValue == 13 {
+              activityName = "Bicicleta Ergométrica"
+            } else {
+              activityName = "Exercício Apple (\(workout.workoutActivityType.rawValue))"
+            }
           }
           
           let durationSec = Int(workout.duration)

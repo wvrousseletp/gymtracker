@@ -702,8 +702,67 @@ class WorkoutProvider extends ChangeNotifier {
       }
     }
     historyLoaded = true;
+    
+    // Sync HealthKit workouts after loading local history
+    await _syncHealthKitWorkouts();
+    
     notifyListeners();
     return history;
+  }
+
+  Future<void> _syncHealthKitWorkouts() async {
+    try {
+      final healthWorkouts = await HealthService.instance.getRecentWorkouts();
+      debugPrint('[WorkoutProvider] Found ${healthWorkouts.length} workouts from HealthKit');
+      
+      for (final hw in healthWorkouts) {
+        final id = hw['id'] as String;
+        final name = hw['name'] as String;
+        final duration = hw['duration'] as int;
+        final calories = hw['calories'] as int?;
+        final dateStr = hw['date'] as String;
+        
+        // Skip if already in history or deleted
+        if (history.any((h) => h.id == id)) {
+          debugPrint('[WorkoutProvider] Skipping duplicate HealthKit workout: $id');
+          continue;
+        }
+        if (deletedHealthWorkoutIds.contains(id)) {
+          debugPrint('[WorkoutProvider] Skipping deleted HealthKit workout: $id');
+          continue;
+        }
+        
+        // Create WorkoutLog from HealthKit data
+        final healthLog = WorkoutLog(
+          id: id,
+          name: name,
+          date: dateStr,
+          duration: duration,
+          completedSets: 0, // HealthKit workouts don't have sets
+          totalSets: 0,
+          totalWeight: 0,
+          rpe: 0,
+          notes: '',
+          exercises: [], // HealthKit workouts don't have exercise details
+          activeCalories: calories,
+        );
+        
+        history.insert(0, healthLog);
+        debugPrint('[WorkoutProvider] Added HealthKit workout to history: $name');
+      }
+      
+      if (healthWorkouts.isNotEmpty) {
+        _updateStreak();
+        _save();
+      }
+    } catch (e) {
+      debugPrint('[WorkoutProvider] Error syncing HealthKit workouts: $e');
+    }
+  }
+
+  Future<void> syncHealthKitWorkoutsManually() async {
+    await _syncHealthKitWorkouts();
+    notifyListeners();
   }
 
   void deleteWorkoutLog(String id) {
