@@ -1102,7 +1102,6 @@ extension AppDelegate {
           case .soccer: activityName = "Futebol"
           case .running: activityName = "Corrida"
           case .cycling: activityName = "Ciclismo"
-          case .indoorCycling: activityName = "Bicicleta Ergométrica"
           case .swimming: activityName = "Natação"
           case .walking: activityName = "Caminhada"
           case .traditionalStrengthTraining: activityName = "Musculação"
@@ -1179,10 +1178,8 @@ extension AppDelegate {
       activityType = .traditionalStrengthTraining
     } else if lowerName.contains("corrida") || lowerName.contains("run") {
       activityType = .running
-    } else if lowerName.contains("ciclismo") || lowerName.contains("bike") || lowerName.contains("bicicleta") {
+    } else if lowerName.contains("ciclismo") || lowerName.contains("bike") || lowerName.contains("bicicleta") || lowerName.contains("ergométrica") || lowerName.contains("indoor") {
       activityType = .cycling
-    } else if lowerName.contains("ergométrica") || lowerName.contains("indoor") {
-      activityType = .indoorCycling
     } else if lowerName.contains("natação") || lowerName.contains("swim") {
       activityType = .swimming
     } else if lowerName.contains("caminhada") || lowerName.contains("walk") {
@@ -1201,27 +1198,8 @@ extension AppDelegate {
       activityType = .other
     }
 
-    // Create workout
-    var workout: HKWorkout
-    let calories = args["calories"] as? Int ?? 0
-
-    if calories > 0 {
-      let energyBurned = HKQuantity(unit: HKUnit.kilocalorie(), doubleValue: Double(calories))
-      workout = HKWorkout(
-        activityType: activityType,
-        start: startDate,
-        end: endDate,
-        duration: TimeInterval(duration),
-        totalEnergyBurned: energyBurned
-      )
-    } else {
-      workout = HKWorkout(
-        activityType: activityType,
-        start: startDate,
-        end: endDate,
-        duration: TimeInterval(duration)
-      )
-    }
+    // Create workout with basic parameters
+    let workout = HKWorkout(activityType: activityType, start: startDate, end: endDate)
 
     healthStore.save(workout) { success, error in
       DispatchQueue.main.async {
