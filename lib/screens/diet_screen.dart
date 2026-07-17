@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../providers/diet_provider.dart';
@@ -1586,6 +1587,233 @@ class _JejumTabState extends State<JejumTab> {
     );
   }
 
+  void _showEndFastingOptions(BuildContext context, DietProvider provider) {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: const Color(0xff1c1c1e),
+        title: const Text(
+          "Finalizar Jejum",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.check_circle, color: Colors.amber),
+              title: const Text(
+                "Agora",
+                style: TextStyle(color: Colors.white),
+              ),
+              onTap: () {
+                Navigator.pop(dialogCtx);
+                provider.endFasting();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Jejum finalizado com sucesso!"),
+                    backgroundColor: Colors.amber,
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.schedule, color: Colors.blueAccent),
+              title: const Text(
+                "Horário personalizado",
+                style: TextStyle(color: Colors.white),
+              ),
+              onTap: () {
+                Navigator.pop(dialogCtx);
+                _showCustomEndTimeDialog(context, provider);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showCustomEndTimeDialog(BuildContext context, DietProvider provider) {
+    DateTime selectedTime = DateTime.now();
+    
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: const Color(0xff1c1c1e),
+        title: const Text(
+          "Horário de Término",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              "Selecione quando você terminou o jejum:",
+              style: TextStyle(color: Colors.white70),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 200,
+              child: CupertinoDatePicker(
+                mode: CupertinoDatePickerMode.dateAndTime,
+                initialDateTime: DateTime.now(),
+                minimumDate: DateTime.now().subtract(const Duration(days: 7)),
+                maximumDate: DateTime.now(),
+                onDateTimeChanged: (DateTime newTime) {
+                  selectedTime = newTime;
+                },
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text("Cancelar", style: TextStyle(color: Colors.white60)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(dialogCtx);
+              provider.endFastingWithCustomTime(selectedTime);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Jejum finalizado com horário personalizado!"),
+                  backgroundColor: Colors.amber,
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.amber,
+            ),
+            child: const Text("Confirmar", style: TextStyle(color: Colors.black)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showManualFastingDialog(BuildContext context, DietProvider provider) {
+    DateTime startTime = DateTime.now().subtract(const Duration(hours: 16));
+    DateTime endTime = DateTime.now();
+    double selectedGoalHours = 16.0;
+    
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (dialogCtx, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xff1c1c1e),
+          title: const Text(
+            "Adicionar Jejum Manual",
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Início:",
+                  style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 150,
+                  child: CupertinoDatePicker(
+                    mode: CupertinoDatePickerMode.dateAndTime,
+                    initialDateTime: startTime,
+                    maximumDate: DateTime.now(),
+                    onDateTimeChanged: (DateTime newTime) {
+                      startTime = newTime;
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  "Término:",
+                  style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 150,
+                  child: CupertinoDatePicker(
+                    mode: CupertinoDatePickerMode.dateAndTime,
+                    initialDateTime: endTime,
+                    minimumDate: startTime,
+                    maximumDate: DateTime.now(),
+                    onDateTimeChanged: (DateTime newTime) {
+                      endTime = newTime;
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  "Meta (horas):",
+                  style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.white.withOpacity(0.1)),
+                  ),
+                  child: DropdownButton<double>(
+                    value: selectedGoalHours,
+                    dropdownColor: const Color(0xff1c1c1e),
+                    style: const TextStyle(color: Colors.white),
+                    isExpanded: true,
+                    onChanged: (val) {
+                      if (val != null) {
+                        setDialogState(() {
+                          selectedGoalHours = val;
+                        });
+                      }
+                    },
+                    items: [12.0, 14.0, 16.0, 18.0, 20.0, 23.0, 24.0, 36.0, 48.0]
+                        .map((h) => DropdownMenuItem(value: h, child: Text("$h horas")))
+                        .toList(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogCtx),
+              child: const Text("Cancelar", style: TextStyle(color: Colors.white60)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (endTime.isBefore(startTime)) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("O horário de término deve ser após o início"),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+                Navigator.pop(dialogCtx);
+                provider.addManualFastingRecord(startTime, endTime, selectedGoalHours);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Jejum manual adicionado com sucesso!"),
+                    backgroundColor: Colors.amber,
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: widget.accentColor,
+              ),
+              child: const Text("Adicionar", style: TextStyle(color: Colors.black)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildMotivationalQuote(Duration elapsed) {
     final hours = elapsed.inSeconds / 3600;
     final quotes = [
@@ -1883,30 +2111,29 @@ class _JejumTabState extends State<JejumTab> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Botão Finalizar
-                    SizedBox(
-                      width: double.infinity,
-                      height: 44,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          provider.endFasting();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Jejum finalizado com sucesso!"),
-                              backgroundColor: Colors.amber,
+                    // Botões de Ação
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            height: 44,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                _showEndFastingOptions(context, provider);
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.amber,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                elevation: 0,
+                              ),
+                              child: const Text(
+                                "Finalizar Jejum",
+                                style: TextStyle(color: Colors.black, fontWeight: FontWeight.w800, fontSize: 14),
+                              ),
                             ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.amber,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          elevation: 0,
+                          ),
                         ),
-                        child: const Text(
-                          "Finalizar Jejum",
-                          style: TextStyle(color: Colors.black, fontWeight: FontWeight.w800, fontSize: 14),
-                        ),
-                      ),
+                      ],
                     ),
                   ],
                 ),
@@ -1917,6 +2144,14 @@ class _JejumTabState extends State<JejumTab> {
                 children: [
                   // Fasting Statistics Card
                   _buildFastingStats(provider),
+                  const SizedBox(height: 16),
+                  // Manual Fasting Entry Button
+                  TextButton.icon(
+                    onPressed: () => _showManualFastingDialog(context, provider),
+                    icon: Icon(Icons.history, color: widget.accentColor, size: 16),
+                    label: Text("Adicionar jejum manual", style: TextStyle(color: widget.accentColor, fontSize: 12, fontWeight: FontWeight.bold)),
+                    style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero),
+                  ),
                   const SizedBox(height: 16),
                   // Start Fasting Card
                   StatefulBuilder(

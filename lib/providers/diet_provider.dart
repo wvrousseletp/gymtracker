@@ -175,6 +175,69 @@ class DietProvider extends ChangeNotifier {
     _save();
   }
 
+  void endFastingWithCustomTime(DateTime customEndTime) {
+    if (diet.fasting.active == null) return;
+    final active = diet.fasting.active!;
+
+    final record = FastingRecord(
+      id: "fast-${DateTime.now().millisecondsSinceEpoch}",
+      startTime: active.startTime,
+      endTime: customEndTime.toUtc().toIso8601String(),
+      goalDurationHours: active.goalDurationHours,
+    );
+
+    final history = List<FastingRecord>.from(diet.fasting.history)..insert(0, record);
+
+    final newFasting = FastingState(
+      history: history,
+      active: null,
+    );
+
+    diet = DietState(
+      caloriesGoal: diet.caloriesGoal,
+      proteinGoal: diet.proteinGoal,
+      carbsGoal: diet.carbsGoal,
+      fatGoal: diet.fatGoal,
+      waterGoalMl: diet.waterGoalMl,
+      meals: diet.meals,
+      waterIntakeMl: diet.waterIntakeMl,
+      fasting: newFasting,
+      abstinence: diet.abstinence,
+      lastDietDate: diet.lastDietDate,
+    );
+    _save();
+  }
+
+  void addManualFastingRecord(DateTime startTime, DateTime endTime, double goalDurationHours) {
+    final record = FastingRecord(
+      id: "fast-${DateTime.now().millisecondsSinceEpoch}",
+      startTime: startTime.toUtc().toIso8601String(),
+      endTime: endTime.toUtc().toIso8601String(),
+      goalDurationHours: goalDurationHours,
+    );
+
+    final history = List<FastingRecord>.from(diet.fasting.history)..insert(0, record);
+
+    final newFasting = FastingState(
+      history: history,
+      active: diet.fasting.active,
+    );
+
+    diet = DietState(
+      caloriesGoal: diet.caloriesGoal,
+      proteinGoal: diet.proteinGoal,
+      carbsGoal: diet.carbsGoal,
+      fatGoal: diet.fatGoal,
+      waterGoalMl: diet.waterGoalMl,
+      meals: diet.meals,
+      waterIntakeMl: diet.waterIntakeMl,
+      fasting: newFasting,
+      abstinence: diet.abstinence,
+      lastDietDate: diet.lastDietDate,
+    );
+    _save();
+  }
+
   void updateWaterGoal(int goalMl) {
     diet = DietState(
       caloriesGoal: diet.caloriesGoal,
