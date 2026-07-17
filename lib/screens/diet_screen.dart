@@ -1462,60 +1462,234 @@ class _JejumTabState extends State<JejumTab> {
     });
   }
 
+  Widget _buildFastingStats(DietProvider provider) {
+    final history = provider.diet.fasting.history;
+    final completedFasts = history.where((f) => f.endTime != null).length;
+    final totalHours = history.fold<double>(0, (sum, f) {
+      if (f.endTime != null) {
+        try {
+          final start = DateTime.parse(f.startTime);
+          final end = DateTime.parse(f.endTime!);
+          return sum + end.difference(start).inHours;
+        } catch (e) {
+          return sum;
+        }
+      }
+      return sum;
+    });
+    final avgHours = completedFasts > 0 ? totalHours / completedFasts : 0.0;
+    
+    // Calculate unique days with fasting
+    final uniqueDays = <String>{};
+    for (final fast in history) {
+      if (fast.endTime != null) {
+        try {
+          final date = DateTime.parse(fast.startTime);
+          uniqueDays.add("${date.year}-${date.month}-${date.day}");
+        } catch (e) {
+          // parse error
+        }
+      }
+    }
+    
+    return GlassCard(
+      padding: const EdgeInsets.all(20),
+      borderColor: Colors.white.withOpacity(0.04),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Estatísticas de Jejum",
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatCard(
+                  "Jejuns Completados",
+                  completedFasts.toString(),
+                  Icons.check_circle,
+                  Colors.greenAccent,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildStatCard(
+                  "Média de Horas",
+                  "${avgHours.toStringAsFixed(1)}h",
+                  Icons.schedule,
+                  Colors.blueAccent,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatCard(
+                  "Total de Horas",
+                  "${totalHours.toStringAsFixed(0)}h",
+                  Icons.access_time,
+                  Colors.amber,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildStatCard(
+                  "Dias com Jejum",
+                  uniqueDays.length.toString(),
+                  Icons.calendar_today,
+                  Colors.purpleAccent,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard(String label, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.2), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white60,
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMotivationalQuote(Duration elapsed) {
+    final hours = elapsed.inSeconds / 3600;
+    final quotes = [
+      if (hours < 2) "O jejum começa com um passo. Continue firme! 💪",
+      if (hours < 12) "Seu corpo está se adaptando. Cada minuto conta! ⏰",
+      if (hours < 18) "Você está entrando na zona de queima de gordura! 🔥",
+      if (hours < 24) "Incrível! Seu corpo está transformando energia! ✨",
+      "Autofagia em andamento! Seu corpo está se renovando! 🌟",
+    ];
+    
+    final quote = quotes.firstWhere((q) => q.isNotEmpty, orElse: () => "Continue firme! Você está no caminho certo! 💪");
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.03),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.format_quote, color: widget.accentColor.withOpacity(0.6), size: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              quote,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 13,
+                fontStyle: FontStyle.italic,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildFastingStageCard(Duration elapsed) {
     final hours = elapsed.inSeconds / 3600;
     String stageTitle = "";
     String stageDesc = "";
     Color stageColor = Colors.amber;
+    IconData stageIcon = Icons.access_time;
 
     if (hours < 2) {
       stageTitle = "Absorção de Nutrientes";
       stageDesc = "Seu corpo está digerindo a última refeição. Nível de açúcar sobe.";
       stageColor = Colors.blueAccent;
+      stageIcon = Icons.restaurant;
     } else if (hours < 12) {
       stageTitle = "Queda de Insulina";
       stageDesc = "A glicose diminui e o pâncreas reduz a liberação de insulina.";
       stageColor = Colors.cyan;
+      stageIcon = Icons.trending_down;
     } else if (hours < 18) {
       stageTitle = "Início de Cetose";
       stageDesc = "O glicogênio hepático se esgota. O corpo começa a queimar gordura.";
       stageColor = Colors.orangeAccent;
+      stageIcon = Icons.local_fire_department;
     } else if (hours < 24) {
       stageTitle = "Queima de Gordura Ativa";
       stageDesc = "A queima de gordura acelera. O hormônio do crescimento (GH) sobe.";
       stageColor = Colors.amber;
+      stageIcon = Icons.whatshot;
     } else {
       stageTitle = "Autofagia";
       stageDesc = "O corpo inicia a reciclagem de células velhas ou danificadas.";
       stageColor = Colors.greenAccent;
+      stageIcon = Icons.autorenew;
     }
 
     return Container(
       margin: const EdgeInsets.only(top: 14),
       child: GlassCard(
-        padding: const EdgeInsets.all(12),
-        borderColor: stageColor.withOpacity(0.2),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        padding: const EdgeInsets.all(16),
+        borderColor: stageColor.withOpacity(0.3),
+        child: Row(
           children: [
-            Row(
-              children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(shape: BoxShape.circle, color: stageColor),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  "Fase: $stageTitle",
-                  style: TextStyle(color: stageColor, fontWeight: FontWeight.bold, fontSize: 13),
-                ),
-              ],
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: stageColor.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(stageIcon, color: stageColor, size: 24),
             ),
-            const SizedBox(height: 4),
-            Text(
-              stageDesc,
-              style: const TextStyle(color: Colors.white70, fontSize: 11, height: 1.3),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    stageTitle,
+                    style: TextStyle(color: stageColor, fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    stageDesc,
+                    style: const TextStyle(color: Colors.white70, fontSize: 12, height: 1.3),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -1525,16 +1699,16 @@ class _JejumTabState extends State<JejumTab> {
 
   Widget _buildPopularProtocols(Function(double) onSelected) {
     final protocols = [
-      {"name": "12h Leve", "hours": 12.0},
-      {"name": "14h Moderado", "hours": 14.0},
-      {"name": "16h Padrão", "hours": 16.0},
-      {"name": "18h Avançado", "hours": 18.0},
-      {"name": "24h Completo", "hours": 24.0},
-      {"name": "OMAD (23h)", "hours": 23.0},
+      {"name": "12h Leve", "hours": 12.0, "icon": Icons.wb_sunny},
+      {"name": "14h Moderado", "hours": 14.0, "icon": Icons.wb_twilight},
+      {"name": "16h Padrão", "hours": 16.0, "icon": Icons.nights_stay},
+      {"name": "18h Avançado", "hours": 18.0, "icon": Icons.flash_on},
+      {"name": "24h Completo", "hours": 24.0, "icon": Icons.all_inclusive},
+      {"name": "OMAD (23h)", "hours": 23.0, "icon": Icons.restaurant_menu},
     ];
 
     return Container(
-      height: 32,
+      height: 50,
       margin: const EdgeInsets.only(bottom: 12),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
@@ -1543,27 +1717,44 @@ class _JejumTabState extends State<JejumTab> {
           final p = protocols[idx];
           final name = p["name"] as String;
           final h = p["hours"] as double;
+          final icon = p["icon"] as IconData;
           final isSel = _selectedGoalHours == h;
 
           return Container(
-            margin: const EdgeInsets.only(right: 6),
-            child: ChoiceChip(
-              label: Text(name),
-              selected: isSel,
-              selectedColor: widget.accentColor.withOpacity(0.2),
-              disabledColor: Colors.transparent,
-              backgroundColor: Colors.white.withOpacity(0.04),
-              labelStyle: TextStyle(
-                color: isSel ? widget.accentColor : Colors.white70,
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
+            margin: const EdgeInsets.only(right: 8),
+            child: GestureDetector(
+              onTap: () => onSelected(h),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSel ? widget.accentColor.withOpacity(0.2) : Colors.white.withOpacity(0.04),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isSel ? widget.accentColor.withOpacity(0.4) : Colors.white.withOpacity(0.08),
+                    width: 1.2,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      icon,
+                      size: 16,
+                      color: isSel ? widget.accentColor : Colors.white60,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      name,
+                      style: TextStyle(
+                        color: isSel ? widget.accentColor : Colors.white70,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              onSelected: (selected) {
-                if (selected) {
-                  onSelected(h);
-                }
-              },
             ),
           );
         },
@@ -1599,7 +1790,7 @@ class _JejumTabState extends State<JejumTab> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Relógio e Barra de Progresso reativos
+                    // Relógio e Barra de Progresso reativos com design premium
                     ValueListenableBuilder<Duration>(
                       valueListenable: _elapsedNotifier,
                       builder: (context, elapsed, child) {
@@ -1607,57 +1798,85 @@ class _JejumTabState extends State<JejumTab> {
                         final goalSecs = active.goalDurationHours * 3600;
                         final elapsedSecs = elapsed.inSeconds;
                         final progress = goalSecs > 0 ? (elapsedSecs / goalSecs).clamp(0.0, 1.0) : 0.0;
+                        final remainingSecs = goalSecs > 0 ? (goalSecs - elapsedSecs).clamp(0, goalSecs.toInt()) : 0;
 
                         return Column(
                           children: [
-                            Text(
-                              _formatDuration(elapsed),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 36,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 1.0,
+                            // Circular Progress Indicator Premium
+                            SizedBox(
+                              height: 200,
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  // Background circle
+                                  SizedBox(
+                                    height: 180,
+                                    width: 180,
+                                    child: CircularProgressIndicator(
+                                      value: 1.0,
+                                      strokeWidth: 12,
+                                      backgroundColor: Colors.white.withOpacity(0.05),
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withOpacity(0.05)),
+                                    ),
+                                  ),
+                                  // Progress circle
+                                  if (!isIndefinite)
+                                    SizedBox(
+                                      height: 180,
+                                      width: 180,
+                                      child: CircularProgressIndicator(
+                                        value: progress,
+                                        strokeWidth: 12,
+                                        backgroundColor: Colors.transparent,
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.amber),
+                                      ),
+                                    ),
+                                  // Center content
+                                  Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        _formatDuration(elapsed),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 32,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: 1.0,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      if (!isIndefinite)
+                                        Text(
+                                          "Restante: ${_formatDuration(Duration(seconds: remainingSecs.toInt()))}",
+                                          style: const TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.w600),
+                                        ),
+                                      const SizedBox(height: 4),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.amber.withOpacity(0.15),
+                                          borderRadius: BorderRadius.circular(20),
+                                          border: Border.all(color: Colors.amber.withOpacity(0.3), width: 1),
+                                        ),
+                                        child: Text(
+                                          isIndefinite ? "Indefinido" : "${(progress * 100).toStringAsFixed(0)}%",
+                                          style: const TextStyle(color: Colors.amber, fontSize: 12, fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              isIndefinite ? "Jejum por Tempo Indefinido" : "Meta: ${active.goalDurationHours.toStringAsFixed(0)} horas",
-                              style: const TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w700),
                             ),
                             const SizedBox(height: 16),
-
-                            if (!isIndefinite) ...[
-                              LinearProgressIndicator(
-                                value: progress,
-                                backgroundColor: Colors.white.withOpacity(0.05),
-                                valueColor: const AlwaysStoppedAnimation<Color>(Colors.amber),
-                                borderRadius: BorderRadius.circular(4),
-                                minHeight: 8,
-                              ),
-                              const SizedBox(height: 6),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: Text(
-                                  "${(progress * 100).toStringAsFixed(0)}% concluído",
-                                  style: const TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                            ] else ...[
-                              // Indefinite design details
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: Colors.amber.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.amber.withOpacity(0.2), width: 0.8),
-                                ),
-                                child: const Text(
-                                  "Cronômetro ativo. Finalize quando desejar.",
-                                  style: TextStyle(color: Colors.amber, fontSize: 11, fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                            ],
+                            Text(
+                              isIndefinite ? "Jejum por Tempo Indefinido" : "Meta: ${active.goalDurationHours.toStringAsFixed(0)} horas",
+                              style: const TextStyle(color: Colors.white54, fontSize: 13, fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(height: 8),
                             _buildFastingStageCard(elapsed),
+                            const SizedBox(height: 16),
+                            _buildMotivationalQuote(elapsed),
                           ],
                         );
                       },
@@ -1694,121 +1913,129 @@ class _JejumTabState extends State<JejumTab> {
               ),
             ] else ...[
               // CONFIGURAR JEJUM
-              StatefulBuilder(
-                builder: (context, setDialogState) {
-                  return GlassCard(
-                    padding: const EdgeInsets.all(20),
-                    borderColor: Colors.white.withOpacity(0.04),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Center(
-                          child: Text(
-                            "Iniciar Novo Jejum",
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        const Text(
-                          "Protocolos Sugeridos",
-                          style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 6),
-                        _buildPopularProtocols((h) {
-                          setDialogState(() {
-                            _selectedGoalHours = h;
-                          });
-                        }),
-
-                        const Text(
-                          "Duração Meta",
-                          style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.05),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.white.withOpacity(0.08)),
-                          ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<double>(
-                              value: _selectedGoalHours,
-                              dropdownColor: const Color(0xff1c1c1e),
-                              style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
-                              isExpanded: true,
-                              onChanged: (val) {
-                                if (val != null) {
-                                  setDialogState(() {
-                                    _selectedGoalHours = val;
-                                  });
-                                }
-                              },
-                              items: [12.0, 14.0, 16.0, 18.0, 20.0, 23.0, 24.0, 36.0, 48.0]
-                                  .map((h) => DropdownMenuItem(value: h, child: Text("$h horas")))
-                                  .toList(),
+              Column(
+                children: [
+                  // Fasting Statistics Card
+                  _buildFastingStats(provider),
+                  const SizedBox(height: 16),
+                  // Start Fasting Card
+                  StatefulBuilder(
+                    builder: (context, setDialogState) {
+                      return GlassCard(
+                        padding: const EdgeInsets.all(20),
+                        borderColor: Colors.white.withOpacity(0.04),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Center(
+                              child: Text(
+                                "Iniciar Novo Jejum",
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15),
+                              ),
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
+                            const SizedBox(height: 16),
 
-                        // Botões de Ação
-                         Row(
-                           children: [
-                             Expanded(
-                               child: SizedBox(
-                                 height: 44,
-                                 child: ElevatedButton(
-                                   onPressed: () {
-                                     provider.startFasting(0.0); // 0.0 represents Indefinite fasting
-                                     _elapsedNotifier.value = Duration.zero;
-                                     _startTimer();
-                                   },
-                                   style: ElevatedButton.styleFrom(
-                                     backgroundColor: Colors.white.withOpacity(0.06),
-                                     foregroundColor: Colors.white,
-                                     side: BorderSide(color: Colors.white.withOpacity(0.15), width: 1.2),
-                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                     elevation: 0,
-                                   ),
-                                   child: const Text(
-                                     "Jejum Indefinido",
-                                     style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 12),
-                                   ),
-                                 ),
-                               ),
-                             ),
-                             const SizedBox(width: 10),
-                             Expanded(
-                               child: SizedBox(
-                                 height: 44,
-                                 child: ElevatedButton(
-                                   onPressed: () {
-                                     provider.startFasting(_selectedGoalHours);
-                                     _elapsedNotifier.value = Duration.zero;
-                                     _startTimer();
-                                   },
-                                   style: ElevatedButton.styleFrom(
-                                     backgroundColor: widget.accentColor,
-                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                     elevation: 0,
-                                   ),
-                                   child: const Text(
-                                     "Iniciar Meta",
-                                     style: TextStyle(color: Colors.black, fontWeight: FontWeight.w800, fontSize: 13),
-                                   ),
-                                 ),
-                               ),
-                             ),
-                           ],
-                         ),
-                       ],
-                     ),
-                   );
-                 },
-               ),
+                            const Text(
+                              "Protocolos Sugeridos",
+                              style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 6),
+                            _buildPopularProtocols((h) {
+                              setDialogState(() {
+                                _selectedGoalHours = h;
+                              });
+                            }),
+
+                            const Text(
+                              "Duração Meta",
+                              style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.05),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.white.withOpacity(0.08)),
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<double>(
+                                  value: _selectedGoalHours,
+                                  dropdownColor: const Color(0xff1c1c1e),
+                                  style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                                  isExpanded: true,
+                                  onChanged: (val) {
+                                    if (val != null) {
+                                      setDialogState(() {
+                                        _selectedGoalHours = val;
+                                      });
+                                    }
+                                  },
+                                  items: [12.0, 14.0, 16.0, 18.0, 20.0, 23.0, 24.0, 36.0, 48.0]
+                                      .map((h) => DropdownMenuItem(value: h, child: Text("$h horas")))
+                                      .toList(),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Botões de Ação
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: SizedBox(
+                                    height: 44,
+                                    child: ElevatedButton(
+                                      onPressed: () {
+                                        provider.startFasting(0.0); // 0.0 represents Indefinite fasting
+                                        _elapsedNotifier.value = Duration.zero;
+                                        _startTimer();
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.white.withOpacity(0.06),
+                                        foregroundColor: Colors.white,
+                                        side: BorderSide(color: Colors.white.withOpacity(0.15), width: 1.2),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                        elevation: 0,
+                                      ),
+                                      child: const Text(
+                                        "Jejum Indefinido",
+                                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 12),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: SizedBox(
+                                    height: 44,
+                                    child: ElevatedButton(
+                                      onPressed: () {
+                                        provider.startFasting(_selectedGoalHours);
+                                        _elapsedNotifier.value = Duration.zero;
+                                        _startTimer();
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: widget.accentColor,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                        elevation: 0,
+                                      ),
+                                      child: const Text(
+                                        "Iniciar Meta",
+                                        style: TextStyle(color: Colors.black, fontWeight: FontWeight.w800, fontSize: 13),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
             ],
             const SizedBox(height: 24),
 
