@@ -2056,7 +2056,7 @@ class _JejumTabState extends State<JejumTab> {
                                         value: progress,
                                         strokeWidth: 12,
                                         backgroundColor: Colors.transparent,
-                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.amber),
+                                        valueColor: const AlwaysStoppedAnimation<Color>(Colors.amber),
                                       ),
                                     ),
                                   // Center content
