@@ -83,8 +83,14 @@ class WorkoutProvider extends ChangeNotifier {
         ),
       );
 
+      // Determine if this is cardio based on measurementType or existing flags
+      final isCardio = ex.isCardio || 
+                       ref.measurementType == MeasurementType.cardio ||
+                       ref.measurementType == MeasurementType.distance ||
+                       ref.measurementType == MeasurementType.time;
+
       // For cardio exercises without sets, use 1 set for UI consistency
-      final effectiveSets = (ex.isCardio && !ex.allowCardioSets) ? 1 : ex.sets;
+      final effectiveSets = (isCardio && !ex.allowCardioSets) ? 1 : ex.sets;
 
       return ActiveExercise(
         id: ex.id,
@@ -101,7 +107,7 @@ class WorkoutProvider extends ChangeNotifier {
         setsState: List<bool>.filled(effectiveSets, false),
         performedCardios: List<PerformedCardio?>.filled(effectiveSets, null),
         failureReport: List<bool>.filled(effectiveSets, false),
-        isCardio: ex.isCardio,
+        isCardio: isCardio,
         allowCardioSets: ex.allowCardioSets,
       );
     }).toList();
@@ -589,15 +595,22 @@ class WorkoutProvider extends ChangeNotifier {
 
       double finalWeight = ex.weight;
       int finalReps = ex.reps;
-      final isCardio = ex.name.toLowerCase().contains('cardio') || ex.muscle.toLowerCase().contains('cardio');
+      final isCardio = ex.isCardio;
 
       if (isCardio) {
-        final completedList = ex.performedCardios.where((c) => c != null).toList();
-        if (completedList.isNotEmpty) {
-          final totalDist = completedList.fold<double>(0, (sum, c) => sum + c!.distanceKm);
-          final totalDurMin = completedList.fold<int>(0, (sum, c) => sum + (c!.durationSeconds ~/ 60));
-          finalWeight = totalDist / completedList.length;
-          finalReps = totalDurMin ~/ completedList.length;
+        // For single cardio sessions, use singleCardioSession
+        if (!ex.allowCardioSets && ex.singleCardioSession != null) {
+          finalWeight = ex.singleCardioSession!.distanceKm;
+          finalReps = ex.singleCardioSession!.durationSeconds ~/ 60;
+        } else {
+          // For cardio with sets (HIIT), use performedCardios
+          final completedList = ex.performedCardios.where((c) => c != null).toList();
+          if (completedList.isNotEmpty) {
+            final totalDist = completedList.fold<double>(0, (sum, c) => sum + c!.distanceKm);
+            final totalDurMin = completedList.fold<int>(0, (sum, c) => sum + (c!.durationSeconds ~/ 60));
+            finalWeight = totalDist / completedList.length;
+            finalReps = totalDurMin ~/ completedList.length;
+          }
         }
       } else {
         for (int i = 0; i < ex.sets; i++) {
@@ -796,9 +809,12 @@ class WorkoutProvider extends ChangeNotifier {
     for (final ex in log.exercises) {
       if (ex.completedSets == 0) continue;
 
-      final isCardio = ex.name.toLowerCase().contains('cardio') || ex.muscle.toLowerCase().contains('cardio');
       final libEx = library.firstWhere((l) => l.name == ex.name, orElse: () => LibraryExercise(id: '', name: '', muscle: '', measurementType: MeasurementType.reps));
       if (libEx.id.isEmpty) continue;
+
+      final isCardio = libEx.measurementType == MeasurementType.cardio ||
+                       libEx.measurementType == MeasurementType.distance ||
+                       libEx.measurementType == MeasurementType.time;
 
       if (isCardio) {
         if (ex.performedCardios != null && ex.performedCardios!.isNotEmpty) {

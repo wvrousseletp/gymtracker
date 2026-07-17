@@ -98,7 +98,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
           final sets = int.tryParse(parts[2]) ?? 3;
           final libEx = provider.library.where((l) => l.id == exerciseId).firstOrNull;
           if (libEx != null) {
-            final isCardio = libEx.muscle.toLowerCase().contains('cardio');
+            final isCardio = libEx.measurementType == MeasurementType.cardio ||
+                             libEx.measurementType == MeasurementType.distance ||
+                             libEx.measurementType == MeasurementType.time;
             return Routine(
               id: "temp-$exerciseId-$sets",
               name: "${libEx.name} (Avulso)",
@@ -108,9 +110,11 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                   id: "e-temp-${const Uuid().v4()}",
                   exerciseId: exerciseId,
                   sets: isCardio ? 1 : sets,
-                  reps: isCardio ? sets : (libEx.measurementType == MeasurementType.time ? 45 : 10),
+                  reps: isCardio ? 0 : (libEx.measurementType == MeasurementType.time ? 45 : 10),
                   rest: 60,
                   weight: 0,
+                  isCardio: isCardio,
+                  allowCardioSets: false,
                 )
               ],
             );

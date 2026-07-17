@@ -442,12 +442,12 @@ class _HistoryTabState extends State<HistoryTab> {
                                   const SizedBox(height: 6),
                                   Column(
                                     children: log.exercises.map((ex) {
-                                      final isCardio = ex.muscle.toLowerCase().contains('cardio');
+                                      final isCardio = ex.performedCardios != null && ex.performedCardios!.isNotEmpty;
                                       final done = ex.completedSets;
                                       
                                       String subtitle = "";
                                       if (isCardio) {
-                                        final doneCardios = (ex.performedCardios ?? []).where((c) => c != null).toList();
+                                        final doneCardios = ex.performedCardios!.where((c) => c != null).toList();
                                         if (doneCardios.isNotEmpty) {
                                           subtitle = doneCardios.map((c) {
                                             final d = c!.distanceKm;
