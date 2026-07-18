@@ -79,6 +79,11 @@ class MyApp extends StatelessWidget {
           dividerColor: Colors.transparent,
           dividerHeight: 0,
         ),
+        textSelectionTheme: const TextSelectionThemeData(
+          cursorColor: Colors.black,
+          selectionColor: Color(0x40000000),
+          selectionHandleColor: Colors.black,
+        ),
         textTheme: GoogleFonts.outfitTextTheme(ThemeData.light().textTheme),
         useMaterial3: true,
       ),
@@ -93,6 +98,11 @@ class MyApp extends StatelessWidget {
         tabBarTheme: const TabBarTheme(
           dividerColor: Colors.transparent,
           dividerHeight: 0,
+        ),
+        textSelectionTheme: const TextSelectionThemeData(
+          cursorColor: Colors.white,
+          selectionColor: Color(0x40FFFFFF),
+          selectionHandleColor: Colors.white,
         ),
         textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme),
         useMaterial3: true,
