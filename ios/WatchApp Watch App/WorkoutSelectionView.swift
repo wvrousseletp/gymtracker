@@ -167,6 +167,7 @@ struct RoutineRow: View {
 
 struct WorkoutSelectionView: View {
     @ObservedObject var connectivityManager = WatchConnectivityManager.shared
+    @ObservedObject var workoutManager = WorkoutManager.shared
     @State private var activeTab = 0
 
     private var todayPlannedItems: [PlannedWatchItem] {
@@ -191,6 +192,13 @@ struct WorkoutSelectionView: View {
                 VStack {
                     if let activeWorkout = connectivityManager.activeWorkout, !activeWorkout.postponed {
                         ActiveWorkoutView()
+                    } else if workoutManager.workoutSessionState == .running || workoutManager.workoutSessionState == .paused {
+                        VStack(spacing: 12) {
+                            ProgressView()
+                            Text("Sincronizando...")
+                                .font(.system(size: 12))
+                                .foregroundColor(.gray)
+                        }
                     } else {
                         if connectivityManager.routines.isEmpty && connectivityManager.library.isEmpty {
                             VStack(spacing: 12) {
@@ -403,6 +411,11 @@ struct WorkoutSelectionView: View {
         .tabViewStyle(PageTabViewStyle())
         .onReceive(connectivityManager.$activeWorkout) { activeWorkout in
             if activeWorkout != nil && !(activeWorkout?.postponed ?? false) {
+                activeTab = 0
+            }
+        }
+        .onReceive(workoutManager.$workoutSessionState) { state in
+            if state == .running || state == .paused {
                 activeTab = 0
             }
         }
