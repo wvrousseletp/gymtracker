@@ -389,6 +389,7 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _restController = TextEditingController(text: "60");
+  final _scrollController = ScrollController();
 
   List<RoutineExercise> _exercises = [];
 
@@ -406,6 +407,7 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
   void dispose() {
     _nameController.dispose();
     _restController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -465,8 +467,15 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                 ),
                 const SizedBox(height: 12),
 
-                Form(
-                  key: _formKey,
+                Expanded(
+                  child: SingleChildScrollView(
+                    controller: _scrollController,
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Form(
+                          key: _formKey,
                   child: Row(
                     children: [
                       Expanded(
@@ -563,26 +572,30 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                 const SizedBox(height: 8),
 
                 // Lista de exercícios adicionados na rotina
-                Expanded(
-                  child: _exercises.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.fitness_center, size: 36, color: Colors.white.withOpacity(0.15)),
-                              const SizedBox(height: 8),
-                              Text(
-                                "Nenhum exercício adicionado ainda.\nToque no botão acima para adicionar.",
-                                textAlign: TextAlign.center,
-                                style: TextStyle(color: Colors.white.withOpacity(0.35), fontSize: 12, height: 1.4, fontStyle: FontStyle.italic),
-                              ),
-                            ],
+                if (_exercises.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 40),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.fitness_center, size: 36, color: Colors.white.withOpacity(0.15)),
+                          const SizedBox(height: 8),
+                          Text(
+                            "Nenhum exercício adicionado ainda.\nToque no botão acima para adicionar.",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.white.withOpacity(0.35), fontSize: 12, height: 1.4, fontStyle: FontStyle.italic),
                           ),
-                        )
-                      : ListView.builder(
-                          physics: const BouncingScrollPhysics(),
-                          itemCount: _exercises.length,
-                          itemBuilder: (context, idx) {
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  ListView.builder(
+                    physics: const NeverScrollableScrollPhysics(),
+                    shrinkWrap: true,
+                    itemCount: _exercises.length,
+                    itemBuilder: (context, idx) {
                             final ex = _exercises[idx];
                             final ref = library.firstWhere(
                               (l) => l.id == ex.exerciseId,
@@ -592,6 +605,7 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                                            ref.measurementType == MeasurementType.distance ||
                                            ref.measurementType == MeasurementType.time;
                             return Container(
+                              key: ValueKey(ex.id),
                               margin: const EdgeInsets.only(bottom: 10),
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
@@ -782,6 +796,9 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                             );
                           },
                         ),
+                      ],
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 12),
 
@@ -1148,6 +1165,15 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                             }
                           });
                           Navigator.pop(dialogCtx);
+                          Future.delayed(const Duration(milliseconds: 300), () {
+                            if (_scrollController.hasClients) {
+                              _scrollController.animateTo(
+                                _scrollController.position.maxScrollExtent,
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeOut,
+                              );
+                            }
+                          });
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: accentColor,
