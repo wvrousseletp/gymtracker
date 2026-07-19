@@ -25,10 +25,9 @@ class WorkoutManager: NSObject, ObservableObject {
     
     private override init() {
         super.init()
-        recoverOrphanedSession()
     }
     
-    private func recoverOrphanedSession() {
+    func recoverOrphanedSession() {
         guard HKHealthStore.isHealthDataAvailable() else { return }
         healthStore.recoverActiveWorkoutSession { [weak self] (session, error) in
             guard let self = self else { return }

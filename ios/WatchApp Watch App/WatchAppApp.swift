@@ -9,6 +9,10 @@ import SwiftUI
 import HealthKit
 
 class ExtensionDelegate: NSObject, WKExtensionDelegate {
+    func applicationDidFinishLaunching() {
+        WorkoutManager.shared.recoverOrphanedSession()
+    }
+
     func handle(_ workoutConfiguration: HKWorkoutConfiguration) {
         // App launched by iOS app starting a workout
         print("[WatchApp] Launched via HKWorkoutConfiguration from iOS")
