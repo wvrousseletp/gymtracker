@@ -25,6 +25,32 @@ class WorkoutManager: NSObject, ObservableObject {
     
     private override init() {
         super.init()
+        recoverOrphanedSession()
+    }
+    
+    private func recoverOrphanedSession() {
+        guard HKHealthStore.isHealthDataAvailable() else { return }
+        healthStore.recoverActiveWorkoutSession { [weak self] (session, error) in
+            guard let self = self else { return }
+            if let activeSession = session {
+                DispatchQueue.main.async {
+                    self.session = activeSession
+                    self.builder = activeSession.associatedWorkoutBuilder()
+                    self.session?.delegate = self
+                    self.builder?.delegate = self
+                    
+                    // Allow time for WatchConnectivityManager to load cache and determine if this is a legitimate ongoing workout
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                        if WatchConnectivityManager.shared.activeWorkout == nil {
+                            print("Orphaned workout session detected! Force ending it.")
+                            self.endWorkout(save: false)
+                        } else {
+                            self.workoutSessionState = activeSession.state
+                        }
+                    }
+                }
+            }
+        }
     }
     
     func requestAuthorization() {
