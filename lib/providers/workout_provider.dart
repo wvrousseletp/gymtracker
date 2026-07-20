@@ -624,8 +624,9 @@ class WorkoutProvider extends ChangeNotifier {
 
   void resumePostponedWorkout(int index) {
     if (index < 0 || index >= postponedWorkouts.length) return;
-    if (activeWorkout != null)
+    if (activeWorkout != null) {
       return; // Can't resume if there's already an active one
+    }
 
     final workout = postponedWorkouts[index];
     postponedWorkouts.removeAt(index);

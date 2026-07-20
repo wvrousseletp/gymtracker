@@ -2063,8 +2063,9 @@ class _LibraryTabState extends State<LibraryTab> {
                                   Icons.keyboard_arrow_down_rounded,
                                   color: Colors.white54),
                               onChanged: (val) {
-                                if (val != null)
+                                if (val != null) {
                                   setState(() => equipment = val);
+                                }
                               },
                               items: ["Barra", "Haltere", "Máquina", "Livre"]
                                   .map((m) => DropdownMenuItem(
