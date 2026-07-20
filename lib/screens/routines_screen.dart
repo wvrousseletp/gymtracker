@@ -958,6 +958,32 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                               );
                             }).toList(),
                           ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 46,
+                          child: ElevatedButton.icon(
+                            icon: const Icon(Icons.add_circle_outline,
+                                color: Colors.black, size: 18),
+                            label: const Text(
+                              "ADICIONAR EXERCÍCIO",
+                              style: TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.5,
+                                  fontSize: 12),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: accentColor,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                              elevation: 0,
+                            ),
+                            onPressed: () {
+                              _addExercisePicker(sortedLibrary);
+                            },
+                          ),
+                        ),
                       ],
                     ),
                   ),
