@@ -22,6 +22,7 @@ class WorkoutManager: NSObject, ObservableObject {
     var builder: HKLiveWorkoutBuilder?
     private var lastHealthSync = Date.distantPast
     var healthSyncInterval: TimeInterval = 5
+    var isLaunchedByiOS = false
     
     private override init() {
         super.init()
@@ -33,6 +34,18 @@ class WorkoutManager: NSObject, ObservableObject {
             guard let self = self else { return }
             if let activeSession = session {
                 DispatchQueue.main.async {
+                    if self.isLaunchedByiOS {
+                        print("Ignoring recovered session because app was launched by iOS.")
+                        return
+                    }
+                    if self.session != nil && self.session !== activeSession {
+                        print("Ignoring recovered session because we already have another active session.")
+                        return
+                    }
+                    if self.session === activeSession {
+                        return
+                    }
+                    
                     self.session = activeSession
                     self.builder = activeSession.associatedWorkoutBuilder()
                     self.session?.delegate = self
@@ -40,7 +53,7 @@ class WorkoutManager: NSObject, ObservableObject {
                     
                     // Allow time for WatchConnectivityManager to load cache and determine if this is a legitimate ongoing workout
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                        if WatchConnectivityManager.shared.activeWorkout == nil {
+                        if WatchConnectivityManager.shared.activeWorkout == nil && !self.isLaunchedByiOS {
                             print("Orphaned workout session detected! Force ending it.")
                             self.endWorkout(save: false)
                         } else {

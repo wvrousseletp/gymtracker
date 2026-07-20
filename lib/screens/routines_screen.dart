@@ -619,40 +619,11 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                           ),
                         ),
                         const SizedBox(height: 16),
-
-                        // Botão Proeminente e Bonito de Adicionar Exercício
-                        SizedBox(
-                          width: double.infinity,
-                          height: 46,
-                          child: ElevatedButton.icon(
-                            icon: const Icon(Icons.add_circle_outline,
-                                color: Colors.black, size: 18),
-                            label: const Text(
-                              "ADICIONAR EXERCÍCIO",
-                              style: TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 0.5,
-                                  fontSize: 12),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: accentColor,
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
-                              elevation: 0,
-                            ),
-                            onPressed: () {
-                              _addExercisePicker(sortedLibrary);
-                            },
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Text(
-                              "Exercícios Adicionados",
+                              "Exercícios",
                               style: TextStyle(
                                   color: Colors.white70,
                                   fontSize: 13,
@@ -669,7 +640,7 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                               ),
                           ],
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 12),
 
                         // Lista de exercícios adicionados na rotina
                         if (_exercises.isEmpty)
@@ -684,7 +655,7 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                                       color: Colors.white.withOpacity(0.15)),
                                   const SizedBox(height: 8),
                                   Text(
-                                    "Nenhum exercício adicionado ainda.\nToque no botão acima para adicionar.",
+                                    "Nenhum exercício adicionado ainda.\nToque no botão abaixo para adicionar.",
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
                                         color: Colors.white.withOpacity(0.35),
@@ -697,14 +668,10 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                             ),
                           )
                         else
-                          ListView.builder(
-                            physics: const NeverScrollableScrollPhysics(),
-                            shrinkWrap: true,
-                            itemCount: _exercises.length,
-                            itemExtent:
-                                80, // Fixed height for better performance
-                            itemBuilder: (context, idx) {
-                              final ex = _exercises[idx];
+                          Column(
+                            children: _exercises.asMap().entries.map((entry) {
+                              final idx = entry.key;
+                              final ex = entry.value;
                               final ref = library.firstWhere(
                                 (l) => l.id == ex.exerciseId,
                                 orElse: () => LibraryExercise(
