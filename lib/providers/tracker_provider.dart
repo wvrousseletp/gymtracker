@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/profile.dart';
 import '../models/exercise.dart';
@@ -33,7 +34,7 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
   DietProvider? _dietProvider;
 
   bool _isLoading = true;
-  
+
   int _todaySteps = 0;
   int _todayBurnedCalories = 0;
   int _currentHeartRate = 0;
@@ -45,12 +46,15 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
   bool get healthAuthorized => _healthAuthorized;
 
   bool get isLoading => _isLoading;
-  List<ActiveWorkoutState> get postponedWorkouts => _workoutProvider?.postponedWorkouts ?? [];
+  List<ActiveWorkoutState> get postponedWorkouts =>
+      _workoutProvider?.postponedWorkouts ?? [];
 
   // Facade delegations
   List<Profile> get profiles => _profileProvider?.profiles ?? [];
   String get currentUserId => _profileProvider?.currentUserId ?? '';
-  Profile get currentProfile => _profileProvider?.currentProfile ?? Profile(
+  Profile get currentProfile =>
+      _profileProvider?.currentProfile ??
+      Profile(
         id: currentUserId,
         name: 'Usuário',
         avatar: '🏋️',
@@ -58,7 +62,9 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
       );
 
   PlannerState? get state {
-    if (_profileProvider == null || _workoutProvider == null || _dietProvider == null) return null;
+    if (_profileProvider == null ||
+        _workoutProvider == null ||
+        _dietProvider == null) return null;
     return PlannerState(
       library: _workoutProvider!.library,
       routines: _workoutProvider!.routines,
@@ -80,7 +86,8 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     // Don't init WatchService here - wait for update() to be called
   }
 
-  void update(ProfileProvider profile, WorkoutProvider workout, DietProvider diet) {
+  void update(
+      ProfileProvider profile, WorkoutProvider workout, DietProvider diet) {
     _profileProvider = profile;
     _workoutProvider = workout;
     _dietProvider = diet;
@@ -88,12 +95,13 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     // Set callback to save state whenever sub-providers update
     _workoutProvider?.onStateChanged = () => saveState();
     _dietProvider?.onStateChanged = () => saveState();
-    
+
     // Set callback to sync water data to watch when water intake changes
     _dietProvider?.onWaterChanged = (int waterIntake) {
-      WatchService.instance.sendWaterData(waterIntake, _dietProvider!.diet.waterGoalMl);
+      WatchService.instance
+          .sendWaterData(waterIntake, _dietProvider!.diet.waterGoalMl);
     };
-    
+
     // Init WatchService after providers are set up
     _init();
   }
@@ -115,22 +123,28 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
       debugPrint('[FirebaseConnection] Testing Firebase connection...');
       debugPrint('[FirebaseConnection] Project ID: vicente-losmooscles');
       debugPrint('[FirebaseConnection] User ID: $uid');
-      
+
       // Test Firestore connection by attempting to read user document
       final firestore = FirebaseFirestore.instance;
       final testDoc = await firestore.collection('users').doc(uid).get();
-      
-      debugPrint('[FirebaseConnection] Firestore connection test: ${testDoc.exists ? "SUCCESS - Document exists" : "SUCCESS - Document does not exist (new user)"}');
-      debugPrint('[FirebaseConnection] Firebase is properly configured and connected!');
+
+      debugPrint(
+          '[FirebaseConnection] Firestore connection test: ${testDoc.exists ? "SUCCESS - Document exists" : "SUCCESS - Document does not exist (new user)"}');
+      debugPrint(
+          '[FirebaseConnection] Firebase is properly configured and connected!');
     } catch (e) {
       debugPrint('[FirebaseConnection] ERROR - Firebase connection failed: $e');
-      debugPrint('[FirebaseConnection] This indicates a configuration or network issue');
+      debugPrint(
+          '[FirebaseConnection] This indicates a configuration or network issue');
     }
   }
 
   Future<void> initializeUser(String uid) async {
-    if (_profileProvider == null || _workoutProvider == null || _dietProvider == null) {
-      debugPrint('[TrackerProvider] Sub-providers not initialized yet, deferring user initialization');
+    if (_profileProvider == null ||
+        _workoutProvider == null ||
+        _dietProvider == null) {
+      debugPrint(
+          '[TrackerProvider] Sub-providers not initialized yet, deferring user initialization');
       return;
     }
 
@@ -187,7 +201,8 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
           if (oldState.history.isNotEmpty || oldState.routines.isNotEmpty) {
             _applyStateToSubproviders(oldState);
             await saveState(immediateSync: true);
-            debugPrint('[Migration] Dados locais de "vicente" migrados para o Google UID: $uid');
+            debugPrint(
+                '[Migration] Dados locais de "vicente" migrados para o Google UID: $uid');
           }
         } catch (e) {
           debugPrint('[Migration] Erro ao migrar dados locais antigos: $e');
@@ -279,7 +294,8 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
-  Future<void> createCloudProfile(String uid, String name, String avatar, String color) async {
+  Future<void> createCloudProfile(
+      String uid, String name, String avatar, String color) async {
     final newProfile = Profile(
       id: uid,
       name: name,
@@ -304,8 +320,10 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     _workoutProvider!.medidas = state.medidas;
     _workoutProvider!.settings = state.settings;
     _workoutProvider!.activeWorkout = state.activeWorkout;
-    _workoutProvider!.postponedWorkouts = List<ActiveWorkoutState>.from(state.postponedWorkouts);
-    _workoutProvider!.deletedHealthWorkoutIds = List<String>.from(state.deletedHealthWorkoutIds);
+    _workoutProvider!.postponedWorkouts =
+        List<ActiveWorkoutState>.from(state.postponedWorkouts);
+    _workoutProvider!.deletedHealthWorkoutIds =
+        List<String>.from(state.deletedHealthWorkoutIds);
     _workoutProvider!.streak = state.streak;
 
     _dietProvider!.diet = state.diet;
@@ -337,7 +355,7 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     // Re-compor após histórico carregado
     final completeState = state!;
     await _syncWithFirebase(completeState, forceDownload: forceDownload);
-    
+
     _workoutProvider!.checkAndPopulateDefaultLibrary();
   }
 
@@ -349,7 +367,7 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
       currentUserId,
       _persistence.encodeState(compiledState),
     );
-    
+
     await _persistence.saveWorkoutsHistoryJson(
       currentUserId,
       json.encode(compiledState.history.map((h) => h.toJson()).toList()),
@@ -392,7 +410,8 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _syncWithFirebase(PlannerState localState, {required bool forceDownload}) async {
+  Future<void> _syncWithFirebase(PlannerState localState,
+      {required bool forceDownload}) async {
     if (currentUserId.isEmpty) return;
 
     final result = await _firebaseSync.sync(
@@ -408,7 +427,8 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _applyRemoteState(PlannerState remoteState, Profile? remoteProfile) async {
+  Future<void> _applyRemoteState(
+      PlannerState remoteState, Profile? remoteProfile) async {
     _applyStateToSubproviders(remoteState);
     _workoutProvider!.checkAndPopulateDefaultLibrary();
     await _persistence.saveStateJson(
@@ -442,12 +462,21 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     _workoutProvider!.startSingleExercise(exercise);
   }
 
-  void completeSet(int exIndex, int setIndex, bool isDone, {double? distance, int? duration, bool isFailure = false, int? failureRep}) {
+  void completeSet(int exIndex, int setIndex, bool isDone,
+      {double? distance,
+      int? duration,
+      bool isFailure = false,
+      int? failureRep}) {
     if (_workoutProvider == null) return;
-    _workoutProvider!.completeSet(exIndex, setIndex, isDone, distance: distance, duration: duration, isFailure: isFailure, failureRep: failureRep);
+    _workoutProvider!.completeSet(exIndex, setIndex, isDone,
+        distance: distance,
+        duration: duration,
+        isFailure: isFailure,
+        failureRep: failureRep);
   }
 
-  void startRestTimer(int seconds, String nextExName, int nextSetNum, bool isPrep) {
+  void startRestTimer(
+      int seconds, String nextExName, int nextSetNum, bool isPrep) {
     if (_workoutProvider == null) return;
     _workoutProvider!.startRestTimer(seconds, nextExName, nextSetNum, isPrep);
   }
@@ -462,9 +491,11 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     _workoutProvider!.updateExerciseWeightReps(exIndex, weight, reps);
   }
 
-  void updateExerciseSetWeightReps(int exIndex, int setIdx, double weight, int reps) {
+  void updateExerciseSetWeightReps(
+      int exIndex, int setIdx, double weight, int reps) {
     if (_workoutProvider == null) return;
-    _workoutProvider!.updateExerciseSetWeightReps(exIndex, setIdx, weight, reps);
+    _workoutProvider!
+        .updateExerciseSetWeightReps(exIndex, setIdx, weight, reps);
   }
 
   void updateWorkoutTimer(int seconds, {bool isWarmupTimer = false}) {
@@ -501,7 +532,7 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     if (_workoutProvider == null) return;
     _workoutProvider!.resumePostponedWorkout(index);
   }
-  
+
   void discardPostponedWorkout(int index) {
     if (_workoutProvider == null) return;
     _workoutProvider!.discardPostponedWorkout(index);
@@ -557,14 +588,18 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     _workoutProvider!.deletePersonalRecord(exerciseId);
   }
 
-  void addLibraryExercise(String name, String muscle, String measurementType, String? notes, String? executionType) {
+  void addLibraryExercise(String name, String muscle, String measurementType,
+      String? notes, String? executionType) {
     if (_workoutProvider == null) return;
-    _workoutProvider!.addLibraryExercise(name, muscle, measurementType, notes, executionType);
+    _workoutProvider!.addLibraryExercise(
+        name, muscle, measurementType, notes, executionType);
   }
 
-  void updateLibraryExercise(String id, String name, String muscle, String measurementType, String? notes, String? executionType) {
+  void updateLibraryExercise(String id, String name, String muscle,
+      String measurementType, String? notes, String? executionType) {
     if (_workoutProvider == null) return;
-    _workoutProvider!.updateLibraryExercise(id, name, muscle, measurementType, notes, executionType);
+    _workoutProvider!.updateLibraryExercise(
+        id, name, muscle, measurementType, notes, executionType);
   }
 
   void deleteLibraryExercise(String id) {
@@ -572,7 +607,8 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     _workoutProvider!.deleteLibraryExercise(id);
   }
 
-  void addRoutine(String name, int defaultRest, List<RoutineExercise> exercises) {
+  void addRoutine(
+      String name, int defaultRest, List<RoutineExercise> exercises) {
     if (_workoutProvider == null) return;
     _workoutProvider!.addRoutine(name, defaultRest, exercises);
   }
@@ -612,7 +648,8 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     _dietProvider!.updateWaterIntake(quantityMl);
   }
 
-  void addMeal(String name, int cals, double prot, double carbs, double fat, String time) {
+  void addMeal(String name, int cals, double prot, double carbs, double fat,
+      String time) {
     if (_dietProvider == null) return;
     _dietProvider!.addMeal(name, cals, prot, carbs, fat, time);
   }
@@ -665,29 +702,34 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
   void checkAndResetPostponedWorkouts() {
     if (_workoutProvider == null) return;
     if (_workoutProvider!.postponedWorkouts.isEmpty) return;
-    
+
     final now = DateTime.now();
-    final todayStr = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
-    
+    final todayStr =
+        "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+
     // Remove any postponed workouts that were created on a previous day
     final beforeCount = _workoutProvider!.postponedWorkouts.length;
     _workoutProvider!.postponedWorkouts.removeWhere((workout) {
       try {
-        final workoutDate = DateTime.fromMillisecondsSinceEpoch(workout.startTime).toLocal();
-        final workoutDateStr = "${workoutDate.year}-${workoutDate.month.toString().padLeft(2, '0')}-${workoutDate.day.toString().padLeft(2, '0')}";
+        final workoutDate =
+            DateTime.fromMillisecondsSinceEpoch(workout.startTime).toLocal();
+        final workoutDateStr =
+            "${workoutDate.year}-${workoutDate.month.toString().padLeft(2, '0')}-${workoutDate.day.toString().padLeft(2, '0')}";
         return workoutDateStr != todayStr;
       } catch (_) {
         return true; // Remove if date can't be parsed
       }
     });
-    
+
     if (_workoutProvider!.postponedWorkouts.length != beforeCount) {
-      debugPrint('[TrackerProvider] Limpou ${beforeCount - _workoutProvider!.postponedWorkouts.length} treino(s) adiado(s) de dias anteriores');
+      debugPrint(
+          '[TrackerProvider] Limpou ${beforeCount - _workoutProvider!.postponedWorkouts.length} treino(s) adiado(s) de dias anteriores');
       saveState();
     }
   }
 
-  Future<void> updateProfile(String id, String name, String avatar, String color) {
+  Future<void> updateProfile(
+      String id, String name, String avatar, String color) {
     if (_profileProvider == null) return Future.value();
     return _profileProvider!.updateProfile(id, name, avatar, color);
   }
@@ -743,7 +785,8 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     final active = _workoutProvider?.activeWorkout;
     if (active != null) {
       _persistence.saveActiveWorkoutState(active);
-      debugPrint('[TrackerProvider] Persisted active workout state for background recovery');
+      debugPrint(
+          '[TrackerProvider] Persisted active workout state for background recovery');
     }
   }
 
@@ -754,10 +797,11 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
       final now = DateTime.now().millisecondsSinceEpoch;
       final startTime = active.startTime;
       final newElapsed = ((now - startTime) / 1000).round();
-      
+
       if (newElapsed != active.elapsedSeconds) {
         _workoutProvider?.updateWorkoutElapsedTime(newElapsed);
-        debugPrint('[TrackerProvider] Recalculated elapsed time: ${active.elapsedSeconds}s -> ${newElapsed}s');
+        debugPrint(
+            '[TrackerProvider] Recalculated elapsed time: ${active.elapsedSeconds}s -> ${newElapsed}s');
       }
     }
   }
@@ -794,7 +838,7 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
       if (workoutJson != null) {
         final decodedMap = json.decode(workoutJson) as Map<String, dynamic>;
         final fromWidget = ActiveWorkoutState.fromJson(decodedMap);
-        
+
         final current = _workoutProvider?.activeWorkout;
         if (current == null) {
           _workoutProvider!.activeWorkout = fromWidget;
@@ -804,7 +848,7 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
           final jsonWidget = json.encode(fromWidget.toJson());
           if (jsonCurrent != jsonWidget) {
             _workoutProvider!.activeWorkout = fromWidget;
-            
+
             final rest = fromWidget.restTimer;
             if (rest != null) {
               RestTimerService.instance.start(
@@ -837,7 +881,7 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
         _healthAuthorized = true;
         notifyListeners();
       }
-      
+
       // Auto sync recent Apple Health workouts too
       await syncAppleWorkouts();
     } catch (e) {
@@ -861,7 +905,7 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
 
         // Skip if already imported by ID
         if (_workoutProvider!.history.any((log) => log.id == id)) continue;
-        
+
         // Skip if it was imported and then deleted by the user
         if (_workoutProvider!.deletedHealthWorkoutIds.contains(id)) continue;
 
@@ -871,7 +915,8 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
           final bool isDuplicateOfLocal = _workoutProvider!.history.any((log) {
             try {
               final logDateTime = DateTime.parse(log.date);
-              final diffMinutes = logDateTime.difference(workoutDateTime).inMinutes.abs();
+              final diffMinutes =
+                  logDateTime.difference(workoutDateTime).inMinutes.abs();
               return diffMinutes <= 3; // Within 3 minutes
             } catch (_) {
               return false;
@@ -919,7 +964,8 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
         await saveState();
       }
     } catch (e) {
-      debugPrint('[TrackerProvider] Erro ao importar treinos do Apple Health: $e');
+      debugPrint(
+          '[TrackerProvider] Erro ao importar treinos do Apple Health: $e');
     }
   }
 
