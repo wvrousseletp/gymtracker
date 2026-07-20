@@ -196,19 +196,30 @@ import WidgetKit
   }
 
   private func launchWatchAppWithRetry(attempt: Int, maxAttempts: Int) {
-    guard HKHealthStore.isHealthDataAvailable() else { return }
+    print("[AppDelegate] Attempting to launch watch app - Attempt \(attempt + 1)/\(maxAttempts)")
+    
+    guard HKHealthStore.isHealthDataAvailable() else {
+      print("[AppDelegate] HealthKit is not available on this device")
+      return
+    }
+    
+    print("[AppDelegate] HealthKit is available, creating workout configuration")
     
     let configuration = HKWorkoutConfiguration()
     configuration.activityType = .traditionalStrengthTraining
     configuration.locationType = .unknown
     
+    print("[AppDelegate] Calling healthStore.startWatchApp with configuration")
+    
     healthStore.startWatchApp(with: configuration) { [weak self] success, error in
       if let error = error {
         print("[AppDelegate] Watch app launch attempt \(attempt + 1) failed: \(error.localizedDescription)")
+        print("[AppDelegate] Error details: \(error)")
         
         // Retry with exponential backoff if we haven't reached max attempts
         if attempt < maxAttempts - 1 {
           let delay = TimeInterval(pow(2.0, Double(attempt))) // 1s, 2s, 4s
+          print("[AppDelegate] Scheduling retry in \(delay) seconds")
           DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
             self?.launchWatchAppWithRetry(attempt: attempt + 1, maxAttempts: maxAttempts)
           }
@@ -217,6 +228,8 @@ import WidgetKit
         }
       } else if success {
         print("[AppDelegate] Watch app launched successfully on attempt \(attempt + 1)")
+      } else {
+        print("[AppDelegate] Watch app launch returned success=false on attempt \(attempt + 1)")
       }
     }
   }
@@ -243,7 +256,9 @@ import WidgetKit
         result(FlutterError(code: "INVALID_ARGUMENT", message: "Expected JSON string for library", details: nil))
       }
     case "updateActiveWorkout":
+      print("[AppDelegate] updateActiveWorkout called")
       if let json = call.arguments as? String {
+        print("[AppDelegate] Sending active workout to watch")
         sendToWatch("activeWorkout", json: json)
         let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles")
         sharedDefaults?.set(json, forKey: "activeWorkoutJson")
@@ -251,12 +266,19 @@ import WidgetKit
         self.updateLiveActivity(workoutJson: json)
         
         // Enhanced watch app launch with retry mechanism
+        print("[AppDelegate] WCSession isReachable: \(session.isReachable)")
+        print("[AppDelegate] WCSession activationState: \(session.activationState.rawValue)")
+        
         if HKHealthStore.isHealthDataAvailable() {
+            print("[AppDelegate] Attempting to launch watch app with retry mechanism")
             self.launchWatchAppWithRetry(attempt: 0, maxAttempts: 3)
+        } else {
+            print("[AppDelegate] HealthKit is not available, cannot launch watch app")
         }
         
         result(nil)
       } else {
+        print("[AppDelegate] Invalid argument for updateActiveWorkout")
         result(FlutterError(code: "INVALID_ARGUMENT", message: "Expected JSON string for active workout", details: nil))
       }
     case "updatePlanner":
