@@ -122,7 +122,10 @@ class FirebaseSyncService {
   // --- INCREMENTAL FIREBASE WORKOUTS AND ROUTINES ---
 
   Future<void> syncWorkoutLog(String userId, WorkoutLog log) async {
-    if (userId.isEmpty || userId.length > 128 || log.id.isEmpty || log.id.length > 128) {
+    if (userId.isEmpty ||
+        userId.length > 128 ||
+        log.id.isEmpty ||
+        log.id.length > 128) {
       debugPrint('[FirebaseSync] syncWorkoutLog rejected: invalid IDs');
       return;
     }
@@ -150,6 +153,39 @@ class FirebaseSyncService {
     }
   }
 
+  Future<void> syncWorkoutLogsBatch(
+      String userId, List<WorkoutLog> logs) async {
+    if (logs.isEmpty || userId.isEmpty || userId.length > 128) {
+      debugPrint('[FirebaseSync] syncWorkoutLogsBatch rejected: invalid input');
+      return;
+    }
+
+    try {
+      final batch = _firestore.batch();
+      final workoutsRef =
+          _firestore.collection('users').doc(userId).collection('workouts');
+
+      for (final log in logs) {
+        if (log.id.isEmpty || log.id.length > 128) continue;
+        final sanitizedLog = _sanitizeWorkoutLog(log);
+        batch.set(workoutsRef.doc(sanitizedLog.id), {
+          ...sanitizedLog.toJson(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      await batch.commit();
+      unawaited(drainQueue(userId));
+      debugPrint('[FirebaseSync] Batch synced ${logs.length} workout logs');
+    } catch (e) {
+      debugPrint('[FirebaseSync] syncWorkoutLogsBatch error (offline?): $e');
+      // Fallback to individual sync with queue
+      for (final log in logs) {
+        await syncWorkoutLog(userId, log);
+      }
+    }
+  }
+
   Future<void> deleteWorkoutLog(String userId, String logId) async {
     try {
       await _firestore
@@ -171,7 +207,10 @@ class FirebaseSyncService {
   }
 
   Future<void> syncRoutine(String userId, Routine routine) async {
-    if (userId.isEmpty || userId.length > 128 || routine.id.isEmpty || routine.id.length > 128) {
+    if (userId.isEmpty ||
+        userId.length > 128 ||
+        routine.id.isEmpty ||
+        routine.id.length > 128) {
       debugPrint('[FirebaseSync] syncRoutine rejected: invalid IDs');
       return;
     }
@@ -198,6 +237,38 @@ class FirebaseSyncService {
     }
   }
 
+  Future<void> syncRoutinesBatch(String userId, List<Routine> routines) async {
+    if (routines.isEmpty || userId.isEmpty || userId.length > 128) {
+      debugPrint('[FirebaseSync] syncRoutinesBatch rejected: invalid input');
+      return;
+    }
+
+    try {
+      final batch = _firestore.batch();
+      final routinesRef =
+          _firestore.collection('users').doc(userId).collection('routines');
+
+      for (final routine in routines) {
+        if (routine.id.isEmpty || routine.id.length > 128) continue;
+        final sanitizedRoutine = _sanitizeRoutine(routine);
+        batch.set(routinesRef.doc(sanitizedRoutine.id), {
+          ...sanitizedRoutine.toJson(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      await batch.commit();
+      unawaited(drainQueue(userId));
+      debugPrint('[FirebaseSync] Batch synced ${routines.length} routines');
+    } catch (e) {
+      debugPrint('[FirebaseSync] syncRoutinesBatch error (offline?): $e');
+      // Fallback to individual sync with queue
+      for (final routine in routines) {
+        await syncRoutine(userId, routine);
+      }
+    }
+  }
+
   Future<void> deleteRoutine(String userId, String routineId) async {
     try {
       await _firestore
@@ -219,7 +290,10 @@ class FirebaseSyncService {
   }
 
   Future<void> syncLibraryExercise(String userId, LibraryExercise ex) async {
-    if (userId.isEmpty || userId.length > 128 || ex.id.isEmpty || ex.id.length > 128) return;
+    if (userId.isEmpty ||
+        userId.length > 128 ||
+        ex.id.isEmpty ||
+        ex.id.length > 128) return;
     try {
       await _firestore
           .collection('users')
@@ -264,7 +338,8 @@ class FirebaseSyncService {
     try {
       final pending = await _syncQueue.pendingFor(userId);
       if (pending.isEmpty) return;
-      debugPrint('[SyncQueue] Draining ${pending.length} pending op(s) for user $userId');
+      debugPrint(
+          '[SyncQueue] Draining ${pending.length} pending op(s) for user $userId');
 
       final completed = <SyncOp>[];
       for (final op in pending) {
@@ -277,7 +352,10 @@ class FirebaseSyncService {
                   .doc(userId)
                   .collection('workouts')
                   .doc(log.id)
-                  .set({...log.toJson(), 'updatedAt': FieldValue.serverTimestamp()});
+                  .set({
+                ...log.toJson(),
+                'updatedAt': FieldValue.serverTimestamp()
+              });
               completed.add(op);
             case SyncOpType.deleteWorkoutLog:
               final id = op.payload['id'] as String;
@@ -295,7 +373,10 @@ class FirebaseSyncService {
                   .doc(userId)
                   .collection('routines')
                   .doc(routine.id)
-                  .set({...routine.toJson(), 'updatedAt': FieldValue.serverTimestamp()});
+                  .set({
+                ...routine.toJson(),
+                'updatedAt': FieldValue.serverTimestamp()
+              });
               completed.add(op);
             case SyncOpType.deleteRoutine:
               final id = op.payload['id'] as String;
@@ -313,7 +394,10 @@ class FirebaseSyncService {
                   .doc(userId)
                   .collection('library')
                   .doc(ex.id)
-                  .set({...ex.toJson(), 'updatedAt': FieldValue.serverTimestamp()});
+                  .set({
+                ...ex.toJson(),
+                'updatedAt': FieldValue.serverTimestamp()
+              });
               completed.add(op);
             case SyncOpType.deleteLibraryExercise:
               final id = op.payload['id'] as String;
@@ -334,7 +418,8 @@ class FirebaseSyncService {
 
       if (completed.isNotEmpty) {
         await _syncQueue.removeCompleted(completed);
-        debugPrint('[SyncQueue] Drained ${completed.length} op(s) successfully.');
+        debugPrint(
+            '[SyncQueue] Drained ${completed.length} op(s) successfully.');
       }
     } finally {
       _isDraining = false;
@@ -354,7 +439,7 @@ class FirebaseSyncService {
           .doc(userId)
           .collection('workouts')
           .get();
-          
+
       final List<WorkoutLog> logs = [];
       for (var doc in snapshot.docs) {
         try {
@@ -377,7 +462,7 @@ class FirebaseSyncService {
           .doc(userId)
           .collection('routines')
           .get();
-          
+
       final List<Routine> routines = [];
       for (var doc in snapshot.docs) {
         try {
@@ -400,13 +485,14 @@ class FirebaseSyncService {
           .doc(userId)
           .collection('library')
           .get();
-          
+
       final List<LibraryExercise> library = [];
       for (var doc in snapshot.docs) {
         try {
           library.add(LibraryExercise.fromJson(doc.data()));
         } catch (e) {
-          debugPrint('[FirebaseSync] Error parsing library exercise ${doc.id}: $e');
+          debugPrint(
+              '[FirebaseSync] Error parsing library exercise ${doc.id}: $e');
         }
       }
       return library;
@@ -428,8 +514,8 @@ class FirebaseSyncService {
     try {
       final docRef = _firestore.collection('users').doc(userId);
       final docSnap = await docRef.get();
-      final localUpdatedAt =
-          await _persistence.loadClientUpdatedAt(userId) ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final localUpdatedAt = await _persistence.loadClientUpdatedAt(userId) ??
+          DateTime.fromMillisecondsSinceEpoch(0);
 
       if (!docSnap.exists) {
         await _upload(docRef, localState, profile, localUpdatedAt);
@@ -459,28 +545,35 @@ class FirebaseSyncService {
 
       PlannerState remoteState;
       try {
-        remoteState = PlannerState.fromJson(json.decode(data['jsonState'] as String));
+        remoteState =
+            PlannerState.fromJson(json.decode(data['jsonState'] as String));
       } catch (e) {
-        debugPrint('[FirebaseSync] Error parsing jsonState, falling back to initial: $e');
+        debugPrint(
+            '[FirebaseSync] Error parsing jsonState, falling back to initial: $e');
         remoteState = localState;
       }
       final remoteUpdatedAt = _readRemoteUpdatedAt(data);
 
-      // CRITICAL SAFETY SHIELD: If local state is empty/new but remote has data, 
+      // CRITICAL SAFETY SHIELD: If local state is empty/new but remote has data,
       // do NOT allow uploading/overwriting the remote state. Force download instead.
-      final isLocalEmpty = localState.routines.isEmpty && localState.history.isEmpty;
-      final isRemoteNotEmpty = remoteState.routines.isNotEmpty || remoteState.history.isNotEmpty;
-      
+      final isLocalEmpty =
+          localState.routines.isEmpty && localState.history.isEmpty;
+      final isRemoteNotEmpty =
+          remoteState.routines.isNotEmpty || remoteState.history.isNotEmpty;
+
       if (isLocalEmpty && isRemoteNotEmpty) {
-        debugPrint('[FirebaseSync] Empty local state detected. Safety shield triggered: forcing download from remote cloud.');
+        debugPrint(
+            '[FirebaseSync] Empty local state detected. Safety shield triggered: forcing download from remote cloud.');
         final cloudWorkouts = await fetchCloudWorkouts(userId);
         final cloudRoutines = await fetchCloudRoutines(userId);
         final cloudLibrary = await fetchCloudLibrary(userId);
-        
+
         final combinedState = remoteState.copyWith(
           library: cloudLibrary.isNotEmpty ? cloudLibrary : remoteState.library,
-          history: cloudWorkouts.isNotEmpty ? cloudWorkouts : remoteState.history,
-          routines: cloudRoutines.isNotEmpty ? cloudRoutines : remoteState.routines,
+          history:
+              cloudWorkouts.isNotEmpty ? cloudWorkouts : remoteState.history,
+          routines:
+              cloudRoutines.isNotEmpty ? cloudRoutines : remoteState.routines,
         );
 
         await onRemoteApplied?.call(combinedState, _readRemoteProfile(data));
@@ -492,7 +585,7 @@ class FirebaseSyncService {
         final cloudWorkouts = await fetchCloudWorkouts(userId);
         final cloudRoutines = await fetchCloudRoutines(userId);
         final cloudLibrary = await fetchCloudLibrary(userId);
-        
+
         // Merge cloudLibrary with remoteState.library (in case some were not uploaded to subcollection yet)
         final combinedLibrary = <LibraryExercise>[...cloudLibrary];
         final cloudLibIds = cloudLibrary.map((e) => e.id).toSet();
@@ -503,17 +596,25 @@ class FirebaseSyncService {
         }
 
         final combinedState = remoteState.copyWith(
-          library: combinedLibrary.isNotEmpty ? combinedLibrary : remoteState.library,
-          history: cloudWorkouts.isNotEmpty ? cloudWorkouts : remoteState.history,
-          routines: cloudRoutines.isNotEmpty ? cloudRoutines : remoteState.routines,
-          deletedHealthWorkoutIds: {...localState.deletedHealthWorkoutIds, ...remoteState.deletedHealthWorkoutIds}.toList(),
+          library: combinedLibrary.isNotEmpty
+              ? combinedLibrary
+              : remoteState.library,
+          history:
+              cloudWorkouts.isNotEmpty ? cloudWorkouts : remoteState.history,
+          routines:
+              cloudRoutines.isNotEmpty ? cloudRoutines : remoteState.routines,
+          deletedHealthWorkoutIds: {
+            ...localState.deletedHealthWorkoutIds,
+            ...remoteState.deletedHealthWorkoutIds
+          }.toList(),
         );
 
         await onRemoteApplied?.call(combinedState, _readRemoteProfile(data));
         return combinedState;
       }
 
-      if (_shouldUpload(localState, remoteState, localUpdatedAt, remoteUpdatedAt)) {
+      if (_shouldUpload(
+          localState, remoteState, localUpdatedAt, remoteUpdatedAt)) {
         await _upload(docRef, localState, profile, localUpdatedAt);
         for (final routine in localState.routines) {
           unawaited(syncRoutine(userId, routine));
@@ -534,32 +635,53 @@ class FirebaseSyncService {
 
       // Retrieve offline operations to resolve conflicts
       final pendingOps = await _syncQueue.pendingFor(userId);
-      final pendingDeletedWorkoutIds = pendingOps.where((op) => op.type == SyncOpType.deleteWorkoutLog).map((op) => op.payload['id'] as String).toSet();
-      final pendingDeletedRoutineIds = pendingOps.where((op) => op.type == SyncOpType.deleteRoutine).map((op) => op.payload['id'] as String).toSet();
-      final pendingDeletedLibraryIds = pendingOps.where((op) => op.type == SyncOpType.deleteLibraryExercise).map((op) => op.payload['id'] as String).toSet();
-      
-      final pendingSyncWorkoutIds = pendingOps.where((op) => op.type == SyncOpType.syncWorkoutLog).map((op) => WorkoutLog.fromJson(op.payload).id).toSet();
-      final pendingSyncRoutineIds = pendingOps.where((op) => op.type == SyncOpType.syncRoutine).map((op) => Routine.fromJson(op.payload).id).toSet();
-      final pendingSyncLibraryIds = pendingOps.where((op) => op.type == SyncOpType.syncLibraryExercise).map((op) => LibraryExercise.fromJson(op.payload).id).toSet();
+      final pendingDeletedWorkoutIds = pendingOps
+          .where((op) => op.type == SyncOpType.deleteWorkoutLog)
+          .map((op) => op.payload['id'] as String)
+          .toSet();
+      final pendingDeletedRoutineIds = pendingOps
+          .where((op) => op.type == SyncOpType.deleteRoutine)
+          .map((op) => op.payload['id'] as String)
+          .toSet();
+      final pendingDeletedLibraryIds = pendingOps
+          .where((op) => op.type == SyncOpType.deleteLibraryExercise)
+          .map((op) => op.payload['id'] as String)
+          .toSet();
+
+      final pendingSyncWorkoutIds = pendingOps
+          .where((op) => op.type == SyncOpType.syncWorkoutLog)
+          .map((op) => WorkoutLog.fromJson(op.payload).id)
+          .toSet();
+      final pendingSyncRoutineIds = pendingOps
+          .where((op) => op.type == SyncOpType.syncRoutine)
+          .map((op) => Routine.fromJson(op.payload).id)
+          .toSet();
+      final pendingSyncLibraryIds = pendingOps
+          .where((op) => op.type == SyncOpType.syncLibraryExercise)
+          .map((op) => LibraryExercise.fromJson(op.payload).id)
+          .toSet();
 
       // Merge workouts
       final cloudWorkoutIds = cloudWorkouts.map((w) => w.id).toSet();
       final localWorkoutsMap = {for (var w in localState.history) w.id: w};
       final mergedWorkouts = <WorkoutLog>[];
       final deletedIdsSet = localState.deletedHealthWorkoutIds.toSet();
-      
-      for (final log in cloudWorkouts.isNotEmpty ? cloudWorkouts : remoteState.history) {
+
+      for (final log
+          in cloudWorkouts.isNotEmpty ? cloudWorkouts : remoteState.history) {
         if (deletedIdsSet.contains(log.id)) continue;
         if (pendingDeletedWorkoutIds.contains(log.id)) continue;
-        
-        if (pendingSyncWorkoutIds.contains(log.id) && localWorkoutsMap.containsKey(log.id)) {
+
+        if (pendingSyncWorkoutIds.contains(log.id) &&
+            localWorkoutsMap.containsKey(log.id)) {
           mergedWorkouts.add(localWorkoutsMap[log.id]!);
         } else {
           mergedWorkouts.add(log);
         }
       }
       for (final log in localState.history) {
-        if (!cloudWorkoutIds.contains(log.id) && !pendingDeletedWorkoutIds.contains(log.id)) {
+        if (!cloudWorkoutIds.contains(log.id) &&
+            !pendingDeletedWorkoutIds.contains(log.id)) {
           mergedWorkouts.add(log);
           unawaited(syncWorkoutLog(userId, log));
         }
@@ -570,18 +692,21 @@ class FirebaseSyncService {
       final cloudRoutineIds = cloudRoutines.map((r) => r.id).toSet();
       final localRoutinesMap = {for (var r in localState.routines) r.id: r};
       final mergedRoutines = <Routine>[];
-      
-      for (final routine in cloudRoutines.isNotEmpty ? cloudRoutines : remoteState.routines) {
+
+      for (final routine
+          in cloudRoutines.isNotEmpty ? cloudRoutines : remoteState.routines) {
         if (pendingDeletedRoutineIds.contains(routine.id)) continue;
-        
-        if (pendingSyncRoutineIds.contains(routine.id) && localRoutinesMap.containsKey(routine.id)) {
+
+        if (pendingSyncRoutineIds.contains(routine.id) &&
+            localRoutinesMap.containsKey(routine.id)) {
           mergedRoutines.add(localRoutinesMap[routine.id]!);
         } else {
           mergedRoutines.add(routine);
         }
       }
       for (final routine in localState.routines) {
-        if (!cloudRoutineIds.contains(routine.id) && !pendingDeletedRoutineIds.contains(routine.id)) {
+        if (!cloudRoutineIds.contains(routine.id) &&
+            !pendingDeletedRoutineIds.contains(routine.id)) {
           mergedRoutines.add(routine);
           unawaited(syncRoutine(userId, routine));
         }
@@ -591,20 +716,23 @@ class FirebaseSyncService {
       final cloudLibraryIds = cloudLibrary.map((l) => l.id).toSet();
       final localLibraryMap = {for (var ex in localState.library) ex.id: ex};
       final mergedLibrary = <LibraryExercise>[];
-      
+
       for (final ex in cloudLibrary) {
         if (pendingDeletedLibraryIds.contains(ex.id)) continue;
-        
-        if (pendingSyncLibraryIds.contains(ex.id) && localLibraryMap.containsKey(ex.id)) {
+
+        if (pendingSyncLibraryIds.contains(ex.id) &&
+            localLibraryMap.containsKey(ex.id)) {
           mergedLibrary.add(localLibraryMap[ex.id]!);
         } else {
           mergedLibrary.add(ex);
         }
       }
-      
+
       for (final ex in remoteState.library) {
-        if (!cloudLibraryIds.contains(ex.id) && !pendingDeletedLibraryIds.contains(ex.id)) {
-          if (pendingSyncLibraryIds.contains(ex.id) && localLibraryMap.containsKey(ex.id)) {
+        if (!cloudLibraryIds.contains(ex.id) &&
+            !pendingDeletedLibraryIds.contains(ex.id)) {
+          if (pendingSyncLibraryIds.contains(ex.id) &&
+              localLibraryMap.containsKey(ex.id)) {
             mergedLibrary.add(localLibraryMap[ex.id]!);
           } else {
             mergedLibrary.add(ex);
@@ -612,10 +740,11 @@ class FirebaseSyncService {
           unawaited(syncLibraryExercise(userId, mergedLibrary.last));
         }
       }
-      
+
       final currentCloudIds = mergedLibrary.map((e) => e.id).toSet();
       for (final ex in localState.library) {
-        if (!currentCloudIds.contains(ex.id) && !pendingDeletedLibraryIds.contains(ex.id)) {
+        if (!currentCloudIds.contains(ex.id) &&
+            !pendingDeletedLibraryIds.contains(ex.id)) {
           mergedLibrary.add(ex);
           unawaited(syncLibraryExercise(userId, ex));
         }
@@ -625,7 +754,10 @@ class FirebaseSyncService {
         library: mergedLibrary,
         history: mergedWorkouts,
         routines: mergedRoutines,
-        deletedHealthWorkoutIds: {...localState.deletedHealthWorkoutIds, ...remoteState.deletedHealthWorkoutIds}.toList(),
+        deletedHealthWorkoutIds: {
+          ...localState.deletedHealthWorkoutIds,
+          ...remoteState.deletedHealthWorkoutIds
+        }.toList(),
       );
 
       await onRemoteApplied?.call(combinedState, _readRemoteProfile(data));
@@ -633,14 +765,17 @@ class FirebaseSyncService {
     } catch (e) {
       debugPrint('[FirebaseSync] sync error: $e');
       if (forceDownload) {
-         return null; // Return null so TrackerProvider doesn't wipe state on download failure
+        return null; // Return null so TrackerProvider doesn't wipe state on download failure
       }
       return localState;
     }
   }
 
   Future<void> updateCloudProfile(String userId, Profile profile) async {
-    if (userId.isEmpty || userId.length > 128 || profile.id.isEmpty || profile.id.length > 128) {
+    if (userId.isEmpty ||
+        userId.length > 128 ||
+        profile.id.isEmpty ||
+        profile.id.length > 128) {
       debugPrint('[FirebaseSync] updateCloudProfile rejected: invalid IDs');
       return;
     }
@@ -663,7 +798,7 @@ class FirebaseSyncService {
   ) async {
     // Strip history, routines and library from main JSON state to keep it light
     final cleanState = state.copyWith(history: [], routines: [], library: []);
-    
+
     await docRef.set({
       'jsonState': json.encode(cleanState.toJson()),
       'profile': profile.toJson(),
@@ -740,7 +875,9 @@ class FirebaseSyncService {
       totalSets: log.totalSets.clamp(0, 1000),
       totalWeight: log.totalWeight.clamp(0.0, 1000000.0),
       rpe: log.rpe.clamp(0, 10),
-      notes: log.notes.trim().substring(0, log.notes.length > 500 ? 500 : log.notes.length),
+      notes: log.notes
+          .trim()
+          .substring(0, log.notes.length > 500 ? 500 : log.notes.length),
       recovery: log.recovery,
       exercises: exercises,
       warmupDurationSeconds: log.warmupDurationSeconds,
@@ -800,4 +937,3 @@ bool shouldUploadState({
   if (remoteUpdatedAt.isAfter(localUpdatedAt)) return false;
   return localHistoryLength >= remoteHistoryLength;
 }
-

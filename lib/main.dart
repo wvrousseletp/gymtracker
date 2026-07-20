@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'providers/profile_provider.dart';
 import 'providers/workout_provider.dart';
@@ -11,6 +11,7 @@ import 'providers/tracker_provider.dart';
 import 'providers/notification_provider.dart';
 import 'screens/main_navigation.dart';
 import 'screens/login_screen.dart';
+import 'screens/splash_screen.dart';
 import 'widgets/offline_banner_wrapper.dart';
 import 'services/analytics_service.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -34,7 +35,8 @@ void main() async {
           create: (_) => DietProvider(),
           update: (_, profile, diet) => diet!..updateProfile(profile),
         ),
-        ChangeNotifierProxyProvider3<ProfileProvider, WorkoutProvider, DietProvider, TrackerProvider>(
+        ChangeNotifierProxyProvider3<ProfileProvider, WorkoutProvider,
+            DietProvider, TrackerProvider>(
           create: (context) => TrackerProvider(),
           update: (context, profile, workout, diet, tracker) {
             tracker?.update(profile, workout, diet);
@@ -66,7 +68,8 @@ class MyApp extends StatelessWidget {
         Locale('pt', 'BR'),
         Locale('en', 'US'),
       ],
-      builder: (context, child) => OfflineBannerWrapper(child: child ?? const SizedBox()),
+      builder: (context, child) =>
+          OfflineBannerWrapper(child: child ?? const SizedBox()),
       theme: ThemeData(
         brightness: Brightness.light,
         scaffoldBackgroundColor: const Color(0xfff2f2f7),
@@ -112,14 +115,11 @@ class MyApp extends StatelessWidget {
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-              body: Center(
-                child: CircularProgressIndicator(),
-              ),
-            );
+            return const SplashScreen();
           }
           if (snapshot.hasData && snapshot.data != null) {
-            final provider = Provider.of<TrackerProvider>(context, listen: false);
+            final provider =
+                Provider.of<TrackerProvider>(context, listen: false);
             Future.microtask(() {
               if (provider.currentUserId != snapshot.data!.uid) {
                 provider.initializeUser(snapshot.data!.uid);

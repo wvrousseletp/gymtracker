@@ -768,8 +768,11 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                       mainAxisAlignment: MainAxisAlignment.end,
                                       children: [
                                         TextButton(
-                                          onPressed: () =>
-                                              Navigator.pop(dialogCtx),
+                                          onPressed: () {
+                                            distCtrl.dispose();
+                                            durCtrl.dispose();
+                                            Navigator.pop(dialogCtx);
+                                          },
                                           child: const Text("Cancelar",
                                               style: TextStyle(
                                                   color: Colors.white54,
@@ -784,6 +787,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                             final t =
                                                 int.tryParse(durCtrl.text) ??
                                                     30;
+                                            distCtrl.dispose();
+                                            durCtrl.dispose();
                                             Navigator.pop(dialogCtx,
                                                 {"distance": d, "duration": t});
                                           },
@@ -1367,7 +1372,11 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     TextButton(
-                      onPressed: () => Navigator.pop(dialogCtx),
+                      onPressed: () {
+                        prepController.dispose();
+                        waterController.dispose();
+                        Navigator.pop(dialogCtx);
+                      },
                       child: const Text("Cancelar",
                           style: TextStyle(
                               color: Colors.white54,
@@ -1383,6 +1392,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                         provider.updateSettings(
                             soundState.value, vibrationState.value, prep);
                         provider.updateWaterGoal(waterGoal);
+                        prepController.dispose();
+                        waterController.dispose();
                         Navigator.pop(dialogCtx);
                       },
                       child: Text("Salvar",

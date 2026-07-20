@@ -26,7 +26,23 @@ class ThemeUtils {
   }
 
   static List<String> getAvatarEmojis() {
-    return ["🏋️", "⚡", "✨", "🦁", "🥑", "🦾", "🤸", "🏃", "🧘", "🏆", "🍉", "🔥", "🍕", "❤️", "👑"];
+    return [
+      "🏋️",
+      "⚡",
+      "✨",
+      "🦁",
+      "🥑",
+      "🦾",
+      "🤸",
+      "🏃",
+      "🧘",
+      "🏆",
+      "🍉",
+      "🔥",
+      "🍕",
+      "❤️",
+      "👑"
+    ];
   }
 }
 
@@ -47,23 +63,25 @@ class ProfileAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeColor = ThemeUtils.getColor(colorName);
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: themeColor.withOpacity(0.12),
-        border: Border.all(
-          color: themeColor.withOpacity(0.35),
-          width: 1.5,
+    return RepaintBoundary(
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: themeColor.withOpacity(0.12),
+          border: Border.all(
+            color: themeColor.withOpacity(0.35),
+            width: 1.5,
+          ),
         ),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        avatar,
-        style: TextStyle(
-          fontSize: fontSize,
-          height: 1.0,
+        alignment: Alignment.center,
+        child: Text(
+          avatar,
+          style: TextStyle(
+            fontSize: fontSize,
+            height: 1.0,
+          ),
         ),
       ),
     );

@@ -27,12 +27,14 @@ class WorkoutProvider extends ChangeNotifier {
   List<WorkoutLog> history = [];
   Map<String, PersonalRecord> prs = {};
   List<BodyMeasurement> medidas = [];
-  SettingsState settings = SettingsState(sound: true, vibration: true, prepSeconds: 5);
+  SettingsState settings =
+      SettingsState(sound: true, vibration: true, prepSeconds: 5);
   ActiveWorkoutState? activeWorkout;
   List<ActiveWorkoutState> postponedWorkouts = [];
   List<String> deletedHealthWorkoutIds = [];
-  WorkoutStreak streak = WorkoutStreak(currentWeekCount: 0, consecutiveWeeks: 0, lastWorkoutDate: '');
-  
+  WorkoutStreak streak = WorkoutStreak(
+      currentWeekCount: 0, consecutiveWeeks: 0, lastWorkoutDate: '');
+
   bool historyLoaded = false;
   DateTime? _lastHealthMetricsNotify;
   static const Duration _healthMetricsNotifyInterval = Duration(seconds: 5);
@@ -44,6 +46,15 @@ class WorkoutProvider extends ChangeNotifier {
   // Cache para a biblioteca de exercícios agrupada por músculo
   Map<String, List<LibraryExercise>>? _muscleGroupedCache;
 
+  // Cache para rotinas agrupadas por músculo
+  Map<String, List<Routine>>? _muscleRoutinesCache;
+
+  // Cache para histórico filtrado por data
+  Map<String, List<WorkoutLog>>? _historyByDateCache;
+
+  // Track which properties changed for selective notifications
+  final Set<String> _changedProperties = {};
+
   Map<String, List<LibraryExercise>> get muscleGroupedExercises {
     if (_muscleGroupedCache != null) return _muscleGroupedCache!;
     final grouped = <String, List<LibraryExercise>>{};
@@ -52,6 +63,45 @@ class WorkoutProvider extends ChangeNotifier {
     }
     _muscleGroupedCache = grouped;
     return grouped;
+  }
+
+  Map<String, List<Routine>> get muscleGroupedRoutines {
+    if (_muscleRoutinesCache != null) return _muscleRoutinesCache!;
+    final grouped = <String, List<Routine>>{};
+    for (final routine in routines) {
+      for (final ex in routine.exercises) {
+        final ref = library.firstWhere(
+          (l) => l.id == ex.exerciseId,
+          orElse: () => LibraryExercise(
+            id: ex.exerciseId,
+            name: 'Exercício',
+            muscle: 'Geral',
+            measurementType: MeasurementType.reps,
+          ),
+        );
+        grouped.putIfAbsent(ref.muscle, () => []).add(routine);
+      }
+    }
+    _muscleRoutinesCache = grouped;
+    return grouped;
+  }
+
+  List<WorkoutLog> getHistoryByDateRange(DateTime start, DateTime end) {
+    final cacheKey = '${start.toIso8601String()}-${end.toIso8601String()}';
+    if (_historyByDateCache != null &&
+        _historyByDateCache!.containsKey(cacheKey)) {
+      return _historyByDateCache![cacheKey]!;
+    }
+
+    final filtered = history.where((log) {
+      final logDate = DateTime.parse(log.date);
+      return logDate.isAfter(start.subtract(const Duration(days: 1))) &&
+          logDate.isBefore(end.add(const Duration(days: 1)));
+    }).toList();
+
+    _historyByDateCache ??= {};
+    _historyByDateCache![cacheKey] = filtered;
+    return filtered;
   }
 
   // Estados de erro/loading granular específicos por operação
@@ -64,10 +114,21 @@ class WorkoutProvider extends ChangeNotifier {
     currentProfile = profileProvider.currentProfile;
   }
 
-  void _save() {
+  void _save({Set<String>? changedProperties}) {
     _muscleGroupedCache = null; // Invalida o cache
+    _muscleRoutinesCache = null; // Invalida o cache de rotinas
+    _historyByDateCache = null; // Invalida o cache de histórico
+    if (changedProperties != null) {
+      _changedProperties.addAll(changedProperties);
+    }
     notifyListeners();
     onStateChanged?.call();
+    _changedProperties.clear();
+  }
+
+  // Check if specific property changed
+  bool didPropertyChange(String property) {
+    return _changedProperties.contains(property);
   }
 
   // --- WORKOUT OPERATIONS ---
@@ -84,10 +145,10 @@ class WorkoutProvider extends ChangeNotifier {
       );
 
       // Determine if this is cardio based on measurementType or existing flags
-      final isCardio = ex.isCardio || 
-                       ref.measurementType == MeasurementType.cardio ||
-                       ref.measurementType == MeasurementType.distance ||
-                       ref.measurementType == MeasurementType.time;
+      final isCardio = ex.isCardio ||
+          ref.measurementType == MeasurementType.cardio ||
+          ref.measurementType == MeasurementType.distance ||
+          ref.measurementType == MeasurementType.time;
 
       // For cardio exercises without sets, use 1 set for UI consistency
       final effectiveSets = (isCardio && !ex.allowCardioSets) ? 1 : ex.sets;
@@ -129,8 +190,8 @@ class WorkoutProvider extends ChangeNotifier {
   void startSingleExercise(LibraryExercise exercise) {
     // Determine if this is a cardio exercise based on measurement type
     final isCardio = exercise.measurementType == MeasurementType.cardio ||
-                     exercise.measurementType == MeasurementType.distance ||
-                     exercise.measurementType == MeasurementType.time;
+        exercise.measurementType == MeasurementType.distance ||
+        exercise.measurementType == MeasurementType.time;
 
     final tempRoutine = Routine(
       id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
@@ -150,10 +211,18 @@ class WorkoutProvider extends ChangeNotifier {
         )
       ],
     );
-    startWorkout(tempRoutine, WorkoutRecovery(sleepOk: SleepQuality.okay, pain: [], warmUpDone: false), false);
+    startWorkout(
+        tempRoutine,
+        WorkoutRecovery(
+            sleepOk: SleepQuality.okay, pain: [], warmUpDone: false),
+        false);
   }
 
-  void completeSet(int exIndex, int setIndex, bool isDone, {double? distance, int? duration, bool isFailure = false, int? failureRep}) {
+  void completeSet(int exIndex, int setIndex, bool isDone,
+      {double? distance,
+      int? duration,
+      bool isFailure = false,
+      int? failureRep}) {
     if (activeWorkout == null) return;
 
     HapticFeedback.lightImpact();
@@ -183,7 +252,8 @@ class WorkoutProvider extends ChangeNotifier {
           failureReps: List<int?>.filled(1, null),
           isCardio: ex.isCardio,
           allowCardioSets: ex.allowCardioSets,
-          singleCardioSession: PerformedCardio(distanceKm: distance, durationSeconds: duration),
+          singleCardioSession:
+              PerformedCardio(distanceKm: distance, durationSeconds: duration),
         );
         activeWorkout = active.copyWith(exercises: exercises);
         _save();
@@ -196,7 +266,8 @@ class WorkoutProvider extends ChangeNotifier {
 
     final newCardios = List<PerformedCardio?>.from(ex.performedCardios);
     if (distance != null && duration != null) {
-      newCardios[setIndex] = PerformedCardio(distanceKm: distance, durationSeconds: duration);
+      newCardios[setIndex] =
+          PerformedCardio(distanceKm: distance, durationSeconds: duration);
     }
 
     final newFailure = List<bool>.from(ex.failureReport);
@@ -228,14 +299,16 @@ class WorkoutProvider extends ChangeNotifier {
 
     WatchRestTimer? computedRestTimer = active.restTimer;
     int computedExIndex = active.currentExerciseIndex;
-    
-    final bool wasDone = setIndex < ex.setsState.length ? ex.setsState[setIndex] : false;
+
+    final bool wasDone =
+        setIndex < ex.setsState.length ? ex.setsState[setIndex] : false;
     final bool isTransitionToDone = !wasDone && isDone;
     final bool isStateChanged = wasDone != isDone;
 
     if (isTransitionToDone) {
       if (setIndex < ex.sets - 1) {
-        final endTime = DateTime.now().millisecondsSinceEpoch + (ex.rest * 1000);
+        final endTime =
+            DateTime.now().millisecondsSinceEpoch + (ex.rest * 1000);
         computedRestTimer = WatchRestTimer(
           endTime: endTime,
           totalSeconds: ex.rest,
@@ -245,7 +318,8 @@ class WorkoutProvider extends ChangeNotifier {
         );
       } else if (exIndex < exercises.length - 1) {
         final nextEx = exercises[exIndex + 1];
-        final endTime = DateTime.now().millisecondsSinceEpoch + (ex.rest * 1000);
+        final endTime =
+            DateTime.now().millisecondsSinceEpoch + (ex.rest * 1000);
         computedRestTimer = WatchRestTimer(
           endTime: endTime,
           totalSeconds: ex.rest,
@@ -268,7 +342,7 @@ class WorkoutProvider extends ChangeNotifier {
     );
 
     _save();
-    
+
     if (isStateChanged) {
       if (computedRestTimer != null) {
         RestTimerService.instance.start(
@@ -284,7 +358,8 @@ class WorkoutProvider extends ChangeNotifier {
     }
   }
 
-  void startRestTimer(int seconds, String nextExName, int nextSetNum, bool isPrep) {
+  void startRestTimer(
+      int seconds, String nextExName, int nextSetNum, bool isPrep) {
     if (activeWorkout == null) return;
     final active = activeWorkout!;
 
@@ -302,7 +377,7 @@ class WorkoutProvider extends ChangeNotifier {
     );
 
     _save();
-    
+
     RestTimerService.instance.start(
       endTimeMs: endTime,
       seconds: seconds,
@@ -356,7 +431,8 @@ class WorkoutProvider extends ChangeNotifier {
     _save();
   }
 
-  void updateExerciseSetWeightReps(int exIndex, int setIdx, double weight, int reps) {
+  void updateExerciseSetWeightReps(
+      int exIndex, int setIdx, double weight, int reps) {
     if (activeWorkout == null) return;
     final active = activeWorkout!;
     final exercises = List<ActiveExercise>.from(active.exercises);
@@ -417,7 +493,8 @@ class WorkoutProvider extends ChangeNotifier {
 
     activeWorkout = active.copyWith(
       elapsedSeconds: isWarmupTimer ? active.elapsedSeconds : seconds,
-      warmupDurationSeconds: isWarmupTimer ? seconds : active.warmupDurationSeconds,
+      warmupDurationSeconds:
+          isWarmupTimer ? seconds : active.warmupDurationSeconds,
     );
 
     onStateChanged?.call(); // Salva sem chamar rebuild geral
@@ -457,24 +534,29 @@ class WorkoutProvider extends ChangeNotifier {
       try {
         final fromWatch = ActiveWorkoutState.fromJson(watchData);
         activeWorkout = fromWatch;
-        debugPrint('[WorkoutProvider] applyActiveWorkoutFromWatch: created new active workout from Watch state (${fromWatch.name})');
+        debugPrint(
+            '[WorkoutProvider] applyActiveWorkoutFromWatch: created new active workout from Watch state (${fromWatch.name})');
         _save();
       } catch (e) {
-        debugPrint('[WorkoutProvider] applyActiveWorkoutFromWatch: failed to parse Watch state — $e');
+        debugPrint(
+            '[WorkoutProvider] applyActiveWorkoutFromWatch: failed to parse Watch state — $e');
       }
       return;
     }
 
     try {
       final watchExercises = watchData['exercises'] as List?;
-      if (watchExercises == null || watchExercises.length != current.exercises.length) return;
+      if (watchExercises == null ||
+          watchExercises.length != current.exercises.length) return;
 
       final merged = List<ActiveExercise>.from(current.exercises);
       for (int i = 0; i < merged.length; i++) {
         final wEx = Map<String, dynamic>.from(watchExercises[i] as Map);
         final ios = merged[i];
 
-        final wSets = (wEx['setsState'] as List?)?.map((e) => e as bool).toList() ?? ios.setsState;
+        final wSets =
+            (wEx['setsState'] as List?)?.map((e) => e as bool).toList() ??
+                ios.setsState;
         final mergedSets = List<bool>.generate(
           ios.setsState.length,
           (j) => (j < wSets.length ? wSets[j] : false) || ios.setsState[j],
@@ -483,7 +565,9 @@ class WorkoutProvider extends ChangeNotifier {
         final wCardios = wEx['performedCardios'] as List?;
         final mergedCardios = List<PerformedCardio?>.from(ios.performedCardios);
         if (wCardios != null) {
-          for (int j = 0; j < mergedCardios.length && j < wCardios.length; j++) {
+          for (int j = 0;
+              j < mergedCardios.length && j < wCardios.length;
+              j++) {
             if (mergedCardios[j] == null && wCardios[j] != null) {
               mergedCardios[j] = PerformedCardio.fromJson(
                   Map<String, dynamic>.from(wCardios[j] as Map));
@@ -511,10 +595,12 @@ class WorkoutProvider extends ChangeNotifier {
       }
 
       activeWorkout = current.copyWith(exercises: merged);
-      debugPrint('[WorkoutProvider] applyActiveWorkoutFromWatch: merged Watch sets into iOS state');
+      debugPrint(
+          '[WorkoutProvider] applyActiveWorkoutFromWatch: merged Watch sets into iOS state');
       _save();
     } catch (e) {
-      debugPrint('[WorkoutProvider] applyActiveWorkoutFromWatch: merge failed — $e');
+      debugPrint(
+          '[WorkoutProvider] applyActiveWorkoutFromWatch: merge failed — $e');
     }
   }
 
@@ -538,18 +624,20 @@ class WorkoutProvider extends ChangeNotifier {
 
   void resumePostponedWorkout(int index) {
     if (index < 0 || index >= postponedWorkouts.length) return;
-    if (activeWorkout != null) return; // Can't resume if there's already an active one
+    if (activeWorkout != null)
+      return; // Can't resume if there's already an active one
 
     final workout = postponedWorkouts[index];
     postponedWorkouts.removeAt(index);
     activeWorkout = workout.copyWith(
-      startTime: DateTime.now().millisecondsSinceEpoch - (workout.elapsedSeconds * 1000),
+      startTime: DateTime.now().millisecondsSinceEpoch -
+          (workout.elapsedSeconds * 1000),
       paused: false,
       postponed: false,
     );
     _save();
   }
-  
+
   void discardPostponedWorkout(int index) {
     if (index < 0 || index >= postponedWorkouts.length) return;
     postponedWorkouts.removeAt(index);
@@ -573,7 +661,8 @@ class WorkoutProvider extends ChangeNotifier {
 
     final now = DateTime.now();
     if (_lastHealthMetricsNotify == null ||
-        now.difference(_lastHealthMetricsNotify!) >= _healthMetricsNotifyInterval) {
+        now.difference(_lastHealthMetricsNotify!) >=
+            _healthMetricsNotifyInterval) {
       _lastHealthMetricsNotify = now;
       notifyListeners();
     }
@@ -604,10 +693,13 @@ class WorkoutProvider extends ChangeNotifier {
           finalReps = ex.singleCardioSession!.durationSeconds ~/ 60;
         } else {
           // For cardio with sets (HIIT), use performedCardios
-          final completedList = ex.performedCardios.where((c) => c != null).toList();
+          final completedList =
+              ex.performedCardios.where((c) => c != null).toList();
           if (completedList.isNotEmpty) {
-            final totalDist = completedList.fold<double>(0, (sum, c) => sum + c!.distanceKm);
-            final totalDurMin = completedList.fold<int>(0, (sum, c) => sum + (c!.durationSeconds ~/ 60));
+            final totalDist =
+                completedList.fold<double>(0, (sum, c) => sum + c!.distanceKm);
+            final totalDurMin = completedList.fold<int>(
+                0, (sum, c) => sum + (c!.durationSeconds ~/ 60));
             finalWeight = totalDist / completedList.length;
             finalReps = totalDurMin ~/ completedList.length;
           }
@@ -703,12 +795,14 @@ class WorkoutProvider extends ChangeNotifier {
   Future<List<WorkoutLog>> loadWorkoutHistory() async {
     if (currentUserId.isEmpty) return [];
     if (historyLoaded) return history;
-    
-    final rawHistory = await _persistence.loadWorkoutsHistoryJson(currentUserId);
+
+    final rawHistory =
+        await _persistence.loadWorkoutsHistoryJson(currentUserId);
     if (rawHistory != null) {
       try {
         final List decoded = json.decode(rawHistory);
-        final loadedHistory = decoded.map((h) => WorkoutLog.fromJson(h)).toList();
+        final loadedHistory =
+            decoded.map((h) => WorkoutLog.fromJson(h)).toList();
         history.clear();
         history.addAll(loadedHistory);
       } catch (e) {
@@ -716,10 +810,10 @@ class WorkoutProvider extends ChangeNotifier {
       }
     }
     historyLoaded = true;
-    
+
     // Sync HealthKit workouts after loading local history
     await _syncHealthKitWorkouts();
-    
+
     notifyListeners();
     return history;
   }
@@ -727,25 +821,28 @@ class WorkoutProvider extends ChangeNotifier {
   Future<void> _syncHealthKitWorkouts() async {
     try {
       final healthWorkouts = await HealthService.instance.getRecentWorkouts();
-      debugPrint('[WorkoutProvider] Found ${healthWorkouts.length} workouts from HealthKit');
-      
+      debugPrint(
+          '[WorkoutProvider] Found ${healthWorkouts.length} workouts from HealthKit');
+
       for (final hw in healthWorkouts) {
         final id = hw['id'] as String;
         final name = hw['name'] as String;
         final duration = hw['duration'] as int;
         final calories = hw['calories'] as int?;
         final dateStr = hw['date'] as String;
-        
+
         // Skip if already in history or deleted
         if (history.any((h) => h.id == id)) {
-          debugPrint('[WorkoutProvider] Skipping duplicate HealthKit workout: $id');
+          debugPrint(
+              '[WorkoutProvider] Skipping duplicate HealthKit workout: $id');
           continue;
         }
         if (deletedHealthWorkoutIds.contains(id)) {
-          debugPrint('[WorkoutProvider] Skipping deleted HealthKit workout: $id');
+          debugPrint(
+              '[WorkoutProvider] Skipping deleted HealthKit workout: $id');
           continue;
         }
-        
+
         // Create WorkoutLog from HealthKit data
         final healthLog = WorkoutLog(
           id: id,
@@ -760,11 +857,12 @@ class WorkoutProvider extends ChangeNotifier {
           exercises: [], // HealthKit workouts don't have exercise details
           activeCalories: calories,
         );
-        
+
         history.insert(0, healthLog);
-        debugPrint('[WorkoutProvider] Added HealthKit workout to history: $name');
+        debugPrint(
+            '[WorkoutProvider] Added HealthKit workout to history: $name');
       }
-      
+
       if (healthWorkouts.isNotEmpty) {
         _updateStreak();
         _save();
@@ -780,7 +878,18 @@ class WorkoutProvider extends ChangeNotifier {
   }
 
   void deleteWorkoutLog(String id) {
-    final logToDelete = history.firstWhere((h) => h.id == id, orElse: () => WorkoutLog(id: '', name: '', date: '', duration: 0, completedSets: 0, totalSets: 0, totalWeight: 0, rpe: 0, exercises: [], notes: ''));
+    final logToDelete = history.firstWhere((h) => h.id == id,
+        orElse: () => WorkoutLog(
+            id: '',
+            name: '',
+            date: '',
+            duration: 0,
+            completedSets: 0,
+            totalSets: 0,
+            totalWeight: 0,
+            rpe: 0,
+            exercises: [],
+            notes: ''));
     // Add to deletedHealthWorkoutIds if it's a HealthKit workout (starts with "healthkit-")
     if (logToDelete.id.isNotEmpty && logToDelete.id.startsWith("healthkit-")) {
       if (!deletedHealthWorkoutIds.contains(id)) {
@@ -789,7 +898,7 @@ class WorkoutProvider extends ChangeNotifier {
     }
 
     history.removeWhere((h) => h.id == id);
-    
+
     // Recalculate PRs completely from the remaining logs in history
     prs.clear();
     // Process from oldest to newest log to properly calculate the best records
@@ -805,33 +914,43 @@ class WorkoutProvider extends ChangeNotifier {
   }
 
   // --- PERSONAL RECORDS HELPER ---
-  void _updatePersonalRecordsForLog(WorkoutLog log, List<String>? prExerciseNamesToNotify) {
+  void _updatePersonalRecordsForLog(
+      WorkoutLog log, List<String>? prExerciseNamesToNotify) {
     for (final ex in log.exercises) {
       if (ex.completedSets == 0) continue;
 
-      final libEx = library.firstWhere((l) => l.name == ex.name, orElse: () => LibraryExercise(id: '', name: '', muscle: '', measurementType: MeasurementType.reps));
+      final libEx = library.firstWhere((l) => l.name == ex.name,
+          orElse: () => LibraryExercise(
+              id: '',
+              name: '',
+              muscle: '',
+              measurementType: MeasurementType.reps));
       if (libEx.id.isEmpty) continue;
 
       final isCardio = libEx.measurementType == MeasurementType.cardio ||
-                       libEx.measurementType == MeasurementType.distance ||
-                       libEx.measurementType == MeasurementType.time;
+          libEx.measurementType == MeasurementType.distance ||
+          libEx.measurementType == MeasurementType.time;
 
       if (isCardio) {
         if (ex.performedCardios != null && ex.performedCardios!.isNotEmpty) {
-          final completedList = ex.performedCardios!.where((c) => c != null).toList();
+          final completedList =
+              ex.performedCardios!.where((c) => c != null).toList();
           if (completedList.isNotEmpty) {
             var maxDistanceCardio = completedList[0]!;
             var bestPaceCardio = completedList[0]!;
-            
+
             for (var p in completedList) {
               if (p!.distanceKm > maxDistanceCardio.distanceKm) {
                 maxDistanceCardio = p;
               }
               if (p.distanceKm > 0 && p.durationSeconds > 0) {
                 double speed = p.distanceKm / (p.durationSeconds / 3600);
-                double currentBest = bestPaceCardio.distanceKm == 0 || bestPaceCardio.durationSeconds == 0 
-                    ? 0 : (bestPaceCardio.distanceKm / (bestPaceCardio.durationSeconds / 3600));
-                
+                double currentBest = bestPaceCardio.distanceKm == 0 ||
+                        bestPaceCardio.durationSeconds == 0
+                    ? 0
+                    : (bestPaceCardio.distanceKm /
+                        (bestPaceCardio.durationSeconds / 3600));
+
                 if (speed > currentBest || bestPaceCardio.distanceKm == 0) {
                   bestPaceCardio = p;
                 }
@@ -842,21 +961,33 @@ class WorkoutProvider extends ChangeNotifier {
             double prWeight = maxDistanceCardio.distanceKm;
             int prReps = maxDistanceCardio.durationSeconds ~/ 60;
             final currentPr = prs[libEx.id];
-            if (currentPr == null || prWeight > currentPr.weight || (prWeight == currentPr.weight && prReps > currentPr.reps)) {
-              prs[libEx.id] = PersonalRecord(weight: prWeight, reps: prReps, date: log.date, routineName: log.name);
+            if (currentPr == null ||
+                prWeight > currentPr.weight ||
+                (prWeight == currentPr.weight && prReps > currentPr.reps)) {
+              prs[libEx.id] = PersonalRecord(
+                  weight: prWeight,
+                  reps: prReps,
+                  date: log.date,
+                  routineName: log.name);
               prExerciseNamesToNotify?.add(ex.name);
             }
 
             // Melhor Pace/Velocidade PR (Usando o ID com sufixo -pace)
             double prSpeed = 0.0;
-            if (bestPaceCardio.distanceKm > 0 && bestPaceCardio.durationSeconds > 0) {
-              prSpeed = bestPaceCardio.distanceKm / (bestPaceCardio.durationSeconds / 3600);
+            if (bestPaceCardio.distanceKm > 0 &&
+                bestPaceCardio.durationSeconds > 0) {
+              prSpeed = bestPaceCardio.distanceKm /
+                  (bestPaceCardio.durationSeconds / 3600);
             }
             if (prSpeed > 0) {
               final pacePrKey = '${libEx.id}-pace';
               final currentPacePr = prs[pacePrKey];
               if (currentPacePr == null || prSpeed > currentPacePr.weight) {
-                prs[pacePrKey] = PersonalRecord(weight: prSpeed, reps: bestPaceCardio.distanceKm.toInt(), date: log.date, routineName: log.name);
+                prs[pacePrKey] = PersonalRecord(
+                    weight: prSpeed,
+                    reps: bestPaceCardio.distanceKm.toInt(),
+                    date: log.date,
+                    routineName: log.name);
               }
             }
           }
@@ -866,8 +997,14 @@ class WorkoutProvider extends ChangeNotifier {
         double prWeight = ex.weight;
         int prReps = ex.reps;
         final currentPr = prs[libEx.id];
-        if (currentPr == null || prWeight > currentPr.weight || (prWeight == currentPr.weight && prReps > currentPr.reps)) {
-          prs[libEx.id] = PersonalRecord(weight: prWeight, reps: prReps, date: log.date, routineName: log.name);
+        if (currentPr == null ||
+            prWeight > currentPr.weight ||
+            (prWeight == currentPr.weight && prReps > currentPr.reps)) {
+          prs[libEx.id] = PersonalRecord(
+              weight: prWeight,
+              reps: prReps,
+              date: log.date,
+              routineName: log.name);
           prExerciseNamesToNotify?.add(ex.name);
         }
       }
@@ -933,7 +1070,8 @@ class WorkoutProvider extends ChangeNotifier {
         }
       } catch (_) {}
     }
-    final List<String> completedTodayRoutines = completedTodayRoutinesSet.toList();
+    final List<String> completedTodayRoutines =
+        completedTodayRoutinesSet.toList();
 
     final lastDate = history.isNotEmpty ? history.first.date : '';
     streak = WorkoutStreak(
@@ -983,7 +1121,8 @@ class WorkoutProvider extends ChangeNotifier {
   }
 
   // --- LIBRARY OPERATIONS ---
-  void addLibraryExercise(String name, String muscle, String measurementType, String? notes, String? executionType) {
+  void addLibraryExercise(String name, String muscle, String measurementType,
+      String? notes, String? executionType) {
     final newEx = LibraryExercise(
       id: "lib-${DateTime.now().millisecondsSinceEpoch}",
       name: name,
@@ -996,7 +1135,8 @@ class WorkoutProvider extends ChangeNotifier {
     _save();
   }
 
-  void updateLibraryExercise(String id, String name, String muscle, String measurementType, String? notes, String? executionType) {
+  void updateLibraryExercise(String id, String name, String muscle,
+      String measurementType, String? notes, String? executionType) {
     final idx = library.indexWhere((e) => e.id == id);
     if (idx != -1) {
       library[idx] = LibraryExercise(
@@ -1012,8 +1152,9 @@ class WorkoutProvider extends ChangeNotifier {
   }
 
   void deleteLibraryExercise(String id) {
-    library = List<LibraryExercise>.from(library)..removeWhere((e) => e.id == id);
-    
+    library = List<LibraryExercise>.from(library)
+      ..removeWhere((e) => e.id == id);
+
     planner.forEach((k, v) {
       planner[k] = v.where((item) => !item.contains('exercise:$id')).toList();
     });
@@ -1032,7 +1173,8 @@ class WorkoutProvider extends ChangeNotifier {
   }
 
   // --- ROUTINE OPERATIONS ---
-  void addRoutine(String name, int defaultRest, List<RoutineExercise> exercises) {
+  void addRoutine(
+      String name, int defaultRest, List<RoutineExercise> exercises) {
     final r = Routine(
       id: "routine-${DateTime.now().millisecondsSinceEpoch}",
       name: name,
@@ -1056,9 +1198,10 @@ class WorkoutProvider extends ChangeNotifier {
 
   void deleteRoutine(String id) {
     routines = List<Routine>.from(routines)..removeWhere((r) => r.id == id);
-    
+
     planner.forEach((k, v) {
-      planner[k] = v.where((item) => item != 'routine:$id' && item != id).toList();
+      planner[k] =
+          v.where((item) => item != 'routine:$id' && item != id).toList();
     });
 
     _save();
@@ -1081,7 +1224,8 @@ class WorkoutProvider extends ChangeNotifier {
   }
 
   void deleteMeasurement(String id) {
-    medidas = List<BodyMeasurement>.from(medidas)..removeWhere((m) => m.id == id);
+    medidas = List<BodyMeasurement>.from(medidas)
+      ..removeWhere((m) => m.id == id);
     _save();
   }
 

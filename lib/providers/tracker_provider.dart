@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/profile.dart';
@@ -39,6 +40,8 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
   int _todayBurnedCalories = 0;
   int _currentHeartRate = 0;
   bool _healthAuthorized = false;
+
+  Timer? _saveDebounceTimer;
 
   int get todaySteps => _todaySteps;
   int get todayBurnedCalories => _todayBurnedCalories;
@@ -92,9 +95,9 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     _workoutProvider = workout;
     _dietProvider = diet;
 
-    // Set callback to save state whenever sub-providers update
-    _workoutProvider?.onStateChanged = () => saveState();
-    _dietProvider?.onStateChanged = () => saveState();
+    // Set callback to save state whenever sub-providers update with debouncing
+    _workoutProvider?.onStateChanged = () => _debouncedSaveState();
+    _dietProvider?.onStateChanged = () => _debouncedSaveState();
 
     // Set callback to sync water data to watch when water intake changes
     _dietProvider?.onWaterChanged = (int waterIntake) {
@@ -397,6 +400,13 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
       );
     }
     notifyListeners();
+  }
+
+  void _debouncedSaveState() {
+    _saveDebounceTimer?.cancel();
+    _saveDebounceTimer = Timer(const Duration(milliseconds: 500), () {
+      saveState();
+    });
   }
 
   Future<Map<String, dynamic>?> checkProfileExistsInCloud(String profileId) {

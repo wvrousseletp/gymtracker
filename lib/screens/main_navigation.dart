@@ -23,11 +23,12 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = const [
-    WorkoutScreen(),
-    RoutinesScreen(),
-    ProgressScreen(),
-    DietScreen(),
+  // Lazy loading - screens are only built when accessed
+  final List<Widget> _screens = [
+    const _KeepAliveScreen(child: WorkoutScreen()),
+    const _KeepAliveScreen(child: RoutinesScreen()),
+    const _KeepAliveScreen(child: ProgressScreen()),
+    const _KeepAliveScreen(child: DietScreen()),
   ];
 
   @override
@@ -37,7 +38,7 @@ class _MainNavigationState extends State<MainNavigation> {
     WatchService.instance.onNavigateToWorkout = () {
       if (mounted) setState(() => _currentIndex = 0);
     };
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkWhatsNew();
     });
@@ -61,35 +62,21 @@ class _MainNavigationState extends State<MainNavigation> {
       );
     }
 
+    // Optimize provider selects - only rebuild when profile colorAccent changes
+    final accentColor = context.select<TrackerProvider, Color>(
+      (p) => ThemeUtils.getColor(p.currentProfile.colorAccent),
+    );
     final activeProfile = context.select<TrackerProvider, Profile>(
       (p) => p.currentProfile,
     );
-    final accentColor = ThemeUtils.getColor(activeProfile.colorAccent);
 
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
         children: [
           // Efeito de brilho de fundo radial no estilo iOS premium
-          Positioned(
-            top: -150,
-            left: 50,
-            right: 50,
-            child: Container(
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: accentColor.withOpacity(0.08),
-                    blurRadius: 100,
-                    spreadRadius: 50,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          
+          _BackgroundGlowEffect(accentColor: accentColor),
+
           // Container do conteúdo principal
           SafeArea(
             bottom: false,
@@ -97,7 +84,8 @@ class _MainNavigationState extends State<MainNavigation> {
               children: [
                 // Cabeçalho Global
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -110,17 +98,19 @@ class _MainNavigationState extends State<MainNavigation> {
                           letterSpacing: 0.5,
                         ),
                       ),
-                      
+
                       // Seletor de Perfil
                       GestureDetector(
                         onTap: () {
                           showProfileManagerDialog(context);
                         },
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.03),
-                            border: Border.all(color: Colors.white.withOpacity(0.06)),
+                            border: Border.all(
+                                color: Colors.white.withOpacity(0.06)),
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Row(
@@ -194,10 +184,14 @@ class _MainNavigationState extends State<MainNavigation> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
-                          _buildNavItem(0, Icons.fitness_center_outlined, "Treino", accentColor),
-                          _buildNavItem(1, Icons.calendar_today_outlined, "Rotinas", accentColor),
-                          _buildNavItem(2, Icons.bar_chart_outlined, "Progresso", accentColor),
-                          _buildNavItem(3, Icons.restaurant_outlined, "Dieta", accentColor),
+                          _buildNavItem(0, Icons.fitness_center_outlined,
+                              "Treino", accentColor),
+                          _buildNavItem(1, Icons.calendar_today_outlined,
+                              "Rotinas", accentColor),
+                          _buildNavItem(2, Icons.bar_chart_outlined,
+                              "Progresso", accentColor),
+                          _buildNavItem(3, Icons.restaurant_outlined, "Dieta",
+                              accentColor),
                         ],
                       ),
                     ),
@@ -211,7 +205,8 @@ class _MainNavigationState extends State<MainNavigation> {
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, String label, Color accentColor) {
+  Widget _buildNavItem(
+      int index, IconData icon, String label, Color accentColor) {
     final isSelected = _currentIndex == index;
     final color = isSelected ? accentColor : const Color(0xff8e8e93);
 
@@ -226,59 +221,59 @@ class _MainNavigationState extends State<MainNavigation> {
           });
         },
         behavior: HitTestBehavior.opaque,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedScale(
-              scale: isSelected ? 1.15 : 1.0,
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOutCubic,
-              child: Icon(
-                icon,
-                color: color,
-                size: 21,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedScale(
+                scale: isSelected ? 1.15 : 1.0,
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOutCubic,
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: 21,
+                ),
               ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 9,
-                fontWeight: FontWeight.w800,
-                color: color,
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w800,
+                  color: color,
+                ),
               ),
-            ),
-            const SizedBox(height: 2),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              height: 4,
-              width: isSelected ? 4 : 0,
-              decoration: BoxDecoration(
-                color: accentColor,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: accentColor.withOpacity(0.8),
-                    blurRadius: 4,
-                    spreadRadius: 1,
-                  ),
-                ],
+              const SizedBox(height: 2),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                height: 4,
+                width: isSelected ? 4 : 0,
+                decoration: BoxDecoration(
+                  color: accentColor,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: accentColor.withOpacity(0.8),
+                      blurRadius: 4,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   void _checkWhatsNew() async {
     final prefs = await SharedPreferences.getInstance();
     const currentBuild = 155;
     final lastSeenBuild = prefs.getInt('last_seen_whats_new_build') ?? 0;
-    
+
     if (lastSeenBuild < currentBuild) {
       if (!mounted) return;
       _showWhatsNewDialog(context);
@@ -311,14 +306,18 @@ class _MainNavigationState extends State<MainNavigation> {
                       SizedBox(width: 8),
                       Text(
                         "O que há de novo! 🌟",
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18),
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 18),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
                   const Text(
                     "Preparamos atualizações incríveis para você atingir seus objetivos de forma ainda mais inteligente!",
-                    style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+                    style: TextStyle(
+                        color: Colors.white70, fontSize: 13, height: 1.4),
                   ),
                   const SizedBox(height: 16),
                   _whatsNewItem(
@@ -348,11 +347,13 @@ class _MainNavigationState extends State<MainNavigation> {
                       backgroundColor: Colors.white,
                       foregroundColor: Colors.black,
                       minimumSize: const Size.fromHeight(48),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
                     ),
                     child: const Text(
                       "Começar a Usar! 🚀",
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                   ),
                 ],
@@ -364,7 +365,8 @@ class _MainNavigationState extends State<MainNavigation> {
     );
   }
 
-  Widget _whatsNewItem(IconData icon, Color color, String title, String description) {
+  Widget _whatsNewItem(
+      IconData icon, Color color, String title, String description) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -384,12 +386,16 @@ class _MainNavigationState extends State<MainNavigation> {
             children: [
               Text(
                 title,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13),
               ),
               const SizedBox(height: 2),
               Text(
                 description,
-                style: const TextStyle(color: Colors.white54, fontSize: 11, height: 1.3),
+                style: const TextStyle(
+                    color: Colors.white54, fontSize: 11, height: 1.3),
               ),
             ],
           ),
@@ -415,7 +421,55 @@ class FadeIndexedStack extends StatefulWidget {
   State<FadeIndexedStack> createState() => _FadeIndexedStackState();
 }
 
-class _FadeIndexedStackState extends State<FadeIndexedStack> with SingleTickerProviderStateMixin {
+class _KeepAliveScreen extends StatefulWidget {
+  final Widget child;
+  const _KeepAliveScreen({required this.child});
+
+  @override
+  State<_KeepAliveScreen> createState() => _KeepAliveScreenState();
+}
+
+class _KeepAliveScreenState extends State<_KeepAliveScreen>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
+  }
+}
+
+class _BackgroundGlowEffect extends StatelessWidget {
+  final Color accentColor;
+  const _BackgroundGlowEffect({required this.accentColor});
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      top: -150,
+      left: 50,
+      right: 50,
+      child: Container(
+        height: 300,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: accentColor.withOpacity(0.08),
+              blurRadius: 100,
+              spreadRadius: 50,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FadeIndexedStackState extends State<FadeIndexedStack>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
   @override

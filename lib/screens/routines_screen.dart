@@ -32,7 +32,8 @@ class RoutinesScreen extends StatefulWidget {
   State<RoutinesScreen> createState() => _RoutinesScreenState();
 }
 
-class _RoutinesScreenState extends State<RoutinesScreen> with SingleTickerProviderStateMixin {
+class _RoutinesScreenState extends State<RoutinesScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -64,7 +65,8 @@ class _RoutinesScreenState extends State<RoutinesScreen> with SingleTickerProvid
               indicatorColor: accentColor,
               labelColor: Colors.white,
               unselectedLabelColor: Colors.white38,
-              labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+              labelStyle:
+                  const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
               tabs: const [
                 Tab(text: "Agenda"),
                 Tab(text: "Modelos"),
@@ -98,7 +100,8 @@ class RoutinesTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = context.select<WorkoutProvider, WorkoutProvider>((p) => p);
-    final routines = context.select<WorkoutProvider, List<Routine>>((p) => p.routines);
+    final routines =
+        context.select<WorkoutProvider, List<Routine>>((p) => p.routines);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -118,14 +121,17 @@ class RoutinesTab extends StatelessWidget {
               child: Text(
                 "Nenhuma rotina criada.\nToque no botão + para adicionar.",
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white38, fontStyle: FontStyle.italic),
+                style: TextStyle(
+                    color: Colors.white38, fontStyle: FontStyle.italic),
               ),
             )
           : ListView.builder(
               addAutomaticKeepAlives: false,
               addRepaintBoundaries: false,
-              padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 100),
+              padding: const EdgeInsets.only(
+                  left: 16, right: 16, top: 16, bottom: 100),
               itemCount: routines.length,
+              itemExtent: 140, // Fixed height for better performance
               itemBuilder: (context, index) {
                 final routine = routines[index];
                 return _buildRoutineCard(context, provider, routine);
@@ -134,7 +140,8 @@ class RoutinesTab extends StatelessWidget {
     );
   }
 
-  Widget _buildRoutineCard(BuildContext context, WorkoutProvider provider, Routine routine) {
+  Widget _buildRoutineCard(
+      BuildContext context, WorkoutProvider provider, Routine routine) {
     final state = provider;
 
     return Container(
@@ -159,7 +166,8 @@ class RoutinesTab extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.05),
                     borderRadius: BorderRadius.circular(8),
@@ -167,7 +175,10 @@ class RoutinesTab extends StatelessWidget {
                   ),
                   child: Text(
                     "Rest: ${routine.defaultRest}s",
-                    style: const TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.w700),
+                    style: const TextStyle(
+                        color: Colors.white54,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700),
                   ),
                 ),
               ],
@@ -179,7 +190,11 @@ class RoutinesTab extends StatelessWidget {
               children: routine.exercises.map((ex) {
                 final ref = state.library.firstWhere(
                   (l) => l.id == ex.exerciseId,
-                  orElse: () => LibraryExercise(id: '', name: 'Deletado', muscle: 'Desconhecido', measurementType: MeasurementType.reps),
+                  orElse: () => LibraryExercise(
+                      id: '',
+                      name: 'Deletado',
+                      muscle: 'Desconhecido',
+                      measurementType: MeasurementType.reps),
                 );
 
                 final isCardio = ref.muscle.toLowerCase().contains('cardio');
@@ -198,11 +213,15 @@ class RoutinesTab extends StatelessWidget {
                         children: [
                           Text(
                             ref.name,
-                            style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700),
                           ),
                           Text(
                             ref.muscle,
-                            style: const TextStyle(color: Colors.white38, fontSize: 11),
+                            style: const TextStyle(
+                                color: Colors.white38, fontSize: 11),
                           ),
                         ],
                       ),
@@ -210,10 +229,12 @@ class RoutinesTab extends StatelessWidget {
                         children: [
                           _buildBadge(repsBadgeText),
                           const SizedBox(width: 4),
-                          _buildBadge("${restTime}s", highlighted: ex.rest != routine.defaultRest),
+                          _buildBadge("${restTime}s",
+                              highlighted: ex.rest != routine.defaultRest),
                           if (ex.weight > 0) ...[
                             const SizedBox(width: 4),
-                            _buildBadge("${ex.weight.toStringAsFixed(1).replaceAll('.0', '')}kg"),
+                            _buildBadge(
+                                "${ex.weight.toStringAsFixed(1).replaceAll('.0', '')}kg"),
                           ],
                         ],
                       ),
@@ -233,7 +254,10 @@ class RoutinesTab extends StatelessWidget {
                       // Disparar o treino ativo
                       provider.startWorkout(
                         routine,
-                        WorkoutRecovery(sleepOk: SleepQuality.okay, pain: [], warmUpDone: false),
+                        WorkoutRecovery(
+                            sleepOk: SleepQuality.okay,
+                            pain: [],
+                            warmUpDone: false),
                         false,
                       );
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -243,14 +267,19 @@ class RoutinesTab extends StatelessWidget {
                         ),
                       );
                     },
-                    icon: const Icon(Icons.play_arrow, color: Colors.black, size: 18),
+                    icon: const Icon(Icons.play_arrow,
+                        color: Colors.black, size: 18),
                     label: const Text(
                       "Iniciar Treino",
-                      style: TextStyle(color: Colors.black, fontWeight: FontWeight.w800, fontSize: 13),
+                      style: TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: accentColor,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       elevation: 0,
                     ),
@@ -258,7 +287,8 @@ class RoutinesTab extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 IconButton(
-                  icon: const Icon(Icons.edit_outlined, color: Colors.white70, size: 20),
+                  icon: const Icon(Icons.edit_outlined,
+                      color: Colors.white70, size: 20),
                   style: IconButton.styleFrom(
                     backgroundColor: Colors.white.withOpacity(0.04),
                     shape: RoundedRectangleBorder(
@@ -272,12 +302,14 @@ class RoutinesTab extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
                 IconButton(
-                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                  icon: const Icon(Icons.delete_outline,
+                      color: Colors.redAccent, size: 20),
                   style: IconButton.styleFrom(
                     backgroundColor: Colors.redAccent.withOpacity(0.08),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
-                      side: BorderSide(color: Colors.redAccent.withOpacity(0.2)),
+                      side:
+                          BorderSide(color: Colors.redAccent.withOpacity(0.2)),
                     ),
                   ),
                   onPressed: () {
@@ -296,10 +328,14 @@ class RoutinesTab extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: highlighted ? accentColor.withOpacity(0.12) : Colors.white.withOpacity(0.04),
+        color: highlighted
+            ? accentColor.withOpacity(0.12)
+            : Colors.white.withOpacity(0.04),
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
-          color: highlighted ? accentColor.withOpacity(0.4) : Colors.white.withOpacity(0.06),
+          color: highlighted
+              ? accentColor.withOpacity(0.4)
+              : Colors.white.withOpacity(0.06),
         ),
       ),
       child: Text(
@@ -313,7 +349,8 @@ class RoutinesTab extends StatelessWidget {
     );
   }
 
-  void _confirmDeleteRoutine(BuildContext context, WorkoutProvider provider, Routine routine) {
+  void _confirmDeleteRoutine(
+      BuildContext context, WorkoutProvider provider, Routine routine) {
     showDialog(
       context: context,
       builder: (dialogCtx) => Dialog(
@@ -329,12 +366,16 @@ class RoutinesTab extends StatelessWidget {
             children: [
               const Text(
                 "Excluir Rotina?",
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16),
               ),
               const SizedBox(height: 12),
               Text(
                 "Tem certeza que deseja excluir '${routine.name}'?",
-                style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+                style: const TextStyle(
+                    color: Colors.white70, fontSize: 13, height: 1.4),
               ),
               const SizedBox(height: 20),
               Row(
@@ -342,7 +383,10 @@ class RoutinesTab extends StatelessWidget {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(dialogCtx),
-                    child: const Text("Cancelar", style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+                    child: const Text("Cancelar",
+                        style: TextStyle(
+                            color: Colors.white54,
+                            fontWeight: FontWeight.bold)),
                   ),
                   const SizedBox(width: 8),
                   TextButton(
@@ -350,7 +394,10 @@ class RoutinesTab extends StatelessWidget {
                       provider.deleteRoutine(routine.id);
                       Navigator.pop(dialogCtx);
                     },
-                    child: const Text("Excluir", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                    child: const Text("Excluir",
+                        style: TextStyle(
+                            color: Colors.redAccent,
+                            fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
@@ -361,7 +408,8 @@ class RoutinesTab extends StatelessWidget {
     );
   }
 
-  void _openRoutineForm(BuildContext context, WorkoutProvider provider, Routine? existing) {
+  void _openRoutineForm(
+      BuildContext context, WorkoutProvider provider, Routine? existing) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -369,7 +417,8 @@ class RoutinesTab extends StatelessWidget {
       isScrollControlled: true,
       enableDrag: false,
       isDismissible: false,
-      builder: (context) => RoutineFormSheet(provider: provider, existing: existing),
+      builder: (context) =>
+          RoutineFormSheet(provider: provider, existing: existing),
     );
   }
 }
@@ -414,7 +463,10 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
   @override
   Widget build(BuildContext context) {
     final library = widget.provider.library;
-    final accentColor = ThemeUtils.getColor(Provider.of<ProfileProvider>(context, listen: false).currentProfile.colorAccent);
+    final accentColor = ThemeUtils.getColor(
+        Provider.of<ProfileProvider>(context, listen: false)
+            .currentProfile
+            .colorAccent);
 
     // Ordena biblioteca de exercícios para seleção
     final sortedLibrary = List<LibraryExercise>.from(library)
@@ -432,8 +484,10 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
             height: MediaQuery.of(context).size.height * 0.88,
             decoration: BoxDecoration(
               color: const Color(0xff0d0d0f).withOpacity(0.92),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              border: Border.all(color: Colors.white.withOpacity(0.08), width: 1.5),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(24)),
+              border:
+                  Border.all(color: Colors.white.withOpacity(0.08), width: 1.5),
             ),
             padding: EdgeInsets.only(
               left: 20,
@@ -447,16 +501,21 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 12),
-                
+
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       widget.existing == null ? "Nova Rotina" : "Editar Rotina",
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -0.3),
+                      style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          letterSpacing: -0.3),
                     ),
                     IconButton(
-                      icon: Icon(Icons.close, color: Colors.white.withOpacity(0.6), size: 20),
+                      icon: Icon(Icons.close,
+                          color: Colors.white.withOpacity(0.6), size: 20),
                       onPressed: () => Navigator.pop(context),
                       style: IconButton.styleFrom(
                         backgroundColor: Colors.white.withOpacity(0.05),
@@ -476,326 +535,462 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                       children: [
                         Form(
                           key: _formKey,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        flex: 3,
-                        child: TextFormField(
-                          controller: _nameController,
-                          style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: Colors.white.withOpacity(0.04),
-                            labelText: "Nome da Rotina",
-                            labelStyle: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12),
-                            floatingLabelStyle: TextStyle(color: accentColor, fontWeight: FontWeight.bold),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.white.withOpacity(0.06)),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: accentColor, width: 1.5),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          ),
-                          validator: (value) => (value == null || value.trim().isEmpty) ? "Obrigatório" : null,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        flex: 2,
-                        child: TextFormField(
-                          controller: _restController,
-                          keyboardType: TextInputType.number,
-                          style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: Colors.white.withOpacity(0.04),
-                            labelText: "Descanso (seg)",
-                            labelStyle: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12),
-                            floatingLabelStyle: TextStyle(color: accentColor, fontWeight: FontWeight.bold),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.white.withOpacity(0.06)),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: accentColor, width: 1.5),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          ),
-                          validator: (value) => (value == null || int.tryParse(value) == null) ? "Inválido" : null,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Botão Proeminente e Bonito de Adicionar Exercício
-                SizedBox(
-                  width: double.infinity,
-                  height: 46,
-                  child: ElevatedButton.icon(
-                    icon: const Icon(Icons.add_circle_outline, color: Colors.black, size: 18),
-                    label: const Text(
-                      "ADICIONAR EXERCÍCIO",
-                      style: TextStyle(color: Colors.black, fontWeight: FontWeight.w900, letterSpacing: 0.5, fontSize: 12),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: accentColor,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      elevation: 0,
-                    ),
-                    onPressed: () {
-                      _addExercisePicker(sortedLibrary);
-                    },
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      "Exercícios Adicionados",
-                      style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: -0.2),
-                    ),
-                    if (_exercises.isNotEmpty)
-                      Text(
-                        "${_exercises.length} ${_exercises.length == 1 ? 'exercício' : 'exercícios'}",
-                        style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11, fontWeight: FontWeight.w600),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-
-                // Lista de exercícios adicionados na rotina
-                if (_exercises.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 40),
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.fitness_center, size: 36, color: Colors.white.withOpacity(0.15)),
-                          const SizedBox(height: 8),
-                          Text(
-                            "Nenhum exercício adicionado ainda.\nToque no botão acima para adicionar.",
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white.withOpacity(0.35), fontSize: 12, height: 1.4, fontStyle: FontStyle.italic),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                else
-                  ListView.builder(
-                    physics: const NeverScrollableScrollPhysics(),
-                    shrinkWrap: true,
-                    itemCount: _exercises.length,
-                    itemBuilder: (context, idx) {
-                            final ex = _exercises[idx];
-                            final ref = library.firstWhere(
-                              (l) => l.id == ex.exerciseId,
-                              orElse: () => LibraryExercise(id: '', name: 'Deletado', muscle: '', measurementType: MeasurementType.reps),
-                            );
-                            final isCardio = ref.measurementType == MeasurementType.cardio || 
-                                           ref.measurementType == MeasurementType.distance ||
-                                           ref.measurementType == MeasurementType.time;
-                            return Container(
-                              key: ValueKey(ex.id),
-                              margin: const EdgeInsets.only(bottom: 10),
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.03),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: Colors.white.withOpacity(0.06)),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                flex: 3,
+                                child: TextFormField(
+                                  controller: _nameController,
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600),
+                                  decoration: InputDecoration(
+                                    filled: true,
+                                    fillColor: Colors.white.withOpacity(0.04),
+                                    labelText: "Nome da Rotina",
+                                    labelStyle: TextStyle(
+                                        color: Colors.white.withOpacity(0.4),
+                                        fontSize: 12),
+                                    floatingLabelStyle: TextStyle(
+                                        color: accentColor,
+                                        fontWeight: FontWeight.bold),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                          color:
+                                              Colors.white.withOpacity(0.06)),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                          color: accentColor, width: 1.5),
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 14, vertical: 12),
+                                  ),
+                                  validator: (value) =>
+                                      (value == null || value.trim().isEmpty)
+                                          ? "Obrigatório"
+                                          : null,
+                                ),
                               ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                flex: 2,
+                                child: TextFormField(
+                                  controller: _restController,
+                                  keyboardType: TextInputType.number,
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600),
+                                  decoration: InputDecoration(
+                                    filled: true,
+                                    fillColor: Colors.white.withOpacity(0.04),
+                                    labelText: "Descanso (seg)",
+                                    labelStyle: TextStyle(
+                                        color: Colors.white.withOpacity(0.4),
+                                        fontSize: 12),
+                                    floatingLabelStyle: TextStyle(
+                                        color: accentColor,
+                                        fontWeight: FontWeight.bold),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                          color:
+                                              Colors.white.withOpacity(0.06)),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                          color: accentColor, width: 1.5),
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 14, vertical: 12),
+                                  ),
+                                  validator: (value) => (value == null ||
+                                          int.tryParse(value) == null)
+                                      ? "Inválido"
+                                      : null,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Botão Proeminente e Bonito de Adicionar Exercício
+                        SizedBox(
+                          width: double.infinity,
+                          height: 46,
+                          child: ElevatedButton.icon(
+                            icon: const Icon(Icons.add_circle_outline,
+                                color: Colors.black, size: 18),
+                            label: const Text(
+                              "ADICIONAR EXERCÍCIO",
+                              style: TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.5,
+                                  fontSize: 12),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: accentColor,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                              elevation: 0,
+                            ),
+                            onPressed: () {
+                              _addExercisePicker(sortedLibrary);
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              "Exercícios Adicionados",
+                              style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: -0.2),
+                            ),
+                            if (_exercises.isNotEmpty)
+                              Text(
+                                "${_exercises.length} ${_exercises.length == 1 ? 'exercício' : 'exercícios'}",
+                                style: TextStyle(
+                                    color: Colors.white.withOpacity(0.4),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+
+                        // Lista de exercícios adicionados na rotina
+                        if (_exercises.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 40),
+                            child: Center(
                               child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          ref.name,
-                                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14, letterSpacing: -0.1),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
+                                  Icon(Icons.fitness_center,
+                                      size: 36,
+                                      color: Colors.white.withOpacity(0.15)),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    "Nenhum exercício adicionado ainda.\nToque no botão acima para adicionar.",
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                        color: Colors.white.withOpacity(0.35),
+                                        fontSize: 12,
+                                        height: 1.4,
+                                        fontStyle: FontStyle.italic),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        else
+                          ListView.builder(
+                            physics: const NeverScrollableScrollPhysics(),
+                            shrinkWrap: true,
+                            itemCount: _exercises.length,
+                            itemExtent:
+                                80, // Fixed height for better performance
+                            itemBuilder: (context, idx) {
+                              final ex = _exercises[idx];
+                              final ref = library.firstWhere(
+                                (l) => l.id == ex.exerciseId,
+                                orElse: () => LibraryExercise(
+                                    id: '',
+                                    name: 'Deletado',
+                                    muscle: '',
+                                    measurementType: MeasurementType.reps),
+                              );
+                              final isCardio = ref.measurementType ==
+                                      MeasurementType.cardio ||
+                                  ref.measurementType ==
+                                      MeasurementType.distance ||
+                                  ref.measurementType == MeasurementType.time;
+                              return Container(
+                                key: ValueKey(ex.id),
+                                margin: const EdgeInsets.only(bottom: 10),
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.03),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                      color: Colors.white.withOpacity(0.06)),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            ref.name,
+                                            style: const TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w800,
+                                                fontSize: 14,
+                                                letterSpacing: -0.1),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
                                         ),
-                                      ),
+                                        Row(
+                                          children: [
+                                            IconButton(
+                                              icon: Icon(
+                                                  Icons.arrow_upward_rounded,
+                                                  color: idx == 0
+                                                      ? Colors.white10
+                                                      : Colors.white60,
+                                                  size: 18),
+                                              padding: EdgeInsets.zero,
+                                              constraints:
+                                                  const BoxConstraints(),
+                                              onPressed: idx == 0
+                                                  ? null
+                                                  : () =>
+                                                      _moveExercise(idx, true),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            IconButton(
+                                              icon: Icon(
+                                                  Icons.arrow_downward_rounded,
+                                                  color: idx ==
+                                                          _exercises.length - 1
+                                                      ? Colors.white10
+                                                      : Colors.white60,
+                                                  size: 18),
+                                              padding: EdgeInsets.zero,
+                                              constraints:
+                                                  const BoxConstraints(),
+                                              onPressed: idx ==
+                                                      _exercises.length - 1
+                                                  ? null
+                                                  : () =>
+                                                      _moveExercise(idx, false),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            GestureDetector(
+                                              onTap: () {
+                                                setState(() {
+                                                  _exercises.removeAt(idx);
+                                                });
+                                              },
+                                              child: Icon(
+                                                  Icons.delete_outline_rounded,
+                                                  color: Colors.redAccent
+                                                      .withOpacity(0.8),
+                                                  size: 20),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    // Cardio mode toggle
+                                    if (isCardio) ...[
                                       Row(
                                         children: [
-                                          IconButton(
-                                            icon: Icon(Icons.arrow_upward_rounded, color: idx == 0 ? Colors.white10 : Colors.white60, size: 18),
-                                            padding: EdgeInsets.zero,
-                                            constraints: const BoxConstraints(),
-                                            onPressed: idx == 0 ? null : () => _moveExercise(idx, true),
+                                          Expanded(
+                                            child: GestureDetector(
+                                              onTap: () {
+                                                setState(() {
+                                                  _updateExerciseField(idx,
+                                                      sets: 1);
+                                                  _exercises[idx] =
+                                                      RoutineExercise(
+                                                    id: ex.id,
+                                                    exerciseId: ex.exerciseId,
+                                                    sets: 1,
+                                                    reps: ex.reps,
+                                                    rest: ex.rest,
+                                                    weight: ex.weight,
+                                                    weightsPerSet:
+                                                        ex.weightsPerSet,
+                                                    repsPerSet: ex.repsPerSet,
+                                                    isCardio: true,
+                                                    allowCardioSets: false,
+                                                  );
+                                                });
+                                              },
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        vertical: 10),
+                                                decoration: BoxDecoration(
+                                                  color: !ex.allowCardioSets
+                                                      ? accentColor
+                                                          .withOpacity(0.15)
+                                                      : Colors.white
+                                                          .withOpacity(0.04),
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                  border: Border.all(
+                                                    color: !ex.allowCardioSets
+                                                        ? accentColor
+                                                            .withOpacity(0.5)
+                                                        : Colors.white
+                                                            .withOpacity(0.08),
+                                                  ),
+                                                ),
+                                                child: Text(
+                                                  "Sessão Única",
+                                                  textAlign: TextAlign.center,
+                                                  style: TextStyle(
+                                                    color: !ex.allowCardioSets
+                                                        ? accentColor
+                                                        : Colors.white60,
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
                                           ),
-                                          const SizedBox(width: 12),
-                                          IconButton(
-                                            icon: Icon(Icons.arrow_downward_rounded, color: idx == _exercises.length - 1 ? Colors.white10 : Colors.white60, size: 18),
-                                            padding: EdgeInsets.zero,
-                                            constraints: const BoxConstraints(),
-                                            onPressed: idx == _exercises.length - 1 ? null : () => _moveExercise(idx, false),
-                                          ),
-                                          const SizedBox(width: 12),
-                                          GestureDetector(
-                                            onTap: () {
-                                              setState(() {
-                                                _exercises.removeAt(idx);
-                                              });
-                                            },
-                                            child: Icon(Icons.delete_outline_rounded, color: Colors.redAccent.withOpacity(0.8), size: 20),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: GestureDetector(
+                                              onTap: () {
+                                                setState(() {
+                                                  _updateExerciseField(idx,
+                                                      sets: ex.sets > 0
+                                                          ? ex.sets
+                                                          : 3);
+                                                  _exercises[idx] =
+                                                      RoutineExercise(
+                                                    id: ex.id,
+                                                    exerciseId: ex.exerciseId,
+                                                    sets: ex.sets > 0
+                                                        ? ex.sets
+                                                        : 3,
+                                                    reps: ex.reps,
+                                                    rest: ex.rest,
+                                                    weight: ex.weight,
+                                                    weightsPerSet:
+                                                        ex.weightsPerSet,
+                                                    repsPerSet: ex.repsPerSet,
+                                                    isCardio: true,
+                                                    allowCardioSets: true,
+                                                  );
+                                                });
+                                              },
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        vertical: 10),
+                                                decoration: BoxDecoration(
+                                                  color: ex.allowCardioSets
+                                                      ? accentColor
+                                                          .withOpacity(0.15)
+                                                      : Colors.white
+                                                          .withOpacity(0.04),
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                  border: Border.all(
+                                                    color: ex.allowCardioSets
+                                                        ? accentColor
+                                                            .withOpacity(0.5)
+                                                        : Colors.white
+                                                            .withOpacity(0.08),
+                                                  ),
+                                                ),
+                                                child: Text(
+                                                  "Múltiplas Séries (HIIT)",
+                                                  textAlign: TextAlign.center,
+                                                  style: TextStyle(
+                                                    color: ex.allowCardioSets
+                                                        ? accentColor
+                                                        : Colors.white60,
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
                                           ),
                                         ],
                                       ),
+                                      const SizedBox(height: 8),
                                     ],
-                                  ),
-                                  const SizedBox(height: 12),
-                                  // Cardio mode toggle
-                                  if (isCardio) ...[
                                     Row(
                                       children: [
-                                        Expanded(
-                                          child: GestureDetector(
-                                            onTap: () {
-                                              setState(() {
-                                                _updateExerciseField(idx, sets: 1);
-                                                _exercises[idx] = RoutineExercise(
-                                                  id: ex.id,
-                                                  exerciseId: ex.exerciseId,
-                                                  sets: 1,
-                                                  reps: ex.reps,
-                                                  rest: ex.rest,
-                                                  weight: ex.weight,
-                                                  weightsPerSet: ex.weightsPerSet,
-                                                  repsPerSet: ex.repsPerSet,
-                                                  isCardio: true,
-                                                  allowCardioSets: false,
-                                                );
-                                              });
-                                            },
-                                            child: Container(
-                                              padding: const EdgeInsets.symmetric(vertical: 10),
-                                              decoration: BoxDecoration(
-                                                color: !ex.allowCardioSets ? accentColor.withOpacity(0.15) : Colors.white.withOpacity(0.04),
-                                                borderRadius: BorderRadius.circular(8),
-                                                border: Border.all(
-                                                  color: !ex.allowCardioSets ? accentColor.withOpacity(0.5) : Colors.white.withOpacity(0.08),
-                                                ),
-                                              ),
-                                              child: Text(
-                                                "Sessão Única",
-                                                textAlign: TextAlign.center,
-                                                style: TextStyle(
-                                                  color: !ex.allowCardioSets ? accentColor : Colors.white60,
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
+                                        if (!isCardio || ex.allowCardioSets)
+                                          Expanded(
+                                            child: _buildInputRow(
+                                              label: isCardio
+                                                  ? "Séries"
+                                                  : "Séries",
+                                              value: ex.sets.toString(),
+                                              onChanged: (val) {
+                                                _updateExerciseField(idx,
+                                                    sets:
+                                                        int.tryParse(val) ?? 0);
+                                              },
                                             ),
+                                          ),
+                                        if (!isCardio || ex.allowCardioSets)
+                                          const SizedBox(width: 8),
+                                        Expanded(
+                                          child: _buildInputRow(
+                                            label: isCardio
+                                                ? "Minutos"
+                                                : (ref.measurementType ==
+                                                        MeasurementType.time
+                                                    ? "Segundos"
+                                                    : "Reps"),
+                                            value: ex.reps.toString(),
+                                            onChanged: (val) {
+                                              _updateExerciseField(idx,
+                                                  reps: int.tryParse(val) ?? 0);
+                                            },
                                           ),
                                         ),
                                         const SizedBox(width: 8),
-                                        Expanded(
-                                          child: GestureDetector(
-                                            onTap: () {
-                                              setState(() {
-                                                _updateExerciseField(idx, sets: ex.sets > 0 ? ex.sets : 3);
-                                                _exercises[idx] = RoutineExercise(
-                                                  id: ex.id,
-                                                  exerciseId: ex.exerciseId,
-                                                  sets: ex.sets > 0 ? ex.sets : 3,
-                                                  reps: ex.reps,
-                                                  rest: ex.rest,
-                                                  weight: ex.weight,
-                                                  weightsPerSet: ex.weightsPerSet,
-                                                  repsPerSet: ex.repsPerSet,
-                                                  isCardio: true,
-                                                  allowCardioSets: true,
-                                                );
-                                              });
-                                            },
-                                            child: Container(
-                                              padding: const EdgeInsets.symmetric(vertical: 10),
-                                              decoration: BoxDecoration(
-                                                color: ex.allowCardioSets ? accentColor.withOpacity(0.15) : Colors.white.withOpacity(0.04),
-                                                borderRadius: BorderRadius.circular(8),
-                                                border: Border.all(
-                                                  color: ex.allowCardioSets ? accentColor.withOpacity(0.5) : Colors.white.withOpacity(0.08),
-                                                ),
-                                              ),
-                                              child: Text(
-                                                "Múltiplas Séries (HIIT)",
-                                                textAlign: TextAlign.center,
-                                                style: TextStyle(
-                                                  color: ex.allowCardioSets ? accentColor : Colors.white60,
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
+                                        if (!isCardio) ...[
+                                          Expanded(
+                                            child: _buildInputRow(
+                                              label: "Carga (kg)",
+                                              value: ex.weight.toString(),
+                                              onChanged: (val) {
+                                                _updateExerciseField(idx,
+                                                    weight:
+                                                        double.tryParse(val) ??
+                                                            0.0);
+                                              },
                                             ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                        ],
+                                        Expanded(
+                                          child: _buildInputRow(
+                                            label: "Desc. (s)",
+                                            value: ex.rest.toString(),
+                                            onChanged: (val) {
+                                              _updateExerciseField(idx,
+                                                  rest: int.tryParse(val) ?? 0);
+                                            },
                                           ),
                                         ),
                                       ],
                                     ),
-                                    const SizedBox(height: 8),
                                   ],
-                                  Row(
-                                    children: [
-                                      if (!isCardio || ex.allowCardioSets)
-                                        Expanded(
-                                          child: _buildInputRow(
-                                            label: isCardio ? "Séries" : "Séries",
-                                            value: ex.sets.toString(),
-                                            onChanged: (val) {
-                                              _updateExerciseField(idx, sets: int.tryParse(val) ?? 0);
-                                            },
-                                          ),
-                                        ),
-                                      if (!isCardio || ex.allowCardioSets) const SizedBox(width: 8),
-                                      Expanded(
-                                        child: _buildInputRow(
-                                          label: isCardio ? "Minutos" : (ref.measurementType == MeasurementType.time ? "Segundos" : "Reps"),
-                                          value: ex.reps.toString(),
-                                          onChanged: (val) {
-                                            _updateExerciseField(idx, reps: int.tryParse(val) ?? 0);
-                                          },
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      if (!isCardio) ...[
-                                        Expanded(
-                                          child: _buildInputRow(
-                                            label: "Carga (kg)",
-                                            value: ex.weight.toString(),
-                                            onChanged: (val) {
-                                              _updateExerciseField(idx, weight: double.tryParse(val) ?? 0.0);
-                                            },
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                      ],
-                                      Expanded(
-                                        child: _buildInputRow(
-                                          label: "Desc. (s)",
-                                          value: ex.rest.toString(),
-                                          onChanged: (val) {
-                                            _updateExerciseField(idx, rest: int.tryParse(val) ?? 0);
-                                          },
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
+                                ),
+                              );
+                            },
+                          ),
                       ],
                     ),
                   ),
@@ -812,7 +1007,8 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                         if (_exercises.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text("Adicione pelo menos um exercício à rotina!"),
+                              content: Text(
+                                  "Adicione pelo menos um exercício à rotina!"),
                               backgroundColor: Colors.redAccent,
                             ),
                           );
@@ -839,7 +1035,8 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                         if (anyInvalid) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text("Todas as séries e repetições/tempo devem ser maiores que zero!"),
+                              content: Text(
+                                  "Todas as séries e repetições/tempo devem ser maiores que zero!"),
                               backgroundColor: Colors.redAccent,
                             ),
                           );
@@ -865,12 +1062,18 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: accentColor,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
                       elevation: 0,
                     ),
                     child: Text(
-                      widget.existing == null ? "Criar Rotina" : "Salvar Alterações",
-                      style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w900, fontSize: 14),
+                      widget.existing == null
+                          ? "Criar Rotina"
+                          : "Salvar Alterações",
+                      style: const TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 14),
                     ),
                   ),
                 ),
@@ -882,11 +1085,18 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
     );
   }
 
-  Widget _buildInputRow({required String label, required String value, required ValueChanged<String> onChanged}) {
+  Widget _buildInputRow(
+      {required String label,
+      required String value,
+      required ValueChanged<String> onChanged}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.bold)),
+        Text(label,
+            style: const TextStyle(
+                color: Colors.white38,
+                fontSize: 10,
+                fontWeight: FontWeight.bold)),
         const SizedBox(height: 4),
         Container(
           height: 32,
@@ -900,7 +1110,8 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
             initialValue: value == "0" || value == "0.0" ? "" : value,
             keyboardType: TextInputType.number,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+                color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
             decoration: const InputDecoration(
               border: InputBorder.none,
               contentPadding: EdgeInsets.zero,
@@ -922,7 +1133,8 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
     });
   }
 
-  void _updateExerciseField(int index, {int? sets, int? reps, double? weight, int? rest}) {
+  void _updateExerciseField(int index,
+      {int? sets, int? reps, double? weight, int? rest}) {
     final cur = _exercises[index];
     _exercises[index] = RoutineExercise(
       id: cur.id,
@@ -937,7 +1149,8 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
   }
 
   void _addExercisePicker(List<LibraryExercise> library) {
-    final accentColor = ThemeUtils.getColor(widget.provider.currentProfile?.colorAccent ?? 'Peito');
+    final accentColor = ThemeUtils.getColor(
+        widget.provider.currentProfile?.colorAccent ?? 'Peito');
     // Agrupar por músculo
     final Map<String, List<LibraryExercise>> grouped = {};
     for (final ex in library) {
@@ -977,7 +1190,8 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close_rounded, color: Colors.white38, size: 20),
+                        icon: const Icon(Icons.close_rounded,
+                            color: Colors.white38, size: 20),
                         onPressed: () => Navigator.pop(dialogCtx),
                         constraints: const BoxConstraints(),
                         padding: EdgeInsets.zero,
@@ -993,7 +1207,8 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                       children: sortedMuscles.map((muscle) {
                         final isSelected = activeFilters.contains(muscle);
                         return Padding(
-                          padding: const EdgeInsets.only(right: 8.0, bottom: 8.0),
+                          padding:
+                              const EdgeInsets.only(right: 8.0, bottom: 8.0),
                           child: GestureDetector(
                             onTap: () {
                               setDialogState(() {
@@ -1007,15 +1222,16 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                             },
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 200),
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 8),
                               decoration: BoxDecoration(
-                                color: isSelected 
-                                    ? accentColor.withOpacity(0.15) 
+                                color: isSelected
+                                    ? accentColor.withOpacity(0.15)
                                     : Colors.white.withOpacity(0.04),
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
-                                  color: isSelected 
-                                      ? accentColor.withOpacity(0.5) 
+                                  color: isSelected
+                                      ? accentColor.withOpacity(0.5)
                                       : Colors.white.withOpacity(0.08),
                                   width: 1.2,
                                 ),
@@ -1023,7 +1239,8 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                               child: Text(
                                 muscle.toUpperCase(),
                                 style: TextStyle(
-                                  color: isSelected ? accentColor : Colors.white60,
+                                  color:
+                                      isSelected ? accentColor : Colors.white60,
                                   fontSize: 10,
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: 0.5,
@@ -1042,16 +1259,26 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                       child: ListView.builder(
                         physics: const BouncingScrollPhysics(),
                         shrinkWrap: true,
-                        itemCount: sortedMuscles.where((m) => activeFilters.isEmpty || activeFilters.contains(m)).length,
+                        itemCount: sortedMuscles
+                            .where((m) =>
+                                activeFilters.isEmpty ||
+                                activeFilters.contains(m))
+                            .length,
+                        itemExtent: 60, // Fixed height for better performance
                         itemBuilder: (context, mIdx) {
-                          final filteredMuscles = sortedMuscles.where((m) => activeFilters.isEmpty || activeFilters.contains(m)).toList();
+                          final filteredMuscles = sortedMuscles
+                              .where((m) =>
+                                  activeFilters.isEmpty ||
+                                  activeFilters.contains(m))
+                              .toList();
                           final muscle = filteredMuscles[mIdx];
                           final exs = grouped[muscle]!;
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Padding(
-                                padding: const EdgeInsets.only(top: 16, bottom: 6),
+                                padding:
+                                    const EdgeInsets.only(top: 16, bottom: 6),
                                 child: Text(
                                   muscle.toUpperCase(),
                                   style: TextStyle(
@@ -1063,22 +1290,25 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                                 ),
                               ),
                               ...exs.map((ex) {
-                                final isSelected = selectedExercises.contains(ex);
+                                final isSelected =
+                                    selectedExercises.contains(ex);
                                 return Container(
-                                  margin: const EdgeInsets.symmetric(vertical: 4),
+                                  margin:
+                                      const EdgeInsets.symmetric(vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: isSelected 
-                                        ? accentColor.withOpacity(0.08) 
+                                    color: isSelected
+                                        ? accentColor.withOpacity(0.08)
                                         : Colors.white.withOpacity(0.02),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                      color: isSelected 
-                                          ? accentColor.withOpacity(0.4) 
+                                      color: isSelected
+                                          ? accentColor.withOpacity(0.4)
                                           : Colors.white.withOpacity(0.04),
                                     ),
                                   ),
                                   child: ListTile(
-                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 4),
                                     title: Row(
                                       children: [
                                         Expanded(
@@ -1093,18 +1323,27 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
-                                        if (ex.executionType != null && ex.executionType!.isNotEmpty) ...[
+                                        if (ex.executionType != null &&
+                                            ex.executionType!.isNotEmpty) ...[
                                           const SizedBox(width: 6),
                                           Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 6, vertical: 2),
                                             decoration: BoxDecoration(
-                                              color: Colors.blueAccent.withOpacity(0.12),
-                                              borderRadius: BorderRadius.circular(6),
-                                              border: Border.all(color: Colors.blueAccent.withOpacity(0.2)),
+                                              color: Colors.blueAccent
+                                                  .withOpacity(0.12),
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                              border: Border.all(
+                                                  color: Colors.blueAccent
+                                                      .withOpacity(0.2)),
                                             ),
                                             child: Text(
                                               ex.executionType!,
-                                              style: const TextStyle(color: Colors.blueAccent, fontSize: 9, fontWeight: FontWeight.w800),
+                                              style: const TextStyle(
+                                                  color: Colors.blueAccent,
+                                                  fontSize: 9,
+                                                  fontWeight: FontWeight.w800),
                                             ),
                                           ),
                                         ],
@@ -1113,13 +1352,21 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                                     subtitle: Padding(
                                       padding: const EdgeInsets.only(top: 3.0),
                                       child: Text(
-                                        _getMeasurementTypeLabelStatic(ex.measurementType),
-                                        style: TextStyle(color: Colors.white.withOpacity(0.35), fontSize: 11),
+                                        _getMeasurementTypeLabelStatic(
+                                            ex.measurementType),
+                                        style: TextStyle(
+                                            color:
+                                                Colors.white.withOpacity(0.35),
+                                            fontSize: 11),
                                       ),
                                     ),
                                     trailing: Icon(
-                                      isSelected ? Icons.check_circle : Icons.add_circle_outline_rounded,
-                                      color: isSelected ? accentColor : accentColor.withOpacity(0.7),
+                                      isSelected
+                                          ? Icons.check_circle
+                                          : Icons.add_circle_outline_rounded,
+                                      color: isSelected
+                                          ? accentColor
+                                          : accentColor.withOpacity(0.7),
                                       size: 20,
                                     ),
                                     onTap: () {
@@ -1149,18 +1396,28 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                         onPressed: () {
                           setState(() {
                             for (final ex in selectedExercises) {
-                              final isCardioEx = ex.measurementType == MeasurementType.cardio || 
-                                               ex.measurementType == MeasurementType.distance ||
-                                               ex.measurementType == MeasurementType.time;
+                              final isCardioEx = ex.measurementType ==
+                                      MeasurementType.cardio ||
+                                  ex.measurementType ==
+                                      MeasurementType.distance ||
+                                  ex.measurementType == MeasurementType.time;
                               _exercises.add(RoutineExercise(
                                 id: "e-${const Uuid().v4()}",
                                 exerciseId: ex.id,
                                 sets: isCardioEx ? 1 : 3,
-                                reps: isCardioEx ? 0 : (ex.measurementType == MeasurementType.time ? 45 : 10),
-                                rest: int.tryParse(_restController.text.trim()) ?? 60,
+                                reps: isCardioEx
+                                    ? 0
+                                    : (ex.measurementType ==
+                                            MeasurementType.time
+                                        ? 45
+                                        : 10),
+                                rest:
+                                    int.tryParse(_restController.text.trim()) ??
+                                        60,
                                 weight: 0,
                                 isCardio: isCardioEx,
-                                allowCardioSets: false, // Default to single session for cardio
+                                allowCardioSets:
+                                    false, // Default to single session for cardio
                               ));
                             }
                           });
@@ -1177,12 +1434,17 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: accentColor,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
                           elevation: 0,
                         ),
                         child: Text(
                           "ADICIONAR ${selectedExercises.length} ${selectedExercises.length == 1 ? 'EXERCÍCIO' : 'EXERCÍCIOS'}",
-                          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.5),
+                          style: const TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 12,
+                              letterSpacing: 0.5),
                         ),
                       ),
                     ),
@@ -1277,10 +1539,14 @@ class _LibraryTabState extends State<LibraryTab> {
                     margin: const EdgeInsets.only(right: 8),
                     padding: const EdgeInsets.symmetric(horizontal: 14),
                     decoration: BoxDecoration(
-                      color: isSelected ? widget.accentColor.withOpacity(0.15) : Colors.white.withOpacity(0.03),
+                      color: isSelected
+                          ? widget.accentColor.withOpacity(0.15)
+                          : Colors.white.withOpacity(0.03),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: isSelected ? widget.accentColor : Colors.white.withOpacity(0.08),
+                        color: isSelected
+                            ? widget.accentColor
+                            : Colors.white.withOpacity(0.08),
                         width: 1.2,
                       ),
                     ),
@@ -1305,11 +1571,13 @@ class _LibraryTabState extends State<LibraryTab> {
                 ? const Center(
                     child: Text(
                       "Nenhum exercício encontrado.",
-                      style: TextStyle(color: Colors.white38, fontStyle: FontStyle.italic),
+                      style: TextStyle(
+                          color: Colors.white38, fontStyle: FontStyle.italic),
                     ),
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 100),
+                    padding: const EdgeInsets.only(
+                        left: 16, right: 16, top: 8, bottom: 100),
                     itemCount: sortedMuscles.length,
                     itemBuilder: (context, mIdx) {
                       final muscle = sortedMuscles[mIdx];
@@ -1318,7 +1586,8 @@ class _LibraryTabState extends State<LibraryTab> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Padding(
-                            padding: const EdgeInsets.only(top: 16, bottom: 8, left: 4),
+                            padding: const EdgeInsets.only(
+                                top: 16, bottom: 8, left: 4),
                             child: Text(
                               muscle.toUpperCase(),
                               style: TextStyle(
@@ -1333,46 +1602,77 @@ class _LibraryTabState extends State<LibraryTab> {
                             return Container(
                               margin: const EdgeInsets.only(bottom: 8),
                               child: GlassCard(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 10),
                                 borderColor: Colors.white.withOpacity(0.04),
                                 child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Row(
                                             children: [
                                               Text(
                                                 ex.name,
-                                                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
+                                                style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 13,
+                                                    fontWeight:
+                                                        FontWeight.w700),
                                               ),
-                                              if (ex.measurementType == MeasurementType.time) ...[
+                                              if (ex.measurementType ==
+                                                  MeasurementType.time) ...[
                                                 const SizedBox(width: 6),
                                                 Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 6,
+                                                      vertical: 2),
                                                   decoration: BoxDecoration(
-                                                    color: Colors.amber.withOpacity(0.15),
-                                                    borderRadius: BorderRadius.circular(4),
+                                                    color: Colors.amber
+                                                        .withOpacity(0.15),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            4),
                                                   ),
                                                   child: const Text(
                                                     "Isometria",
-                                                    style: TextStyle(color: Colors.amber, fontSize: 9, fontWeight: FontWeight.bold),
+                                                    style: TextStyle(
+                                                        color: Colors.amber,
+                                                        fontSize: 9,
+                                                        fontWeight:
+                                                            FontWeight.bold),
                                                   ),
                                                 ),
                                               ],
-                                              if (ex.executionType != null && ex.executionType!.isNotEmpty) ...[
+                                              if (ex.executionType != null &&
+                                                  ex.executionType!
+                                                      .isNotEmpty) ...[
                                                 const SizedBox(width: 6),
                                                 Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 6,
+                                                      vertical: 2),
                                                   decoration: BoxDecoration(
-                                                    color: Colors.blueAccent.withOpacity(0.15),
-                                                    borderRadius: BorderRadius.circular(4),
+                                                    color: Colors.blueAccent
+                                                        .withOpacity(0.15),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            4),
                                                   ),
                                                   child: Text(
                                                     ex.executionType!,
-                                                    style: const TextStyle(color: Colors.blueAccent, fontSize: 9, fontWeight: FontWeight.bold),
+                                                    style: const TextStyle(
+                                                        color:
+                                                            Colors.blueAccent,
+                                                        fontSize: 9,
+                                                        fontWeight:
+                                                            FontWeight.bold),
                                                   ),
                                                 ),
                                               ],
@@ -1381,13 +1681,19 @@ class _LibraryTabState extends State<LibraryTab> {
                                           const SizedBox(height: 2),
                                           Text(
                                             "${ex.muscle} • ${_getMeasurementTypeLabelStatic(ex.measurementType)}",
-                                            style: const TextStyle(color: Colors.white38, fontSize: 11),
+                                            style: const TextStyle(
+                                                color: Colors.white38,
+                                                fontSize: 11),
                                           ),
-                                          if (ex.notes != null && ex.notes!.trim().isNotEmpty) ...[
+                                          if (ex.notes != null &&
+                                              ex.notes!.trim().isNotEmpty) ...[
                                             const SizedBox(height: 4),
                                             Text(
                                               ex.notes!,
-                                              style: const TextStyle(color: Colors.white24, fontSize: 10, fontStyle: FontStyle.italic),
+                                              style: const TextStyle(
+                                                  color: Colors.white24,
+                                                  fontSize: 10,
+                                                  fontStyle: FontStyle.italic),
                                             ),
                                           ],
                                         ],
@@ -1397,15 +1703,21 @@ class _LibraryTabState extends State<LibraryTab> {
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         IconButton(
-                                          icon: const Icon(Icons.edit_outlined, color: Colors.white70, size: 18),
+                                          icon: const Icon(Icons.edit_outlined,
+                                              color: Colors.white70, size: 18),
                                           onPressed: () {
-                                            _openAddExerciseDialog(context, provider, existing: ex);
+                                            _openAddExerciseDialog(
+                                                context, provider,
+                                                existing: ex);
                                           },
                                         ),
                                         IconButton(
-                                          icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
+                                          icon: const Icon(Icons.delete_outline,
+                                              color: Colors.redAccent,
+                                              size: 18),
                                           onPressed: () {
-                                            _confirmDeleteExercise(context, provider, ex);
+                                            _confirmDeleteExercise(
+                                                context, provider, ex);
                                           },
                                         ),
                                       ],
@@ -1425,7 +1737,8 @@ class _LibraryTabState extends State<LibraryTab> {
     );
   }
 
-  void _confirmDeleteExercise(BuildContext context, WorkoutProvider provider, LibraryExercise ex) {
+  void _confirmDeleteExercise(
+      BuildContext context, WorkoutProvider provider, LibraryExercise ex) {
     showDialog(
       context: context,
       builder: (dialogCtx) => Dialog(
@@ -1441,12 +1754,16 @@ class _LibraryTabState extends State<LibraryTab> {
             children: [
               const Text(
                 "Excluir Exercício?",
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16),
               ),
               const SizedBox(height: 12),
               Text(
                 "Deseja realmente deletar '${ex.name}' da biblioteca?",
-                style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+                style: const TextStyle(
+                    color: Colors.white70, fontSize: 13, height: 1.4),
               ),
               const SizedBox(height: 20),
               Row(
@@ -1454,7 +1771,10 @@ class _LibraryTabState extends State<LibraryTab> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(dialogCtx),
-                    child: const Text("Cancelar", style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+                    child: const Text("Cancelar",
+                        style: TextStyle(
+                            color: Colors.white54,
+                            fontWeight: FontWeight.bold)),
                   ),
                   const SizedBox(width: 8),
                   TextButton(
@@ -1462,7 +1782,10 @@ class _LibraryTabState extends State<LibraryTab> {
                       provider.deleteLibraryExercise(ex.id);
                       Navigator.pop(dialogCtx);
                     },
-                    child: const Text("Excluir", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                    child: const Text("Excluir",
+                        style: TextStyle(
+                            color: Colors.redAccent,
+                            fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
@@ -1473,7 +1796,8 @@ class _LibraryTabState extends State<LibraryTab> {
     );
   }
 
-  void _openAddExerciseDialog(BuildContext context, WorkoutProvider provider, {LibraryExercise? existing}) {
+  void _openAddExerciseDialog(BuildContext context, WorkoutProvider provider,
+      {LibraryExercise? existing}) {
     final nameCtrl = TextEditingController(text: existing?.name ?? "");
     String category = existing != null
         ? (existing.muscle == "Cardio" ? "Cardio" : "Musculação")
@@ -1483,7 +1807,9 @@ class _LibraryTabState extends State<LibraryTab> {
         : "Peito";
     String equipment = existing?.executionType ?? "Barra";
     String measurement = existing != null
-        ? (existing.measurementType == MeasurementType.time ? "Tempo de Isometria" : "Repetições")
+        ? (existing.measurementType == MeasurementType.time
+            ? "Tempo de Isometria"
+            : "Repetições")
         : "Repetições";
     if (existing != null && existing.muscle == "Cardio") {
       if (existing.measurementType == MeasurementType.cardio) {
@@ -1516,41 +1842,62 @@ class _LibraryTabState extends State<LibraryTab> {
                     children: [
                       Row(
                         children: [
-                          Icon(existing == null ? Icons.add_circle_outline_rounded : Icons.edit_calendar_rounded, color: widget.accentColor, size: 22),
+                          Icon(
+                              existing == null
+                                  ? Icons.add_circle_outline_rounded
+                                  : Icons.edit_calendar_rounded,
+                              color: widget.accentColor,
+                              size: 22),
                           const SizedBox(width: 8),
                           Text(
-                            existing == null ? "Novo Exercício" : "Editar Exercício",
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
+                            existing == null
+                                ? "Novo Exercício"
+                                : "Editar Exercício",
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 16),
                           ),
                         ],
                       ),
                       const SizedBox(height: 20),
-                      
+
                       // Nome
                       TextField(
                         controller: nameCtrl,
-                        style: const TextStyle(color: Colors.white, fontSize: 14),
+                        style:
+                            const TextStyle(color: Colors.white, fontSize: 14),
                         decoration: InputDecoration(
                           filled: true,
                           fillColor: Colors.white.withOpacity(0.03),
                           hintText: "Nome do Exercício",
-                          hintStyle: const TextStyle(color: Colors.white30, fontSize: 13),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          hintStyle: const TextStyle(
+                              color: Colors.white30, fontSize: 13),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 14),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+                            borderSide: BorderSide(
+                                color: Colors.white.withOpacity(0.08)),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: widget.accentColor.withOpacity(0.5), width: 1.5),
+                            borderSide: BorderSide(
+                                color: widget.accentColor.withOpacity(0.5),
+                                width: 1.5),
                           ),
-                          prefixIcon: const Icon(Icons.edit_note_rounded, color: Colors.white30, size: 20),
+                          prefixIcon: const Icon(Icons.edit_note_rounded,
+                              color: Colors.white30, size: 20),
                         ),
                       ),
                       const SizedBox(height: 16),
 
                       // Tipo de Exercício
-                      const Text("Tipo de Exercício", style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold)),
+                      const Text("Tipo de Exercício",
+                          style: TextStyle(
+                              color: Colors.white54,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold)),
                       const SizedBox(height: 8),
                       Row(
                         children: [
@@ -1565,7 +1912,8 @@ class _LibraryTabState extends State<LibraryTab> {
                                 });
                               },
                               child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
                                 decoration: BoxDecoration(
                                   color: category == "Musculação"
                                       ? widget.accentColor.withOpacity(0.12)
@@ -1581,7 +1929,9 @@ class _LibraryTabState extends State<LibraryTab> {
                                   child: Text(
                                     "Musculação 🏋️",
                                     style: TextStyle(
-                                      color: category == "Musculação" ? Colors.white : Colors.white60,
+                                      color: category == "Musculação"
+                                          ? Colors.white
+                                          : Colors.white60,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 13,
                                     ),
@@ -1600,7 +1950,8 @@ class _LibraryTabState extends State<LibraryTab> {
                                 });
                               },
                               child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
                                 decoration: BoxDecoration(
                                   color: category == "Cardio"
                                       ? widget.accentColor.withOpacity(0.12)
@@ -1616,7 +1967,9 @@ class _LibraryTabState extends State<LibraryTab> {
                                   child: Text(
                                     "Cardio 🏃",
                                     style: TextStyle(
-                                      color: category == "Cardio" ? Colors.white : Colors.white60,
+                                      color: category == "Cardio"
+                                          ? Colors.white
+                                          : Colors.white60,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 13,
                                     ),
@@ -1631,27 +1984,48 @@ class _LibraryTabState extends State<LibraryTab> {
 
                       // Agrupamento Muscular (se Musculação)
                       if (category == "Musculação") ...[
-                        const Text("Agrupamento Muscular", style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold)),
+                        const Text("Agrupamento Muscular",
+                            style: TextStyle(
+                                color: Colors.white54,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold)),
                         const SizedBox(height: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 2),
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.03),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.white.withOpacity(0.08)),
+                            border: Border.all(
+                                color: Colors.white.withOpacity(0.08)),
                           ),
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<String>(
                               value: muscle,
                               dropdownColor: const Color(0xff1c1c1e),
-                              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold),
                               isExpanded: true,
-                              icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white54),
+                              icon: const Icon(
+                                  Icons.keyboard_arrow_down_rounded,
+                                  color: Colors.white54),
                               onChanged: (val) {
                                 if (val != null) setState(() => muscle = val);
                               },
-                              items: ["Peito", "Costas", "Pernas", "Ombros", "Bíceps", "Tríceps", "Core", "Outros"]
-                                  .map((m) => DropdownMenuItem(value: m, child: Text(m)))
+                              items: [
+                                "Peito",
+                                "Costas",
+                                "Pernas",
+                                "Ombros",
+                                "Bíceps",
+                                "Tríceps",
+                                "Core",
+                                "Outros"
+                              ]
+                                  .map((m) => DropdownMenuItem(
+                                      value: m, child: Text(m)))
                                   .toList(),
                             ),
                           ),
@@ -1661,27 +2035,40 @@ class _LibraryTabState extends State<LibraryTab> {
 
                       // Tipo de Equipamento (se Musculação)
                       if (category == "Musculação") ...[
-                        const Text("Tipo de Equipamento", style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold)),
+                        const Text("Tipo de Equipamento",
+                            style: TextStyle(
+                                color: Colors.white54,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold)),
                         const SizedBox(height: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 2),
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.03),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.white.withOpacity(0.08)),
+                            border: Border.all(
+                                color: Colors.white.withOpacity(0.08)),
                           ),
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<String>(
                               value: equipment,
                               dropdownColor: const Color(0xff1c1c1e),
-                              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold),
                               isExpanded: true,
-                              icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white54),
+                              icon: const Icon(
+                                  Icons.keyboard_arrow_down_rounded,
+                                  color: Colors.white54),
                               onChanged: (val) {
-                                if (val != null) setState(() => equipment = val);
+                                if (val != null)
+                                  setState(() => equipment = val);
                               },
                               items: ["Barra", "Haltere", "Máquina", "Livre"]
-                                  .map((m) => DropdownMenuItem(value: m, child: Text(m)))
+                                  .map((m) => DropdownMenuItem(
+                                      value: m, child: Text(m)))
                                   .toList(),
                             ),
                           ),
@@ -1691,15 +2078,21 @@ class _LibraryTabState extends State<LibraryTab> {
 
                       // Tipo de Medição (se Musculação)
                       if (category == "Musculação") ...[
-                        const Text("Tipo de Medição", style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold)),
+                        const Text("Tipo de Medição",
+                            style: TextStyle(
+                                color: Colors.white54,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold)),
                         const SizedBox(height: 8),
                         Row(
                           children: [
                             Expanded(
                               child: GestureDetector(
-                                onTap: () => setState(() => measurement = "Repetições"),
+                                onTap: () =>
+                                    setState(() => measurement = "Repetições"),
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 12),
                                   decoration: BoxDecoration(
                                     color: measurement == "Repetições"
                                         ? widget.accentColor.withOpacity(0.12)
@@ -1715,7 +2108,9 @@ class _LibraryTabState extends State<LibraryTab> {
                                     child: Text(
                                       "Repetições",
                                       style: TextStyle(
-                                        color: measurement == "Repetições" ? Colors.white : Colors.white60,
+                                        color: measurement == "Repetições"
+                                            ? Colors.white
+                                            : Colors.white60,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 12,
                                       ),
@@ -1727,9 +2122,11 @@ class _LibraryTabState extends State<LibraryTab> {
                             const SizedBox(width: 10),
                             Expanded(
                               child: GestureDetector(
-                                onTap: () => setState(() => measurement = "Tempo de Isometria"),
+                                onTap: () => setState(
+                                    () => measurement = "Tempo de Isometria"),
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 12),
                                   decoration: BoxDecoration(
                                     color: measurement == "Tempo de Isometria"
                                         ? widget.accentColor.withOpacity(0.12)
@@ -1745,7 +2142,10 @@ class _LibraryTabState extends State<LibraryTab> {
                                     child: Text(
                                       "Tempo (s)",
                                       style: TextStyle(
-                                        color: measurement == "Tempo de Isometria" ? Colors.white : Colors.white60,
+                                        color:
+                                            measurement == "Tempo de Isometria"
+                                                ? Colors.white
+                                                : Colors.white60,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 12,
                                       ),
@@ -1761,22 +2161,30 @@ class _LibraryTabState extends State<LibraryTab> {
 
                       // Tipo de Medição (se Cardio)
                       if (category == "Cardio") ...[
-                        const Text("Tipo de Medição", style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold)),
+                        const Text("Tipo de Medição",
+                            style: TextStyle(
+                                color: Colors.white54,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold)),
                         const SizedBox(height: 8),
                         Row(
                           children: [
                             Expanded(
                               child: GestureDetector(
-                                onTap: () => setState(() => measurement = "Cardio (distância + tempo)"),
+                                onTap: () => setState(() =>
+                                    measurement = "Cardio (distância + tempo)"),
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 12),
                                   decoration: BoxDecoration(
-                                    color: measurement == "Cardio (distância + tempo)"
+                                    color: measurement ==
+                                            "Cardio (distância + tempo)"
                                         ? widget.accentColor.withOpacity(0.12)
                                         : Colors.white.withOpacity(0.03),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                      color: measurement == "Cardio (distância + tempo)"
+                                      color: measurement ==
+                                              "Cardio (distância + tempo)"
                                           ? widget.accentColor.withOpacity(0.4)
                                           : Colors.white.withOpacity(0.08),
                                     ),
@@ -1785,7 +2193,10 @@ class _LibraryTabState extends State<LibraryTab> {
                                     child: Text(
                                       "Distância + Tempo",
                                       style: TextStyle(
-                                        color: measurement == "Cardio (distância + tempo)" ? Colors.white : Colors.white60,
+                                        color: measurement ==
+                                                "Cardio (distância + tempo)"
+                                            ? Colors.white
+                                            : Colors.white60,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 11,
                                       ),
@@ -1797,9 +2208,11 @@ class _LibraryTabState extends State<LibraryTab> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: GestureDetector(
-                                onTap: () => setState(() => measurement = "Distância"),
+                                onTap: () =>
+                                    setState(() => measurement = "Distância"),
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 12),
                                   decoration: BoxDecoration(
                                     color: measurement == "Distância"
                                         ? widget.accentColor.withOpacity(0.12)
@@ -1815,7 +2228,9 @@ class _LibraryTabState extends State<LibraryTab> {
                                     child: Text(
                                       "Apenas Distância",
                                       style: TextStyle(
-                                        color: measurement == "Distância" ? Colors.white : Colors.white60,
+                                        color: measurement == "Distância"
+                                            ? Colors.white
+                                            : Colors.white60,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 11,
                                       ),
@@ -1827,9 +2242,11 @@ class _LibraryTabState extends State<LibraryTab> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: GestureDetector(
-                                onTap: () => setState(() => measurement = "Tempo"),
+                                onTap: () =>
+                                    setState(() => measurement = "Tempo"),
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 12),
                                   decoration: BoxDecoration(
                                     color: measurement == "Tempo"
                                         ? widget.accentColor.withOpacity(0.12)
@@ -1845,7 +2262,9 @@ class _LibraryTabState extends State<LibraryTab> {
                                     child: Text(
                                       "Apenas Tempo",
                                       style: TextStyle(
-                                        color: measurement == "Tempo" ? Colors.white : Colors.white60,
+                                        color: measurement == "Tempo"
+                                            ? Colors.white
+                                            : Colors.white60,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 11,
                                       ),
@@ -1863,35 +2282,46 @@ class _LibraryTabState extends State<LibraryTab> {
                       TextField(
                         controller: notesCtrl,
                         maxLines: 2,
-                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                        style:
+                            const TextStyle(color: Colors.white, fontSize: 13),
                         decoration: InputDecoration(
                           filled: true,
                           fillColor: Colors.white.withOpacity(0.03),
                           hintText: "Observação (Opcional)",
-                          hintStyle: const TextStyle(color: Colors.white30, fontSize: 12),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          hintStyle: const TextStyle(
+                              color: Colors.white30, fontSize: 12),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+                            borderSide: BorderSide(
+                                color: Colors.white.withOpacity(0.08)),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: widget.accentColor.withOpacity(0.5), width: 1.5),
+                            borderSide: BorderSide(
+                                color: widget.accentColor.withOpacity(0.5),
+                                width: 1.5),
                           ),
                         ),
                       ),
                       const SizedBox(height: 20),
-                      
+
                       Row(
                         children: [
                           Expanded(
                             child: TextButton(
                               onPressed: () => Navigator.pop(dialogCtx),
                               style: TextButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
                               ),
-                              child: const Text("Cancelar", style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+                              child: const Text("Cancelar",
+                                  style: TextStyle(
+                                      color: Colors.white54,
+                                      fontWeight: FontWeight.bold)),
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -1903,7 +2333,8 @@ class _LibraryTabState extends State<LibraryTab> {
                                   final isCardioEx = category == "Cardio";
                                   String mType;
                                   if (isCardioEx) {
-                                    if (measurement == "Cardio (distância + tempo)") {
+                                    if (measurement ==
+                                        "Cardio (distância + tempo)") {
                                       mType = "cardio";
                                     } else if (measurement == "Distância") {
                                       mType = "distance";
@@ -1913,11 +2344,12 @@ class _LibraryTabState extends State<LibraryTab> {
                                       mType = "cardio"; // Default
                                     }
                                   } else {
-                                    mType = measurement == "Tempo de Isometria" ? "time" : "reps";
+                                    mType = measurement == "Tempo de Isometria"
+                                        ? "time"
+                                        : "reps";
                                   }
-                                  final execType = isCardioEx
-                                      ? "Livre"
-                                      : equipment;
+                                  final execType =
+                                      isCardioEx ? "Livre" : equipment;
 
                                   if (existing == null) {
                                     provider.addLibraryExercise(
@@ -1943,11 +2375,16 @@ class _LibraryTabState extends State<LibraryTab> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: widget.accentColor,
                                 foregroundColor: Colors.black,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
                                 elevation: 0,
                               ),
-                              child: Text(existing == null ? "Adicionar" : "Salvar", style: const TextStyle(fontWeight: FontWeight.bold)),
+                              child: Text(
+                                  existing == null ? "Adicionar" : "Salvar",
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold)),
                             ),
                           ),
                         ],
