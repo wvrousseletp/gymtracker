@@ -956,7 +956,7 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                                   ],
                                 ),
                               );
-                            },
+                            }).toList(),
                           ),
                       ],
                     ),
