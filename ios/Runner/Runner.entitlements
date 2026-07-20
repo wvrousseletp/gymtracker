@@ -24,5 +24,10 @@
 	<array>
 		<string>group.com.vicente.losmooscles</string>
 	</array>
+	<key> UIBackgroundModes </key>
+	<array>
+		<string>fetch</string>
+		<string>processing</string>
+	</array>
 </dict>
 </plist>

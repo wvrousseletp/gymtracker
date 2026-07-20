@@ -1095,6 +1095,27 @@ class WorkoutProvider extends ChangeNotifier {
   }
 
   // --- SETTINGS OPERATIONS ---
+  void updateWorkoutElapsedTime(int newElapsedSeconds) {
+    if (activeWorkout != null) {
+      activeWorkout = ActiveWorkoutState(
+        name: activeWorkout!.name,
+        startTime: activeWorkout!.startTime,
+        exercises: activeWorkout!.exercises,
+        currentExerciseIndex: activeWorkout!.currentExerciseIndex,
+        elapsedSeconds: newElapsedSeconds,
+        paused: activeWorkout!.paused,
+        restTimer: activeWorkout!.restTimer,
+        warmupDurationSeconds: activeWorkout!.warmupDurationSeconds,
+        heartRate: activeWorkout!.heartRate,
+        activeCalories: activeWorkout!.activeCalories,
+        postponed: activeWorkout!.postponed,
+        recovery: activeWorkout!.recovery,
+        isWarmup: activeWorkout!.isWarmup,
+      );
+      _save();
+    }
+  }
+
   void updateSettings(bool sound, bool vibration, int prepSeconds) {
     settings = SettingsState(
       sound: sound,

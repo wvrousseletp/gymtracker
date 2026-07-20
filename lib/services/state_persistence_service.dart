@@ -140,4 +140,31 @@ class StatePersistenceService {
   String encodeProfile(Profile profile) {
     return json.encode(profile.toJson());
   }
+
+  /// Saves active workout state for background recovery
+  Future<void> saveActiveWorkoutState(ActiveWorkoutState workout) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('active_workout_state', json.encode(workout.toJson()));
+    await prefs.setInt('active_workout_timestamp', DateTime.now().millisecondsSinceEpoch);
+  }
+
+  /// Loads active workout state for background recovery
+  Future<ActiveWorkoutState?> loadActiveWorkoutState() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('active_workout_state');
+    if (raw == null) return null;
+    try {
+      return ActiveWorkoutState.fromJson(json.decode(raw));
+    } catch (e) {
+      debugPrint('[StatePersistence] Error loading active workout state: $e');
+      return null;
+    }
+  }
+
+  /// Clears active workout state
+  Future<void> clearActiveWorkoutState() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('active_workout_state');
+    await prefs.remove('active_workout_timestamp');
+  }
 }

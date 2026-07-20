@@ -110,6 +110,24 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     WatchService.instance.init(this);
   }
 
+  Future<void> _testFirebaseConnection(String uid) async {
+    try {
+      debugPrint('[FirebaseConnection] Testing Firebase connection...');
+      debugPrint('[FirebaseConnection] Project ID: vicente-losmooscles');
+      debugPrint('[FirebaseConnection] User ID: $uid');
+      
+      // Test Firestore connection by attempting to read user document
+      final firestore = FirebaseFirestore.instance;
+      final testDoc = await firestore.collection('users').doc(uid).get();
+      
+      debugPrint('[FirebaseConnection] Firestore connection test: ${testDoc.exists ? "SUCCESS - Document exists" : "SUCCESS - Document does not exist (new user)"}');
+      debugPrint('[FirebaseConnection] Firebase is properly configured and connected!');
+    } catch (e) {
+      debugPrint('[FirebaseConnection] ERROR - Firebase connection failed: $e');
+      debugPrint('[FirebaseConnection] This indicates a configuration or network issue');
+    }
+  }
+
   Future<void> initializeUser(String uid) async {
     if (_profileProvider == null || _workoutProvider == null || _dietProvider == null) {
       debugPrint('[TrackerProvider] Sub-providers not initialized yet, deferring user initialization');
@@ -118,6 +136,9 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
 
     _isLoading = true;
     notifyListeners();
+
+    // Test Firebase connection
+    await _testFirebaseConnection(uid);
 
     _profileProvider!.setCurrentUserId(uid);
     _workoutProvider!.historyLoaded = false;
@@ -711,6 +732,33 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
       checkAndResetDailyDiet();
       checkAndResetPostponedWorkouts();
       syncHealthMetrics();
+      recalculateWorkoutElapsedTime();
+    } else if (state == AppLifecycleState.paused) {
+      persistActiveWorkoutState();
+    }
+  }
+
+  void persistActiveWorkoutState() {
+    // Save current workout state to SharedPreferences for background recovery
+    final active = _workoutProvider?.activeWorkout;
+    if (active != null) {
+      _persistence.saveActiveWorkoutState(active);
+      debugPrint('[TrackerProvider] Persisted active workout state for background recovery');
+    }
+  }
+
+  void recalculateWorkoutElapsedTime() {
+    // Recalculate elapsed time when returning from background
+    final active = _workoutProvider?.activeWorkout;
+    if (active != null) {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final startTime = active.startTime;
+      final newElapsed = ((now - startTime) / 1000).round();
+      
+      if (newElapsed != active.elapsedSeconds) {
+        _workoutProvider?.updateWorkoutElapsedTime(newElapsed);
+        debugPrint('[TrackerProvider] Recalculated elapsed time: ${active.elapsedSeconds}s -> ${newElapsed}s');
+      }
     }
   }
 

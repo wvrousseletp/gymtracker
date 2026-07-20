@@ -363,6 +363,24 @@ class WatchService {
         }
         break;
 
+      case 'appDidEnterBackground':
+        // App is entering background - ensure timer state is persisted
+        debugPrint('[WatchService] App entering background');
+        if (_provider?.state?.activeWorkout != null) {
+          // Save current workout state to shared preferences for recovery
+          _provider?.persistActiveWorkoutState();
+        }
+        break;
+
+      case 'appWillEnterForeground':
+        // App is returning to foreground - restore timer if needed
+        debugPrint('[WatchService] App entering foreground');
+        if (_provider?.state?.activeWorkout != null) {
+          // Recalculate elapsed time based on persisted start time
+          _provider?.recalculateWorkoutElapsedTime();
+        }
+        break;
+
       default:
         break;
     }

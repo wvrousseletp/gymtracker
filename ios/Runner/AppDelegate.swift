@@ -80,6 +80,41 @@ import WidgetKit
     return super.application(app, open: url, options: options)
   }
 
+  // MARK: - Background Execution
+
+  private var backgroundTaskID: UIBackgroundTaskIdentifier = .invalid
+  private var workoutTimerBackgroundTask: UIBackgroundTaskIdentifier = .invalid
+
+  override func applicationDidEnterBackground(_ application: UIApplication) {
+    // Start a background task to keep the workout timer running
+    workoutTimerBackgroundTask = UIApplication.shared.beginBackgroundTask(withName: "WorkoutTimer") { [weak self] in
+      // Expiration handler - called when system is about to terminate
+      self?.endBackgroundTasks()
+    }
+
+    // Notify Flutter that app is entering background
+    methodChannel?.invokeMethod("appDidEnterBackground", arguments: nil)
+  }
+
+  override func applicationWillEnterForeground(_ application: UIApplication) {
+    // End background task when returning to foreground
+    endBackgroundTasks()
+
+    // Notify Flutter that app is entering foreground
+    methodChannel?.invokeMethod("appWillEnterForeground", arguments: nil)
+  }
+
+  private func endBackgroundTasks() {
+    if workoutTimerBackgroundTask != .invalid {
+      UIApplication.shared.endBackgroundTask(workoutTimerBackgroundTask)
+      workoutTimerBackgroundTask = .invalid
+    }
+    if backgroundTaskID != .invalid {
+      UIApplication.shared.endBackgroundTask(backgroundTaskID)
+      backgroundTaskID = .invalid
+    }
+  }
+
   private func sendToWatch(_ key: String, json: String?, clearActive: Bool = false) {
     guard let session = session else { return }
     
@@ -160,6 +195,32 @@ import WidgetKit
     }
   }
 
+  private func launchWatchAppWithRetry(attempt: Int, maxAttempts: Int) {
+    guard HKHealthStore.isHealthDataAvailable() else { return }
+    
+    let configuration = HKWorkoutConfiguration()
+    configuration.activityType = .traditionalStrengthTraining
+    configuration.locationType = .unknown
+    
+    healthStore.startWatchApp(with: configuration) { [weak self] success, error in
+      if let error = error {
+        print("[AppDelegate] Watch app launch attempt \(attempt + 1) failed: \(error.localizedDescription)")
+        
+        // Retry with exponential backoff if we haven't reached max attempts
+        if attempt < maxAttempts - 1 {
+          let delay = TimeInterval(pow(2.0, Double(attempt))) // 1s, 2s, 4s
+          DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+            self?.launchWatchAppWithRetry(attempt: attempt + 1, maxAttempts: maxAttempts)
+          }
+        } else {
+          print("[AppDelegate] All watch app launch attempts failed. Workout data sent via WCSession instead.")
+        }
+      } else if success {
+        print("[AppDelegate] Watch app launched successfully on attempt \(attempt + 1)")
+      }
+    }
+  }
+
   private func handleFlutterCall(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
     guard let session = session else {
       result(FlutterError(code: "UNAVAILABLE", message: "Watch session not initialized", details: nil))
@@ -189,15 +250,9 @@ import WidgetKit
         sharedDefaults?.synchronize()
         self.updateLiveActivity(workoutJson: json)
         
+        // Enhanced watch app launch with retry mechanism
         if HKHealthStore.isHealthDataAvailable() {
-            let configuration = HKWorkoutConfiguration()
-            configuration.activityType = .traditionalStrengthTraining
-            configuration.locationType = .unknown
-            self.healthStore.startWatchApp(with: configuration) { success, error in
-                if let error = error {
-                    print("[AppDelegate] Failed to start watch app: \(error.localizedDescription)")
-                }
-            }
+            self.launchWatchAppWithRetry(attempt: 0, maxAttempts: 3)
         }
         
         result(nil)
