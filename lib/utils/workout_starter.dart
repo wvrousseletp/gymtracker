@@ -48,7 +48,7 @@ class WorkoutStarter {
 }
 
 class _CountdownDialog extends StatefulWidget {
-  const _CountdownDialog({super.key});
+  const _CountdownDialog();
 
   @override
   _CountdownDialogState createState() => _CountdownDialogState();
