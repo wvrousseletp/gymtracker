@@ -209,27 +209,27 @@ import WidgetKit
     configuration.activityType = .traditionalStrengthTraining
     configuration.locationType = .unknown
     
-    print("[AppDelegate] Calling healthStore.startWatchApp with configuration")
-    
-    healthStore.startWatchApp(with: configuration) { [weak self] success, error in
-      if let error = error {
-        print("[AppDelegate] Watch app launch attempt \(attempt + 1) failed: \(error.localizedDescription)")
-        print("[AppDelegate] Error details: \(error)")
-        
-        // Retry with exponential backoff if we haven't reached max attempts
-        if attempt < maxAttempts - 1 {
-          let delay = TimeInterval(pow(2.0, Double(attempt))) // 1s, 2s, 4s
-          print("[AppDelegate] Scheduling retry in \(delay) seconds")
-          DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-            self?.launchWatchAppWithRetry(attempt: attempt + 1, maxAttempts: maxAttempts)
+    DispatchQueue.main.async { [weak self] in
+      print("[AppDelegate] Calling healthStore.startWatchApp with configuration on main thread")
+      self?.healthStore.startWatchApp(with: configuration) { success, error in
+        if let error = error {
+          print("[AppDelegate] Watch app launch attempt \(attempt + 1) failed: \(error.localizedDescription)")
+          print("[AppDelegate] Error details: \(error)")
+          
+          if attempt < maxAttempts - 1 {
+            let delay = TimeInterval(pow(2.0, Double(attempt))) // 1s, 2s, 4s
+            print("[AppDelegate] Scheduling retry in \(delay) seconds")
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+              self?.launchWatchAppWithRetry(attempt: attempt + 1, maxAttempts: maxAttempts)
+            }
+          } else {
+            print("[AppDelegate] All watch app launch attempts failed. Workout data sent via WCSession instead.")
           }
+        } else if success {
+          print("[AppDelegate] Watch app launched successfully on attempt \(attempt + 1)")
         } else {
-          print("[AppDelegate] All watch app launch attempts failed. Workout data sent via WCSession instead.")
+          print("[AppDelegate] Watch app launch returned success=false on attempt \(attempt + 1)")
         }
-      } else if success {
-        print("[AppDelegate] Watch app launched successfully on attempt \(attempt + 1)")
-      } else {
-        print("[AppDelegate] Watch app launch returned success=false on attempt \(attempt + 1)")
       }
     }
   }

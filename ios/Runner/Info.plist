@@ -73,6 +73,10 @@
 				<string>com.googleusercontent.apps.973584151756-1dutt4u0djfff6mvsjsnsr0cprl6o9qk</string>
 			</array>
 		</dict>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>processing</string>
 	</array>
 </dict>
 </plist>

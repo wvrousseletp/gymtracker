@@ -1508,7 +1508,7 @@ class ActiveWorkoutView extends StatefulWidget {
   State<ActiveWorkoutView> createState() => _ActiveWorkoutViewState();
 }
 
-class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
+class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindingObserver {
   Timer? _stopwatchTimer;
   Timer? _healthSyncTimer;
   late final ValueNotifier<int> _workoutDurationNotifier;
@@ -1533,9 +1533,14 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _currentExIdx = widget.activeWorkout.currentExerciseIndex;
-    _workoutDurationNotifier =
-        ValueNotifier<int>(widget.activeWorkout.elapsedSeconds);
+
+    // Calculate initial elapsed seconds from startTime if valid
+    final initialElapsed = _calculateRealElapsed();
+    _workoutDurationNotifier = ValueNotifier<int>(
+      initialElapsed > 0 ? initialElapsed : widget.activeWorkout.elapsedSeconds,
+    );
 
     // Iniciar cronômetro do treino
     _startStopwatch();
@@ -1558,6 +1563,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     widget.provider.removeListener(_onProviderChange);
     RestTimerService.instance.secondsRemaining.removeListener(_onRestTimerTick);
     _stopwatchTimer?.cancel();
@@ -1566,12 +1572,39 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
     super.dispose();
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _syncElapsedSecondsFromClock();
+    }
+  }
+
+  int _calculateRealElapsed() {
+    final start = widget.activeWorkout.startTime;
+    if (start <= 0) return widget.activeWorkout.elapsedSeconds;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final diff = (now - start) ~/ 1000;
+    return diff > 0 ? diff : widget.activeWorkout.elapsedSeconds;
+  }
+
+  void _syncElapsedSecondsFromClock() {
+    if (!mounted || widget.activeWorkout.paused) return;
+    final realElapsed = _calculateRealElapsed();
+    if (_workoutDurationNotifier.value != realElapsed) {
+      _workoutDurationNotifier.value = realElapsed;
+      widget.provider.updateWorkoutTimer(realElapsed);
+    }
+  }
+
   void _startStopwatch() {
+    _stopwatchTimer?.cancel();
     _stopwatchTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!widget.activeWorkout.paused) {
-        _workoutDurationNotifier.value++;
-        // Sincroniza periodicamente com o provider
-        widget.provider.updateWorkoutTimer(_workoutDurationNotifier.value);
+        final realElapsed = _calculateRealElapsed();
+        if (realElapsed != _workoutDurationNotifier.value) {
+          _workoutDurationNotifier.value = realElapsed;
+          widget.provider.updateWorkoutTimer(realElapsed);
+        }
       }
     });
   }
@@ -2290,22 +2323,133 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> {
     final isCardio = ex.isCardio;
     final isSingleCardio = isCardio && !ex.allowCardioSets;
 
+    // Calculate total accumulated volume for strength exercises
+    double totalVolume = 0;
+    for (int i = 0; i < ex.sets; i++) {
+      if (ex.setsState[i]) {
+        final w = (ex.weightsPerSet != null && i < ex.weightsPerSet!.length)
+            ? ex.weightsPerSet![i]
+            : ex.weight;
+        final r = (ex.repsPerSet != null && i < ex.repsPerSet!.length)
+            ? ex.repsPerSet![i]
+            : ex.reps;
+        totalVolume += (w * r);
+      }
+    }
+
+    final cardioAccent = const Color(0xff00e676); // Vibrant Lime/Cyan for Cardio
+
     return GlassCard(
       padding: const EdgeInsets.all(16),
-      borderColor: Colors.white.withOpacity(0.04),
+      borderColor: isCardio
+          ? cardioAccent.withOpacity(0.25)
+          : accentColor.withOpacity(0.15),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            ex.name,
-            style: const TextStyle(
-                color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
-          ),
-          Text(
-            ex.executionType != null && ex.executionType!.isNotEmpty
-                ? "${ex.muscle} • ${ex.executionType}"
-                : ex.muscle,
-            style: const TextStyle(color: Colors.white38, fontSize: 12),
+          // Header: Category Icon, Name and Badges
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: isCardio
+                      ? cardioAccent.withOpacity(0.12)
+                      : accentColor.withOpacity(0.12),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isCardio
+                        ? cardioAccent.withOpacity(0.4)
+                        : accentColor.withOpacity(0.4),
+                    width: 1.5,
+                  ),
+                ),
+                child: Icon(
+                  isCardio ? Icons.directions_run : Icons.fitness_center,
+                  color: isCardio ? cardioAccent : accentColor,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      ex.name,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.2),
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.06),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                                color: Colors.white.withOpacity(0.1)),
+                          ),
+                          child: Text(
+                            ex.muscle.toUpperCase(),
+                            style: TextStyle(
+                              color: isCardio ? cardioAccent : accentColor,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                        if (ex.executionType != null &&
+                            ex.executionType!.isNotEmpty) ...[
+                          const SizedBox(width: 6),
+                          Text(
+                            "• ${ex.executionType}",
+                            style: const TextStyle(
+                                color: Colors.white54, fontSize: 11),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              if (!isCardio && totalVolume > 0) ...[
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: accentColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: accentColor.withOpacity(0.3)),
+                  ),
+                  child: Column(
+                    children: [
+                      const Text(
+                        "VOLUME",
+                        style: TextStyle(
+                            color: Colors.white38,
+                            fontSize: 8,
+                            fontWeight: FontWeight.w800),
+                      ),
+                      Text(
+                        "${totalVolume.toStringAsFixed(0)} kg",
+                        style: TextStyle(
+                            color: accentColor,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w900),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
           ),
           const SizedBox(height: 16),
 
