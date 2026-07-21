@@ -17,9 +17,7 @@ class ExtensionDelegate: NSObject, WKExtensionDelegate {
         // App launched by iOS app starting a workout
         print("[WatchApp] Launched via HKWorkoutConfiguration from iOS")
         WorkoutManager.shared.isLaunchedByiOS = true
-        DispatchQueue.main.async {
-            WorkoutManager.shared.startWorkout()
-        }
+        WorkoutManager.shared.startWorkout()
     }
 }
 

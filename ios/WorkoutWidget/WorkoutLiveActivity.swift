@@ -94,15 +94,11 @@ struct WorkoutLiveActivity: Widget {
                         .font(.system(size: 9, weight: .bold))
                         .foregroundColor(.yellow)
                 } else {
-                    // Show compact progress: checkmark and e.g., 2/3
-                    HStack(spacing: 2) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 8))
-                            .foregroundColor(.green)
-                        Text("\(context.state.completedSets)/\(context.state.totalSets)")
-                            .font(.system(size: 9, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
-                    }
+                    Text(Date(timeIntervalSinceNow: Double(-context.state.elapsedSeconds)), style: .timer)
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundColor(.green)
+                        .monospacedDigit()
+                        .frame(maxWidth: 44)
                 }
                 
             } minimal: {

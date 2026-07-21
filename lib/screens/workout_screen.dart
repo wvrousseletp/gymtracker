@@ -1974,43 +1974,47 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
                   child: SingleChildScrollView(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: _buildExerciseCard(
-                        exercises[_currentExIdx], _currentExIdx, accentColor),
+                    child: Column(
+                      children: [
+                        _buildExerciseCard(
+                            exercises[_currentExIdx], _currentExIdx, accentColor),
+                        
+                        // Botão Concluir Treino
+                        Padding(
+                          padding: const EdgeInsets.only(
+                              top: 24.0, bottom: 100.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              OutlinedButton.icon(
+                                onPressed: () {
+                                  _showFinishWorkoutDialog(context);
+                                },
+                                icon: const Icon(Icons.check_circle_outline, size: 16),
+                                label: const Text(
+                                  "Finalizar Treino",
+                                  style: TextStyle(
+                                      color: Colors.white60,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 12),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  side: BorderSide(color: Colors.white.withOpacity(0.12)),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12)),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 8),
+                                  minimumSize: const Size(0, 36),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
-
-              // Botão Concluir Treino (reduzido e menos destacado)
-              Padding(
-                padding: const EdgeInsets.only(
-                    left: 16.0, right: 16.0, top: 8.0, bottom: 100.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    OutlinedButton.icon(
-                      onPressed: () {
-                        _showFinishWorkoutDialog(context);
-                      },
-                      icon: const Icon(Icons.check_circle_outline, size: 16),
-                      label: const Text(
-                        "Finalizar Treino",
-                        style: TextStyle(
-                            color: Colors.white60,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: Colors.white.withOpacity(0.12)),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        minimumSize: const Size(0, 36),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ],
           ),
 
@@ -2520,9 +2524,9 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
                     opacity: isDone ? 0.65 : 1.0,
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
-                      margin: const EdgeInsets.symmetric(vertical: 6),
+                      margin: const EdgeInsets.symmetric(vertical: 8),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 10),
+                          horizontal: 16, vertical: 16),
                       decoration: BoxDecoration(
                         color: isActive
                             ? accentColor.withOpacity(0.04)
@@ -2553,12 +2557,12 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
                             "Série ${setIdx + 1}",
                             style: TextStyle(
                               color: isActive ? Colors.white : Colors.white70,
-                              fontSize: 12,
+                              fontSize: 14,
                               fontWeight:
                                   isActive ? FontWeight.w900 : FontWeight.bold,
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 16),
 
                           // Quantidade (reps ou segs) e Peso - editáveis por clique
                           Expanded(
@@ -2577,7 +2581,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
                                         color: isActive
                                             ? Colors.white
                                             : Colors.white60,
-                                        fontSize: 12,
+                                        fontSize: 16,
                                         fontWeight: isActive
                                             ? FontWeight.w900
                                             : FontWeight.bold,
@@ -2598,9 +2602,9 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
                                       color: isActive
                                           ? Colors.white
                                           : Colors.white38,
-                                      fontSize: 11,
+                                      fontSize: 15,
                                       fontWeight: isActive
-                                          ? FontWeight.bold
+                                          ? FontWeight.w900
                                           : FontWeight.normal,
                                     ),
                                   ),
