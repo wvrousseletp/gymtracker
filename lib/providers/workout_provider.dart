@@ -29,7 +29,22 @@ class WorkoutProvider extends ChangeNotifier {
   List<BodyMeasurement> medidas = [];
   SettingsState settings =
       SettingsState(sound: true, vibration: true, prepSeconds: 5);
-  ActiveWorkoutState? activeWorkout;
+  ActiveWorkoutState? _activeWorkout;
+  
+  ActiveWorkoutState? get activeWorkout {
+    if (_activeWorkout != null && !_activeWorkout!.paused) {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final newElapsed = ((now - _activeWorkout!.startTime) / 1000).round();
+      if (newElapsed != _activeWorkout!.elapsedSeconds) {
+        _activeWorkout = _activeWorkout!.copyWith(elapsedSeconds: newElapsed);
+      }
+    }
+    return _activeWorkout;
+  }
+
+  set activeWorkout(ActiveWorkoutState? value) {
+    _activeWorkout = value;
+  }
   List<ActiveWorkoutState> postponedWorkouts = [];
   List<String> deletedHealthWorkoutIds = [];
   WorkoutStreak streak = WorkoutStreak(
