@@ -16,7 +16,6 @@ import '../widgets/profile_avatar.dart';
 import '../utils/workout_starter.dart';
 import '../services/rest_timer_service.dart';
 import '../widgets/premium_strength_set_card.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../widgets/premium_cardio_view.dart';
 import 'notification_settings_dialog.dart';
@@ -1958,14 +1957,14 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
                             _confirmDiscardWorkout(context);
                           }
                         },
-                        itemBuilder: (context) => [
+                        itemBuilder: (context) => const [
                           PopupMenuItem(
                             value: 'postpone',
                             child: Row(
                               children: [
-                                const Icon(Icons.snooze, color: Colors.amberAccent, size: 20),
-                                const SizedBox(width: 12),
-                                const Text("Adiar Treino", style: TextStyle(color: Colors.white)),
+                                Icon(Icons.snooze, color: Colors.amberAccent, size: 20),
+                                SizedBox(width: 12),
+                                Text("Adiar Treino", style: TextStyle(color: Colors.white)),
                               ],
                             ),
                           ),
@@ -1973,9 +1972,9 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
                             value: 'discard',
                             child: Row(
                               children: [
-                                const Icon(Icons.close, color: Colors.redAccent, size: 20),
-                                const SizedBox(width: 12),
-                                const Text("Descartar", style: TextStyle(color: Colors.redAccent)),
+                                Icon(Icons.close, color: Colors.redAccent, size: 20),
+                                SizedBox(width: 12),
+                                Text("Descartar", style: TextStyle(color: Colors.redAccent)),
                               ],
                             ),
                           ),
@@ -2970,234 +2969,5 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
       return "${twoDigits(hours)}:${twoDigits(minutes)}:${twoDigits(seconds)}";
     }
     return "${twoDigits(minutes)}:${twoDigits(seconds)}";
-  }
-}
-
-// ---------------------------------------------------------------------------
-// _CardioSetRow — StatefulWidget that owns its TextEditingControllers so they
-// survive rebuilds and don't lose text/focus while the user is typing.
-// ---------------------------------------------------------------------------
-class _CardioSetRow extends StatefulWidget {
-  final int setIndex;
-  final bool isDone;
-  final double? initialDistance;
-  final int? initialMinutes;
-
-  /// (distance km, duration minutes, isDone)
-  final void Function(double dist, int durMinutes, bool done) onChanged;
-
-  const _CardioSetRow({
-    super.key,
-    required this.setIndex,
-    required this.isDone,
-    this.initialDistance,
-    this.initialMinutes,
-    required this.onChanged,
-  });
-
-  @override
-  State<_CardioSetRow> createState() => _CardioSetRowState();
-}
-
-class _CardioSetRowState extends State<_CardioSetRow> {
-  late final TextEditingController _distCtrl;
-  late final TextEditingController _durCtrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _distCtrl = TextEditingController(
-      text: widget.initialDistance != null
-          ? widget.initialDistance!.toStringAsFixed(widget.initialDistance! ==
-                  widget.initialDistance!.truncateToDouble()
-              ? 0
-              : 1)
-          : '',
-    );
-    _durCtrl = TextEditingController(
-      text:
-          widget.initialMinutes != null ? widget.initialMinutes.toString() : '',
-    );
-  }
-
-  @override
-  void dispose() {
-    _distCtrl.dispose();
-    _durCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isDone = widget.isDone;
-
-    final dist = double.tryParse(_distCtrl.text.replaceAll(',', '.')) ?? 0.0;
-    final dur = int.tryParse(_durCtrl.text.trim()) ?? 0;
-
-    String paceStr = "--:-- /km";
-    String speedStr = "-- km/h";
-    if (dist > 0 && dur > 0) {
-      final paceMinutesPerKm = dur / dist;
-      final speedKmH = dist / (dur / 60);
-
-      int paceM = paceMinutesPerKm.floor();
-      int paceS = ((paceMinutesPerKm - paceM) * 60).round();
-      paceStr = "$paceM:${paceS.toString().padLeft(2, '0')} /km";
-      speedStr = "${speedKmH.toStringAsFixed(1)} km/h";
-    }
-
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(isDone ? 0.05 : 0.01),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDone
-              ? Colors.blue.withOpacity(0.35)
-              : Colors.white.withOpacity(0.06),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                'Sessão ${widget.setIndex + 1}',
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(width: 12),
-
-              // Input Km
-              Expanded(
-                child: TextField(
-                  controller: _distCtrl,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                  decoration: InputDecoration(
-                    labelText: 'Km',
-                    labelStyle:
-                        const TextStyle(color: Colors.white38, fontSize: 11),
-                    filled: true,
-                    fillColor: Colors.white.withOpacity(0.04),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide:
-                          BorderSide(color: Colors.white.withOpacity(0.1)),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide:
-                          BorderSide(color: Colors.white.withOpacity(0.1)),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Colors.blueAccent),
-                    ),
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    isDense: true,
-                  ),
-                  onChanged: (val) {
-                    setState(() {});
-                    final d = double.tryParse(val.replaceAll(',', '.')) ?? 0.0;
-                    final t = int.tryParse(_durCtrl.text.trim()) ?? 0;
-                    widget.onChanged(d, t, isDone);
-                  },
-                ),
-              ),
-              const SizedBox(width: 8),
-
-              // Input Minutos
-              Expanded(
-                child: TextField(
-                  controller: _durCtrl,
-                  keyboardType: TextInputType.number,
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                  decoration: InputDecoration(
-                    labelText: 'Minutos',
-                    labelStyle:
-                        const TextStyle(color: Colors.white38, fontSize: 11),
-                    filled: true,
-                    fillColor: Colors.white.withOpacity(0.04),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide:
-                          BorderSide(color: Colors.white.withOpacity(0.1)),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide:
-                          BorderSide(color: Colors.white.withOpacity(0.1)),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Colors.blueAccent),
-                    ),
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    isDense: true,
-                  ),
-                  onChanged: (val) {
-                    setState(() {});
-                    final d =
-                        double.tryParse(_distCtrl.text.replaceAll(',', '.')) ??
-                            0.0;
-                    final t = int.tryParse(val.trim()) ?? 0;
-                    widget.onChanged(d, t, isDone);
-                  },
-                ),
-              ),
-              const SizedBox(width: 12),
-
-              // Checkbox Concluir
-              Checkbox(
-                value: isDone,
-                activeColor: Colors.blueAccent,
-                onChanged: (val) {
-                  final d =
-                      double.tryParse(_distCtrl.text.replaceAll(',', '.')) ??
-                          0.0;
-                  final t = int.tryParse(_durCtrl.text.trim()) ?? 0;
-                  widget.onChanged(d, t, val ?? false);
-                },
-              ),
-            ],
-          ),
-          if (dist > 0 && dur > 0) ...[
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                const Icon(Icons.speed, size: 14, color: Colors.blueAccent),
-                const SizedBox(width: 4),
-                Text(
-                  "Pace: $paceStr",
-                  style: const TextStyle(
-                      color: Colors.blueAccent,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(width: 16),
-                const Icon(Icons.electric_bolt,
-                    size: 14, color: Colors.orangeAccent),
-                const SizedBox(width: 4),
-                Text(
-                  "Vel: $speedStr",
-                  style: const TextStyle(
-                      color: Colors.orangeAccent,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-          ]
-        ],
-      ),
-    );
   }
 }

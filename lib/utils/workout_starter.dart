@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../services/watch_service.dart';
 import '../providers/workout_provider.dart';
 import '../models/routine.dart';
-import '../models/planner_state.dart';
 import '../models/exercise.dart';
 import '../models/workout_log.dart';
 import 'dart:async';
@@ -49,7 +48,7 @@ class WorkoutStarter {
 }
 
 class _CountdownDialog extends StatefulWidget {
-  const _CountdownDialog({Key? key}) : super(key: key);
+  const _CountdownDialog({super.key});
 
   @override
   _CountdownDialogState createState() => _CountdownDialogState();

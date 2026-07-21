@@ -15,7 +15,7 @@ class PremiumStrengthSetCard extends StatelessWidget {
   final VoidCallback onFailureTap;
 
   const PremiumStrengthSetCard({
-    Key? key,
+    super.key,
     required this.setIndex,
     required this.ex,
     required this.isDone,
@@ -25,7 +25,7 @@ class PremiumStrengthSetCard extends StatelessWidget {
     required this.onEditTap,
     required this.onDoneTap,
     required this.onFailureTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

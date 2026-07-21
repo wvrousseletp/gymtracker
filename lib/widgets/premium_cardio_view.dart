@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:ui';
 
 class PremiumCardioSessionView extends StatefulWidget {
   final int setIndex;
@@ -10,14 +9,14 @@ class PremiumCardioSessionView extends StatefulWidget {
   final void Function(double dist, int durMinutes, bool done) onChanged;
 
   const PremiumCardioSessionView({
-    Key? key,
+    super.key,
     required this.setIndex,
     required this.isDone,
     this.initialDistance,
     this.initialMinutes,
     required this.workoutDurationNotifier,
     required this.onChanged,
-  }) : super(key: key);
+  });
 
   @override
   State<PremiumCardioSessionView> createState() => _PremiumCardioSessionViewState();

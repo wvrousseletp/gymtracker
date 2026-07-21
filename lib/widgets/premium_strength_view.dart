@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../models/exercise.dart';
 import '../models/enums.dart';
@@ -13,7 +12,7 @@ class PremiumStrengthSetRow extends StatelessWidget {
   final Widget trailingWidget;
 
   const PremiumStrengthSetRow({
-    Key? key,
+    super.key,
     required this.setIndex,
     required this.ex,
     required this.isDone,
@@ -21,7 +20,7 @@ class PremiumStrengthSetRow extends StatelessWidget {
     required this.accentColor,
     required this.onEditTap,
     required this.trailingWidget,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
