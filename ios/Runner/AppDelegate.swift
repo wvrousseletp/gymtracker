@@ -85,6 +85,11 @@ import WidgetKit
   private var backgroundTaskID: UIBackgroundTaskIdentifier = .invalid
   private var workoutTimerBackgroundTask: UIBackgroundTaskIdentifier = .invalid
 
+  // Rest Timer State for Live Activity Sync
+  private var currentRestEndDate: Date? = nil
+  private var currentRestTotalSeconds: Int = 0
+  private var currentRestIsPrep: Bool = false
+
   override func applicationDidEnterBackground(_ application: UIApplication) {
     // Start a background task to keep the workout timer running
     workoutTimerBackgroundTask = UIApplication.shared.beginBackgroundTask(withName: "WorkoutTimer") { [weak self] in
@@ -854,14 +859,9 @@ import WidgetKit
     }
 
     // Preserve any active rest timer state when updating workout info
-    var restEndDate: Date? = nil
-    var restTotalSeconds: Int = 0
-    var restIsPrep: Bool = false
-    if let activity = workoutActivity as? Activity<WorkoutWidgetAttributes> {
-        restEndDate = activity.contentState.restTimerEndDate
-        restTotalSeconds = activity.contentState.restTimerTotalSeconds
-        restIsPrep = activity.contentState.restIsPrep
-    }
+    let restEndDate: Date? = self.currentRestEndDate
+    let restTotalSeconds: Int = self.currentRestTotalSeconds
+    let restIsPrep: Bool = self.currentRestIsPrep
 
     let contentState = WorkoutWidgetAttributes.ContentState(
         exerciseName: exerciseName,
@@ -897,11 +897,15 @@ import WidgetKit
   }
 
   private func updateLiveActivityRestTimer(endTimeMs: Double, totalSeconds: Int, isPrep: Bool, nextExName: String) {
+    let endDate = Date(timeIntervalSince1970: endTimeMs / 1000.0)
+    self.currentRestEndDate = endDate
+    self.currentRestTotalSeconds = totalSeconds
+    self.currentRestIsPrep = isPrep
+
     #if canImport(ActivityKit)
     guard #available(iOS 16.1, *) else { return }
     guard let activity = workoutActivity as? Activity<WorkoutWidgetAttributes> else { return }
 
-    let endDate = Date(timeIntervalSince1970: endTimeMs / 1000.0)
     let current = activity.contentState
     let updated = WorkoutWidgetAttributes.ContentState(
         exerciseName: current.exerciseName,
@@ -922,6 +926,10 @@ import WidgetKit
   }
 
   private func clearLiveActivityRestTimer() {
+    self.currentRestEndDate = nil
+    self.currentRestTotalSeconds = 0
+    self.currentRestIsPrep = false
+
     #if canImport(ActivityKit)
     guard #available(iOS 16.1, *) else { return }
     guard let activity = workoutActivity as? Activity<WorkoutWidgetAttributes> else { return }

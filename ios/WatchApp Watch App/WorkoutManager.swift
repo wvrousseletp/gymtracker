@@ -98,19 +98,23 @@ class WorkoutManager: NSObject, ObservableObject {
         }
     }
     
-    func startWorkout(exercises: [WatchActiveExercise]? = nil) {
+    func startWorkout(exercises: [WatchActiveExercise]? = nil, configuration providedConfiguration: HKWorkoutConfiguration? = nil) {
         guard HKHealthStore.isHealthDataAvailable() else { return }
         // Ensure no existing session is active
         if session != nil {
             return
         }
         
-        let configuration = HKWorkoutConfiguration()
-        
-        // Auto-detect workout type based on exercises
-        let hasCardio = exercises?.contains(where: { $0.muscle.lowercased().contains("cardio") }) ?? false
-        configuration.activityType = hasCardio ? .other : .traditionalStrengthTraining
-        configuration.locationType = .indoor
+        let configuration: HKWorkoutConfiguration
+        if let provided = providedConfiguration {
+            configuration = provided
+        } else {
+            configuration = HKWorkoutConfiguration()
+            // Auto-detect workout type based on exercises
+            let hasCardio = exercises?.contains(where: { $0.muscle.lowercased().contains("cardio") }) ?? false
+            configuration.activityType = hasCardio ? .other : .traditionalStrengthTraining
+            configuration.locationType = .indoor
+        }
         
         do {
             session = try HKWorkoutSession(healthStore: healthStore, configuration: configuration)
