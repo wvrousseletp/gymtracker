@@ -1545,6 +1545,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
   // Controladores de páginas para exercícios
   int _currentExIdx = 0;
   late PageController _pageController;
+  late List<ScrollController> _scrollControllers;
 
   @override
   void initState() {
@@ -1552,6 +1553,10 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
     WidgetsBinding.instance.addObserver(this);
     _currentExIdx = widget.activeWorkout.currentExerciseIndex;
     _pageController = PageController(initialPage: _currentExIdx, viewportFraction: 0.95);
+    _scrollControllers = List.generate(
+      widget.activeWorkout.exercises.length,
+      (_) => ScrollController(),
+    );
 
     // Calculate initial elapsed seconds from startTime if valid
     final initialElapsed = _calculateRealElapsed();
@@ -1587,6 +1592,9 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
     _healthSyncTimer?.cancel();
     _workoutDurationNotifier.dispose();
     _pageController.dispose();
+    for (var sc in _scrollControllers) {
+      sc.dispose();
+    }
     super.dispose();
   }
 
@@ -1869,8 +1877,9 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
                     itemCount: exercises.length,
                     itemBuilder: (context, index) {
                       return SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 8),
+                        controller: _scrollControllers[index],
+                        padding: const EdgeInsets.only(
+                            left: 8, right: 8, top: 8, bottom: 60),
                         child: Column(
                           children: [
                             _buildExerciseCard(
@@ -1908,7 +1917,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
                                 ),
                               )
                             else
-                              const SizedBox(height: 100), // Espaço para a Action Bar
+                              const SizedBox(height: 160), // Espaço maior para a Action Bar
                           ],
                         ),
                       );
@@ -2517,6 +2526,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
                         distance: dist,
                         duration: durMinutes * 60,
                       );
+                      if (done) _scrollToNextSet(exIdx);
                     },
                   );
                 } else {
@@ -2539,6 +2549,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
                       );
                       if (!isFailure) {
                         _showFailureRepDialog(context, exIdx, setIdx, ex.failureReps[setIdx]);
+                        _scrollToNextSet(exIdx);
                       }
                     },
                     onDoneTap: () {
@@ -2558,6 +2569,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
                           isFailure: isFailure,
                           failureRep: isFailure ? ex.failureReps[setIdx] : null,
                         );
+                        _scrollToNextSet(exIdx);
                       }
                     },
                   );
@@ -2830,6 +2842,27 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
         ),
       ),
     );
+  }
+
+
+
+  void _scrollToNextSet(int exIdx) {
+    if (exIdx >= 0 && exIdx < _scrollControllers.length) {
+      final sc = _scrollControllers[exIdx];
+      if (sc.hasClients) {
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (sc.hasClients) {
+            final maxScroll = sc.position.maxScrollExtent;
+            final targetOffset = sc.offset + 220.0;
+            sc.animateTo(
+              targetOffset > maxScroll ? maxScroll : targetOffset,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
+          }
+        });
+      }
+    }
   }
 
   void _showFinishWorkoutDialog(BuildContext context) {
