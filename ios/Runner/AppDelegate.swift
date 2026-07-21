@@ -840,6 +840,7 @@ import WidgetKit
     var setInfo = ""
     var completedSets = 0
     var totalSets = 0
+    var isCardio = false
     
     if let exercises = json["exercises"] as? [[String: Any]],
        let currentIndex = json["currentExerciseIndex"] as? Int,

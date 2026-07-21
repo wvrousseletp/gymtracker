@@ -19,7 +19,6 @@ import '../widgets/premium_strength_set_card.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../widgets/premium_cardio_view.dart';
-import '../widgets/premium_strength_view.dart';
 import 'notification_settings_dialog.dart';
 
 class WorkoutScreen extends StatefulWidget {

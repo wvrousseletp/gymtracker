@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
-import '../models/planner_state.dart';
 
 class PremiumCardioSessionView extends StatefulWidget {
   final int setIndex;
