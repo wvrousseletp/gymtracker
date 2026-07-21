@@ -2337,7 +2337,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
       }
     }
 
-    final cardioAccent = const Color(0xff00e676); // Vibrant Lime/Cyan for Cardio
+    const cardioAccent = Color(0xff00e676); // Vibrant Lime/Cyan for Cardio
 
     return GlassCard(
       padding: const EdgeInsets.all(16),
