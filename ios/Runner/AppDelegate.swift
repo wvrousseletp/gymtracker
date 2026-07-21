@@ -954,7 +954,8 @@ import WidgetKit
         restTimerTotalSeconds: totalSeconds,
         restIsPrep: isPrep,
         completedSets: current.completedSets,
-        totalSets: current.totalSets
+        totalSets: current.totalSets,
+        isCardio: current.isCardio
     )
     Task {
         await activity.update(using: updated)
@@ -982,7 +983,8 @@ import WidgetKit
         restTimerTotalSeconds: 0,
         restIsPrep: false,
         completedSets: current.completedSets,
-        totalSets: current.totalSets
+        totalSets: current.totalSets,
+        isCardio: current.isCardio
     )
     Task {
         await activity.update(using: updated)

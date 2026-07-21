@@ -183,11 +183,14 @@ func updateLiveActivityFromUserDefaults() {
     var completedSets = 0
     var totalSets = 0
     
+    var isCardio = false
+    
     if let exercises = json["exercises"] as? [[String: Any]],
        let currentIndex = json["currentExerciseIndex"] as? Int,
        currentIndex < exercises.count {
         let currentExercise = exercises[currentIndex]
         exerciseName = currentExercise["name"] as? String ?? "Exercício"
+        isCardio = currentExercise["isCardio"] as? Bool ?? false
         
         let sets = currentExercise["sets"] as? Int ?? 0
         totalSets = sets
@@ -223,7 +226,8 @@ func updateLiveActivityFromUserDefaults() {
         restTimerTotalSeconds: restTotalSeconds,
         restIsPrep: restIsPrep,
         completedSets: completedSets,
-        totalSets: totalSets
+        totalSets: totalSets,
+        isCardio: isCardio
     )
     
     Task {
