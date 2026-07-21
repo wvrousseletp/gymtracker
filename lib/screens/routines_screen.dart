@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../providers/workout_provider.dart';
+import '../services/analytics_service.dart';
+import '../utils/workout_starter.dart';
 import '../providers/profile_provider.dart';
 import '../models/exercise.dart';
 import '../models/routine.dart';
@@ -251,8 +253,9 @@ class RoutinesTab extends StatelessWidget {
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () {
-                      // Disparar o treino ativo
-                      provider.startWorkout(
+                      WorkoutStarter.startWithCountdown(
+                        context,
+                        provider,
                         routine,
                         WorkoutRecovery(
                             sleepOk: SleepQuality.okay,

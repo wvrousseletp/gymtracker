@@ -212,7 +212,7 @@ import WidgetKit
     
     let configuration = HKWorkoutConfiguration()
     configuration.activityType = .traditionalStrengthTraining
-    configuration.locationType = .unknown
+    configuration.locationType = .indoor
     
     DispatchQueue.main.async { [weak self] in
       print("[AppDelegate] Calling healthStore.startWatchApp with configuration on main thread")
@@ -260,6 +260,12 @@ import WidgetKit
       } else {
         result(FlutterError(code: "INVALID_ARGUMENT", message: "Expected JSON string for library", details: nil))
       }
+    case "prepareWatchApp":
+      print("[AppDelegate] prepareWatchApp called")
+      if HKHealthStore.isHealthDataAvailable() {
+          self.launchWatchAppWithRetry(attempt: 0, maxAttempts: 3)
+      }
+      result(nil)
     case "updateActiveWorkout":
       print("[AppDelegate] updateActiveWorkout called")
       if let json = call.arguments as? String {
@@ -820,8 +826,15 @@ import WidgetKit
     
     let workoutName = json["name"] as? String ?? "Treino"
     let isPaused = json["paused"] as? Bool ?? false
-    let elapsedSeconds = json["elapsedSeconds"] as? Int ?? 0
+    var elapsedSeconds = json["elapsedSeconds"] as? Int ?? 0
     let postponed = json["postponed"] as? Bool ?? false
+    let startTime = json["startTime"] as? Double ?? 0
+    
+    // Correct the elapsedSeconds using the absolute startTime if it's currently running
+    if !isPaused && startTime > 0 {
+        let nowMs = Date().timeIntervalSince1970 * 1000
+        elapsedSeconds = Int((nowMs - startTime) / 1000)
+    }
     
     var exerciseName = "Exercício"
     var setInfo = ""
@@ -833,6 +846,8 @@ import WidgetKit
        currentIndex < exercises.count {
         let currentExercise = exercises[currentIndex]
         exerciseName = currentExercise["name"] as? String ?? "Exercício"
+        
+        isCardio = currentExercise["isCardio"] as? Bool ?? false
         
         let sets = currentExercise["sets"] as? Int ?? 0
         totalSets = sets
@@ -853,27 +868,50 @@ import WidgetKit
         }
     }
     
+    var restTimerEndDate: Date? = nil
+    var restTimerTotalSeconds = 0
+    var restIsPrep = false
+    
+    if let restTimer = json["restTimer"] as? [String: Any],
+       let endTimeMs = restTimer["endTime"] as? Double,
+       endTimeMs > 0 {
+        let totalSeconds = restTimer["totalSeconds"] as? Int ?? 0
+        restIsPrep = restTimer["isPrep"] as? Bool ?? false
+        let endDate = Date(timeIntervalSince1970: endTimeMs / 1000.0)
+        
+        if endDate > Date() {
+            restTimerEndDate = endDate
+            restTimerTotalSeconds = totalSeconds
+        }
+    }
+    
     if postponed {
         stopLiveActivity()
         return
     }
 
-    // Preserve any active rest timer state when updating workout info
-    let restEndDate: Date? = self.currentRestEndDate
-    let restTotalSeconds: Int = self.currentRestTotalSeconds
-    let restIsPrep: Bool = self.currentRestIsPrep
+    // Prefer rest timer from JSON, fallback to preserved state
+    let finalRestEndDate: Date? = restTimerEndDate ?? self.currentRestEndDate
+    let finalRestTotalSeconds: Int = restTimerEndDate != nil ? restTimerTotalSeconds : self.currentRestTotalSeconds
+    let finalRestIsPrep: Bool = restTimerEndDate != nil ? restIsPrep : self.currentRestIsPrep
 
     let contentState = WorkoutWidgetAttributes.ContentState(
         exerciseName: exerciseName,
         currentSetInfo: setInfo,
         isPaused: isPaused,
         elapsedSeconds: elapsedSeconds,
-        restTimerEndDate: restEndDate,
-        restTimerTotalSeconds: restTotalSeconds,
-        restIsPrep: restIsPrep,
+        restTimerEndDate: finalRestEndDate,
+        restTimerTotalSeconds: finalRestTotalSeconds,
+        restIsPrep: finalRestIsPrep,
         completedSets: completedSets,
-        totalSets: totalSets
+        totalSets: totalSets,
+        isCardio: isCardio
     )
+    
+    // Also save current back so it's not lost
+    self.currentRestEndDate = finalRestEndDate
+    self.currentRestTotalSeconds = finalRestTotalSeconds
+    self.currentRestIsPrep = finalRestIsPrep
     
     if let activity = workoutActivity as? Activity<WorkoutWidgetAttributes> {
         Task {

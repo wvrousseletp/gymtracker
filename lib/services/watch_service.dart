@@ -432,6 +432,14 @@ class WatchService {
     }
   }
 
+  Future<void> prepareWatchApp() async {
+    try {
+      await _channel.invokeMethod('prepareWatchApp');
+    } on PlatformException catch (e) {
+      debugPrint("[WatchService] Erro ao preparar app no watch: $e");
+    }
+  }
+
   Future<void> sendActiveWorkoutCleared() async {
     try {
       _lastSentActiveWorkoutJson = null;

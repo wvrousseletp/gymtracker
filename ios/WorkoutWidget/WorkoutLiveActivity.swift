@@ -258,17 +258,23 @@ struct LockScreenWidgetView: View {
                 // No rest: show set info and interactive buttons
                 HStack(alignment: .center) {
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(context.state.currentSetInfo)
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(.gray)
-                        
-                        // Series dots
-                        HStack(spacing: 3) {
-                            ForEach(0..<context.state.totalSets, id: \.self) { index in
-                                Circle()
-                                    .fill(index < context.state.completedSets ? Color.green : Color.gray.opacity(0.4))
-                                    .frame(width: 6, height: 6)
+                        if !context.state.isCardio {
+                            Text(context.state.currentSetInfo)
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundColor(.gray)
+                            
+                            // Series dots
+                            HStack(spacing: 3) {
+                                ForEach(0..<context.state.totalSets, id: \.self) { index in
+                                    Circle()
+                                        .fill(index < context.state.completedSets ? Color.green : Color.gray.opacity(0.4))
+                                        .frame(width: 6, height: 6)
+                                }
                             }
+                        } else {
+                            Text("Treino Cardiovascular")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundColor(.green)
                         }
                     }
                     
@@ -400,19 +406,31 @@ struct DynamicIslandExpandedBottomView: View {
                         Text(context.state.exerciseName)
                             .font(.system(size: 13, weight: .bold))
                             .foregroundColor(.white)
-                        Text(context.state.currentSetInfo)
-                            .font(.system(size: 10))
-                            .foregroundColor(.gray)
+                        if !context.state.isCardio {
+                            Text(context.state.currentSetInfo)
+                                .font(.system(size: 10))
+                                .foregroundColor(.gray)
+                        } else {
+                            Text("Cardiovascular")
+                                .font(.system(size: 10))
+                                .foregroundColor(.gray)
+                        }
                     }
                     Spacer()
                     
-                    // Progress Dots
-                    HStack(spacing: 3) {
-                        ForEach(0..<context.state.totalSets, id: \.self) { index in
-                            Circle()
-                                .fill(index < context.state.completedSets ? Color.green : Color.gray.opacity(0.4))
-                                .frame(width: 8, height: 8)
+                    // Progress Dots (hide for cardio)
+                    if !context.state.isCardio {
+                        HStack(spacing: 3) {
+                            ForEach(0..<context.state.totalSets, id: \.self) { index in
+                                Circle()
+                                    .fill(index < context.state.completedSets ? Color.green : Color.gray.opacity(0.4))
+                                    .frame(width: 8, height: 8)
+                            }
                         }
+                    } else {
+                        // For cardio, maybe show an icon
+                        Image(systemName: "figure.run")
+                            .foregroundColor(.green)
                     }
                 }
                 

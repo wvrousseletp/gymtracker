@@ -14,6 +14,7 @@ struct WorkoutWidgetAttributes: ActivityAttributes {
         // Series progress
         var completedSets: Int
         var totalSets: Int
+        var isCardio: Bool
     }
     
     var workoutName: String

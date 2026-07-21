@@ -13,7 +13,14 @@ import '../models/workout_log.dart';
 import '../models/planner_state.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/profile_avatar.dart';
+import '../services/live_activities_service.dart';
+import '../utils/workout_starter.dart';
 import '../services/rest_timer_service.dart';
+import '../widgets/premium_strength_set_card.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+import '../widgets/premium_cardio_view.dart';
+import '../widgets/premium_strength_view.dart';
 import 'notification_settings_dialog.dart';
 
 class WorkoutScreen extends StatefulWidget {
@@ -399,7 +406,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                 if (provider.activeWorkout != null) {
                                   _promptPostponeOrCreateWorkout(
                                       context, provider, () {
-                                    provider.startWorkout(
+                                    WorkoutStarter.startWithCountdown(
+                                      context,
+                                      provider,
                                       routine,
                                       WorkoutRecovery(
                                           sleepOk: SleepQuality.okay,
@@ -409,7 +418,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                     );
                                   });
                                 } else {
-                                  provider.startWorkout(
+                                  WorkoutStarter.startWithCountdown(
+                                    context,
+                                    provider,
                                     routine,
                                     WorkoutRecovery(
                                         sleepOk: SleepQuality.okay,
@@ -483,7 +494,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                     onTap: () {
                       if (provider.activeWorkout != null) {
                         _promptPostponeOrCreateWorkout(context, provider, () {
-                          provider.startWorkout(
+                          WorkoutStarter.startWithCountdown(
+                            context,
+                            provider,
                             routine,
                             WorkoutRecovery(
                                 sleepOk: SleepQuality.okay,
@@ -493,7 +506,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                           );
                         });
                       } else {
-                        provider.startWorkout(
+                        WorkoutStarter.startWithCountdown(
+                          context,
+                          provider,
                           routine,
                           WorkoutRecovery(
                               sleepOk: SleepQuality.okay,
@@ -1140,13 +1155,16 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                                     null) {
                                                   _promptPostponeOrCreateWorkout(
                                                       context, provider, () {
-                                                    provider
-                                                        .startSingleExercise(
+                                                    WorkoutStarter
+                                                        .startSingleExerciseWithCountdown(
+                                                            context,
+                                                            provider,
                                                             ex);
                                                   });
                                                 } else {
-                                                  provider
-                                                      .startSingleExercise(ex);
+                                                  WorkoutStarter
+                                                      .startSingleExerciseWithCountdown(
+                                                          context, provider, ex);
                                                 }
                                               },
                                             ),
@@ -1529,12 +1547,14 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
 
   // Controladores de páginas para exercícios
   int _currentExIdx = 0;
+  late PageController _pageController;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _currentExIdx = widget.activeWorkout.currentExerciseIndex;
+    _pageController = PageController(initialPage: _currentExIdx, viewportFraction: 0.95);
 
     // Calculate initial elapsed seconds from startTime if valid
     final initialElapsed = _calculateRealElapsed();
@@ -1569,6 +1589,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
     _stopwatchTimer?.cancel();
     _healthSyncTimer?.cancel();
     _workoutDurationNotifier.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -1736,286 +1757,273 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
     final steps = widget.provider.todaySteps;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.black,
       body: Stack(
         children: [
+          // Dynamic Glowing Background
+          Positioned.fill(
+            child: AnimatedContainer(
+              duration: const Duration(seconds: 2),
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: const Alignment(0, -0.8),
+                  radius: 1.5,
+                  colors: [
+                    accentColor.withOpacity(0.15),
+                    Colors.black,
+                  ],
+                ),
+              ),
+            ),
+          ),
           // Tela Principal de Treino Ativo
           Column(
             children: [
-              // Barra superior do treino
+              // Barra superior do treino (Header Centered)
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                padding: const EdgeInsets.only(top: 16, bottom: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            workout.name.toUpperCase(),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                                color: accentColor,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.0),
-                          ),
-                          ValueListenableBuilder<int>(
-                            valueListenable: _workoutDurationNotifier,
-                            builder: (context, elapsed, child) {
-                              return Text(
-                                _formatDuration(elapsed),
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w900),
-                              );
-                            },
-                          ),
-                          if (hr > 0 || cal > 0 || steps > 0) ...[
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                if (hr > 0) ...[
-                                  const Icon(Icons.favorite,
-                                      color: Colors.redAccent, size: 12),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    "$hr bpm",
-                                    style: const TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                  const SizedBox(width: 12),
-                                ],
-                                if (cal > 0) ...[
-                                  const Icon(Icons.local_fire_department,
-                                      color: Colors.orangeAccent, size: 12),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    "$cal kcal",
-                                    style: const TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                  const SizedBox(width: 12),
-                                ],
-                                if (steps > 0) ...[
-                                  const Icon(Icons.directions_walk,
-                                      color: Colors.blueAccent, size: 12),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    "$steps passos",
-                                    style: const TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ],
-                        ],
+                    Text(
+                      workout.name.toUpperCase(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: accentColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 2.0,
                       ),
                     ),
-                    Row(
-                      children: [
-                        // Adiar
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.amberAccent.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                                color: Colors.amberAccent.withOpacity(0.3),
-                                width: 1),
+                    const SizedBox(height: 8),
+                    ValueListenableBuilder<int>(
+                      valueListenable: _workoutDurationNotifier,
+                      builder: (context, elapsed, child) {
+                        return Text(
+                          _formatDuration(elapsed),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 56,
+                            fontWeight: FontWeight.w900,
+                            fontFeatures: [FontFeature.tabularFigures()],
+                            letterSpacing: -2.0,
                           ),
-                          child: IconButton(
-                            icon: const Icon(Icons.snooze,
-                                color: Colors.amberAccent, size: 20),
-                            tooltip: "Adiar Treino",
-                            onPressed: () {
-                              widget.provider.postponeActiveWorkout();
-                            },
-                            padding: const EdgeInsets.all(8),
-                            constraints: const BoxConstraints(
-                                minWidth: 40, minHeight: 40),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        // Pausar
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                                color: Colors.white.withOpacity(0.15),
-                                width: 1),
-                          ),
-                          child: IconButton(
-                            icon: Icon(
-                                workout.paused ? Icons.play_arrow : Icons.pause,
-                                color: Colors.white,
-                                size: 20),
-                            onPressed: () {
-                              widget.provider.pauseWorkout(!workout.paused);
-                            },
-                            padding: const EdgeInsets.all(8),
-                            constraints: const BoxConstraints(
-                                minWidth: 40, minHeight: 40),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        // Descartar
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.redAccent.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                                color: Colors.redAccent.withOpacity(0.3),
-                                width: 1),
-                          ),
-                          child: IconButton(
-                            icon: const Icon(Icons.close,
-                                color: Colors.redAccent, size: 20),
-                            onPressed: () => _confirmDiscardWorkout(context),
-                            padding: const EdgeInsets.all(8),
-                            constraints: const BoxConstraints(
-                                minWidth: 40, minHeight: 40),
-                          ),
-                        ),
-                      ],
+                        );
+                      },
                     ),
+                    const SizedBox(height: 12),
+                    // Telemetry Glass Pills
+                    if (hr > 0 || cal > 0 || steps > 0)
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        alignment: WrapAlignment.center,
+                        children: [
+                          if (hr > 0)
+                            _buildTelemetryPill(
+                                Icons.favorite, Colors.redAccent, "$hr bpm"),
+                          if (cal > 0)
+                            _buildTelemetryPill(Icons.local_fire_department,
+                                Colors.orangeAccent, "$cal kcal"),
+                          if (steps > 0)
+                            _buildTelemetryPill(Icons.directions_walk,
+                                Colors.blueAccent, "$steps steps"),
+                        ],
+                      ),
                   ],
                 ),
               ),
 
-              // Navegação do Exercício Ativo (Páginas)
+              // Carrossel de Exercícios (PageView)
               if (exercises.isNotEmpty) ...[
+                // Dots indicator
                 Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Botão Anterior (maior e mais destacado)
-                      Container(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(exercises.length, (index) {
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        height: 8,
+                        width: _currentExIdx == index ? 24 : 8,
                         decoration: BoxDecoration(
-                          color: _currentExIdx == 0
-                              ? Colors.white.withOpacity(0.03)
-                              : accentColor.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: _currentExIdx == 0
-                                ? Colors.white.withOpacity(0.08)
-                                : accentColor.withOpacity(0.3),
-                            width: 1.5,
-                          ),
+                          color: _currentExIdx == index
+                              ? accentColor
+                              : Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(4),
                         ),
-                        child: IconButton(
-                          icon: const Icon(Icons.arrow_back_ios,
-                              color: Colors.white, size: 20),
-                          onPressed: _currentExIdx == 0
-                              ? null
-                              : () {
-                                  setState(() {
-                                    _currentExIdx--;
-                                    widget.provider
-                                        .setCurrentExerciseIndex(_currentExIdx);
-                                  });
-                                },
-                        ),
-                      ),
-                      Text(
-                        "Exercício ${_currentExIdx + 1} de ${exercises.length}",
-                        style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold),
-                      ),
-                      // Botão Próximo (maior e mais destacado)
-                      Container(
-                        decoration: BoxDecoration(
-                          color: _currentExIdx == exercises.length - 1
-                              ? Colors.white.withOpacity(0.03)
-                              : accentColor.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: _currentExIdx == exercises.length - 1
-                                ? Colors.white.withOpacity(0.08)
-                                : accentColor.withOpacity(0.3),
-                            width: 1.5,
-                          ),
-                        ),
-                        child: IconButton(
-                          icon: const Icon(Icons.arrow_forward_ios,
-                              color: Colors.white, size: 20),
-                          onPressed: _currentExIdx == exercises.length - 1
-                              ? null
-                              : () {
-                                  setState(() {
-                                    _currentExIdx++;
-                                    widget.provider
-                                        .setCurrentExerciseIndex(_currentExIdx);
-                                  });
-                                },
-                        ),
-                      ),
-                    ],
+                      );
+                    }),
                   ),
                 ),
-
-                // Cartão do Exercício Atual
+                
                 Expanded(
-                  child: SingleChildScrollView(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: Column(
-                      children: [
-                        _buildExerciseCard(
-                            exercises[_currentExIdx], _currentExIdx, accentColor),
-                        
-                        // Botão Concluir Treino
-                        Padding(
-                          padding: const EdgeInsets.only(
-                              top: 24.0, bottom: 100.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              OutlinedButton.icon(
-                                onPressed: () {
-                                  _showFinishWorkoutDialog(context);
-                                },
-                                icon: const Icon(Icons.check_circle_outline, size: 16),
-                                label: const Text(
-                                  "Finalizar Treino",
-                                  style: TextStyle(
-                                      color: Colors.white60,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 12),
+                  child: PageView.builder(
+                    controller: _pageController,
+                    physics: const BouncingScrollPhysics(),
+                    onPageChanged: (index) {
+                      setState(() {
+                        _currentExIdx = index;
+                        widget.provider.setCurrentExerciseIndex(_currentExIdx);
+                      });
+                    },
+                    itemCount: exercises.length,
+                    itemBuilder: (context, index) {
+                      return SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 8),
+                        child: Column(
+                          children: [
+                            _buildExerciseCard(
+                                exercises[index], index, accentColor),
+                            
+                            // Botão Concluir Treino no último exercício
+                            if (index == exercises.length - 1)
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                    top: 32.0, bottom: 100.0),
+                                child: ElevatedButton.icon(
+                                  onPressed: () {
+                                    _showFinishWorkoutDialog(context);
+                                  },
+                                  icon: const Icon(Icons.check_circle_outline,
+                                      size: 24, color: Colors.black),
+                                  label: const Text(
+                                    "FINALIZAR TREINO",
+                                    style: TextStyle(
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 16,
+                                        letterSpacing: 1),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: accentColor,
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(20)),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 24, vertical: 16),
+                                    elevation: 8,
+                                    shadowColor: accentColor.withOpacity(0.5),
+                                  ),
                                 ),
-                                style: OutlinedButton.styleFrom(
-                                  side: BorderSide(color: Colors.white.withOpacity(0.12)),
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12)),
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 8),
-                                  minimumSize: const Size(0, 36),
-                                ),
-                              ),
-                            ],
-                          ),
+                              )
+                            else
+                              const SizedBox(height: 100), // Espaço para a Action Bar
+                          ],
                         ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
                 ),
               ],
             ],
+          ),
+
+          // FLOATING BOTTOM ACTION BAR (Glassmorphism)
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 24,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(30),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(color: Colors.white.withOpacity(0.2)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      )
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Mais Opções (Adiar / Descartar)
+                      PopupMenuButton<String>(
+                        color: const Color(0xff2c2c2e),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        icon: const Icon(Icons.more_vert, color: Colors.white),
+                        onSelected: (value) {
+                          if (value == 'postpone') {
+                            widget.provider.postponeActiveWorkout();
+                          } else if (value == 'discard') {
+                            _confirmDiscardWorkout(context);
+                          }
+                        },
+                        itemBuilder: (context) => [
+                          PopupMenuItem(
+                            value: 'postpone',
+                            child: Row(
+                              children: [
+                                const Icon(Icons.snooze, color: Colors.amberAccent, size: 20),
+                                const SizedBox(width: 12),
+                                const Text("Adiar Treino", style: TextStyle(color: Colors.white)),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: 'discard',
+                            child: Row(
+                              children: [
+                                const Icon(Icons.close, color: Colors.redAccent, size: 20),
+                                const SizedBox(width: 12),
+                                const Text("Descartar", style: TextStyle(color: Colors.redAccent)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      // Botão Play/Pause Gigante no Centro
+                      GestureDetector(
+                        onTap: () {
+                          widget.provider.pauseWorkout(!workout.paused);
+                        },
+                        child: Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            color: workout.paused ? Colors.white : accentColor,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: (workout.paused ? Colors.white : accentColor).withOpacity(0.4),
+                                blurRadius: 12,
+                                spreadRadius: 2,
+                              )
+                            ],
+                          ),
+                          child: Icon(
+                            workout.paused ? Icons.play_arrow_rounded : Icons.pause_rounded,
+                            color: Colors.black,
+                            size: 32,
+                          ),
+                        ),
+                      ),
+
+                      // Botão Finalizar Minimalista
+                      IconButton(
+                        icon: const Icon(Icons.check_circle_outline, color: Colors.white70),
+                        tooltip: "Finalizar Treino",
+                        onPressed: () {
+                          _showFinishWorkoutDialog(context);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
 
           // OVERLAY DE DESCANSO / PREPARO ATIVO (CircularProgressTimer) - REDESENHO PREMIUM TELA CHEIA
@@ -2463,24 +2471,22 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
             if (isSingleCardio) {
               final pc = ex.singleCardioSession;
               final isDone = ex.setsState.isNotEmpty && ex.setsState[0];
-              return Opacity(
-                opacity: isDone ? 0.65 : 1.0,
-                child: _CardioSetRow(
-                  key: ValueKey('cardio_${exIdx}_single'),
-                  setIndex: 0,
-                  isDone: isDone,
-                  initialDistance: pc?.distanceKm,
-                  initialMinutes: pc != null ? pc.durationSeconds ~/ 60 : null,
-                  onChanged: (dist, durMinutes, done) {
-                    widget.provider.completeSet(
-                      exIdx,
-                      0,
-                      done,
-                      distance: dist,
-                      duration: durMinutes * 60,
-                    );
-                  },
-                ),
+              return PremiumCardioSessionView(
+                key: ValueKey('cardio_${exIdx}_single'),
+                setIndex: 0,
+                isDone: isDone,
+                initialDistance: pc?.distanceKm,
+                initialMinutes: pc != null ? pc.durationSeconds ~/ 60 : null,
+                workoutDurationNotifier: _workoutDurationNotifier,
+                onChanged: (dist, durMinutes, done) {
+                  widget.provider.completeSet(
+                    exIdx,
+                    0,
+                    done,
+                    distance: dist,
+                    duration: durMinutes * 60,
+                  );
+                },
               );
             }
 
@@ -2498,252 +2504,90 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
                 if (isCardio) {
                   // RENDERIZAR SESSÃO DE CARDIO COM SETS (HIIT)
                   final pc = ex.performedCardios[setIdx];
-                  return Opacity(
-                    opacity: isDone ? 0.65 : 1.0,
-                    child: _CardioSetRow(
-                      key: ValueKey('cardio_${exIdx}_$setIdx'),
-                      setIndex: setIdx,
-                      isDone: isDone,
-                      initialDistance: pc?.distanceKm,
-                      initialMinutes:
-                          pc != null ? pc.durationSeconds ~/ 60 : null,
-                      onChanged: (dist, durMinutes, done) {
+                  return PremiumCardioSessionView(
+                    key: ValueKey('cardio_${exIdx}_$setIdx'),
+                    setIndex: setIdx,
+                    isDone: isDone,
+                    initialDistance: pc?.distanceKm,
+                    initialMinutes:
+                        pc != null ? pc.durationSeconds ~/ 60 : null,
+                    workoutDurationNotifier: _workoutDurationNotifier,
+                    onChanged: (dist, durMinutes, done) {
+                      widget.provider.completeSet(
+                        exIdx,
+                        setIdx,
+                        done,
+                        distance: dist,
+                        duration: durMinutes * 60,
+                      );
+                    },
+                  );
+                } else {
+                  return PremiumStrengthSetCard(
+                    setIndex: setIdx,
+                    ex: ex,
+                    isDone: isDone,
+                    isActive: isActive,
+                    isFailure: isFailure,
+                    accentColor: accentColor,
+                    onEditTap: () => _showEditSetWeightRepsDialog(
+                        context, exIdx, setIdx, ex),
+                    onFailureTap: () {
+                      widget.provider.completeSet(
+                        exIdx,
+                        setIdx,
+                        isDone,
+                        isFailure: !isFailure,
+                        failureRep: !isFailure ? ex.failureReps[setIdx] : null,
+                      );
+                      if (!isFailure) {
+                        _showFailureRepDialog(context, exIdx, setIdx, ex.failureReps[setIdx]);
+                      }
+                    },
+                    onDoneTap: () {
+                      if (isDone) {
+                        widget.provider.undoCompleteSet(exIdx, setIdx);
+                      } else {
                         widget.provider.completeSet(
                           exIdx,
                           setIdx,
-                          done,
-                          distance: dist,
-                          duration: durMinutes * 60,
+                          true,
+                          isFailure: isFailure,
+                          failureRep: isFailure ? ex.failureReps[setIdx] : null,
                         );
-                      },
-                    ),
-                  );
-                } else {
-                  // RENDERIZAR SÉRIE DE MUSCULAÇÃO / ISOMETRIA
-                  return Opacity(
-                    opacity: isDone ? 0.65 : 1.0,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      margin: const EdgeInsets.symmetric(vertical: 8),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 16),
-                      decoration: BoxDecoration(
-                        color: isActive
-                            ? accentColor.withOpacity(0.04)
-                            : Colors.white.withOpacity(isDone ? 0.03 : 0.01),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isActive
-                              ? accentColor.withOpacity(0.85)
-                              : (isDone
-                                  ? accentColor.withOpacity(0.2)
-                                  : Colors.white.withOpacity(0.06)),
-                          width: isActive ? 1.5 : 1.0,
-                        ),
-                        boxShadow: isActive
-                            ? [
-                                BoxShadow(
-                                  color: accentColor.withOpacity(0.08),
-                                  blurRadius: 8,
-                                  spreadRadius: 1,
-                                ),
-                              ]
-                            : null,
-                      ),
-                      child: Row(
-                        children: [
-                          // Número da série
-                          Text(
-                            "Série ${setIdx + 1}",
-                            style: TextStyle(
-                              color: isActive ? Colors.white : Colors.white70,
-                              fontSize: 14,
-                              fontWeight:
-                                  isActive ? FontWeight.w900 : FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-
-                          // Quantidade (reps ou segs) e Peso - editáveis por clique
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () => _showEditSetWeightRepsDialog(
-                                  context, exIdx, setIdx, ex),
-                              behavior: HitTestBehavior.opaque,
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      ex.measurementType == MeasurementType.time
-                                          ? "${(ex.repsPerSet != null && setIdx < ex.repsPerSet!.length) ? ex.repsPerSet![setIdx] : ex.reps} segundos"
-                                          : "${(ex.repsPerSet != null && setIdx < ex.repsPerSet!.length) ? ex.repsPerSet![setIdx] : ex.reps} reps",
-                                      style: TextStyle(
-                                        color: isActive
-                                            ? Colors.white
-                                            : Colors.white60,
-                                        fontSize: 16,
-                                        fontWeight: isActive
-                                            ? FontWeight.w900
-                                            : FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                  Text(
-                                    ((ex.weightsPerSet != null &&
-                                                    setIdx <
-                                                        ex.weightsPerSet!
-                                                            .length)
-                                                ? ex.weightsPerSet![setIdx]
-                                                : ex.weight) >
-                                            0
-                                        ? "${((ex.weightsPerSet != null && setIdx < ex.weightsPerSet!.length) ? ex.weightsPerSet![setIdx] : ex.weight).toStringAsFixed(1).replaceAll('.0', '')} kg"
-                                        : "Sem carga",
-                                    style: TextStyle(
-                                      color: isActive
-                                          ? Colors.white
-                                          : Colors.white38,
-                                      fontSize: 15,
-                                      fontWeight: isActive
-                                          ? FontWeight.w900
-                                          : FontWeight.normal,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Icon(
-                                    Icons.edit,
-                                    size: 11,
-                                    color: isActive
-                                        ? Colors.white38
-                                        : Colors.white12,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              GestureDetector(
-                                onTap: () {
-                                  widget.provider.completeSet(
-                                    exIdx,
-                                    setIdx,
-                                    isDone,
-                                    isFailure: !isFailure,
-                                    failureRep: !isFailure
-                                        ? ex.failureReps[setIdx]
-                                        : null,
-                                  );
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: isFailure
-                                        ? Colors.redAccent.withOpacity(0.15)
-                                        : Colors.white.withOpacity(0.02),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                        color: isFailure
-                                            ? Colors.redAccent
-                                            : Colors.white.withOpacity(0.08)),
-                                  ),
-                                  child: Text(
-                                    "❌ Falha",
-                                    style: TextStyle(
-                                      color: isFailure
-                                          ? Colors.redAccent
-                                          : Colors.white24,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              if (isFailure) ...[
-                                const SizedBox(width: 4),
-                                GestureDetector(
-                                  onTap: () {
-                                    _showFailureRepDialog(context, exIdx,
-                                        setIdx, ex.failureReps[setIdx]);
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 6, vertical: 5),
-                                    decoration: BoxDecoration(
-                                      color: Colors.redAccent.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(
-                                          color: Colors.redAccent
-                                              .withOpacity(0.25)),
-                                    ),
-                                    child: Text(
-                                      "Rep: ${ex.failureReps[setIdx] ?? '-'}",
-                                      style: const TextStyle(
-                                          color: Colors.redAccent,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                          const SizedBox(width: 12),
-
-                          // Checkbox Concluir (Premium Custom Animated Circle)
-                          GestureDetector(
-                            onTap: () {
-                              widget.provider.completeSet(
-                                exIdx,
-                                setIdx,
-                                !isDone,
-                                isFailure: isFailure,
-                                failureRep: ex.failureReps[setIdx],
-                              );
-                            },
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 150),
-                              width: 44,
-                              height: 28,
-                              decoration: BoxDecoration(
-                                color: isDone
-                                    ? accentColor
-                                    : (isActive
-                                        ? accentColor.withOpacity(0.08)
-                                        : Colors.transparent),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: isDone
-                                      ? accentColor
-                                      : (isActive
-                                          ? accentColor.withOpacity(0.6)
-                                          : Colors.white.withOpacity(0.18)),
-                                  width: 1.5,
-                                ),
-                              ),
-                              child: Center(
-                                child: isDone
-                                    ? const Icon(Icons.check,
-                                        color: Colors.black,
-                                        size: 16,
-                                        weight: 800)
-                                    : Icon(Icons.check,
-                                        color: isActive
-                                            ? accentColor.withOpacity(0.7)
-                                            : Colors.white24,
-                                        size: 14),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                      }
+                    },
                   );
                 }
               },
             );
           }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTelemetryPill(IconData icon, Color color, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 14),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );
