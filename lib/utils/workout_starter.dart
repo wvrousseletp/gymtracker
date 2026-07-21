@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import '../services/watch_service.dart';
-import '../providers/tracker_provider.dart';
+import '../providers/workout_provider.dart';
 import '../models/routine.dart';
 import '../models/planner_state.dart';
+import '../models/exercise.dart';
+import '../models/workout_log.dart';
 import 'dart:async';
 
 class WorkoutStarter {
   static Future<void> startWithCountdown(
     BuildContext context, 
-    TrackerProvider provider, 
+    WorkoutProvider provider, 
     Routine routine, 
     WorkoutRecovery recovery, 
     bool isWarmup,
@@ -30,7 +32,7 @@ class WorkoutStarter {
 
   static Future<void> startSingleExerciseWithCountdown(
     BuildContext context, 
-    TrackerProvider provider, 
+    WorkoutProvider provider, 
     LibraryExercise exercise,
   ) async {
     WatchService.instance.prepareWatchApp();

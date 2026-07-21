@@ -13,7 +13,6 @@ import '../models/workout_log.dart';
 import '../models/planner_state.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/profile_avatar.dart';
-import '../services/live_activities_service.dart';
 import '../utils/workout_starter.dart';
 import '../services/rest_timer_service.dart';
 import '../widgets/premium_strength_set_card.dart';
@@ -2546,7 +2545,13 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
                     },
                     onDoneTap: () {
                       if (isDone) {
-                        widget.provider.undoCompleteSet(exIdx, setIdx);
+                        widget.provider.completeSet(
+                          exIdx,
+                          setIdx,
+                          false,
+                          isFailure: isFailure,
+                          failureRep: isFailure ? ex.failureReps[setIdx] : null,
+                        );
                       } else {
                         widget.provider.completeSet(
                           exIdx,

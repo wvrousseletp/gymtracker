@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../models/planner_state.dart';
 import '../models/exercise.dart';
+import '../models/enums.dart';
 
 class PremiumStrengthSetCard extends StatelessWidget {
   final int setIndex;
