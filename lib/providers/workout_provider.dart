@@ -200,6 +200,8 @@ class WorkoutProvider extends ChangeNotifier {
     );
 
     _save();
+    WatchService.instance.prepareWatchApp();
+    WatchService.instance.sendActiveWorkout(activeWorkout!, force: true);
   }
 
   void startSingleExercise(LibraryExercise exercise) {

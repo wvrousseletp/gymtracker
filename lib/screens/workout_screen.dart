@@ -1161,7 +1161,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                                 } else {
                                                   WorkoutStarter
                                                       .startSingleExerciseWithCountdown(
-                                                          context, provider, ex);
+                                                          context,
+                                                          provider,
+                                                          ex);
                                                 }
                                               },
                                             ),
@@ -1523,7 +1525,8 @@ class ActiveWorkoutView extends StatefulWidget {
   State<ActiveWorkoutView> createState() => _ActiveWorkoutViewState();
 }
 
-class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindingObserver {
+class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
+    with WidgetsBindingObserver {
   Timer? _stopwatchTimer;
   Timer? _healthSyncTimer;
   late final ValueNotifier<int> _workoutDurationNotifier;
@@ -1552,7 +1555,8 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _currentExIdx = widget.activeWorkout.currentExerciseIndex;
-    _pageController = PageController(initialPage: _currentExIdx, viewportFraction: 0.95);
+    _pageController =
+        PageController(initialPage: _currentExIdx, viewportFraction: 0.95);
     _scrollControllers = List.generate(
       widget.activeWorkout.exercises.length,
       (_) => ScrollController(),
@@ -1863,7 +1867,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
                     }),
                   ),
                 ),
-                
+
                 Expanded(
                   child: PageView.builder(
                     controller: _pageController,
@@ -1884,7 +1888,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
                           children: [
                             _buildExerciseCard(
                                 exercises[index], index, accentColor),
-                            
+
                             // Botão Concluir Treino no último exercício
                             if (index == exercises.length - 1)
                               Padding(
@@ -1917,7 +1921,9 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
                                 ),
                               )
                             else
-                              const SizedBox(height: 160), // Espaço maior para a Action Bar
+                              const SizedBox(
+                                  height:
+                                      160), // Espaço maior para a Action Bar
                           ],
                         ),
                       );
@@ -1938,7 +1944,8 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(30),
@@ -1957,7 +1964,8 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
                       // Mais Opções (Adiar / Descartar)
                       PopupMenuButton<String>(
                         color: const Color(0xff2c2c2e),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
                         icon: const Icon(Icons.more_vert, color: Colors.white),
                         onSelected: (value) {
                           if (value == 'postpone') {
@@ -1971,9 +1979,11 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
                             value: 'postpone',
                             child: Row(
                               children: [
-                                Icon(Icons.snooze, color: Colors.amberAccent, size: 20),
+                                Icon(Icons.snooze,
+                                    color: Colors.amberAccent, size: 20),
                                 SizedBox(width: 12),
-                                Text("Adiar Treino", style: TextStyle(color: Colors.white)),
+                                Text("Adiar Treino",
+                                    style: TextStyle(color: Colors.white)),
                               ],
                             ),
                           ),
@@ -1981,9 +1991,11 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
                             value: 'discard',
                             child: Row(
                               children: [
-                                Icon(Icons.close, color: Colors.redAccent, size: 20),
+                                Icon(Icons.close,
+                                    color: Colors.redAccent, size: 20),
                                 SizedBox(width: 12),
-                                Text("Descartar", style: TextStyle(color: Colors.redAccent)),
+                                Text("Descartar",
+                                    style: TextStyle(color: Colors.redAccent)),
                               ],
                             ),
                           ),
@@ -2003,14 +2015,19 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: (workout.paused ? Colors.white : accentColor).withOpacity(0.4),
+                                color: (workout.paused
+                                        ? Colors.white
+                                        : accentColor)
+                                    .withOpacity(0.4),
                                 blurRadius: 12,
                                 spreadRadius: 2,
                               )
                             ],
                           ),
                           child: Icon(
-                            workout.paused ? Icons.play_arrow_rounded : Icons.pause_rounded,
+                            workout.paused
+                                ? Icons.play_arrow_rounded
+                                : Icons.pause_rounded,
                             color: Colors.black,
                             size: 32,
                           ),
@@ -2019,7 +2036,8 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
 
                       // Botão Finalizar Minimalista
                       IconButton(
-                        icon: const Icon(Icons.check_circle_outline, color: Colors.white70),
+                        icon: const Icon(Icons.check_circle_outline,
+                            color: Colors.white70),
                         tooltip: "Finalizar Treino",
                         onPressed: () {
                           _showFinishWorkoutDialog(context);
@@ -2492,6 +2510,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
                     distance: dist,
                     duration: durMinutes * 60,
                   );
+                  if (done) _scrollToNextSet(exIdx);
                 },
               );
             }
@@ -2548,7 +2567,8 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
                         failureRep: !isFailure ? ex.failureReps[setIdx] : null,
                       );
                       if (!isFailure) {
-                        _showFailureRepDialog(context, exIdx, setIdx, ex.failureReps[setIdx]);
+                        _showFailureRepDialog(
+                            context, exIdx, setIdx, ex.failureReps[setIdx]);
                         _scrollToNextSet(exIdx);
                       }
                     },
@@ -2844,23 +2864,57 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
     );
   }
 
-
-
   void _scrollToNextSet(int exIdx) {
-    if (exIdx >= 0 && exIdx < _scrollControllers.length) {
-      final sc = _scrollControllers[exIdx];
-      if (sc.hasClients) {
-        Future.delayed(const Duration(milliseconds: 300), () {
-          if (sc.hasClients) {
-            final maxScroll = sc.position.maxScrollExtent;
-            final targetOffset = sc.offset + 220.0;
-            sc.animateTo(
-              targetOffset > maxScroll ? maxScroll : targetOffset,
-              duration: const Duration(milliseconds: 300),
+    final active = widget.provider.state?.activeWorkout;
+    if (active == null || exIdx < 0 || exIdx >= active.exercises.length) return;
+
+    final ex = active.exercises[exIdx];
+    final allCompleted = ex.setsState.every((isDone) => isDone);
+
+    if (allCompleted) {
+      // Automatic transition to next exercise when all sets are completed!
+      if (exIdx < active.exercises.length - 1) {
+        Future.delayed(const Duration(milliseconds: 350), () {
+          if (_pageController.hasClients) {
+            _pageController.animateToPage(
+              exIdx + 1,
+              duration: const Duration(milliseconds: 400),
               curve: Curves.easeInOut,
             );
           }
         });
+      } else {
+        // Last exercise completed - scroll smoothly to the finish workout button
+        if (exIdx < _scrollControllers.length &&
+            _scrollControllers[exIdx].hasClients) {
+          final sc = _scrollControllers[exIdx];
+          sc.animateTo(
+            sc.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeInOut,
+          );
+        }
+      }
+    } else {
+      // Find next unfinished set index
+      final nextSetIdx = ex.setsState.indexOf(false);
+      if (nextSetIdx != -1 && exIdx < _scrollControllers.length) {
+        final sc = _scrollControllers[exIdx];
+        if (sc.hasClients) {
+          Future.delayed(const Duration(milliseconds: 250), () {
+            if (sc.hasClients) {
+              // Calculate offset to center the active set in view
+              final estimatedOffset = 140.0 + (nextSetIdx * 86.0);
+              final maxScroll = sc.position.maxScrollExtent;
+              final targetOffset = estimatedOffset.clamp(0.0, maxScroll);
+              sc.animateTo(
+                targetOffset,
+                duration: const Duration(milliseconds: 350),
+                curve: Curves.easeInOut,
+              );
+            }
+          });
+        }
       }
     }
   }

@@ -327,10 +327,17 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     }
 
     private func handleWorkoutSessionTransition(oldWorkout: WatchActiveWorkoutState?, newWorkout: WatchActiveWorkoutState?, action: String? = nil) {
-        if oldWorkout == nil && newWorkout != nil {
+        let isNewWorkoutStarted = newWorkout != nil && !newWorkout!.postponed && (
+            oldWorkout == nil ||
+            oldWorkout?.id != newWorkout?.id ||
+            oldWorkout?.postponed == true ||
+            WorkoutManager.shared.session == nil
+        )
+        
+        if isNewWorkoutStarted {
             // Workout started!
-            if let new = newWorkout, !new.postponed {
-                WorkoutManager.shared.startWorkout()
+            if let new = newWorkout {
+                WorkoutManager.shared.startWorkout(exercises: new.exercises)
             }
         } else if oldWorkout != nil && newWorkout == nil {
             // Workout ended!
@@ -349,7 +356,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             if !old.postponed && new.postponed {
                 WorkoutManager.shared.endWorkout(save: true)
             } else if old.postponed && !new.postponed {
-                WorkoutManager.shared.startWorkout()
+                WorkoutManager.shared.startWorkout(exercises: new.exercises)
             }
         }
     }

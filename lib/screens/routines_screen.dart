@@ -245,82 +245,67 @@ class RoutinesTab extends StatelessWidget {
                       );
                     }
 
-                    final exerciseNames = routine.exercises.map((ex) {
-                      final ref = state.library.firstWhere(
-                        (l) => l.id == ex.exerciseId,
-                        orElse: () => LibraryExercise(
-                            id: '',
-                            name: 'Deletado',
-                            muscle: 'Desconhecido',
-                            measurementType: MeasurementType.reps),
-                      );
-                      return ref.name;
-                    }).toList();
-
-                    final totalSets = routine.exercises
-                        .fold<int>(0, (sum, ex) => sum + ex.sets);
-                    final displayNames = exerciseNames.take(3).join(', ');
-                    final moreCount = exerciseNames.length - 3;
-                    final summaryText = moreCount > 0
-                        ? '$displayNames e mais $moreCount'
-                        : displayNames;
-
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.08),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                "${routine.exercises.length} EXERCÍCIOS",
-                                style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: accentColor.withOpacity(0.15),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                "$totalSets SÉRIES",
-                                style: TextStyle(
+                      children: routine.exercises.map((ex) {
+                        final ref = state.library.firstWhere(
+                          (l) => l.id == ex.exerciseId,
+                          orElse: () => LibraryExercise(
+                              id: '',
+                              name: 'Deletado',
+                              muscle: 'Desconhecido',
+                              measurementType: MeasurementType.reps),
+                        );
+                        
+                        final isCardio = ref.muscle.toLowerCase().contains('cardio');
+                        final isTime = ref.measurementType == MeasurementType.time;
+                        final repsSuffix = isCardio ? 'min' : (isTime ? 's' : '');
+                        final repsText = ex.reps > 0 ? "${ex.sets}x${ex.reps}$repsSuffix" : "${ex.sets} séries";
+
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                margin: const EdgeInsets.only(top: 6, right: 10),
+                                width: 5,
+                                height: 5,
+                                decoration: BoxDecoration(
                                   color: accentColor,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 0.5,
+                                  shape: BoxShape.circle,
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: Text(
-                            summaryText,
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.8),
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              height: 1.4,
-                            ),
+                              Expanded(
+                                child: Text(
+                                  ref.name,
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.9),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.06),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  repsText,
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.7),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
+                        );
+                      }).toList(),
                     );
                   },
                 ),

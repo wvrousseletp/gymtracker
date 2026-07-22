@@ -412,7 +412,7 @@ class WatchService {
     }
   }
 
-  Future<void> sendActiveWorkout(ActiveWorkoutState activeWorkout) async {
+  Future<void> sendActiveWorkout(ActiveWorkoutState activeWorkout, {bool force = false}) async {
     try {
       final jsonMap = activeWorkout.toJson();
       final structureMap = Map<String, dynamic>.from(jsonMap)
@@ -422,7 +422,7 @@ class WatchService {
         ..remove('activeCalories');
       final serializedStructure = json.encode(structureMap);
 
-      if (serializedStructure == _lastSentActiveWorkoutJson) {
+      if (!force && serializedStructure == _lastSentActiveWorkoutJson) {
         return; // Skip if identical structure
       }
       _lastSentActiveWorkoutJson = serializedStructure;

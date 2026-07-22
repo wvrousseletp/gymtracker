@@ -7,8 +7,9 @@
 
 import SwiftUI
 import HealthKit
+import WatchKit
 
-class ExtensionDelegate: NSObject, WKExtensionDelegate {
+class ExtensionDelegate: NSObject, WKApplicationDelegate, WKExtensionDelegate {
     func applicationDidFinishLaunching() {
         WorkoutManager.shared.recoverOrphanedSession()
     }
@@ -24,7 +25,7 @@ class ExtensionDelegate: NSObject, WKExtensionDelegate {
 
 @main
 struct WatchApp_Watch_AppApp: App {
-    @WKExtensionDelegateAdaptor(ExtensionDelegate.self) var delegate
+    @WKApplicationDelegateAdaptor(ExtensionDelegate.self) var delegate
 
     var body: some Scene {
         WindowGroup {

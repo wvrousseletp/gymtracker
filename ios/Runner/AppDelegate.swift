@@ -211,7 +211,12 @@ import WidgetKit
     print("[AppDelegate] HealthKit is available, creating workout configuration")
     
     let configuration = HKWorkoutConfiguration()
-    configuration.activityType = .traditionalStrengthTraining
+    if let json = UserDefaults(suiteName: "group.com.vicente.losmooscles")?.string(forKey: "activeWorkoutJson"),
+       json.lowercased().contains("cardio") {
+      configuration.activityType = .running
+    } else {
+      configuration.activityType = .traditionalStrengthTraining
+    }
     configuration.locationType = .indoor
     
     DispatchQueue.main.async { [weak self] in
