@@ -17,6 +17,8 @@ import 'services/analytics_service.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'utils/app_localizations.dart';
 
+import 'widgets/profile_avatar.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
@@ -68,8 +70,22 @@ class MyApp extends StatelessWidget {
         Locale('pt', 'BR'),
         Locale('en', 'US'),
       ],
-      builder: (context, child) =>
-          OfflineBannerWrapper(child: child ?? const SizedBox()),
+      builder: (context, child) {
+        return Consumer<ProfileProvider>(
+          builder: (context, profileProvider, _) {
+            final colorName = profileProvider.currentProfile.colorAccent;
+            final accentColor = ThemeUtils.getColor(colorName);
+            return TextSelectionTheme(
+              data: TextSelectionThemeData(
+                cursorColor: accentColor,
+                selectionColor: accentColor.withOpacity(0.40),
+                selectionHandleColor: accentColor,
+              ),
+              child: OfflineBannerWrapper(child: child ?? const SizedBox()),
+            );
+          },
+        );
+      },
       theme: ThemeData(
         brightness: Brightness.light,
         scaffoldBackgroundColor: const Color(0xfff2f2f7),
@@ -84,7 +100,7 @@ class MyApp extends StatelessWidget {
         ),
         textSelectionTheme: const TextSelectionThemeData(
           cursorColor: Colors.black,
-          selectionColor: Color(0x40000000),
+          selectionColor: Color(0x60000000),
           selectionHandleColor: Colors.black,
         ),
         textTheme: GoogleFonts.outfitTextTheme(ThemeData.light().textTheme),
@@ -104,7 +120,7 @@ class MyApp extends StatelessWidget {
         ),
         textSelectionTheme: const TextSelectionThemeData(
           cursorColor: Colors.white,
-          selectionColor: Color(0x40FFFFFF),
+          selectionColor: Color(0x60FFFFFF),
           selectionHandleColor: Colors.white,
         ),
         textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme),

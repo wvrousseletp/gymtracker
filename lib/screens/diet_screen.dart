@@ -3604,16 +3604,34 @@ class _ManualFastingSheetState extends State<_ManualFastingSheet> {
           ),
         ),
         if (isExpanded) ...[
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 150,
-            child: CupertinoDatePicker(
-              mode: CupertinoDatePickerMode.dateAndTime,
-              use24hFormat: true,
-              initialDateTime: date,
-              minimumDate: minimumDate,
-              maximumDate: DateTime.now(),
-              onDateTimeChanged: onChanged,
+          const SizedBox(height: 12),
+          Container(
+            height: 160,
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: widget.accentColor.withOpacity(0.25)),
+            ),
+            child: CupertinoTheme(
+              data: const CupertinoThemeData(
+                brightness: Brightness.dark,
+                textTheme: CupertinoTextThemeData(
+                  dateTimePickerTextStyle: TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              child: CupertinoDatePicker(
+                mode: CupertinoDatePickerMode.dateAndTime,
+                use24hFormat: true,
+                initialDateTime: date,
+                minimumDate: minimumDate,
+                maximumDate: DateTime.now(),
+                onDateTimeChanged: onChanged,
+              ),
             ),
           ),
         ]
