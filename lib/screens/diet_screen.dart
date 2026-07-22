@@ -2956,7 +2956,7 @@ class HistoricoTab extends StatelessWidget {
 class _ManualFastingSheet extends StatefulWidget {
   final DietProvider provider;
   final Color accentColor;
-  const _ManualFastingSheet({super.key, required this.provider, required this.accentColor});
+  const _ManualFastingSheet({required this.provider, required this.accentColor});
 
   @override
   State<_ManualFastingSheet> createState() => _ManualFastingSheetState();
