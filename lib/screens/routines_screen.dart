@@ -145,34 +145,34 @@ class RoutinesTab extends StatelessWidget {
       BuildContext context, WorkoutProvider provider, Routine routine) {
     final state = provider;
     
-    return Container(
-      margin: const EdgeInsets.only(bottom: 24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            accentColor.withOpacity(0.15),
-            Colors.black.withOpacity(0.6),
+    return GestureDetector(
+      onTap: () => _openRoutineForm(context, provider, routine),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 24),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              accentColor.withOpacity(0.15),
+              Colors.black.withOpacity(0.6),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: accentColor.withOpacity(0.2),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: accentColor.withOpacity(0.05),
+              blurRadius: 20,
+              spreadRadius: 2,
+            ),
           ],
         ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: accentColor.withOpacity(0.2),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: accentColor.withOpacity(0.05),
-            blurRadius: 20,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
@@ -213,34 +213,10 @@ class RoutinesTab extends StatelessWidget {
                         ],
                       ),
                     ),
-                    Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.edit_outlined, color: Colors.white70, size: 22),
-                          style: IconButton.styleFrom(
-                            backgroundColor: Colors.white.withOpacity(0.04),
-                            padding: const EdgeInsets.all(8),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          constraints: const BoxConstraints(),
-                          onPressed: () => _openRoutineForm(context, provider, routine),
-                        ),
-                        const SizedBox(width: 8),
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 22),
-                          style: IconButton.styleFrom(
-                            backgroundColor: Colors.redAccent.withOpacity(0.08),
-                            padding: const EdgeInsets.all(8),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          constraints: const BoxConstraints(),
-                          onPressed: () => _confirmDeleteRoutine(context, provider, routine),
-                        ),
-                      ],
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: Colors.white.withOpacity(0.3),
+                      size: 28,
                     ),
                   ],
                 ),
@@ -297,42 +273,61 @@ class RoutinesTab extends StatelessWidget {
                                     fontWeight: FontWeight.w800,
                                   ),
                                 ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  ref.muscle.toUpperCase(),
-                                  style: TextStyle(
-                                    color: accentColor.withOpacity(0.8),
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 0.5,
-                                  ),
+                                const SizedBox(height: 6),
+                                Wrap(
+                                  spacing: 6,
+                                  runSpacing: 6,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: accentColor.withOpacity(0.15),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        "${ex.sets} SÉRIES",
+                                        style: TextStyle(
+                                          color: accentColor,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w900,
+                                        ),
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        "${ex.reps}$repsSuffix",
+                                        style: const TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w900,
+                                        ),
+                                      ),
+                                    ),
+                                    if (ex.weight > 0)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          "${ex.weight.toStringAsFixed(1).replaceAll('.0', '')} KG",
+                                          style: const TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w900,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
                                 ),
                               ],
                             ),
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                repsBadgeText,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                              if (ex.weight > 0) ...[
-                                const SizedBox(height: 2),
-                                Text(
-                                  "${ex.weight.toStringAsFixed(1).replaceAll('.0', '')} kg",
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.5),
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
-                            ],
                           ),
                         ],
                       ),
@@ -559,14 +554,90 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                           color: Colors.white,
                           letterSpacing: -0.3),
                     ),
-                    IconButton(
-                      icon: Icon(Icons.close,
-                          color: Colors.white.withOpacity(0.6), size: 20),
-                      onPressed: () => Navigator.pop(context),
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.white.withOpacity(0.05),
-                        padding: const EdgeInsets.all(6),
-                      ),
+                    Row(
+                      children: [
+                        if (widget.existing != null)
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (dialogCtx) => Dialog(
+                                  backgroundColor: Colors.transparent,
+                                  child: GlassCard(
+                                    useBlur: true,
+                                    borderColor: Colors.white.withOpacity(0.08),
+                                    borderRadius: 20,
+                                    padding: const EdgeInsets.all(20),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                                      children: [
+                                        const Text(
+                                          "Excluir Rotina?",
+                                          style: TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w800,
+                                              fontSize: 16),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Text(
+                                          "Tem certeza que deseja excluir '${widget.existing!.name}'?",
+                                          style: const TextStyle(
+                                              color: Colors.white70, fontSize: 13, height: 1.4),
+                                        ),
+                                        const SizedBox(height: 20),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.end,
+                                          children: [
+                                            TextButton(
+                                              onPressed: () => Navigator.pop(dialogCtx),
+                                              child: const Text("Cancelar",
+                                                  style: TextStyle(
+                                                      color: Colors.white54,
+                                                      fontWeight: FontWeight.bold)),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            ElevatedButton(
+                                              onPressed: () {
+                                                widget.provider.deleteRoutine(widget.existing!.id);
+                                                Navigator.pop(dialogCtx);
+                                                Navigator.pop(context); // Close the sheet
+                                              },
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.redAccent,
+                                                foregroundColor: Colors.white,
+                                                shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(12)),
+                                              ),
+                                              child: const Text("Excluir",
+                                                  style: TextStyle(fontWeight: FontWeight.bold)),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                            style: IconButton.styleFrom(
+                              backgroundColor: Colors.redAccent.withOpacity(0.1),
+                              padding: const EdgeInsets.all(6),
+                            ),
+                          ),
+                        if (widget.existing != null)
+                          const SizedBox(width: 8),
+                        IconButton(
+                          icon: Icon(Icons.close,
+                              color: Colors.white.withOpacity(0.6), size: 20),
+                          onPressed: () => Navigator.pop(context),
+                          style: IconButton.styleFrom(
+                            backgroundColor: Colors.white.withOpacity(0.05),
+                            padding: const EdgeInsets.all(6),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -593,27 +664,25 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                                       fontWeight: FontWeight.w600),
                                   decoration: InputDecoration(
                                     filled: true,
-                                    fillColor: Colors.white.withOpacity(0.04),
+                                    fillColor: Colors.white.withOpacity(0.06),
                                     labelText: "Nome da Rotina",
                                     labelStyle: TextStyle(
                                         color: Colors.white.withOpacity(0.4),
                                         fontSize: 12),
                                     floatingLabelStyle: TextStyle(
                                         color: accentColor,
-                                        fontWeight: FontWeight.bold),
+                                        fontWeight: FontWeight.w800),
                                     border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
-                                          color:
-                                              Colors.white.withOpacity(0.06)),
+                                      borderRadius: BorderRadius.circular(16),
+                                      borderSide: BorderSide.none,
                                     ),
                                     focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(16),
                                       borderSide: BorderSide(
                                           color: accentColor, width: 1.5),
                                     ),
                                     contentPadding: const EdgeInsets.symmetric(
-                                        horizontal: 14, vertical: 12),
+                                        horizontal: 16, vertical: 14),
                                   ),
                                   validator: (value) =>
                                       (value == null || value.trim().isEmpty)
@@ -633,27 +702,25 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                                       fontWeight: FontWeight.w600),
                                   decoration: InputDecoration(
                                     filled: true,
-                                    fillColor: Colors.white.withOpacity(0.04),
-                                    labelText: "Descanso (seg)",
+                                    fillColor: Colors.white.withOpacity(0.06),
+                                    labelText: "Descanso (s)",
                                     labelStyle: TextStyle(
                                         color: Colors.white.withOpacity(0.4),
                                         fontSize: 12),
                                     floatingLabelStyle: TextStyle(
                                         color: accentColor,
-                                        fontWeight: FontWeight.bold),
+                                        fontWeight: FontWeight.w800),
                                     border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
-                                          color:
-                                              Colors.white.withOpacity(0.06)),
+                                      borderRadius: BorderRadius.circular(16),
+                                      borderSide: BorderSide.none,
                                     ),
                                     focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(16),
                                       borderSide: BorderSide(
                                           color: accentColor, width: 1.5),
                                     ),
                                     contentPadding: const EdgeInsets.symmetric(
-                                        horizontal: 14, vertical: 12),
+                                        horizontal: 16, vertical: 14),
                                   ),
                                   validator: (value) => (value == null ||
                                           int.tryParse(value) == null)
@@ -731,17 +798,24 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                                   ref.measurementType ==
                                       MeasurementType.distance ||
                                   ref.measurementType == MeasurementType.time;
-                              return Container(
-                                key: ValueKey(ex.id),
-                                margin: const EdgeInsets.only(bottom: 10),
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.03),
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                      color: Colors.white.withOpacity(0.06)),
-                                ),
-                                child: Column(
+                                return Container(
+                                  key: ValueKey(ex.id),
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.02),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                        color: accentColor.withOpacity(0.1), width: 1.5),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: accentColor.withOpacity(0.02),
+                                        blurRadius: 10,
+                                        spreadRadius: 1,
+                                      )
+                                    ],
+                                  ),
+                                  child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Row(
@@ -759,41 +833,44 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                           ),
-                                        ),
                                         Row(
                                           children: [
-                                            IconButton(
-                                              icon: Icon(
-                                                  Icons.arrow_upward_rounded,
-                                                  color: idx == 0
-                                                      ? Colors.white10
-                                                      : Colors.white60,
-                                                  size: 18),
-                                              padding: EdgeInsets.zero,
-                                              constraints:
-                                                  const BoxConstraints(),
-                                              onPressed: idx == 0
-                                                  ? null
-                                                  : () =>
-                                                      _moveExercise(idx, true),
-                                            ),
-                                            const SizedBox(width: 12),
-                                            IconButton(
-                                              icon: Icon(
-                                                  Icons.arrow_downward_rounded,
-                                                  color: idx ==
-                                                          _exercises.length - 1
-                                                      ? Colors.white10
-                                                      : Colors.white60,
-                                                  size: 18),
-                                              padding: EdgeInsets.zero,
-                                              constraints:
-                                                  const BoxConstraints(),
-                                              onPressed: idx ==
-                                                      _exercises.length - 1
-                                                  ? null
-                                                  : () =>
-                                                      _moveExercise(idx, false),
+                                            Container(
+                                              decoration: BoxDecoration(
+                                                color: Colors.white.withOpacity(0.04),
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                              child: Row(
+                                                children: [
+                                                  IconButton(
+                                                    icon: Icon(
+                                                        Icons.arrow_upward_rounded,
+                                                        color: idx == 0
+                                                            ? Colors.white10
+                                                            : Colors.white70,
+                                                        size: 16),
+                                                    padding: const EdgeInsets.all(4),
+                                                    constraints: const BoxConstraints(),
+                                                    onPressed: idx == 0
+                                                        ? null
+                                                        : () => _moveExercise(idx, true),
+                                                  ),
+                                                  Container(width: 1, height: 16, color: Colors.white10),
+                                                  IconButton(
+                                                    icon: Icon(
+                                                        Icons.arrow_downward_rounded,
+                                                        color: idx == _exercises.length - 1
+                                                            ? Colors.white10
+                                                            : Colors.white70,
+                                                        size: 16),
+                                                    padding: const EdgeInsets.all(4),
+                                                    constraints: const BoxConstraints(),
+                                                    onPressed: idx == _exercises.length - 1
+                                                        ? null
+                                                        : () => _moveExercise(idx, false),
+                                                  ),
+                                                ],
+                                              ),
                                             ),
                                             const SizedBox(width: 12),
                                             GestureDetector(
@@ -802,14 +879,19 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                                                   _exercises.removeAt(idx);
                                                 });
                                               },
-                                              child: Icon(
-                                                  Icons.delete_outline_rounded,
-                                                  color: Colors.redAccent
-                                                      .withOpacity(0.8),
-                                                  size: 20),
+                                              child: Container(
+                                                padding: const EdgeInsets.all(6),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.redAccent.withOpacity(0.1),
+                                                  borderRadius: BorderRadius.circular(8),
+                                                ),
+                                                child: const Icon(
+                                                  Icons.close_rounded,
+                                                  color: Colors.redAccent,
+                                                  size: 18,
+                                                ),
+                                              ),
                                             ),
-                                          ],
-                                        ),
                                       ],
                                     ),
                                     const SizedBox(height: 12),

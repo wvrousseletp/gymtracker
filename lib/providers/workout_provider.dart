@@ -534,9 +534,15 @@ class WorkoutProvider extends ChangeNotifier {
     if (activeWorkout == null) return;
     final active = activeWorkout!;
 
-    activeWorkout = active.copyWith(
-      paused: isPaused,
-    );
+    if (isPaused) {
+      activeWorkout = active.copyWith(paused: true);
+    } else {
+      activeWorkout = active.copyWith(
+        paused: false,
+        startTime: DateTime.now().millisecondsSinceEpoch -
+            (active.elapsedSeconds * 1000),
+      );
+    }
 
     WatchService.instance.sendActiveWorkout(activeWorkout!);
     _save();

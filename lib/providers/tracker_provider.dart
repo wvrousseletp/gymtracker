@@ -802,7 +802,7 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
   void recalculateWorkoutElapsedTime() {
     // Recalculate elapsed time when returning from background
     final active = _workoutProvider?.activeWorkout;
-    if (active != null) {
+    if (active != null && !active.paused) {
       final now = DateTime.now().millisecondsSinceEpoch;
       final startTime = active.startTime;
       final newElapsed = ((now - startTime) / 1000).round();

@@ -1932,7 +1932,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView> with WidgetsBindi
           Positioned(
             left: 16,
             right: 16,
-            bottom: 24,
+            bottom: 104,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(30),
               child: BackdropFilter(
