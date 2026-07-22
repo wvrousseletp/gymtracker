@@ -832,6 +832,8 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                                                 ),
                                               ),
                                             ),
+                                          ],
+                                        ),
                                       ],
                                     ),
                                     const SizedBox(height: 12),
