@@ -329,7 +329,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     private func handleWorkoutSessionTransition(oldWorkout: WatchActiveWorkoutState?, newWorkout: WatchActiveWorkoutState?, action: String? = nil) {
         let isNewWorkoutStarted = newWorkout != nil && !newWorkout!.postponed && (
             oldWorkout == nil ||
-            oldWorkout?.id != newWorkout?.id ||
+            oldWorkout?.startTime != newWorkout?.startTime ||
             oldWorkout?.postponed == true ||
             WorkoutManager.shared.session == nil
         )
