@@ -241,7 +241,6 @@ class RoutinesTab extends StatelessWidget {
                     final isCardio = ref.muscle.toLowerCase().contains('cardio');
                     final isTime = ref.measurementType == MeasurementType.time;
                     final repsSuffix = isCardio ? 'min' : (isTime ? 's' : '');
-                    final repsBadgeText = "${ex.sets} x ${ex.reps}$repsSuffix";
 
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 16),
@@ -383,66 +382,6 @@ class RoutinesTab extends StatelessWidget {
                 ),
               ],
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-
-  void _confirmDeleteRoutine(
-      BuildContext context, WorkoutProvider provider, Routine routine) {
-    showDialog(
-      context: context,
-      builder: (dialogCtx) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: GlassCard(
-          useBlur: true,
-          borderColor: Colors.white.withOpacity(0.08),
-          borderRadius: 20,
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(
-                "Excluir Rotina?",
-                style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 16),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                "Tem certeza que deseja excluir '${routine.name}'?",
-                style: const TextStyle(
-                    color: Colors.white70, fontSize: 13, height: 1.4),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(dialogCtx),
-                    child: const Text("Cancelar",
-                        style: TextStyle(
-                            color: Colors.white54,
-                            fontWeight: FontWeight.bold)),
-                  ),
-                  const SizedBox(width: 8),
-                  TextButton(
-                    onPressed: () {
-                      provider.deleteRoutine(routine.id);
-                      Navigator.pop(dialogCtx);
-                    },
-                    child: const Text("Excluir",
-                        style: TextStyle(
-                            color: Colors.redAccent,
-                            fontWeight: FontWeight.bold)),
-                  ),
-                ],
-              ),
-            ],
           ),
         ),
       ),
@@ -833,6 +772,7 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                           ),
+                                        ),
                                         Row(
                                           children: [
                                             Container(

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
@@ -2955,7 +2956,7 @@ class HistoricoTab extends StatelessWidget {
 class _ManualFastingSheet extends StatefulWidget {
   final DietProvider provider;
   final Color accentColor;
-  const _ManualFastingSheet({Key? key, required this.provider, required this.accentColor}) : super(key: key);
+  const _ManualFastingSheet({super.key, required this.provider, required this.accentColor});
 
   @override
   State<_ManualFastingSheet> createState() => _ManualFastingSheetState();
