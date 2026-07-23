@@ -1545,6 +1545,14 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
   // Track last endTime to avoid re-registering the same timer
   int _lastEndTime = 0;
 
+  // Global keys for sets to allow accurate scrolling centering
+  final Map<String, GlobalKey> _setCardKeys = {};
+
+  GlobalKey _getOrCreateKey(int exIdx, int setIdx) {
+    final keyStr = '${exIdx}_$setIdx';
+    return _setCardKeys.putIfAbsent(keyStr, () => GlobalKey());
+  }
+
   // Controladores de páginas para exercícios
   int _currentExIdx = 0;
   late PageController _pageController;
@@ -1561,6 +1569,10 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
       widget.activeWorkout.exercises.length,
       (_) => ScrollController(),
     );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToNextSet(_currentExIdx);
+    });
 
     // Calculate initial elapsed seconds from startTime if valid
     final initialElapsed = _calculateRealElapsed();
@@ -1877,6 +1889,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                         _currentExIdx = index;
                         widget.provider.setCurrentExerciseIndex(_currentExIdx);
                       });
+                      _scrollToNextSet(index);
                     },
                     itemCount: exercises.length,
                     itemBuilder: (context, index) {
@@ -2496,7 +2509,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
               final pc = ex.singleCardioSession;
               final isDone = ex.setsState.isNotEmpty && ex.setsState[0];
               return PremiumCardioSessionView(
-                key: ValueKey('cardio_${exIdx}_single'),
+                key: _getOrCreateKey(exIdx, 0),
                 setIndex: 0,
                 isDone: isDone,
                 initialDistance: pc?.distanceKm,
@@ -2530,7 +2543,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                   // RENDERIZAR SESSÃO DE CARDIO COM SETS (HIIT)
                   final pc = ex.performedCardios[setIdx];
                   return PremiumCardioSessionView(
-                    key: ValueKey('cardio_${exIdx}_$setIdx'),
+                    key: _getOrCreateKey(exIdx, setIdx),
                     setIndex: setIdx,
                     isDone: isDone,
                     initialDistance: pc?.distanceKm,
@@ -2550,6 +2563,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                   );
                 } else {
                   return PremiumStrengthSetCard(
+                    key: _getOrCreateKey(exIdx, setIdx),
                     setIndex: setIdx,
                     ex: ex,
                     isDone: isDone,
@@ -2898,17 +2912,16 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
     } else {
       // Find next unfinished set index
       final nextSetIdx = ex.setsState.indexOf(false);
-      if (nextSetIdx != -1 && exIdx < _scrollControllers.length) {
-        final sc = _scrollControllers[exIdx];
-        if (sc.hasClients) {
-          Future.delayed(const Duration(milliseconds: 250), () {
-            if (sc.hasClients) {
-              // Calculate offset to center the active set in view
-              final estimatedOffset = 140.0 + (nextSetIdx * 86.0);
-              final maxScroll = sc.position.maxScrollExtent;
-              final targetOffset = estimatedOffset.clamp(0.0, maxScroll);
-              sc.animateTo(
-                targetOffset,
+      if (nextSetIdx != -1) {
+        final keyStr = '${exIdx}_$nextSetIdx';
+        final key = _setCardKeys[keyStr];
+        if (key != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final context = key.currentContext;
+            if (context != null) {
+              Scrollable.ensureVisible(
+                context,
+                alignment: 0.5,
                 duration: const Duration(milliseconds: 350),
                 curve: Curves.easeInOut,
               );
