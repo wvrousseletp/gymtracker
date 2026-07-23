@@ -26,6 +26,9 @@ import WidgetKit
   private var workoutActivity: Any? = nil
   /// Actions from Watch that arrived before the Flutter method channel was initialised.
   private var pendingWatchActions: [[String: Any]] = []
+  /// Last workout startTime (ms) used to launch the watch app — avoids relaunching on every set update.
+  private var lastWatchLaunchWorkoutStartTime: Int64 = 0
+  private var watchSyncBackgroundTask: UIBackgroundTaskIdentifier = .invalid
   private let healthStore = HKHealthStore()
 
   override func application(
@@ -281,15 +284,18 @@ import WidgetKit
         sharedDefaults?.synchronize()
         self.updateLiveActivity(workoutJson: json)
         
-        // Enhanced watch app launch with retry mechanism
-        print("[AppDelegate] WCSession isReachable: \(session.isReachable)")
-        print("[AppDelegate] WCSession activationState: \(session.activationState.rawValue)")
-        
-        if HKHealthStore.isHealthDataAvailable() {
-            print("[AppDelegate] Attempting to launch watch app with retry mechanism")
+        // Launch watch app only when a new workout session starts (Fitness-app style).
+        if HKHealthStore.isHealthDataAvailable(),
+           let data = json.data(using: .utf8),
+           let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           obj["postponed"] as? Bool != true,
+           let startTime = obj["startTime"] as? Double {
+          let startMs = Int64(startTime)
+          if startMs != self.lastWatchLaunchWorkoutStartTime {
+            self.lastWatchLaunchWorkoutStartTime = startMs
+            print("[AppDelegate] New workout detected — launching watch app (startTime=\(startMs))")
             self.launchWatchAppWithRetry(attempt: 0, maxAttempts: 3)
-        } else {
-            print("[AppDelegate] HealthKit is not available, cannot launch watch app")
+          }
         }
         
         result(nil)
@@ -305,6 +311,7 @@ import WidgetKit
         result(FlutterError(code: "INVALID_ARGUMENT", message: "Expected JSON string for planner", details: nil))
       }
     case "clearActiveWorkout", "workoutFinished", "workoutCancelled":
+      lastWatchLaunchWorkoutStartTime = 0
       sendToWatch("activeWorkout", json: nil, clearActive: true)
       let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles")
       sharedDefaults?.set(nil, forKey: "activeWorkoutJson")
@@ -522,6 +529,14 @@ import WidgetKit
     session.activate()
   }
 
+  func sessionReachabilityDidChange(_ session: WCSession) {
+    if session.isReachable {
+      DispatchQueue.main.async { [weak self] in
+        self?.methodChannel?.invokeMethod("sessionActivated", arguments: nil)
+      }
+    }
+  }
+
   func session(_ session: WCSession, didReceiveMessage message: [String : Any]) {
     handleIncomingWatchData(message)
   }
@@ -533,13 +548,19 @@ import WidgetKit
   private func handleIncomingWatchData(_ data: [String : Any]) {
     guard let action = data["action"] as? String else { return }
 
+    beginWatchSyncBackgroundTask()
+
     DispatchQueue.main.async { [weak self] in
       guard let self = self else { return }
       
       switch action {
       case "startWorkout":
         if let routineId = data["routineId"] as? String {
-          self.invokeOrQueue(method: "startWorkout", arguments: routineId)
+          var args: [String: Any] = ["routineId": routineId]
+          if let custom = data["customExercises"] {
+            args["customExercises"] = custom
+          }
+          self.invokeOrQueue(method: "startWorkout", arguments: args)
         }
       case "toggleSet":
         if let exerciseIndex = data["exerciseIndex"] as? Int,
@@ -559,14 +580,14 @@ import WidgetKit
           if let duration = data["duration"] as? Int {
             args["duration"] = duration
           }
-          self.methodChannel?.invokeMethod("toggleSet", arguments: args)
+          self.invokeOrQueue(method: "toggleSet", arguments: args)
         }
       case "updateCardio":
         if let exerciseIndex = data["exerciseIndex"] as? Int,
            let setIndex = data["setIndex"] as? Int,
            let distance = data["distance"] as? Double,
            let duration = data["duration"] as? Int {
-          self.methodChannel?.invokeMethod("updateCardio", arguments: [
+          self.invokeOrQueue(method: "updateCardio", arguments: [
             "exerciseIndex": exerciseIndex,
             "setIndex": setIndex,
             "distance": distance,
@@ -585,15 +606,15 @@ import WidgetKit
           if let failureRep = data["failureRep"] as? Int {
             args["failureRep"] = failureRep
           }
-          self.methodChannel?.invokeMethod("updateFailure", arguments: args)
+          self.invokeOrQueue(method: "updateFailure", arguments: args)
         }
       case "skipRest":
-        self.methodChannel?.invokeMethod("skipRest", arguments: nil)
+        self.invokeOrQueue(method: "skipRest", arguments: nil)
       case "updateExerciseWeightReps":
         if let exerciseIndex = data["exerciseIndex"] as? Int,
            let weight = data["weight"] as? Double,
            let reps = data["reps"] as? Int {
-          self.methodChannel?.invokeMethod("updateExerciseWeightReps", arguments: [
+          self.invokeOrQueue(method: "updateExerciseWeightReps", arguments: [
             "exerciseIndex": exerciseIndex,
             "weight": weight,
             "reps": reps
@@ -601,10 +622,9 @@ import WidgetKit
         }
       case "startSingleExercise":
         if let exerciseId = data["exerciseId"] as? String {
-          self.methodChannel?.invokeMethod("startSingleExercise", arguments: exerciseId)
+          self.invokeOrQueue(method: "startSingleExercise", arguments: exerciseId)
         }
       case "completeWorkout":
-        // Stop Live Activity immediately – don't wait for Flutter roundtrip
         self.clearRestTimerNotification()
         self.stopLiveActivity()
         var completeArgs: [String: Any] = [:]
@@ -614,25 +634,23 @@ import WidgetKit
         if let notes = data["notes"] as? String {
           completeArgs["notes"] = notes
         }
-        self.methodChannel?.invokeMethod(
-          "completeWorkout",
+        self.invokeOrQueue(
+          method: "completeWorkout",
           arguments: completeArgs.isEmpty ? nil : completeArgs
         )
       case "cancelWorkout":
-        // Stop Live Activity immediately – don't wait for Flutter roundtrip
         self.clearRestTimerNotification()
         self.stopLiveActivity()
-        self.methodChannel?.invokeMethod("cancelWorkout", arguments: nil)
+        self.invokeOrQueue(method: "cancelWorkout", arguments: nil)
       case "postponeWorkout":
-        // Stop Live Activity immediately – don't wait for Flutter roundtrip
         self.clearRestTimerNotification()
         self.stopLiveActivity()
-        self.methodChannel?.invokeMethod("postponeWorkout", arguments: nil)
+        self.invokeOrQueue(method: "postponeWorkout", arguments: nil)
       case "resumeWorkout":
-        self.methodChannel?.invokeMethod("resumeWorkout", arguments: nil)
+        self.invokeOrQueue(method: "resumeWorkout", arguments: nil)
       case "togglePause":
         if let paused = data["paused"] as? Bool {
-          self.methodChannel?.invokeMethod("togglePause", arguments: paused)
+          self.invokeOrQueue(method: "togglePause", arguments: paused)
         }
       case "requestSync":
         self.invokeOrQueue(method: "sessionActivated", arguments: nil)
@@ -642,12 +660,12 @@ import WidgetKit
         }
       case "changeExercise":
         if let exerciseIndex = data["exerciseIndex"] as? Int {
-          self.methodChannel?.invokeMethod("changeExercise", arguments: exerciseIndex)
+          self.invokeOrQueue(method: "changeExercise", arguments: exerciseIndex)
         }
       case "updateActiveWorkout":
-        // Watch is pushing its current in-progress workout state (e.g. after reconnect
-        // or while in offline/local mode). Forward it to Flutter so iOS can reconcile.
-        if let workoutJson = data["workoutJson"] as? String {
+        // Watch pushes in-progress state (key is "activeWorkout" from WatchConnectivityManager).
+        let workoutJson = (data["workoutJson"] as? String) ?? (data["activeWorkout"] as? String)
+        if let workoutJson = workoutJson {
           self.invokeOrQueue(method: "updateActiveWorkoutFromWatch", arguments: workoutJson)
           let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles")
           sharedDefaults?.set(workoutJson, forKey: "activeWorkoutJson")
@@ -657,7 +675,7 @@ import WidgetKit
       case "updateHealthMetrics":
         if let heartRate = data["heartRate"] as? Double,
            let calories = data["activeCalories"] as? Double {
-          self.methodChannel?.invokeMethod("updateHealthMetrics", arguments: [
+          self.invokeOrQueue(method: "updateHealthMetrics", arguments: [
             "heartRate": Int(heartRate),
             "activeCalories": Int(calories)
           ])
@@ -674,10 +692,14 @@ import WidgetKit
           }
           #endif
           
-          self.methodChannel?.invokeMethod("updateWaterIntake", arguments: currentWater)
+          self.invokeOrQueue(method: "updateWaterIntake", arguments: currentWater)
         }
       default:
         break
+      }
+
+      DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+        self?.endWatchSyncBackgroundTask()
       }
     }
   }
@@ -690,6 +712,20 @@ import WidgetKit
       ch.invokeMethod(method, arguments: arguments)
     } else {
       pendingWatchActions.append(["method": method, "arguments": arguments as Any])
+    }
+  }
+
+  private func beginWatchSyncBackgroundTask() {
+    guard watchSyncBackgroundTask == .invalid else { return }
+    watchSyncBackgroundTask = UIApplication.shared.beginBackgroundTask(withName: "WatchSync") { [weak self] in
+      self?.endWatchSyncBackgroundTask()
+    }
+  }
+
+  private func endWatchSyncBackgroundTask() {
+    if watchSyncBackgroundTask != .invalid {
+      UIApplication.shared.endBackgroundTask(watchSyncBackgroundTask)
+      watchSyncBackgroundTask = .invalid
     }
   }
 

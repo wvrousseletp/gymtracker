@@ -371,14 +371,14 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
             guard let self = self else { return }
+            var msg: [String: Any] = [
+                "action": "startWorkout",
+                "routineId": routineId
+            ]
+            if let custom = customExercises {
+                msg["customExercises"] = custom
+            }
             if self.isReachable {
-                var msg: [String: Any] = [
-                    "action": "startWorkout",
-                    "routineId": routineId
-                ]
-                if let custom = customExercises {
-                    msg["customExercises"] = custom
-                }
                 self.sendToiPhone(msg)
             } else {
                 self.isLocalWorkout = true
@@ -386,6 +386,8 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                     self.activeWorkout = workout
                 }
             }
+            // Guaranteed delivery when iPhone is in background (mirrors Fitness handoff).
+            self.session?.transferUserInfo(msg)
         }
     }
 
@@ -394,14 +396,16 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
             guard let self = self else { return }
+            let msg: [String: Any] = ["action": "startSingleExercise", "exerciseId": exerciseId]
             if self.isReachable {
-                self.sendToiPhone(["action": "startSingleExercise", "exerciseId": exerciseId])
+                self.sendToiPhone(msg)
             } else {
                 self.isLocalWorkout = true
                 if let workout = self.localWorkoutManager.startLocalSingleExercise(exerciseId: exerciseId, library: self.library) {
                     self.activeWorkout = workout
                 }
             }
+            self.session?.transferUserInfo(msg)
         }
     }
 

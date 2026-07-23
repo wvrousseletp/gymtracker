@@ -65,6 +65,13 @@ class WatchService {
           routineId = call.arguments as String;
         }
 
+        final existing = _provider!.state?.activeWorkout;
+        if (existing != null && !existing.postponed) {
+          debugPrint('[WatchService] startWorkout from Watch ignored — iOS already has active workout');
+          sendActiveWorkout(existing, force: true);
+          break;
+        }
+
         final baseRoutine = _provider!.state?.routines.firstWhere((r) => r.id == routineId);
         if (baseRoutine != null) {
           Routine routineToStart = baseRoutine;
@@ -99,6 +106,7 @@ class WatchService {
           }
           
           _provider!.startWorkout(routineToStart, WorkoutRecovery(sleepOk: SleepQuality.okay, pain: [], warmUpDone: false), false);
+          _provider!.persistActiveWorkoutState();
           // Envia de volta o estado atualizado do treino ativo
           if (_provider!.state?.activeWorkout != null) {
             sendActiveWorkout(_provider!.state!.activeWorkout!);
@@ -304,6 +312,8 @@ class WatchService {
             _provider!.state?.diet.waterIntakeMl ?? 0,
             _provider!.state?.diet.waterGoalMl ?? 2000,
           );
+          // Reconcile with Watch-initiated workout persisted in App Group.
+          _provider!.syncActiveWorkoutFromWidget();
         }
         break;
 
@@ -355,6 +365,7 @@ class WatchService {
           final Map<String, dynamic> watchData = Map<String, dynamic>.from(
               json.decode(workoutJson) as Map);
           _provider!.applyActiveWorkoutFromWatch(watchData);
+          _provider!.persistActiveWorkoutState();
           if (_provider!.state?.activeWorkout != null) {
             sendActiveWorkout(_provider!.state!.activeWorkout!);
           }

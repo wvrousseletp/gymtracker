@@ -20,6 +20,8 @@ class ExtensionDelegate: NSObject, WKApplicationDelegate, WKExtensionDelegate {
         WKInterfaceDevice.current().play(.success)
         WorkoutManager.shared.isLaunchedByiOS = true
         WorkoutManager.shared.startWorkout(configuration: workoutConfiguration)
+        // Pull latest workout state from iPhone (application context may already be in flight).
+        WatchConnectivityManager.shared.requestSync()
     }
 }
 
@@ -32,6 +34,7 @@ struct WatchApp_Watch_AppApp: App {
             WorkoutSelectionView()
                 .onAppear {
                     WorkoutManager.shared.requestAuthorization()
+                    WatchBackgroundSyncManager.setupBackgroundSync()
                 }
         }
     }

@@ -617,7 +617,20 @@ class WorkoutProvider extends ChangeNotifier {
         );
       }
 
-      activeWorkout = current.copyWith(exercises: merged);
+      activeWorkout = current.copyWith(
+        exercises: merged,
+        currentExerciseIndex:
+            (watchData['currentExerciseIndex'] as num?)?.toInt() ??
+                current.currentExerciseIndex,
+        paused: watchData['paused'] as bool? ?? current.paused,
+        elapsedSeconds:
+            (watchData['elapsedSeconds'] as num?)?.toInt() ??
+                current.elapsedSeconds,
+        restTimer: watchData['restTimer'] != null
+            ? WatchRestTimer.fromJson(
+                Map<String, dynamic>.from(watchData['restTimer'] as Map))
+            : current.restTimer,
+      );
       debugPrint(
           '[WorkoutProvider] applyActiveWorkoutFromWatch: merged Watch sets into iOS state');
       _save();
