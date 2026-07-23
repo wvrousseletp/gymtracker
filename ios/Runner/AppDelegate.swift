@@ -561,6 +561,9 @@ import WidgetKit
             args["customExercises"] = custom
           }
           self.invokeOrQueue(method: "startWorkout", arguments: args)
+          
+          // Bring iOS app to foreground when workout starts from watch (Fitness-app style)
+          self.scheduleWorkoutStartedNotification()
         }
       case "toggleSet":
         if let exerciseIndex = data["exerciseIndex"] as? Int,
@@ -785,6 +788,35 @@ import WidgetKit
 
   private func clearRestTimerNotification() {
     UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [restTimerNotificationId])
+  }
+
+  private let workoutStartedNotificationId = "com.vicente.losmooscles.workoutStarted"
+
+  private func scheduleWorkoutStartedNotification() {
+    // Cancel any previous workout started notification
+    UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [workoutStartedNotificationId])
+
+    let content = UNMutableNotificationContent()
+    content.title = "🏋️ Treino Iniciado"
+    content.body = "O treino foi iniciado no Apple Watch. Abra o app para acompanhar."
+    content.sound = UNNotificationSound.default
+    // Time-sensitive so it shows even in Focus mode
+    if #available(iOS 15.0, *) {
+      content.interruptionLevel = .timeSensitive
+    }
+
+    // Schedule notification immediately to bring app to foreground
+    let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 0.1, repeats: false)
+    let request = UNNotificationRequest(
+      identifier: workoutStartedNotificationId,
+      content: content,
+      trigger: trigger
+    )
+    UNUserNotificationCenter.current().add(request) { error in
+      if let error = error {
+        print("[AppDelegate] Failed to schedule workout started notification: \(error.localizedDescription)")
+      }
+    }
   }
 
   private func scheduleHydrationReminders(waterIntake: Int, waterGoal: Int) {
