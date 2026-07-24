@@ -289,8 +289,8 @@ import WidgetKit
            let data = json.data(using: .utf8),
            let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
            obj["postponed"] as? Bool != true,
-           let startTime = obj["startTime"] as? Double {
-          let startMs = Int64(startTime)
+           let startTimeNum = obj["startTime"] as? NSNumber {
+          let startMs = startTimeNum.int64Value
           if startMs != self.lastWatchLaunchWorkoutStartTime {
             self.lastWatchLaunchWorkoutStartTime = startMs
             print("[AppDelegate] New workout detected — launching watch app (startTime=\(startMs))")
