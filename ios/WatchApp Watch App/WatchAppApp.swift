@@ -21,11 +21,8 @@ class ExtensionDelegate: NSObject, WKApplicationDelegate, WKExtensionDelegate, U
         print("[WatchApp] Launched via HKWorkoutConfiguration from iOS")
         WorkoutManager.shared.isLaunchedByiOS = true
         
-        // Criar uma nova configuração desvinculada do iOS para evitar tela "Abrir no iPhone"
-        let newConfig = HKWorkoutConfiguration()
-        newConfig.activityType = workoutConfiguration.activityType
-        newConfig.locationType = workoutConfiguration.locationType
-        WorkoutManager.shared.startWorkout(configuration: newConfig)
+        // Use the EXACT configuration provided by iOS to claim the session placeholder
+        WorkoutManager.shared.startWorkout(configuration: workoutConfiguration)
         
         // Trigger a local notification to alert the user in watchOS 10+
         let content = UNMutableNotificationContent()

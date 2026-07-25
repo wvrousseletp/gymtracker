@@ -147,14 +147,15 @@ struct RestTimerView: View {
         
         if remaining != timeRemaining {
             timeRemaining = remaining
-            if remaining == 0 && !didAutoSkip {
-                didAutoSkip = true
-                #if canImport(WatchKit)
-                WKInterfaceDevice.current().play(.success)
-                WKInterfaceDevice.current().play(.click)
-                #endif
-                connectivityManager.skipRest()
-            }
+        }
+        
+        if remaining == 0 && !didAutoSkip {
+            didAutoSkip = true
+            #if canImport(WatchKit)
+            WKInterfaceDevice.current().play(.success)
+            WKInterfaceDevice.current().play(.click)
+            #endif
+            connectivityManager.skipRest()
         }
     }
 }
