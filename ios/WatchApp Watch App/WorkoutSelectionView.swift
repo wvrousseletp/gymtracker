@@ -192,7 +192,7 @@ struct WorkoutSelectionView: View {
                 VStack {
                     if let activeWorkout = connectivityManager.activeWorkout, !activeWorkout.postponed {
                         ActiveWorkoutView()
-                    } else if workoutManager.workoutSessionState == .running || workoutManager.workoutSessionState == .paused {
+                    } else if workoutManager.workoutSessionState == .running || workoutManager.workoutSessionState == .paused || connectivityManager.isSyncing {
                         VStack(spacing: 12) {
                             ProgressView()
                             Text("Sincronizando...")

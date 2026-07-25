@@ -21,6 +21,8 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     @Published var waterIntakeTarget: Int = 2000
     /// Lista de exercícios com PR recém-batido – resetada após exibição da celebração
     @Published var prExerciseNames: [String] = []
+    
+    @Published var isSyncing: Bool = false
 
     @Published var activeWorkout: WatchActiveWorkoutState? {
         didSet {
@@ -135,6 +137,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
 
     private func handleIncomingData(_ data: [String : Any]) {
         DispatchQueue.main.async {
+            self.isSyncing = false
             // 1. Process routines
             if let jsonString = data["routines"] as? String,
                let jsonData = jsonString.data(using: .utf8) {
@@ -559,6 +562,15 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     }
 
     func requestSync() {
+        DispatchQueue.main.async {
+            self.isSyncing = true
+            // Timeout to prevent infinite loading if iPhone doesn't respond
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                if self.isSyncing {
+                    self.isSyncing = false
+                }
+            }
+        }
         sendToiPhone(["action": "requestSync"])
     }
 
