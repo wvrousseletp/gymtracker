@@ -587,7 +587,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         ])
     }
 
-    private func checkAndResetDailyWater() {
+    func checkAndResetDailyWater() {
         let now = Date()
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"

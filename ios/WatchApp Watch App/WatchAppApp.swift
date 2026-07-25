@@ -13,11 +13,7 @@ import UserNotifications
 class ExtensionDelegate: NSObject, WKApplicationDelegate, WKExtensionDelegate, UNUserNotificationCenterDelegate {
     func applicationDidFinishLaunching() {
         WorkoutManager.shared.recoverOrphanedSession()
-        
         UNUserNotificationCenter.current().delegate = self
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
-            print("[WatchApp] Notifications granted: \(granted)")
-        }
     }
 
     func handle(_ workoutConfiguration: HKWorkoutConfiguration) {
@@ -53,13 +49,23 @@ class ExtensionDelegate: NSObject, WKApplicationDelegate, WKExtensionDelegate, U
 @main
 struct WatchApp_Watch_AppApp: App {
     @WKApplicationDelegateAdaptor(ExtensionDelegate.self) var delegate
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
             WorkoutSelectionView()
+                .onChange(of: scenePhase) { phase in
+                    if phase == .active {
+                        WatchConnectivityManager.shared.checkAndResetDailyWater()
+                    }
+                }
                 .onAppear {
                     WorkoutManager.shared.requestAuthorization()
                     WatchBackgroundSyncManager.setupBackgroundSync()
+                    
+                    UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+                        print("[WatchApp] Notifications granted on appear: \(granted)")
+                    }
                 }
         }
     }
