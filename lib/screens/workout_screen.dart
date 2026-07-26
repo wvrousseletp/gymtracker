@@ -1889,7 +1889,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                         _currentExIdx = index;
                         widget.provider.setCurrentExerciseIndex(_currentExIdx);
                       });
-                      _scrollToNextSet(index);
+                      _scrollToNextSet(index, fromUserSwipe: true);
                     },
                     itemCount: exercises.length,
                     itemBuilder: (context, index) {
@@ -2878,7 +2878,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
     );
   }
 
-  void _scrollToNextSet(int exIdx) {
+  void _scrollToNextSet(int exIdx, {bool fromUserSwipe = false}) {
     final active = widget.provider.state?.activeWorkout;
     if (active == null || exIdx < 0 || exIdx >= active.exercises.length) return;
 
@@ -2886,6 +2886,8 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
     final allCompleted = ex.setsState.every((isDone) => isDone);
 
     if (allCompleted) {
+      if (fromUserSwipe) return;
+      
       // Automatic transition to next exercise when all sets are completed!
       if (exIdx < active.exercises.length - 1) {
         Future.delayed(const Duration(milliseconds: 350), () {
@@ -2910,6 +2912,8 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
         }
       }
     } else {
+      if (fromUserSwipe) return;
+
       // Find next unfinished set index
       final nextSetIdx = ex.setsState.indexOf(false);
       if (nextSetIdx != -1) {
@@ -2921,7 +2925,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
             if (context != null) {
               Scrollable.ensureVisible(
                 context,
-                alignment: 0.5,
+                alignment: 0.15,
                 duration: const Duration(milliseconds: 350),
                 curve: Curves.easeInOut,
               );

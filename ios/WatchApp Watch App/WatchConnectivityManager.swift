@@ -416,6 +416,21 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         if isLocalWorkout {
             toggleSetLocal(exerciseIndex: exerciseIndex, setIndex: setIndex, isDone: isDone, isFailure: isFailure, failureRep: failureRep, distance: distance, duration: duration)
         } else {
+            // Optimistic Update
+            if var current = self.activeWorkout {
+                if exerciseIndex >= 0 && exerciseIndex < current.exercises.count {
+                    var exercise = current.exercises[exerciseIndex]
+                    if setIndex >= 0 && setIndex < exercise.setsState.count {
+                        exercise.setsState[setIndex] = isDone
+                        if isFailure, setIndex < exercise.failureReport.count {
+                            exercise.failureReport[setIndex] = true
+                        }
+                        current.exercises[exerciseIndex] = exercise
+                        self.activeWorkout = current
+                    }
+                }
+            }
+            
             var msg: [String: Any] = [
                 "action": "toggleSet",
                 "exerciseIndex": exerciseIndex,
@@ -549,6 +564,11 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         if isLocalWorkout {
             togglePauseLocal(currentlyPaused: currentlyPaused)
         } else {
+            // Optimistic Update
+            if var current = self.activeWorkout {
+                current.paused = !currentlyPaused
+                self.activeWorkout = current
+            }
             sendToiPhone(["action": "togglePause", "paused": !currentlyPaused])
         }
     }
@@ -557,6 +577,11 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         if isLocalWorkout {
             changeExerciseLocal(to: index)
         } else {
+            // Optimistic Update
+            if var current = self.activeWorkout, index >= 0 && index < current.exercises.count {
+                current.currentExerciseIndex = index
+                self.activeWorkout = current
+            }
             sendToiPhone(["action": "changeExercise", "exerciseIndex": index])
         }
     }

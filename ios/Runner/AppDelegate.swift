@@ -472,8 +472,17 @@ import WidgetKit
 
     case "getSharedWaterIntake":
       let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles")
-      let current = sharedDefaults?.integer(forKey: "waterIntakeCurrent") ?? 0
-      result(current)
+      let date = sharedDefaults?.string(forKey: "waterIntakeDate") ?? ""
+      let formatter = DateFormatter()
+      formatter.dateFormat = "yyyy-MM-dd"
+      let todayStr = formatter.string(from: Date())
+      
+      if date == todayStr {
+        let current = sharedDefaults?.integer(forKey: "waterIntakeCurrent") ?? 0
+        result(current)
+      } else {
+        result(0)
+      }
 
     case "getSharedActiveWorkout":
       let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles")

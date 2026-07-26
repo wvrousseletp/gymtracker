@@ -110,6 +110,21 @@ struct ActiveWorkoutView: View {
         selectedSetIndexMap[key] = setIndex
     }
 
+    private func checkAllSetsCompleted(activeWorkout: WatchActiveWorkoutState, overridingSet: (exIdx: Int, setIdx: Int, isDone: Bool)?) -> Bool {
+        for (exIdx, exercise) in activeWorkout.exercises.enumerated() {
+            for (setIdx, isDone) in exercise.setsState.enumerated() {
+                var state = isDone
+                if let override = overridingSet, override.exIdx == exIdx, override.setIdx == setIdx {
+                    state = override.isDone
+                }
+                if !state {
+                    return false
+                }
+            }
+        }
+        return true
+    }
+
     // MARK: - Sub-Views for Page 1 (Current Exercise)
 
     private func cardioControls(exercise: WatchActiveExercise, exIndex: Int, selectedSetIdx: Int) -> some View {
@@ -460,6 +475,15 @@ struct ActiveWorkoutView: View {
                                         distance: pc?.distanceKm,
                                         duration: pc?.durationSeconds
                                     )
+                                    
+                                    if !isCompleted {
+                                        let willCompleteWorkout = checkAllSetsCompleted(activeWorkout: activeWorkout, overridingSet: (exIdx: exIndex, setIdx: setIndex, isDone: true))
+                                        if willCompleteWorkout {
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                                                showingFinishSheet = true
+                                            }
+                                        }
+                                    }
                                 } else {
                                     setSelectedSetIndex(for: exercise, index: exIndex, setIndex: setIndex)
                                 }
@@ -531,14 +555,23 @@ struct ActiveWorkoutView: View {
                             #endif
 
                             connectivityManager.toggleSet(
-                                exerciseIndex: exIndex,
-                                setIndex: activeSetIdx,
-                                isDone: !isCompleted,
-                                isFailure: isFailure,
-                                failureRep: failureRep,
-                                distance: pc?.distanceKm,
-                                duration: pc?.durationSeconds
-                            )
+                                        exerciseIndex: exIndex,
+                                        setIndex: activeSetIdx,
+                                        isDone: !isCompleted,
+                                        isFailure: isFailure,
+                                        failureRep: failureRep,
+                                        distance: pc?.distanceKm,
+                                        duration: pc?.durationSeconds
+                                    )
+                                    
+                            if !isCompleted {
+                                let willCompleteWorkout = checkAllSetsCompleted(activeWorkout: activeWorkout, overridingSet: (exIdx: exIndex, setIdx: activeSetIdx, isDone: true))
+                                if willCompleteWorkout {
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                                        showingFinishSheet = true
+                                    }
+                                }
+                            }
                         }) {
                             let isCompleted = activeSetIdx < exercise.setsState.count ? exercise.setsState[activeSetIdx] : false
                             HStack(spacing: 4) {
