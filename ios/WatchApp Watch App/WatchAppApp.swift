@@ -41,9 +41,9 @@ class ExtensionDelegate: NSObject, WKApplicationDelegate, WKExtensionDelegate, U
         WatchConnectivityManager.shared.requestSync()
     }
     
-    // Ensure notification shows even if app is in foreground
+    // Hide notifications if the app is already in the foreground
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-        completionHandler([.banner, .sound])
+        completionHandler([])
     }
 }
 
