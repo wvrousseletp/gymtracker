@@ -205,10 +205,10 @@ struct WatchPerformedCardio: Codable {
 struct WatchActiveWorkoutState: Codable {
     let name: String
     let startTime: Int64
-    let exercises: [WatchActiveExercise]
-    let currentExerciseIndex: Int
+    var exercises: [WatchActiveExercise]
+    var currentExerciseIndex: Int
     let elapsedSeconds: Int
-    let paused: Bool
+    var paused: Bool
     let restTimer: WatchRestTimer?
     let postponed: Bool
 
@@ -331,11 +331,11 @@ struct WatchActiveExercise: Codable, Identifiable {
     let reps: Int
     let rest: Int
     let weight: Double
-    let setsState: [Bool]
+    var setsState: [Bool]
     let measurementType: String
     let executionType: String?
     let performedCardios: [WatchPerformedCardio?]
-    let failureReport: [Bool]
+    var failureReport: [Bool]
     let failureReps: [Int?]
 
     enum CodingKeys: String, CodingKey {
