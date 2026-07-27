@@ -24,6 +24,8 @@ class WorkoutProvider extends ChangeNotifier {
   List<LibraryExercise> library = [];
   List<Routine> routines = [];
   Map<String, List<String>> planner = {};
+  Map<String, List<String>>? _previousPlanner;
+  String? _lastRestLogId;
   List<WorkoutLog> history = [];
   Map<String, PersonalRecord> prs = {};
   List<BodyMeasurement> medidas = [];
@@ -1332,17 +1334,46 @@ class WorkoutProvider extends ChangeNotifier {
   void shiftPlannerForward() {
     final List<String> days = ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'];
     final Map<String, List<String>> newPlanner = {};
-    
+
     // Shift every day 1 day forward
     for (int i = 0; i < days.length; i++) {
       String currentDay = days[i];
       String nextDay = days[(i + 1) % days.length];
       newPlanner[nextDay] = planner[currentDay] ?? [];
     }
-    
+
+    // Save state for undo
+    _previousPlanner = Map.from(planner);
     planner = newPlanner;
-    _save();
-    notifyListeners();
+
+    final restLog = WorkoutLog(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      name: 'Dia de Descanso',
+      date: DateTime.now().toIso8601String(),
+      duration: 0,
+      completedSets: 0,
+      totalSets: 0,
+      totalWeight: 0,
+      rpe: 0,
+      notes: 'Descanso registrado manualmente.',
+      exercises: [],
+    );
+    _lastRestLogId = restLog.id;
+    addManualWorkoutLog(restLog);
+  }
+
+  void undoShiftPlannerForward() {
+    if (_previousPlanner != null) {
+      planner = _previousPlanner!;
+      _previousPlanner = null;
+    }
+    if (_lastRestLogId != null) {
+      deleteWorkoutLog(_lastRestLogId!);
+      _lastRestLogId = null;
+    } else {
+      _save();
+      notifyListeners();
+    }
   }
 
   Map<String, double>? fetchLastPerformance(String exerciseName) {
