@@ -1673,6 +1673,61 @@ class _JejumTabState extends State<JejumTab> {
   Timer? _timer;
   late final ValueNotifier<Duration> _elapsedNotifier;
   double _selectedGoalHours = 16.0;
+  DateTime _selectedStartTime = DateTime.now();
+
+  Future<void> _pickStartTime(StateSetter setDialogState) async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _selectedStartTime,
+      firstDate: DateTime.now().subtract(const Duration(days: 7)),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.dark().copyWith(
+            colorScheme: ColorScheme.dark(
+              primary: widget.accentColor,
+              onPrimary: Colors.black,
+              surface: const Color(0xff1c1c1e),
+              onSurface: Colors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (date == null) return;
+
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_selectedStartTime),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.dark().copyWith(
+            colorScheme: ColorScheme.dark(
+              primary: widget.accentColor,
+              onPrimary: Colors.black,
+              surface: const Color(0xff1c1c1e),
+              onSurface: Colors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (time == null) return;
+
+    final newTime = DateTime(
+        date.year, date.month, date.day, time.hour, time.minute);
+    if (newTime.isAfter(DateTime.now())) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('O início não pode ser no futuro.')));
+      return;
+    }
+    setDialogState(() {
+      _selectedStartTime = newTime;
+    });
+  }
 
   @override
   void initState() {
@@ -2434,6 +2489,42 @@ class _JejumTabState extends State<JejumTab> {
                             ),
                             const SizedBox(height: 16),
 
+                            const Text(
+                              "Horário de Início",
+                              style: TextStyle(
+                                  color: Colors.white54,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 6),
+                            GestureDetector(
+                              onTap: () => _pickStartTime(setDialogState),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.05),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                      color: Colors.white.withOpacity(0.08)),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      "${_selectedStartTime.day.toString().padLeft(2, '0')}/${_selectedStartTime.month.toString().padLeft(2, '0')} às ${_selectedStartTime.hour.toString().padLeft(2, '0')}:${_selectedStartTime.minute.toString().padLeft(2, '0')}",
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                    const Icon(Icons.edit_calendar, color: Colors.white54, size: 18),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+
                             // Botões de Ação
                             Row(
                               children: [
@@ -2442,9 +2533,8 @@ class _JejumTabState extends State<JejumTab> {
                                     height: 44,
                                     child: ElevatedButton(
                                       onPressed: () {
-                                        provider.startFasting(
-                                            0.0); // 0.0 represents Indefinite fasting
-                                        _elapsedNotifier.value = Duration.zero;
+                                        provider.startFasting(0.0, startTime: _selectedStartTime);
+                                        _elapsedNotifier.value = DateTime.now().difference(_selectedStartTime);
                                         _startTimer();
                                       },
                                       style: ElevatedButton.styleFrom(
@@ -2476,9 +2566,8 @@ class _JejumTabState extends State<JejumTab> {
                                     height: 44,
                                     child: ElevatedButton(
                                       onPressed: () {
-                                        provider
-                                            .startFasting(_selectedGoalHours);
-                                        _elapsedNotifier.value = Duration.zero;
+                                        provider.startFasting(_selectedGoalHours, startTime: _selectedStartTime);
+                                        _elapsedNotifier.value = DateTime.now().difference(_selectedStartTime);
                                         _startTimer();
                                       },
                                       style: ElevatedButton.styleFrom(

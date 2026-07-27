@@ -118,11 +118,11 @@ class DietProvider extends ChangeNotifier {
   }
 
   // --- FASTING ACTIONS ---
-  void startFasting(double hours) {
+  void startFasting(double hours, {DateTime? startTime}) {
     final newFasting = FastingState(
       history: diet.fasting.history,
       active: ActiveFasting(
-        startTime: DateTime.now().toUtc().toIso8601String(),
+        startTime: (startTime ?? DateTime.now()).toUtc().toIso8601String(),
         goalDurationHours: hours,
       ),
     );
