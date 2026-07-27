@@ -91,6 +91,19 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     });
   }
 
+  bool _isRestDayToday(List<WorkoutLog> history) {
+    final todayStr = DateTime.now().toLocal().toString().substring(0, 10);
+    return history.any((log) {
+      if (log.name != 'Dia de Descanso') return false;
+      try {
+        final logDate = DateTime.parse(log.date).toLocal();
+        return logDate.toString().substring(0, 10) == todayStr;
+      } catch (e) {
+        return false;
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<WorkoutProvider>(context);
@@ -115,8 +128,10 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       (p) => ThemeUtils.getColor(p.currentProfile.colorAccent),
     );
 
+    final isRestDay = _isRestDayToday(provider.history);
+
     // Mapear IDs do planejador para as rotinas reais do usuário
-    final List<Routine> plannedRoutines = plannedRoutineIds
+    final List<Routine> plannedRoutines = isRestDay ? [] : plannedRoutineIds
         .map((item) {
           if (item.isEmpty) return null;
           if (item.startsWith('exercise:')) {
@@ -306,8 +321,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                       fontSize: 13,
                       fontWeight: FontWeight.w700),
                 ),
-                TextButton.icon(
-                  onPressed: () {
+                if (!isRestDay)
+                  TextButton.icon(
+                    onPressed: () {
                     HapticFeedback.lightImpact();
                     provider.shiftPlannerForward();
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -340,7 +356,21 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             ),
             const SizedBox(height: 8),
 
-            if (plannedRoutines.isEmpty)
+            if (isRestDay)
+              const GlassCard(
+                padding: EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                child: Center(
+                  child: Text(
+                    "Hoje é seu dia de descanso!\nAproveite para se recuperar.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold),
+                  ),
+                ),
+              )
+            else if (plannedRoutines.isEmpty)
               const GlassCard(
                 padding: EdgeInsets.symmetric(vertical: 24, horizontal: 16),
                 child: Center(
