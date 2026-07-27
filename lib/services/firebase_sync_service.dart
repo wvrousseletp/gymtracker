@@ -434,11 +434,20 @@ class FirebaseSyncService {
 
   Future<List<WorkoutLog>> fetchCloudWorkouts(String userId) async {
     try {
-      final snapshot = await _firestore
+      final ref = _firestore
           .collection('users')
           .doc(userId)
-          .collection('workouts')
-          .get();
+          .collection('workouts');
+          
+      QuerySnapshot<Map<String, dynamic>> snapshot;
+      try {
+        snapshot = await ref.get(const GetOptions(source: Source.cache));
+        if (snapshot.docs.isEmpty) {
+          snapshot = await ref.get(const GetOptions(source: Source.serverAndCache));
+        }
+      } catch (e) {
+        snapshot = await ref.get(const GetOptions(source: Source.serverAndCache));
+      }
 
       final List<WorkoutLog> logs = [];
       for (var doc in snapshot.docs) {
@@ -457,11 +466,20 @@ class FirebaseSyncService {
 
   Future<List<Routine>> fetchCloudRoutines(String userId) async {
     try {
-      final snapshot = await _firestore
+      final ref = _firestore
           .collection('users')
           .doc(userId)
-          .collection('routines')
-          .get();
+          .collection('routines');
+          
+      QuerySnapshot<Map<String, dynamic>> snapshot;
+      try {
+        snapshot = await ref.get(const GetOptions(source: Source.cache));
+        if (snapshot.docs.isEmpty) {
+          snapshot = await ref.get(const GetOptions(source: Source.serverAndCache));
+        }
+      } catch (e) {
+        snapshot = await ref.get(const GetOptions(source: Source.serverAndCache));
+      }
 
       final List<Routine> routines = [];
       for (var doc in snapshot.docs) {
@@ -480,11 +498,20 @@ class FirebaseSyncService {
 
   Future<List<LibraryExercise>> fetchCloudLibrary(String userId) async {
     try {
-      final snapshot = await _firestore
+      final ref = _firestore
           .collection('users')
           .doc(userId)
-          .collection('library')
-          .get();
+          .collection('library');
+          
+      QuerySnapshot<Map<String, dynamic>> snapshot;
+      try {
+        snapshot = await ref.get(const GetOptions(source: Source.cache));
+        if (snapshot.docs.isEmpty) {
+          snapshot = await ref.get(const GetOptions(source: Source.serverAndCache));
+        }
+      } catch (e) {
+        snapshot = await ref.get(const GetOptions(source: Source.serverAndCache));
+      }
 
       final List<LibraryExercise> library = [];
       for (var doc in snapshot.docs) {

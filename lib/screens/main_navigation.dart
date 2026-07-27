@@ -271,7 +271,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
   void _checkWhatsNew() async {
     final prefs = await SharedPreferences.getInstance();
-    const currentBuild = 155;
+    const currentBuild = 223;
     final lastSeenBuild = prefs.getInt('last_seen_whats_new_build') ?? 0;
 
     if (lastSeenBuild < currentBuild) {
@@ -315,30 +315,30 @@ class _MainNavigationState extends State<MainNavigation> {
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    "Preparamos atualizações incríveis para você atingir seus objetivos de forma ainda mais inteligente!",
+                    "Atualização v2.3.0 chegou! Mais controle sobre seu histórico, e o app agora abre na hora — mesmo sem internet.",
                     style: TextStyle(
                         color: Colors.white70, fontSize: 13, height: 1.4),
                   ),
                   const SizedBox(height: 16),
                   _whatsNewItem(
-                    Icons.timer_outlined,
+                    Icons.calendar_month_rounded,
+                    Colors.deepPurpleAccent,
+                    "Calendário de Treinos 📅",
+                    "Visualize seu histórico como um heatmap mensal! Toque em qualquer dia para ver os treinos daquele dia com todos os detalhes.",
+                  ),
+                  const SizedBox(height: 12),
+                  _whatsNewItem(
+                    Icons.bedtime_rounded,
                     Colors.blueAccent,
-                    "Descanso em Tela Cheia ⏱️",
-                    "Nova tela de descanso imersiva premium com botões rápidos de tempo (-15s / +15s) e visualização fácil do próximo exercício.",
+                    "Registro de Descanso & Desfazer 😴",
+                    "Dias de descanso agora ficam registrados no histórico. Se apertar por engano, basta usar o botão Desfazer para remover.",
                   ),
                   const SizedBox(height: 12),
                   _whatsNewItem(
-                    Icons.history_toggle_off_rounded,
-                    Colors.greenAccent,
-                    "Histórico Seguro & Estável 💾",
-                    "Correção de sincronização que evita que o app esqueça o treino do dia ou zere o histórico local.",
-                  ),
-                  const SizedBox(height: 12),
-                  _whatsNewItem(
-                    Icons.favorite_outline_rounded,
-                    Colors.redAccent,
-                    "Fim de Treinos Duplicados 🛡️",
-                    "Integração inteligente com Apple Health para evitar conflito e treinos duplicados no mesmo dia.",
+                    Icons.bolt_rounded,
+                    Colors.amberAccent,
+                    "App mais rápido & Offline 🚀",
+                    "O app agora carrega instantaneamente usando o cache local, sem precisar esperar o Firebase — perfeito para academias com sinal fraco.",
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton(

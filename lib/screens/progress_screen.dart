@@ -8,6 +8,7 @@ import '../models/medidas.dart';
 import '../models/exercise.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/profile_avatar.dart';
+import 'package:table_calendar/table_calendar.dart';
 import 'analytics_tab.dart';
 
 class ProgressScreen extends StatefulWidget {
@@ -93,6 +94,9 @@ class _HistoryTabState extends State<HistoryTab> {
   final Set<String> _expandedMonths = {};
   bool _loadingHistory = false;
   bool _monthsInitialized = false;
+  bool _isCalendarView = false;
+  DateTime _focusedDay = DateTime.now();
+  DateTime? _selectedDay;
 
   static const Map<int, String> _monthNames = {
     1: 'Janeiro',
@@ -209,32 +213,68 @@ class _HistoryTabState extends State<HistoryTab> {
           child: const Icon(Icons.add_task, color: Colors.black),
         ),
       ),
-      body: RefreshIndicator(
-        color: widget.accentColor,
-        backgroundColor: const Color(0xff1c1c1e),
-        onRefresh: () async {
-          await provider.syncAppleWorkouts();
-          await provider.loadWorkoutHistory();
-        },
-        child: monthGroups.isEmpty
-            ? ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: const [
-                  SizedBox(height: 200),
-                  Center(
-                    child: Text(
-                      "Nenhum treino no diário ainda.\nPuxe para sincronizar com o Apple Health.",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.white38, fontStyle: FontStyle.italic, height: 1.4),
-                    ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  "Seu Histórico",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
                   ),
-                ],
-              )
-            : ListView.builder(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 100),
-                itemCount: monthGroups.length,
-                itemBuilder: (context, groupIndex) {
+                ),
+                IconButton(
+                  icon: Icon(
+                    _isCalendarView ? Icons.view_list_rounded : Icons.calendar_month_rounded,
+                    color: widget.accentColor,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _isCalendarView = !_isCalendarView;
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: RefreshIndicator(
+              color: widget.accentColor,
+              backgroundColor: const Color(0xff1c1c1e),
+              onRefresh: () async {
+                await provider.syncAppleWorkouts();
+                await provider.loadWorkoutHistory();
+              },
+              child: Builder(
+                builder: (context) {
+                  if (_isCalendarView) {
+                    return _buildCalendarView(history, provider);
+                  }
+                  if (monthGroups.isEmpty) {
+                    return ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: const [
+                        SizedBox(height: 200),
+                        Center(
+                          child: Text(
+                            "Nenhum treino no diário ainda.\nPuxe para sincronizar com o Apple Health.",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.white38, fontStyle: FontStyle.italic, height: 1.4),
+                          ),
+                        ),
+                      ],
+                    );
+                  }
+                  return ListView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 100),
+                          itemCount: monthGroups.length,
+                          itemBuilder: (context, groupIndex) {
                   final group = monthGroups[groupIndex];
                   final isMonthExpanded = _expandedMonths.contains(group.key);
 
@@ -302,294 +342,449 @@ class _HistoryTabState extends State<HistoryTab> {
 
                     if (isMonthExpanded) ...[
                       ...group.logs.map((log) {
-                        final isExpanded = _expandedLogIds.contains(log.id);
-
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          child: GlassCard(
-                            padding: const EdgeInsets.all(16),
-                            borderColor: Colors.white.withOpacity(0.04),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Cabeçalho básico (título e data)
-                                GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      if (isExpanded) {
-                                        _expandedLogIds.remove(log.id);
-                                      } else {
-                                        _expandedLogIds.add(log.id);
-                                      }
-                                    });
-                                  },
-                                  behavior: HitTestBehavior.opaque,
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              log.name,
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 15,
-                                                fontWeight: FontWeight.w800,
-                                              ),
-                                            ),
-                                          ),
-                                          Icon(
-                                            isExpanded ? Icons.expand_less : Icons.expand_more,
-                                            color: Colors.white54,
-                                            size: 20,
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Row(
-                                        children: [
-                                          Text(
-                                            _formatLogDate(log.date),
-                                            style: const TextStyle(color: Colors.white38, fontSize: 11),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            "${(log.duration ~/ 60)} min",
-                                            style: const TextStyle(color: Colors.white38, fontSize: 11),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            "Volume: ${log.totalWeight.toStringAsFixed(0)}kg",
-                                            style: TextStyle(color: widget.accentColor.withOpacity(0.8), fontSize: 11, fontWeight: FontWeight.bold),
-                                          ),
-                                          if (log.avgHeartRate != null) ...[
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              "❤️ ${log.avgHeartRate} bpm",
-                                              style: const TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold),
-                                            ),
-                                          ],
-                                          if (log.activeCalories != null) ...[
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              "🔥 ${log.activeCalories} kcal",
-                                              style: const TextStyle(color: Colors.orangeAccent, fontSize: 11, fontWeight: FontWeight.bold),
-                                            ),
-                                          ],
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-
-                                // Detalhes expandidos
-                                if (isExpanded) ...[
-                                  const Divider(color: Colors.white10, height: 20),
-                                  // Métricas gerais (RPE, Sono, Dores, etc.)
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      _buildMetricItem("Esforço (RPE)", "${log.rpe}/10"),
-                                      _buildMetricItem("Séries Concl.", "${log.completedSets}/${log.totalSets}"),
-                                      _buildMetricItem("Sono", sleepQualityToString(log.recovery?.sleepOk ?? SleepQuality.okay).toUpperCase()),
-                                    ],
-                                  ),
-                                  if (log.avgHeartRate != null || log.activeCalories != null) ...[
-                                    const SizedBox(height: 12),
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        if (log.avgHeartRate != null)
-                                          _buildMetricItem("Média Cardíaca", "${log.avgHeartRate} bpm")
-                                        else
-                                          const SizedBox(width: 80),
-                                        if (log.activeCalories != null)
-                                          _buildMetricItem("Calorias Ativas", "${log.activeCalories} kcal")
-                                        else
-                                          const SizedBox(width: 80),
-                                        const SizedBox(width: 80), // Alinhador para manter 3 colunas
-                                      ],
-                                    ),
-                                  ],
-                                  if (log.recovery != null && log.recovery!.pain.isNotEmpty) ...[
-                                    const SizedBox(height: 10),
-                                    Row(
-                                      children: [
-                                        const Text("Dores: ", style: TextStyle(color: Colors.white38, fontSize: 11)),
-                                        Wrap(
-                                          spacing: 4,
-                                          children: log.recovery!.pain.map((p) => Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color: Colors.redAccent.withOpacity(0.12),
-                                              borderRadius: BorderRadius.circular(4),
-                                            ),
-                                            child: Text(
-                                              p,
-                                              style: const TextStyle(color: Colors.redAccent, fontSize: 9, fontWeight: FontWeight.bold),
-                                            ),
-                                          )).toList(),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                  const SizedBox(height: 12),
-
-                                  // Lista de exercícios concluídos
-                                  const Text(
-                                    "Exercícios Executados:",
-                                    style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w700),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Column(
-                                    children: log.exercises.map((ex) {
-                                      final isCardio = ex.performedCardios != null && ex.performedCardios!.isNotEmpty;
-                                      final done = ex.completedSets;
-                                      
-                                      String subtitle = "";
-                                      if (isCardio) {
-                                        final doneCardios = ex.performedCardios!.where((c) => c != null).toList();
-                                        if (doneCardios.isNotEmpty) {
-                                          subtitle = doneCardios.map((c) {
-                                            final d = c!.distanceKm;
-                                            final t = c.durationSeconds ~/ 60;
-                                            if (d > 0 && t > 0) {
-                                                final pace = t / d;
-                                                final m = pace.floor();
-                                                final s = ((pace - m) * 60).round();
-                                                return "${d.toStringAsFixed(1)}km em ${t}m (Pace: $m:${s.toString().padLeft(2, '0')})";
-                                            }
-                                            return "${d.toStringAsFixed(1)}km em ${t}m";
-                                          }).join('\n');
-                                        } else {
-                                            final d = ex.weight;
-                                            final t = ex.reps;
-                                            if (d > 0 && t > 0) {
-                                                final pace = t / d;
-                                                final m = pace.floor();
-                                                final s = ((pace - m) * 60).round();
-                                                subtitle = "${d}km em ${t}min (Pace: $m:${s.toString().padLeft(2, '0')})";
-                                            } else {
-                                                subtitle = "${d}km em ${t}min";
-                                            }
-                                        }
-                                      } else {
-                                        subtitle = "${ex.sets} séries x ${ex.reps} reps @ ${ex.weight.toStringAsFixed(1).replaceAll('.0', '')}kg";
-                                      }
-
-                                      final failedSets = <String>[];
-                                      if (ex.failureReport != null) {
-                                        for (int i = 0; i < ex.failureReport!.length; i++) {
-                                          if (ex.failureReport![i]) {
-                                            final rep = (ex.failureReps != null && ex.failureReps!.length > i) ? ex.failureReps![i] : null;
-                                            failedSets.add("S${i+1}${rep != null ? ' (Rep $rep)' : ''}");
-                                          }
-                                        }
-                                      }
-
-                                      return Container(
-                                        margin: const EdgeInsets.symmetric(vertical: 4),
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.02),
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    ex.name,
-                                                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                                                  ),
-                                                  const SizedBox(height: 2),
-                                                  RichText(
-                                                    text: TextSpan(
-                                                      style: const TextStyle(color: Colors.white54, fontSize: 11),
-                                                      children: [
-                                                        TextSpan(text: subtitle),
-                                                        if (failedSets.isNotEmpty) ...[
-                                                          const TextSpan(text: " • "),
-                                                          TextSpan(
-                                                            text: "Falha: ${failedSets.join(', ')}",
-                                                            style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
-                                                          ),
-                                                        ],
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                              decoration: BoxDecoration(
-                                                color: widget.accentColor.withOpacity(0.12),
-                                                borderRadius: BorderRadius.circular(6),
-                                              ),
-                                              child: Text(
-                                                "FEITO $done",
-                                                style: TextStyle(color: widget.accentColor, fontSize: 9, fontWeight: FontWeight.w800),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    }).toList(),
-                                  ),
-
-                                  if (log.notes.isNotEmpty) ...[
-                                    const SizedBox(height: 12),
-                                    Container(
-                                      width: double.infinity,
-                                      padding: const EdgeInsets.all(10),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.03),
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(color: Colors.white.withOpacity(0.05)),
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          const Text("Notas da Sessão:", style: TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.bold)),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            log.notes,
-                                            style: const TextStyle(color: Colors.white70, fontSize: 12, height: 1.3),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                  const SizedBox(height: 16),
-
-                                  // Excluir registro
-                                  Align(
-                                    alignment: Alignment.centerRight,
-                                    child: TextButton.icon(
-                                      onPressed: () {
-                                        _confirmDeleteLog(context, provider, log);
-                                      },
-                                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 16),
-                                      label: const Text("Excluir Registro", style: TextStyle(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.w700)),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        );
+                        return _buildLogCard(log, provider);
                       }),
                     ],
                   ],
                 );
               },
+            );
+          },
+        ), // Closes Builder
+      ), // Closes RefreshIndicator
+    ), // Closes Expanded
+  ], // Closes children of Column
+  ), // Closes Column
+); // Closes Scaffold
+  }
+
+  Map<DateTime, List<WorkoutLog>> _groupHistoryByDay(List<WorkoutLog> history) {
+    final Map<DateTime, List<WorkoutLog>> grouped = {};
+    for (final log in history) {
+      final date = DateTime.tryParse(log.date)?.toLocal() ?? DateTime.now();
+      final normalizedDate = DateTime.utc(date.year, date.month, date.day);
+      grouped.putIfAbsent(normalizedDate, () => []).add(log);
+    }
+    return grouped;
+  }
+
+  Widget _buildCalendarCell(BuildContext context, DateTime date, List<WorkoutLog> logs, Color accent) {
+    if (logs.isEmpty) {
+      return Center(
+        child: Text(
+          '${date.day}',
+          style: const TextStyle(color: Colors.white54),
+        ),
+      );
+    }
+
+    int totalVolume = 0;
+    bool isRest = false;
+    for (final log in logs) {
+      if (log.name == 'Dia de Descanso' || log.notes.contains('Descanso registrado')) {
+        isRest = true;
+      }
+      totalVolume += log.totalWeight.toInt();
+    }
+
+    Color cellColor;
+    if (isRest) {
+      cellColor = Colors.grey.shade800; 
+    } else {
+      if (totalVolume > 5000) {
+        cellColor = accent; 
+      } else if (totalVolume > 2000) {
+        cellColor = accent.withOpacity(0.6); 
+      } else {
+        cellColor = accent.withOpacity(0.3); 
+      }
+    }
+
+    return Container(
+      margin: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: cellColor,
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          '${date.day}',
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCalendarView(List<WorkoutLog> history, TrackerProvider provider) {
+    final logsByDay = _groupHistoryByDay(history);
+    
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.only(bottom: 100, left: 16, right: 16),
+      children: [
+        TableCalendar<WorkoutLog>(
+          firstDay: DateTime.utc(2020, 1, 1),
+          lastDay: DateTime.utc(2030, 12, 31),
+          focusedDay: _focusedDay,
+          selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+          onDaySelected: (selectedDay, focusedDay) {
+            setState(() {
+              _selectedDay = selectedDay;
+              _focusedDay = focusedDay;
+            });
+          },
+          eventLoader: (day) {
+            return logsByDay[DateTime.utc(day.year, day.month, day.day)] ?? [];
+          },
+          calendarBuilders: CalendarBuilders(
+            defaultBuilder: (context, day, focusedDay) {
+              final logs = logsByDay[DateTime.utc(day.year, day.month, day.day)] ?? [];
+              return _buildCalendarCell(context, day, logs, widget.accentColor);
+            },
+            selectedBuilder: (context, day, focusedDay) {
+              final logs = logsByDay[DateTime.utc(day.year, day.month, day.day)] ?? [];
+              return Container(
+                margin: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.white, width: 2),
+                  shape: BoxShape.circle,
+                ),
+                child: _buildCalendarCell(context, day, logs, widget.accentColor),
+              );
+            },
+            todayBuilder: (context, day, focusedDay) {
+              final logs = logsByDay[DateTime.utc(day.year, day.month, day.day)] ?? [];
+              return Container(
+                margin: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  border: Border.all(color: widget.accentColor, width: 1),
+                  shape: BoxShape.circle,
+                ),
+                child: _buildCalendarCell(context, day, logs, widget.accentColor),
+              );
+            },
+            outsideBuilder: (context, day, focusedDay) {
+              return Center(
+                child: Text(
+                  '${day.day}',
+                  style: const TextStyle(color: Colors.white24),
+                ),
+              );
+            }
+          ),
+          calendarStyle: const CalendarStyle(
+            outsideDaysVisible: true,
+            defaultTextStyle: TextStyle(color: Colors.white),
+            weekendTextStyle: TextStyle(color: Colors.white70),
+          ),
+          headerStyle: HeaderStyle(
+            titleTextStyle: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+            formatButtonVisible: false,
+            leftChevronIcon: Icon(Icons.chevron_left, color: widget.accentColor),
+            rightChevronIcon: Icon(Icons.chevron_right, color: widget.accentColor),
+          ),
+          daysOfWeekStyle: const DaysOfWeekStyle(
+            weekdayStyle: TextStyle(color: Colors.white70),
+            weekendStyle: TextStyle(color: Colors.white54),
+          ),
+        ),
+        const SizedBox(height: 20),
+        if (_selectedDay != null && (logsByDay[DateTime.utc(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day)]?.isNotEmpty ?? false))
+          ...logsByDay[DateTime.utc(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day)]!.map((log) => _buildLogCard(log, provider)),
+        if (_selectedDay != null && (logsByDay[DateTime.utc(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day)]?.isEmpty ?? true))
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(32.0),
+              child: Text(
+                'Nenhum treino neste dia.',
+                style: TextStyle(color: Colors.white54),
+              ),
             ),
+          )
+      ],
+    );
+  }
+
+  Widget _buildLogCard(WorkoutLog log, TrackerProvider provider) {
+    final isExpanded = _expandedLogIds.contains(log.id);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: GlassCard(
+        padding: const EdgeInsets.all(16),
+        borderColor: Colors.white.withOpacity(0.04),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Cabeçalho básico (título e data)
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  if (isExpanded) {
+                    _expandedLogIds.remove(log.id);
+                  } else {
+                    _expandedLogIds.add(log.id);
+                  }
+                });
+              },
+              behavior: HitTestBehavior.opaque,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          log.name,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        isExpanded ? Icons.expand_less : Icons.expand_more,
+                        color: Colors.white54,
+                        size: 20,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Text(
+                        _formatLogDate(log.date),
+                        style: const TextStyle(color: Colors.white38, fontSize: 11),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        "${(log.duration ~/ 60)} min",
+                        style: const TextStyle(color: Colors.white38, fontSize: 11),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        "Volume: ${log.totalWeight.toStringAsFixed(0)}kg",
+                        style: TextStyle(color: widget.accentColor.withOpacity(0.8), fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                      if (log.avgHeartRate != null) ...[
+                        const SizedBox(width: 8),
+                        Text(
+                          "❤️ ${log.avgHeartRate} bpm",
+                          style: const TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                      if (log.activeCalories != null) ...[
+                        const SizedBox(width: 8),
+                        Text(
+                          "🔥 ${log.activeCalories} kcal",
+                          style: const TextStyle(color: Colors.orangeAccent, fontSize: 11, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // Detalhes expandidos
+            if (isExpanded) ...[
+              const Divider(color: Colors.white10, height: 20),
+              // Métricas gerais (RPE, Sono, Dores, etc.)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildMetricItem("Esforço (RPE)", "${log.rpe}/10"),
+                  _buildMetricItem("Séries Concl.", "${log.completedSets}/${log.totalSets}"),
+                  _buildMetricItem("Sono", sleepQualityToString(log.recovery?.sleepOk ?? SleepQuality.okay).toUpperCase()),
+                ],
+              ),
+              if (log.avgHeartRate != null || log.activeCalories != null) ...[
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    if (log.avgHeartRate != null)
+                      _buildMetricItem("Média Cardíaca", "${log.avgHeartRate} bpm")
+                    else
+                      const SizedBox(width: 80),
+                    if (log.activeCalories != null)
+                      _buildMetricItem("Calorias Ativas", "${log.activeCalories} kcal")
+                    else
+                      const SizedBox(width: 80),
+                    const SizedBox(width: 80), // Alinhador para manter 3 colunas
+                  ],
+                ),
+              ],
+              if (log.recovery != null && log.recovery!.pain.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    const Text("Dores: ", style: TextStyle(color: Colors.white38, fontSize: 11)),
+                    Wrap(
+                      spacing: 4,
+                      children: log.recovery!.pain.map((p) => Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.redAccent.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          p,
+                          style: const TextStyle(color: Colors.redAccent, fontSize: 9, fontWeight: FontWeight.bold),
+                        ),
+                      )).toList(),
+                    ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 12),
+
+              // Lista de exercícios concluídos
+              const Text(
+                "Exercícios Executados:",
+                style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 6),
+              Column(
+                children: log.exercises.map((ex) {
+                  final isCardio = ex.performedCardios != null && ex.performedCardios!.isNotEmpty;
+                  final done = ex.completedSets;
+                  
+                  String subtitle = "";
+                  if (isCardio) {
+                    final doneCardios = ex.performedCardios!.where((c) => c != null).toList();
+                    if (doneCardios.isNotEmpty) {
+                      subtitle = doneCardios.map((c) {
+                        final d = c!.distanceKm;
+                        final t = c.durationSeconds ~/ 60;
+                        if (d > 0 && t > 0) {
+                            final pace = t / d;
+                            final m = pace.floor();
+                            final s = ((pace - m) * 60).round();
+                            return "${d.toStringAsFixed(1)}km em ${t}m (Pace: $m:${s.toString().padLeft(2, '0')})";
+                        }
+                        return "${d.toStringAsFixed(1)}km em ${t}m";
+                      }).join('\n');
+                    } else {
+                        final d = ex.weight;
+                        final t = ex.reps;
+                        if (d > 0 && t > 0) {
+                            final pace = t / d;
+                            final m = pace.floor();
+                            final s = ((pace - m) * 60).round();
+                            subtitle = "${d}km em ${t}min (Pace: $m:${s.toString().padLeft(2, '0')})";
+                        } else {
+                            subtitle = "${d}km em ${t}min";
+                        }
+                    }
+                  } else {
+                    subtitle = "${ex.sets} séries x ${ex.reps} reps @ ${ex.weight.toStringAsFixed(1).replaceAll('.0', '')}kg";
+                  }
+
+                  final failedSets = <String>[];
+                  if (ex.failureReport != null) {
+                    for (int i = 0; i < ex.failureReport!.length; i++) {
+                      if (ex.failureReport![i]) {
+                        final rep = (ex.failureReps != null && ex.failureReps!.length > i) ? ex.failureReps![i] : null;
+                        failedSets.add("S${i+1}${rep != null ? ' (Rep $rep)' : ''}");
+                      }
+                    }
+                  }
+
+                  return Container(
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.02),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                ex.name,
+                                style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 2),
+                              RichText(
+                                text: TextSpan(
+                                  style: const TextStyle(color: Colors.white54, fontSize: 11),
+                                  children: [
+                                    TextSpan(text: subtitle),
+                                    if (failedSets.isNotEmpty) ...[
+                                      const TextSpan(text: " • "),
+                                      TextSpan(
+                                        text: "Falha: ${failedSets.join(', ')}",
+                                        style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: widget.accentColor.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            "FEITO $done",
+                            style: TextStyle(color: widget.accentColor, fontSize: 9, fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+
+              if (log.notes.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.03),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.white.withOpacity(0.05)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text("Notas da Sessão:", style: TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      Text(
+                        log.notes,
+                        style: const TextStyle(color: Colors.white70, fontSize: 12, height: 1.3),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
+
+              // Excluir registro
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: () {
+                    _confirmDeleteLog(context, provider, log);
+                  },
+                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 16),
+                  label: const Text("Excluir Registro", style: TextStyle(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.w700)),
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

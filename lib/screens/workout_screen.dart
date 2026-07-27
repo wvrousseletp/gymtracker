@@ -310,6 +310,20 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                   onPressed: () {
                     HapticFeedback.lightImpact();
                     provider.shiftPlannerForward();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text('Descanso registrado. Treinos adiados.'),
+                        action: SnackBarAction(
+                          label: 'Desfazer',
+                          onPressed: () {
+                            provider.undoShiftPlannerForward();
+                          },
+                        ),
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        duration: const Duration(seconds: 4),
+                      ),
+                    );
                   },
                   icon: Icon(Icons.nightlight_round, color: accentColor, size: 14),
                   label: Text(
