@@ -1,6 +1,6 @@
 part of 'workout_provider.dart';
 
-extension WorkoutProviderLibrary on WorkoutProvider {
+// part of WorkoutProvider
 
   void addLibraryExercise(String name, String muscle, String measurementType,
       String? notes, String? executionType) {
@@ -76,4 +76,3 @@ extension WorkoutProviderLibrary on WorkoutProvider {
       _save();
     }
   }
-}

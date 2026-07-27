@@ -1,6 +1,6 @@
 part of 'workout_provider.dart';
 
-extension WorkoutProviderHistory on WorkoutProvider {
+// part of WorkoutProvider
 
   void addMeasurement(BodyMeasurement record) {
     final index = medidas.indexWhere((m) => m.date == record.date);
@@ -284,7 +284,7 @@ extension WorkoutProviderHistory on WorkoutProvider {
     notifyListeners();
   }
 
-List<WorkoutLog>> loadWorkoutHistory() async {
+  Future<List<WorkoutLog>> loadWorkoutHistory() async {
     if (currentUserId.isEmpty) return [];
     if (historyLoaded) return history;
 
@@ -309,4 +309,3 @@ List<WorkoutLog>> loadWorkoutHistory() async {
     notifyListeners();
     return history;
   }
-}

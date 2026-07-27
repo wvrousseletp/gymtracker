@@ -153,9 +153,6 @@ class WorkoutProvider extends ChangeNotifier {
     return _changedProperties.contains(property);
   }
 
-  // --- WORKOUT OPERATIONS ---
-
-  Future<
 
   Future<void> _syncHealthKitWorkouts() async {
     try {

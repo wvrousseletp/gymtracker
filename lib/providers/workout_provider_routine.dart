@@ -1,6 +1,6 @@
 part of 'workout_provider.dart';
 
-extension WorkoutProviderRoutine on WorkoutProvider {
+// part of WorkoutProvider
 
   void addRoutine(
       String name, int defaultRest, List<RoutineExercise> exercises) {
@@ -125,4 +125,3 @@ extension WorkoutProviderRoutine on WorkoutProvider {
       notifyListeners();
     }
   }
-}

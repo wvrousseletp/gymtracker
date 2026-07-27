@@ -1,6 +1,6 @@
 part of 'workout_provider.dart';
 
-extension WorkoutProviderActive on WorkoutProvider {
+// part of WorkoutProvider
 
   void startWorkout(Routine routine, WorkoutRecovery recovery, bool isWarmup) {
     final workoutExercises = routine.exercises.map((ex) {
@@ -716,4 +716,3 @@ extension WorkoutProviderActive on WorkoutProvider {
       _save();
     }
   }
-}
