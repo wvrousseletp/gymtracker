@@ -1342,7 +1342,6 @@ class WorkoutProvider extends ChangeNotifier {
     
     planner = newPlanner;
     _save();
-    unawaited(_firebaseSync.sendPlanner(currentUserId, planner));
     notifyListeners();
   }
 
