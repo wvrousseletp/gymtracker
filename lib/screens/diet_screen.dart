@@ -1696,6 +1696,7 @@ class _JejumTabState extends State<JejumTab> {
       },
     );
     if (date == null) return;
+    if (!mounted) return;
 
     final time = await showTimePicker(
       context: context,
