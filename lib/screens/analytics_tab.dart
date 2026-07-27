@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../providers/tracker_provider.dart';
 import '../models/workout_log.dart';
 import '../widgets/glass_card.dart';
+import 'diet_analytics_tab.dart';
 
 class AnalyticsTab extends StatefulWidget {
   final Color accentColor;
@@ -61,9 +62,27 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          const Text(
+            "ESTATÍSTICAS DE TREINO",
+            style: TextStyle(
+                color: Colors.white54,
+                fontSize: 12,
+                fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
           _buildVolumeChart(history),
           const SizedBox(height: 24),
           _buildMuscleHeatmap(history),
+          const SizedBox(height: 40),
+          const Text(
+            "ESTATÍSTICAS DE DIETA",
+            style: TextStyle(
+                color: Colors.white54,
+                fontSize: 12,
+                fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          DietAnalyticsTab(accentColor: widget.accentColor),
           const SizedBox(height: 80),
         ],
       ),
