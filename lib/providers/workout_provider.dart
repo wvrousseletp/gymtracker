@@ -1328,4 +1328,34 @@ class WorkoutProvider extends ChangeNotifier {
     _updateStreak();
     notifyListeners();
   }
+
+  void shiftPlannerForward() {
+    final List<String> days = ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'];
+    final Map<String, List<String>> newPlanner = {};
+    
+    // Shift every day 1 day forward
+    for (int i = 0; i < days.length; i++) {
+      String currentDay = days[i];
+      String nextDay = days[(i + 1) % days.length];
+      newPlanner[nextDay] = planner[currentDay] ?? [];
+    }
+    
+    planner = newPlanner;
+    _save();
+    unawaited(_firebaseSync.sendPlanner(currentUserId, planner));
+    notifyListeners();
+  }
+
+  Map<String, double>? fetchLastPerformance(String exerciseName) {
+    for (final log in history) {
+      for (final ex in log.exercises) {
+        if (ex.name == exerciseName && ex.completedSets > 0) {
+          if (ex.weight > 0) {
+            return {'weight': ex.weight, 'reps': ex.reps.toDouble()};
+          }
+        }
+      }
+    }
+    return null;
+  }
 }

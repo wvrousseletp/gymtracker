@@ -8,6 +8,7 @@ import '../models/medidas.dart';
 import '../models/exercise.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/profile_avatar.dart';
+import 'analytics_tab.dart';
 
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
@@ -22,7 +23,7 @@ class _ProgressScreenState extends State<ProgressScreen> with SingleTickerProvid
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -49,6 +50,7 @@ class _ProgressScreenState extends State<ProgressScreen> with SingleTickerProvid
           labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
           tabs: const [
             Tab(text: "Histórico"),
+            Tab(text: "Estatísticas"),
             Tab(text: "Recordes (PRs)"),
             Tab(text: "Medidas"),
           ],
@@ -58,6 +60,7 @@ class _ProgressScreenState extends State<ProgressScreen> with SingleTickerProvid
         controller: _tabController,
         children: [
           HistoryTab(accentColor: accentColor),
+          AnalyticsTab(accentColor: accentColor),
           PrsTab(accentColor: accentColor),
           MedidasTab(accentColor: accentColor),
         ],

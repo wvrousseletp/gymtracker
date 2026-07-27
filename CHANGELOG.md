@@ -1,5 +1,19 @@
 # Changelog — Los Mooscles
 
+## 2.3.0 — 27/07/2026
+
+### ✨ Novidades
+- **Analytics & Progresso (Nova Aba)**: Gráficos de volume semanal e um Mapa de Calor (Heatmap) mostrando quais músculos foram mais exigidos recentemente.
+- **Sugestões de Sobrecarga Progressiva**: O app agora analisa seu último treino e sugere de forma inteligente (+5% de carga) a meta para cada série no treino atual.
+- **Compartilhamento Social**: Novo "Workout Share Card" super premium, integrado nativamente ao iOS. Gere um card de conclusão do seu treino para compartilhar nas redes sociais com um único clique.
+- **Botão "Descansar Hoje"**: Atraso no treino? Aperte o botão de Descansar Hoje na tela inicial. Todo o seu planejamento semanal (segunda a domingo) será deslocado exatamente 1 dia para a frente de forma inteligente, mantendo sua rotina e intervalos perfeitos.
+
+### 🐛 Correções & Ajustes
+- Integrações offline para o Apple Watch reforçadas com enfileiramento (queue) para evitar perda de dados quando o app entra em suspensão.
+- Haptics (vibrações sutis) melhorados em botões de séries concluídas e descanso.
+- Refinamentos no `intl` e conflitos de compilação da biblioteca de UI (`fl_chart`).
+
+---
 ## 2.2.0 (Build 172) — 15/07/2026
 
 ### 🛡 Recuperação de Dados e Sincronização

@@ -1,9 +1,13 @@
 import 'dart:async';
 import 'dart:ui';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
+import 'package:screenshot/screenshot.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
 import '../providers/tracker_provider.dart';
 import '../providers/workout_provider.dart';
 import '../providers/profile_provider.dart';
@@ -16,6 +20,7 @@ import '../widgets/profile_avatar.dart';
 import '../utils/workout_starter.dart';
 import '../services/rest_timer_service.dart';
 import '../widgets/premium_strength_set_card.dart';
+import '../widgets/workout_share_card.dart';
 
 import '../widgets/premium_cardio_view.dart';
 import 'notification_settings_dialog.dart';
@@ -291,13 +296,33 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Cartões de Treinos Planejados
-            const Text(
-              "Treino Planejado para Hoje",
-              style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  "Treino Planejado para Hoje",
+                  style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700),
+                ),
+                TextButton.icon(
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    provider.shiftPlannerForward();
+                  },
+                  icon: Icon(Icons.nightlight_round, color: accentColor, size: 14),
+                  label: Text(
+                    "Descansar Hoje",
+                    style: TextStyle(color: accentColor, fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 8),
 
@@ -2500,6 +2525,41 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
               ],
             ],
           ),
+          
+          // Progressive Overload Suggestion
+          if (!isCardio) Builder(
+            builder: (context) {
+              final workoutProvider = Provider.of<WorkoutProvider>(context, listen: false);
+              final lastPerf = workoutProvider.fetchLastPerformance(ex.name);
+              if (lastPerf == null || lastPerf['weight'] == 0) return const SizedBox.shrink();
+              final suggWeight = (lastPerf['weight']! * 1.05).ceilToDouble(); // +5%
+              return Container(
+                margin: const EdgeInsets.only(top: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xff1c1c1e),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: accentColor.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.trending_up, color: accentColor, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        "Último treino: ${lastPerf['weight']!.toStringAsFixed(0)}kg. Sugestão: ${suggWeight.toStringAsFixed(0)}kg x ${lastPerf['reps']!.toInt()}",
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.8),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
           const SizedBox(height: 16),
 
           // Lista de Séries ou Sessão de Cardio Única
@@ -2523,7 +2583,10 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                     distance: dist,
                     duration: durMinutes * 60,
                   );
-                  if (done) _scrollToNextSet(exIdx);
+                  if (done) {
+                    HapticFeedback.heavyImpact();
+                    _scrollToNextSet(exIdx);
+                  }
                 },
               );
             }
@@ -2558,7 +2621,10 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                         distance: dist,
                         duration: durMinutes * 60,
                       );
-                      if (done) _scrollToNextSet(exIdx);
+                      if (done) {
+                        HapticFeedback.heavyImpact();
+                        _scrollToNextSet(exIdx);
+                      }
                     },
                   );
                 } else {
@@ -2581,6 +2647,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                         failureRep: !isFailure ? ex.failureReps[setIdx] : null,
                       );
                       if (!isFailure) {
+                        HapticFeedback.heavyImpact();
                         _showFailureRepDialog(
                             context, exIdx, setIdx, ex.failureReps[setIdx]);
                         _scrollToNextSet(exIdx);
@@ -2603,6 +2670,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                           isFailure: isFailure,
                           failureRep: isFailure ? ex.failureReps[setIdx] : null,
                         );
+                        HapticFeedback.heavyImpact();
                         _scrollToNextSet(exIdx);
                       }
                     },
@@ -3044,6 +3112,14 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                               notesCtrl.text.trim(),
                             );
                             Navigator.pop(dialogCtx);
+                            
+                            // Show Share Dialog
+                            final workoutProvider = Provider.of<WorkoutProvider>(context, listen: false);
+                            final history = workoutProvider.history;
+                            if (history.isNotEmpty) {
+                               final savedLog = history.first; // newest is at index 0
+                               _showShareWorkoutDialog(context, savedLog, accentColor);
+                            }
                           },
                           child: Text("Salvar Treino",
                               style: TextStyle(
@@ -3073,5 +3149,56 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
       return "${twoDigits(hours)}:${twoDigits(minutes)}:${twoDigits(seconds)}";
     }
     return "${twoDigits(minutes)}:${twoDigits(seconds)}";
+  }
+
+  void _showShareWorkoutDialog(BuildContext context, WorkoutLog log, Color accentColor) {
+    final ScreenshotController screenshotController = ScreenshotController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Screenshot(
+              controller: screenshotController,
+              child: WorkoutShareCard(workout: log, accentColor: accentColor),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () async {
+                try {
+                  final imageBytes = await screenshotController.capture(pixelRatio: 3.0);
+                  if (imageBytes != null) {
+                    final directory = await getApplicationDocumentsDirectory();
+                    final imagePath = await File('${directory.path}/share_workout.png').create();
+                    await imagePath.writeAsBytes(imageBytes);
+                    await Share.shareXFiles([XFile(imagePath.path)], text: 'Treino finalizado no Los Mooscles! 💪');
+                    if (context.mounted) Navigator.pop(ctx);
+                  }
+                } catch (e) {
+                  debugPrint("Error sharing: \$e");
+                }
+              },
+              icon: const Icon(Icons.share, color: Colors.black),
+              label: const Text(
+                "Compartilhar no Instagram / WhatsApp",
+                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: accentColor,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text("Fechar", style: TextStyle(color: Colors.white70)),
+            )
+          ],
+        ),
+      ),
+    );
   }
 }
