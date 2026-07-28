@@ -1846,9 +1846,13 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
         : workout.activeCalories;
     final steps = widget.provider.todaySteps;
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
+    final keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: Stack(
         children: [
           // Dynamic Glowing Background
           Positioned.fill(
@@ -1875,28 +1879,30 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(
-                      workout.name.toUpperCase(),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: accentColor,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 2.0,
+                    if (!keyboardOpen) ...[
+                      Text(
+                        workout.name.toUpperCase(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: accentColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 2.0,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
+                      const SizedBox(height: 8),
+                    ],
                     ValueListenableBuilder<int>(
                       valueListenable: _workoutDurationNotifier,
                       builder: (context, elapsed, child) {
                         return Text(
                           _formatDuration(elapsed),
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.white,
-                            fontSize: 56,
+                            fontSize: keyboardOpen ? 32 : 56,
                             fontWeight: FontWeight.w900,
-                            fontFeatures: [FontFeature.tabularFigures()],
+                            fontFeatures: const [FontFeature.tabularFigures()],
                             letterSpacing: -2.0,
                           ),
                         );
@@ -1905,22 +1911,23 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                     const SizedBox(height: 12),
                     // Telemetry Glass Pills
                     if (hr > 0 || cal > 0 || steps > 0)
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        alignment: WrapAlignment.center,
-                        children: [
-                          if (hr > 0)
-                            _buildTelemetryPill(
-                                Icons.favorite, Colors.redAccent, "$hr bpm"),
-                          if (cal > 0)
-                            _buildTelemetryPill(Icons.local_fire_department,
-                                Colors.orangeAccent, "$cal kcal"),
-                          if (steps > 0)
-                            _buildTelemetryPill(Icons.directions_walk,
-                                Colors.blueAccent, "$steps steps"),
-                        ],
-                      ),
+                      if (!keyboardOpen)
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          alignment: WrapAlignment.center,
+                          children: [
+                            if (hr > 0)
+                              _buildTelemetryPill(
+                                  Icons.favorite, Colors.redAccent, "$hr bpm"),
+                            if (cal > 0)
+                              _buildTelemetryPill(Icons.local_fire_department,
+                                  Colors.orangeAccent, "$cal kcal"),
+                            if (steps > 0)
+                              _buildTelemetryPill(Icons.directions_walk,
+                                  Colors.blueAccent, "$steps steps"),
+                          ],
+                        ),
                   ],
                 ),
               ),
@@ -1963,6 +1970,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                     itemCount: exercises.length,
                     itemBuilder: (context, index) {
                       return SingleChildScrollView(
+                        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                         controller: _scrollControllers[index],
                         padding: const EdgeInsets.only(
                             left: 8, right: 8, top: 8, bottom: 60),
@@ -2017,7 +2025,8 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
           ),
 
           // FLOATING BOTTOM ACTION BAR (Glassmorphism)
-          Positioned(
+          if (!keyboardOpen)
+            Positioned(
             left: 16,
             right: 16,
             bottom: 104,
@@ -2725,7 +2734,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
           }),
         ],
       ),
-    );
+    ));
   }
 
   Widget _buildTelemetryPill(IconData icon, Color color, String label) {
