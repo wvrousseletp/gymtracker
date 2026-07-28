@@ -5,6 +5,6 @@ storage_mode("git")
 type("appstore") # The default type, can be: appstore, adhoc, enterprise or development
 
 # All app targets that require provisioning profiles
-app_identifier(["com.vicente.losmooscles", "com.vicente.losmooscles.watchkitapp", "com.vicente.losmooscles.WorkoutWidget", "com.vicente.losmooscles.watchkitapp.WatchWidgetExtension"])
+app_identifier(["com.vicente.losmooscles", "com.vicente.losmooscles.watchkitapp", "com.vicente.losmooscles.WorkoutWidgetExtension", "com.vicente.losmooscles.watchkitapp.WatchWidgetExtension"])
 
 username("wvrousseletp@icloud.com") # Your Apple Developer Portal username
