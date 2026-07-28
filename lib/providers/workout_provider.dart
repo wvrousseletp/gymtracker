@@ -1335,10 +1335,10 @@ class WorkoutProvider extends ChangeNotifier {
     final List<String> days = ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'];
     final Map<String, List<String>> newPlanner = {};
 
-    // Shift every day 1 day forward
+    // Shift every day 1 day backward
     for (int i = 0; i < days.length; i++) {
       String currentDay = days[i];
-      String nextDay = days[(i + 1) % days.length];
+      String nextDay = days[(i - 1 + days.length) % days.length];
       newPlanner[nextDay] = planner[currentDay] ?? [];
     }
 
