@@ -25,6 +25,8 @@ class RestTimerService {
   final ValueNotifier<String> nextExName = ValueNotifier<String>('');
   final ValueNotifier<int> nextSetNum = ValueNotifier<int>(0);
   final ValueNotifier<int> totalSeconds = ValueNotifier<int>(0);
+  final ValueNotifier<int?> nextTargetReps = ValueNotifier<int?>(null);
+  final ValueNotifier<double?> nextTargetWeight = ValueNotifier<double?>(null);
 
   // Callback called when the timer naturally reaches zero
   VoidCallback? onTimerCompleted;
@@ -37,6 +39,8 @@ class RestTimerService {
     required bool prep,
     required String exName,
     required int setNum,
+    int? targetReps,
+    double? targetWeight,
     VoidCallback? onCompleted,
   }) {
     _timer?.cancel();
@@ -46,6 +50,8 @@ class RestTimerService {
     nextExName.value = exName;
     nextSetNum.value = setNum;
     totalSeconds.value = seconds;
+    nextTargetReps.value = targetReps;
+    nextTargetWeight.value = targetWeight;
     onTimerCompleted = onCompleted;
 
     final remaining =
@@ -83,6 +89,8 @@ class RestTimerService {
     nextExName.value = '';
     nextSetNum.value = 0;
     totalSeconds.value = 0;
+    nextTargetReps.value = null;
+    nextTargetWeight.value = null;
     onTimerCompleted = null;
     _notifyNativeClear();
   }

@@ -333,6 +333,8 @@ class WorkoutProvider extends ChangeNotifier {
           totalSeconds: ex.rest,
           nextExerciseName: ex.name,
           nextSetNum: setIndex + 2,
+          nextTargetReps: ex.repsPerSet?[setIndex + 1] ?? ex.reps,
+          nextTargetWeight: ex.weightsPerSet?[setIndex + 1] ?? ex.weight,
           isPrep: false,
         );
       } else if (exIndex < exercises.length - 1) {
@@ -344,6 +346,8 @@ class WorkoutProvider extends ChangeNotifier {
           totalSeconds: ex.rest,
           nextExerciseName: nextEx.name,
           nextSetNum: 1,
+          nextTargetReps: nextEx.repsPerSet?[0] ?? nextEx.reps,
+          nextTargetWeight: nextEx.weightsPerSet?[0] ?? nextEx.weight,
           isPrep: false,
         );
         computedExIndex = exIndex + 1;
@@ -370,6 +374,8 @@ class WorkoutProvider extends ChangeNotifier {
           prep: computedRestTimer.isPrep,
           exName: computedRestTimer.nextExerciseName,
           setNum: computedRestTimer.nextSetNum,
+          targetReps: computedRestTimer.nextTargetReps,
+          targetWeight: computedRestTimer.nextTargetWeight,
         );
       } else {
         RestTimerService.instance.clear();
@@ -382,12 +388,24 @@ class WorkoutProvider extends ChangeNotifier {
     if (activeWorkout == null) return;
     final active = activeWorkout!;
 
+    int? targetReps;
+    double? targetWeight;
+    final exIndex = active.exercises.indexWhere((e) => e.name == nextExName);
+    if (exIndex != -1) {
+      final nextEx = active.exercises[exIndex];
+      final setIdx = (nextSetNum - 1).clamp(0, nextEx.sets - 1);
+      targetReps = nextEx.repsPerSet?[setIdx] ?? nextEx.reps;
+      targetWeight = nextEx.weightsPerSet?[setIdx] ?? nextEx.weight;
+    }
+
     final endTime = DateTime.now().millisecondsSinceEpoch + (seconds * 1000);
     final restTimer = WatchRestTimer(
       endTime: endTime,
       totalSeconds: seconds,
       nextExerciseName: nextExName,
       nextSetNum: nextSetNum,
+      nextTargetReps: targetReps,
+      nextTargetWeight: targetWeight,
       isPrep: isPrep,
     );
 
@@ -403,6 +421,8 @@ class WorkoutProvider extends ChangeNotifier {
       prep: isPrep,
       exName: nextExName,
       setNum: nextSetNum,
+      targetReps: targetReps,
+      targetWeight: targetWeight,
     );
   }
 

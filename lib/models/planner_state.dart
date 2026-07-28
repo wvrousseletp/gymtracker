@@ -93,6 +93,8 @@ class WatchRestTimer {
   final int totalSeconds;
   final String nextExerciseName;
   final int nextSetNum;
+  final int? nextTargetReps;
+  final double? nextTargetWeight;
   final bool isPrep;
 
   WatchRestTimer({
@@ -100,6 +102,8 @@ class WatchRestTimer {
     required this.totalSeconds,
     required this.nextExerciseName,
     required this.nextSetNum,
+    this.nextTargetReps,
+    this.nextTargetWeight,
     required this.isPrep,
   });
 
@@ -108,6 +112,8 @@ class WatchRestTimer {
     'totalSeconds': totalSeconds,
     'nextExerciseName': nextExerciseName,
     'nextSetNum': nextSetNum,
+    'nextTargetReps': nextTargetReps,
+    'nextTargetWeight': nextTargetWeight,
     'isPrep': isPrep,
   };
 
@@ -116,6 +122,8 @@ class WatchRestTimer {
     totalSeconds: (json['totalSeconds'] as num?)?.toInt() ?? 0,
     nextExerciseName: json['nextExerciseName'] ?? '',
     nextSetNum: (json['nextSetNum'] as num?)?.toInt() ?? 0,
+    nextTargetReps: (json['nextTargetReps'] as num?)?.toInt(),
+    nextTargetWeight: (json['nextTargetWeight'] as num?)?.toDouble(),
     isPrep: json['isPrep'] ?? false,
   );
 }

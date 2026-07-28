@@ -90,6 +90,14 @@ struct RestTimerView: View {
                     Text("Série \(restTimer.nextSetNum)")
                         .font(.system(size: 10, weight: .semibold, design: .rounded))
                         .foregroundColor(.gray)
+
+                    if let reps = restTimer.nextTargetReps, let weight = restTimer.nextTargetWeight {
+                        let weightStr = weight.truncatingRemainder(dividingBy: 1) == 0 ? String(format: "%.0f", weight) : String(weight)
+                        Text("\(reps) reps • \(weightStr) kg")
+                            .font(.system(size: 11, weight: .medium, design: .rounded))
+                            .foregroundColor(.white.opacity(0.7))
+                            .padding(.top, 2)
+                    }
                 }
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)

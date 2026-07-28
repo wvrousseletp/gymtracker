@@ -105,10 +105,12 @@ struct WatchRestTimer: Codable {
     let totalSeconds: Int
     let nextExerciseName: String
     let nextSetNum: Int
+    let nextTargetReps: Int?
+    let nextTargetWeight: Double?
     let isPrep: Bool
 
     enum CodingKeys: String, CodingKey {
-        case endTime, totalSeconds, nextExerciseName, nextSetNum, isPrep
+        case endTime, totalSeconds, nextExerciseName, nextSetNum, nextTargetReps, nextTargetWeight, isPrep
     }
 
     init(endTime: Int64, totalSeconds: Int, nextExerciseName: String, nextSetNum: Int, isPrep: Bool) {
@@ -148,17 +150,30 @@ struct WatchRestTimer: Codable {
             nextSetNum = 0
         }
 
+        if let val = try? container.decodeIfPresent(Int.self, forKey: .nextTargetReps) {
+            nextTargetReps = val
+        } else if let val = try? container.decodeIfPresent(Double.self, forKey: .nextTargetReps) {
+            nextTargetReps = Int(val)
+        } else {
+            nextTargetReps = nil
+        }
+        
+        nextTargetWeight = try? container.decodeIfPresent(Double.self, forKey: .nextTargetWeight)
+
         isPrep = (try? container.decode(Bool.self, forKey: .isPrep)) ?? false
     }
     
     func toJSON() -> [String: Any] {
-        return [
+        var dict: [String: Any] = [
             "endTime": endTime,
             "totalSeconds": totalSeconds,
             "nextExerciseName": nextExerciseName,
             "nextSetNum": nextSetNum,
             "isPrep": isPrep
         ]
+        if let reps = nextTargetReps { dict["nextTargetReps"] = reps }
+        if let weight = nextTargetWeight { dict["nextTargetWeight"] = weight }
+        return dict
     }
 }
 

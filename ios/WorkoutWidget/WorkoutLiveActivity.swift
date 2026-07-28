@@ -56,7 +56,7 @@ struct WorkoutLiveActivity: Widget {
                                 .font(.system(size: 10, weight: .bold))
                                 .foregroundColor(.yellow)
                         } else {
-                            Text(Date(timeIntervalSinceNow: Double(-context.state.elapsedSeconds)), style: .timer)
+                            Text(context.state.workoutStartDate ?? Date(timeIntervalSinceNow: Double(-context.state.elapsedSeconds)), style: .timer)
                                 .font(.system(size: 11, weight: .bold, design: .rounded))
                                 .foregroundColor(.green)
                                 .monospacedDigit()
@@ -94,7 +94,7 @@ struct WorkoutLiveActivity: Widget {
                         .font(.system(size: 9, weight: .bold))
                         .foregroundColor(.yellow)
                 } else {
-                    Text(Date(timeIntervalSinceNow: Double(-context.state.elapsedSeconds)), style: .timer)
+                    Text(context.state.workoutStartDate ?? Date(timeIntervalSinceNow: Double(-context.state.elapsedSeconds)), style: .timer)
                         .font(.system(size: 11, weight: .bold, design: .rounded))
                         .foregroundColor(.green)
                         .monospacedDigit()
@@ -152,7 +152,7 @@ struct LockScreenWidgetView: View {
                         .font(.system(size: 10, weight: .bold))
                         .foregroundColor(.yellow)
                 } else {
-                    Text(Date(timeIntervalSinceNow: Double(-context.state.elapsedSeconds)), style: .timer)
+                    Text(context.state.workoutStartDate ?? Date(timeIntervalSinceNow: Double(-context.state.elapsedSeconds)), style: .timer)
                         .font(.system(size: 12, weight: .bold, design: .rounded))
                         .foregroundColor(.green)
                         .monospacedDigit()

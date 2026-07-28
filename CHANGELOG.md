@@ -1,6 +1,19 @@
 # Changelog — Los Mooscles
 
+## 2.4.0 (Build 227) — 28/07/2026
+
+### ✨ Novidades
+- **Descanso Ativo — Dados do Próximo Exercício**: Enquanto descansa entre séries, a tela agora exibe diretamente a carga e o número de repetições planejados para a próxima série (ex: `12 reps • 40 kg`), tanto no iOS quanto no Apple Watch.
+- **Botões de Ajuste do Timer**: Os botões de incremento/decremento do timer de descanso agora mostram claramente `+15s` e `-15s` para deixar a ação mais intuitiva.
+- **Dynamic Island (Cardio)**: Corrigido o bug onde o temporizador global do treino na Dynamic Island ficava "travado" ou voltando para o início quando o app estava em segundo plano durante treinos de Cardio. O relógio agora flui continuamente sem interrupções.
+
+### 🐛 Correções
+- **Dynamic Island**: O timer de treino na Dynamic Island agora usa a data absoluta de início do treino como referência (em vez de segundos relativos), garantindo que o contador continue de onde parou, sem resetar ao atualizar a UI.
+- **Apple Watch — Descanso Ativo**: O relógio agora recebe as informações de carga e repetições da próxima série via WatchConnectivity, exibindo-as discretamente abaixo do número da série no timer de descanso.
+
+---
 ## 2.3.0 — 27/07/2026
+
 
 ### ✨ Novidades
 - **Analytics & Progresso (Nova Aba)**: Gráficos de volume semanal e um Mapa de Calor (Heatmap) mostrando quais músculos foram mais exigidos recentemente.

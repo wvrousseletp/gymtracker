@@ -1609,6 +1609,8 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
   bool _timerIsPrep = false;
   String _timerNextExName = '';
   int _timerNextSetNum = 0;
+  int? _timerNextTargetReps;
+  double? _timerNextTargetWeight;
   int _countdownTotalSeconds = 0;
 
   // Track last endTime to avoid re-registering the same timer
@@ -1738,6 +1740,8 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
         svc.isPrep.value != _timerIsPrep ||
         svc.nextExName.value != _timerNextExName ||
         svc.nextSetNum.value != _timerNextSetNum ||
+        svc.nextTargetReps.value != _timerNextTargetReps ||
+        svc.nextTargetWeight.value != _timerNextTargetWeight ||
         svc.totalSeconds.value != _countdownTotalSeconds) {
       if (mounted) {
         setState(() {
@@ -1745,6 +1749,8 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
           _timerIsPrep = svc.isPrep.value;
           _timerNextExName = svc.nextExName.value;
           _timerNextSetNum = svc.nextSetNum.value;
+          _timerNextTargetReps = svc.nextTargetReps.value;
+          _timerNextTargetWeight = svc.nextTargetWeight.value;
           _countdownTotalSeconds = svc.totalSeconds.value;
         });
       }
@@ -1801,6 +1807,8 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
         _countdownTotalSeconds = svc.totalSeconds.value;
         _timerNextExName = svc.nextExName.value;
         _timerNextSetNum = svc.nextSetNum.value;
+        _timerNextTargetReps = svc.nextTargetReps.value;
+        _timerNextTargetWeight = svc.nextTargetWeight.value;
       });
     }
   }
@@ -2297,10 +2305,12 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                                                   );
                                                 }
                                               },
-                                              icon: const Icon(Icons.remove,
-                                                  color: Colors.white,
-                                                  size: 24),
-                                              padding: const EdgeInsets.all(12),
+                                              icon: const Text("-15s",
+                                                  style: TextStyle(
+                                                      color: Colors.white,
+                                                      fontWeight: FontWeight.bold,
+                                                      fontSize: 16)),
+                                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                                               constraints: const BoxConstraints(
                                                   minWidth: 56, minHeight: 56),
                                             ),
@@ -2329,9 +2339,12 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                                                   _timerIsPrep,
                                                 );
                                               },
-                                              icon: Icon(Icons.add,
-                                                  color: accentColor, size: 24),
-                                              padding: const EdgeInsets.all(12),
+                                              icon: Text("+15s",
+                                                  style: TextStyle(
+                                                      color: accentColor,
+                                                      fontWeight: FontWeight.bold,
+                                                      fontSize: 16)),
+                                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                                               constraints: const BoxConstraints(
                                                   minWidth: 56, minHeight: 56),
                                             ),
@@ -2385,6 +2398,18 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                                                 fontWeight: FontWeight.bold,
                                               ),
                                             ),
+                                            if (_timerNextTargetReps != null && _timerNextTargetWeight != null)
+                                              Padding(
+                                                padding: const EdgeInsets.only(top: 4),
+                                                child: Text(
+                                                  "$_timerNextTargetReps reps • ${_timerNextTargetWeight == _timerNextTargetWeight!.toInt() ? _timerNextTargetWeight!.toInt() : _timerNextTargetWeight} kg",
+                                                  style: const TextStyle(
+                                                    color: Colors.white54,
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ),
                                           ],
                                         ),
                                       ),

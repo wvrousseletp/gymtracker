@@ -912,10 +912,15 @@ import WidgetKit
     let postponed = json["postponed"] as? Bool ?? false
     let startTime = json["startTime"] as? Double ?? 0
     
+    var workoutStartDate: Date? = nil
+    
     // Correct the elapsedSeconds using the absolute startTime if it's currently running
     if !isPaused && startTime > 0 {
         let nowMs = Date().timeIntervalSince1970 * 1000
         elapsedSeconds = Int((nowMs - startTime) / 1000)
+        workoutStartDate = Date(timeIntervalSince1970: startTime / 1000.0)
+    } else if startTime > 0 {
+        workoutStartDate = Date().addingTimeInterval(-Double(elapsedSeconds))
     }
     
     var exerciseName = "Exercício"
@@ -983,6 +988,7 @@ import WidgetKit
         currentSetInfo: setInfo,
         isPaused: isPaused,
         elapsedSeconds: elapsedSeconds,
+        workoutStartDate: workoutStartDate,
         restTimerEndDate: finalRestEndDate,
         restTimerTotalSeconds: finalRestTotalSeconds,
         restIsPrep: finalRestIsPrep,
