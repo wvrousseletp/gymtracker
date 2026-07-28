@@ -46,6 +46,8 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
 
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
+    final provider = Provider.of<TrackerProvider>(context, listen: false);
+    
     final prefs = await SharedPreferences.getInstance();
     final savedOrder = prefs.getStringList('analytics_order');
     if (savedOrder != null && savedOrder.isNotEmpty) {
@@ -57,7 +59,6 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
       _widgetOrder = validOrder;
     }
 
-    final provider = Provider.of<TrackerProvider>(context, listen: false);
     if (provider.state?.history.isEmpty ?? true) {
       await provider.loadWorkoutHistory();
     }
