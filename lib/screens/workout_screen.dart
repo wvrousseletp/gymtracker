@@ -2443,7 +2443,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
             ),
         ],
       ),
-    );
+    ));
   }
 
   Widget _buildExerciseCard(ActiveExercise ex, int exIdx, Color accentColor) {
@@ -2734,7 +2734,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
           }),
         ],
       ),
-    ));
+    );
   }
 
   Widget _buildTelemetryPill(IconData icon, Color color, String label) {
