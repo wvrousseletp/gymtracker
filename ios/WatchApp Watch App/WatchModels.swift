@@ -119,6 +119,8 @@ struct WatchRestTimer: Codable {
         self.nextExerciseName = nextExerciseName
         self.nextSetNum = nextSetNum
         self.isPrep = isPrep
+        self.nextTargetReps = nil
+        self.nextTargetWeight = nil
     }
 
     init(from decoder: Decoder) throws {
