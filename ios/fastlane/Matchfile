@@ -1,4 +1,4 @@
-git_url("https://github.com/wvrousseletp/gymtracker-certs.git")
+git_url("https://#{ENV['MATCH_PAT']}@github.com/wvrousseletp/gymtracker-certs.git")
 
 storage_mode("git")
 
