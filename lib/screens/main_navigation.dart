@@ -271,7 +271,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
   void _checkWhatsNew() async {
     final prefs = await SharedPreferences.getInstance();
-    const currentBuild = 223;
+    const currentBuild = 224;
     final lastSeenBuild = prefs.getInt('last_seen_whats_new_build') ?? 0;
 
     if (lastSeenBuild < currentBuild) {
@@ -315,30 +315,30 @@ class _MainNavigationState extends State<MainNavigation> {
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    "Atualização v2.3.0 chegou! Mais controle sobre seu histórico, e o app agora abre na hora — mesmo sem internet.",
+                    "Atualização v2.4.0 chegou! Dashboard de Estatísticas totalmente novo, com mais dados e totalmente personalizável.",
                     style: TextStyle(
                         color: Colors.white70, fontSize: 13, height: 1.4),
                   ),
                   const SizedBox(height: 16),
                   _whatsNewItem(
-                    Icons.calendar_month_rounded,
+                    Icons.bar_chart_rounded,
                     Colors.deepPurpleAccent,
-                    "Calendário de Treinos 📅",
-                    "Visualize seu histórico como um heatmap mensal! Toque em qualquer dia para ver os treinos daquele dia com todos os detalhes.",
+                    "Dashboard Premium 📊",
+                    "Cards de KPI com sua Ofensiva de treinos, Músculo favorito e Tempo total. Filtros de período: 7 dias, 30 dias ou o ano todo.",
                   ),
                   const SizedBox(height: 12),
                   _whatsNewItem(
-                    Icons.bedtime_rounded,
+                    Icons.donut_large_rounded,
+                    Colors.orangeAccent,
+                    "Anéis & Donut de Macros 🍩",
+                    "Anéis de conclusão diária (Treino, Calorias e Água) no estilo Apple Fitness, mais um gráfico de distribuição dos seus macronutrientes.",
+                  ),
+                  const SizedBox(height: 12),
+                  _whatsNewItem(
+                    Icons.drag_indicator_rounded,
                     Colors.blueAccent,
-                    "Registro de Descanso & Desfazer 😴",
-                    "Dias de descanso agora ficam registrados no histórico. Se apertar por engano, basta usar o botão Desfazer para remover.",
-                  ),
-                  const SizedBox(height: 12),
-                  _whatsNewItem(
-                    Icons.bolt_rounded,
-                    Colors.amberAccent,
-                    "App mais rápido & Offline 🚀",
-                    "O app agora carrega instantaneamente usando o cache local, sem precisar esperar o Firebase — perfeito para academias com sinal fraco.",
+                    "Reordene as Estatísticas ✏️",
+                    "Toque no ícone de lápis e arraste cada bloco para a posição que preferir. Sua ordem é salva automaticamente!",
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton(
