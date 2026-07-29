@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../providers/tracker_provider.dart';
 import '../models/profile.dart';
 import '../widgets/profile_avatar.dart';
+import 'badges_screen.dart';
 
 void showProfileManagerDialog(BuildContext context) {
   showModalBottomSheet(
@@ -182,6 +183,28 @@ class _ProfileManagerSheetState extends State<ProfileManagerSheet> {
                   icon: Icon(Icons.edit_outlined, color: accentColor),
                   label: Text(
                     "Editar Perfil",
+                    style: TextStyle(color: accentColor, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // Badges Button
+              SizedBox(
+                width: double.infinity,
+                child: TextButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context); // close dialog
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => BadgesScreen(accentColor: accentColor),
+                      ),
+                    );
+                  },
+                  icon: Icon(Icons.military_tech, color: accentColor),
+                  label: Text(
+                    "Minhas Conquistas",
                     style: TextStyle(color: accentColor, fontWeight: FontWeight.w700),
                   ),
                 ),

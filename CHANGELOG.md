@@ -1,5 +1,19 @@
 # Changelog — Los Mooscles
 
+## 2.5.0 (Build 228) — 29/07/2026
+
+### ✨ Novidades
+- **Sugestões de Treino com Inteligência Artificial (Gemini)**: O app agora integra o Google Gemini AI diretamente na tela de Planejamento. Ao clicar no ícone de varinha mágica ✨ em qualquer dia do cronograma, a IA analisa o seu histórico de treinos e gera dicas personalizadas de carga e repetições para cada exercício planejado naquele dia. As dicas ficam salvas na tela e podem ser ocultadas ou exibidas com um toque.
+- **Compartilhamento de Rotinas via Código**: Agora é possível exportar qualquer rotina como um código de texto e importar rotinas compartilhadas por outras pessoas. Basta clicar no ícone de compartilhar dentro da rotina ou usar o novo botão de importar (ícone de download) na aba de Rotinas.
+- **Conquistas e Gamificação**: Novo sistema de medalhas e conquistas desbloqueáveis conforme você evolui nos treinos. Acesse em Perfil → Minhas Conquistas.
+- **Gráfico de Progressão por Exercício**: Nova visualização na aba de Análise mostrando a evolução de carga e repetições de qualquer exercício ao longo do tempo, com gráfico interativo e seletor de exercício.
+- **Mapa de Calor Muscular Aprimorado**: O heatmap da aba de Análise agora exibe uma silhueta humana animada indicando visualmente quais grupos musculares foram mais trabalhados no período selecionado.
+- **Navegação Semanal no Planejamento**: Dois novos botões de seta permitem avançar ou retroceder o cronograma semanal inteiro com um toque, sem gerar nenhum registro automático de treino.
+
+### 🐛 Correções
+- Removida a sugestão estática de carga (+5%) da tela de treino, que foi substituída pela sugestão inteligente com IA na tela de Planejamento.
+
+---
 ## 2.4.0 (Build 227) — 28/07/2026
 
 ### ✨ Novidades

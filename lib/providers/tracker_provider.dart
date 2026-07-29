@@ -81,6 +81,7 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
       dietHistory: _dietProvider!.dietHistory,
       streak: _workoutProvider!.streak,
       deletedHealthWorkoutIds: _workoutProvider!.deletedHealthWorkoutIds,
+      unlockedBadgeIds: _workoutProvider!.unlockedBadgeIds,
     );
   }
 
@@ -270,6 +271,7 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     _workoutProvider!.medidas = [];
     _workoutProvider!.activeWorkout = null;
     _workoutProvider!.historyLoaded = false;
+    _workoutProvider!.unlockedBadgeIds = [];
 
     _dietProvider!.diet = DietState(
       caloriesGoal: 2000,
@@ -326,6 +328,8 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
         List<ActiveWorkoutState>.from(state.postponedWorkouts);
     _workoutProvider!.deletedHealthWorkoutIds =
         List<String>.from(state.deletedHealthWorkoutIds);
+    _workoutProvider!.unlockedBadgeIds =
+        List<String>.from(state.unlockedBadgeIds);
     _workoutProvider!.streak = state.streak;
 
     _dietProvider!.diet = state.diet;
@@ -570,6 +574,16 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
   void deleteWorkoutLog(String id) {
     if (_workoutProvider == null) return;
     _workoutProvider!.deleteWorkoutLog(id);
+  }
+
+  void shiftPlannerForwardWithoutLog() {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.shiftPlannerForwardWithoutLog();
+  }
+
+  void shiftPlannerBackwardWithoutLog() {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.shiftPlannerBackwardWithoutLog();
   }
 
   void addPlannerItem(String day) {

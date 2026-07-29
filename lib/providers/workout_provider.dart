@@ -16,6 +16,7 @@ import '../models/profile.dart';
 import '../utils/date_utils.dart';
 import '../utils/default_exercises_data.dart';
 import 'profile_provider.dart';
+import '../services/badges_service.dart';
 
 class WorkoutProvider extends ChangeNotifier {
   final StatePersistenceService _persistence = StatePersistenceService();
@@ -49,6 +50,7 @@ class WorkoutProvider extends ChangeNotifier {
   }
   List<ActiveWorkoutState> postponedWorkouts = [];
   List<String> deletedHealthWorkoutIds = [];
+  List<String> unlockedBadgeIds = [];
   WorkoutStreak streak = WorkoutStreak(
       currentWeekCount: 0, consecutiveWeeks: 0, lastWorkoutDate: '');
 
@@ -815,6 +817,19 @@ class WorkoutProvider extends ChangeNotifier {
 
     activeWorkout = null;
     _updateStreak();
+    
+    // Evaluate new badges
+    final newlyUnlocked = BadgesService.evaluateNewBadges(
+      history: history,
+      currentUnlocked: unlockedBadgeIds,
+      streak: streak,
+      library: library,
+    );
+    if (newlyUnlocked.isNotEmpty) {
+      unlockedBadgeIds = List.from(unlockedBadgeIds)..addAll(newlyUnlocked);
+      // Optional: trigger some UI alert / snackbar from the UI layer by listening to a new event or state
+    }
+
     _save();
 
     unawaited(_firebaseSync.syncWorkoutLog(currentUserId, log));
@@ -836,6 +851,18 @@ class WorkoutProvider extends ChangeNotifier {
     _updatePersonalRecordsForLog(log, null);
 
     _updateStreak();
+    
+    // Evaluate new badges
+    final newlyUnlocked = BadgesService.evaluateNewBadges(
+      history: history,
+      currentUnlocked: unlockedBadgeIds,
+      streak: streak,
+      library: library,
+    );
+    if (newlyUnlocked.isNotEmpty) {
+      unlockedBadgeIds = List.from(unlockedBadgeIds)..addAll(newlyUnlocked);
+    }
+
     _save();
     notifyListeners();
     unawaited(_firebaseSync.syncWorkoutLog(currentUserId, log));
@@ -1394,6 +1421,44 @@ class WorkoutProvider extends ChangeNotifier {
       _save();
       notifyListeners();
     }
+  }
+
+  void shiftPlannerForwardWithoutLog() {
+    final List<String> days = ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'];
+    final Map<String, List<String>> newPlanner = {};
+
+    // Shift every day 1 day backward
+    for (int i = 0; i < days.length; i++) {
+      String currentDay = days[i];
+      String nextDay = days[(i - 1 + days.length) % days.length];
+      newPlanner[nextDay] = planner[currentDay] ?? [];
+    }
+
+    // Save state for undo
+    _previousPlanner = Map.from(planner);
+    planner = newPlanner;
+
+    _save();
+    notifyListeners();
+  }
+
+  void shiftPlannerBackwardWithoutLog() {
+    final List<String> days = ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'];
+    final Map<String, List<String>> newPlanner = {};
+
+    // Shift every day 1 day forward (meaning Monday goes to Sunday instead of Tuesday)
+    for (int i = 0; i < days.length; i++) {
+      String currentDay = days[i];
+      String nextDay = days[(i + 1) % days.length];
+      newPlanner[nextDay] = planner[currentDay] ?? [];
+    }
+
+    // Save state for undo
+    _previousPlanner = Map.from(planner);
+    planner = newPlanner;
+
+    _save();
+    notifyListeners();
   }
 
   Map<String, double>? fetchLastPerformance(String exerciseName) {

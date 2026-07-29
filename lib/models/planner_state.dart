@@ -241,7 +241,7 @@ class PlannerState {
   final WorkoutStreak streak;
   final Map<String, DietHistoryDay> dietHistory;
   final List<String> deletedHealthWorkoutIds;
-  final List<ActiveWorkoutState> postponedWorkouts;
+  final List<String> unlockedBadgeIds;
 
   PlannerState({
     required this.library,
@@ -257,8 +257,10 @@ class PlannerState {
     Map<String, DietHistoryDay>? dietHistory,
     WorkoutStreak? streak,
     List<String>? deletedHealthWorkoutIds,
+    List<String>? unlockedBadgeIds,
   }) : dietHistory = dietHistory ?? {},
        deletedHealthWorkoutIds = deletedHealthWorkoutIds ?? [],
+       unlockedBadgeIds = unlockedBadgeIds ?? [],
        postponedWorkouts = postponedWorkouts ?? [],
        streak = streak ??
             WorkoutStreak(
@@ -282,6 +284,7 @@ class PlannerState {
     WorkoutStreak? streak,
     Map<String, DietHistoryDay>? dietHistory,
     List<String>? deletedHealthWorkoutIds,
+    List<String>? unlockedBadgeIds,
   }) {
     return PlannerState(
       library: library ?? this.library,
@@ -297,6 +300,7 @@ class PlannerState {
       streak: streak ?? this.streak,
       dietHistory: dietHistory ?? this.dietHistory,
       deletedHealthWorkoutIds: deletedHealthWorkoutIds ?? this.deletedHealthWorkoutIds,
+      unlockedBadgeIds: unlockedBadgeIds ?? this.unlockedBadgeIds,
     );
   }
 
@@ -314,6 +318,7 @@ class PlannerState {
     'streak': streak.toJson(),
     'dietHistory': dietHistory.map((k, v) => MapEntry(k, v.toJson())),
     'deletedHealthWorkoutIds': deletedHealthWorkoutIds,
+    'unlockedBadgeIds': unlockedBadgeIds,
   };
 
   factory PlannerState.fromJson(Map<String, dynamic> json) {
@@ -387,6 +392,9 @@ class PlannerState {
       dietHistory: dietHistoryMap,
       deletedHealthWorkoutIds: json['deletedHealthWorkoutIds'] != null 
           ? List<String>.from(json['deletedHealthWorkoutIds'])
+          : [],
+      unlockedBadgeIds: json['unlockedBadgeIds'] != null
+          ? List<String>.from(json['unlockedBadgeIds'])
           : [],
     );
   }

@@ -11,6 +11,8 @@ import 'diet_analytics_tab.dart';
 import '../widgets/analytics/kpi_cards.dart';
 import '../widgets/analytics/activity_rings.dart';
 import '../widgets/analytics/macros_donut_chart.dart';
+import '../widgets/analytics/exercise_progression_card.dart';
+import '../widgets/analytics/human_body_heatmap.dart';
 
 class AnalyticsTab extends StatefulWidget {
   final Color accentColor;
@@ -28,6 +30,7 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
   final List<String> _defaultOrder = [
     "kpi_cards",
     "activity_rings",
+    "exercise_progression",
     "volume_chart",
     "muscle_heatmap",
     "macros_donut",
@@ -231,6 +234,11 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
           history: filteredHistory, // passed only for today's check
           accentColor: widget.accentColor,
         );
+      case "exercise_progression":
+        return ExerciseProgressionCard(
+          history: filteredHistory,
+          accentColor: widget.accentColor,
+        );
       case "volume_chart":
         return _buildVolumeChart(filteredHistory);
       case "muscle_heatmap":
@@ -397,51 +405,63 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
             style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.5)),
           ),
           const SizedBox(height: 16),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: muscles.map((m) {
-              final count = muscleCounts[m] ?? 0;
-              final intensity = maxCount > 0 ? count / maxCount : 0.0;
-              
-              Color chipColor = widget.accentColor.withOpacity(0.1 + (0.9 * intensity));
-              if (count == 0) chipColor = Colors.white.withOpacity(0.05);
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: muscles.map((m) {
+                    final count = muscleCounts[m] ?? 0;
+                    final intensity = maxCount > 0 ? count / maxCount : 0.0;
+                    
+                    Color chipColor = widget.accentColor.withOpacity(0.1 + (0.9 * intensity));
+                    if (count == 0) chipColor = Colors.white.withOpacity(0.05);
 
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: chipColor,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: count > 0 ? widget.accentColor.withOpacity(0.3) : Colors.transparent,
-                  )
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      m,
-                      style: TextStyle(
-                        color: count > 0 ? Colors.white : Colors.white54,
-                        fontWeight: count > 0 ? FontWeight.bold : FontWeight.normal,
-                        fontSize: 12,
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: chipColor,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: count > 0 ? widget.accentColor.withOpacity(0.3) : Colors.transparent,
+                        )
                       ),
-                    ),
-                    if (count > 0) ...[
-                      const SizedBox(width: 6),
-                      Text(
-                        "$count",
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.8),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 10,
-                        ),
-                      )
-                    ]
-                  ],
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            m,
+                            style: TextStyle(
+                              color: count > 0 ? Colors.white : Colors.white54,
+                              fontWeight: count > 0 ? FontWeight.bold : FontWeight.normal,
+                              fontSize: 12,
+                            ),
+                          ),
+                          if (count > 0) ...[
+                            const SizedBox(width: 6),
+                            Text(
+                              "$count",
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.8),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 10,
+                              ),
+                            )
+                          ]
+                        ],
+                      ),
+                    );
+                  }).toList(),
                 ),
-              );
-            }).toList(),
+              ),
+              const SizedBox(width: 16),
+              HumanBodyHeatmap(
+                muscleIntensity: muscleCounts.map((k, v) => MapEntry(k, maxCount > 0 ? v / maxCount : 0.0)),
+                accentColor: widget.accentColor,
+              ),
+            ],
           ),
         ],
       ),

@@ -4,6 +4,9 @@ import '../providers/tracker_provider.dart';
 import '../models/exercise.dart';
 import '../models/planner_state.dart';
 import '../models/enums.dart';
+import '../utils/date_utils.dart';
+import '../utils/default_exercises_data.dart';
+import '../services/ai_service.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/profile_avatar.dart';
 
@@ -16,6 +19,72 @@ class PlannerScreen extends StatefulWidget {
 
 class _PlannerScreenState extends State<PlannerScreen> {
   final List<String> _daysOfWeek = ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'];
+
+  // AI Insights State
+  final Map<String, Map<String, String>> _aiSuggestionsByDay = {};
+  final Map<String, bool> _isLoadingAIByDay = {};
+  final Map<String, bool> _showAIByDay = {};
+
+  Future<void> _toggleOrFetchAI(String day, List<String> items, List<WorkoutLog> history, PlannerState state) async {
+    if (_showAIByDay[day] == true) {
+      setState(() => _showAIByDay[day] = false);
+      return;
+    }
+    
+    setState(() {
+      _showAIByDay[day] = true;
+    });
+
+    if (_aiSuggestionsByDay.containsKey(day)) {
+      return; // already fetched
+    }
+
+    setState(() {
+      _isLoadingAIByDay[day] = true;
+    });
+
+    // Parse planned exercises
+    List<String> plannedExercises = [];
+    for (var rawItem in items) {
+      if (rawItem.startsWith('routine:')) {
+        final rId = rawItem.substring(8);
+        final r = state.routines.where((x) => x.id == rId).firstOrNull;
+        if (r != null) {
+          for (var e in r.exercises) {
+            final libEx = state.library.where((x) => x.id == e.exerciseId).firstOrNull;
+            if (libEx != null) plannedExercises.add(libEx.name);
+          }
+        }
+      } else if (rawItem.startsWith('exercise:')) {
+        final parts = rawItem.split(':');
+        if (parts.length >= 2) {
+          final libEx = state.library.where((x) => x.id == parts[1]).firstOrNull;
+          if (libEx != null) plannedExercises.add(libEx.name);
+        }
+      } else if (rawItem.isNotEmpty) {
+        final r = state.routines.where((x) => x.id == rawItem).firstOrNull;
+        if (r != null) {
+          for (var e in r.exercises) {
+            final libEx = state.library.where((x) => x.id == e.exerciseId).firstOrNull;
+            if (libEx != null) plannedExercises.add(libEx.name);
+          }
+        }
+      }
+    }
+
+    final aiService = AIService();
+    final suggestions = await aiService.generateWorkoutSuggestions(
+      plannedExercises: plannedExercises,
+      recentHistory: history,
+    );
+
+    if (mounted) {
+      setState(() {
+        _aiSuggestionsByDay[day] = suggestions;
+        _isLoadingAIByDay[day] = false;
+      });
+    }
+  }
 
   String _getDayNamePt(String day) {
     switch (day) {
@@ -483,16 +552,48 @@ class _PlannerScreenState extends State<PlannerScreen> {
           const SizedBox(height: 24),
 
           // Seção Cronograma Semanal
-          const Row(
+          Row(
             children: [
-              Icon(Icons.calendar_month, color: Colors.white70, size: 20),
-              SizedBox(width: 8),
-              Text(
+              const Icon(Icons.calendar_month, color: Colors.white70, size: 20),
+              const SizedBox(width: 8),
+              const Text(
                 "Cronograma Semanal",
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.white.withOpacity(0.1)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white70, size: 14),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      constraints: const BoxConstraints(),
+                      tooltip: "Voltar cronograma em 1 dia",
+                      onPressed: () {
+                        provider.shiftPlannerBackwardWithoutLog();
+                      },
+                    ),
+                    Container(width: 1, height: 16, color: Colors.white.withOpacity(0.1)),
+                    IconButton(
+                      icon: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white70, size: 14),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      constraints: const BoxConstraints(),
+                      tooltip: "Avançar cronograma em 1 dia",
+                      onPressed: () {
+                        provider.shiftPlannerForwardWithoutLog();
+                      },
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -522,13 +623,30 @@ class _PlannerScreenState extends State<PlannerScreen> {
                             fontWeight: FontWeight.w800,
                           ),
                         ),
-                        IconButton(
-                          icon: Icon(Icons.add_box_outlined, color: accentColor, size: 22),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          onPressed: () {
-                            provider.addPlannerItem(day);
-                          },
+                        Row(
+                          children: [
+                            if (items.isNotEmpty)
+                              IconButton(
+                                icon: Icon(
+                                  _showAIByDay[day] == true ? Icons.auto_awesome : Icons.auto_awesome_outlined,
+                                  color: _showAIByDay[day] == true ? accentColor : Colors.amber,
+                                  size: 22,
+                                ),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                tooltip: "Dicas de Treino (IA)",
+                                onPressed: () => _toggleOrFetchAI(day, items, provider.state!.history, state),
+                              ),
+                            if (items.isNotEmpty) const SizedBox(width: 16),
+                            IconButton(
+                              icon: Icon(Icons.add_box_outlined, color: accentColor, size: 22),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              onPressed: () {
+                                provider.addPlannerItem(day);
+                              },
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -556,6 +674,61 @@ class _PlannerScreenState extends State<PlannerScreen> {
                           return _buildPlannerItemRow(context, provider, day, idx, rawItem, accentColor);
                         },
                       ),
+                      
+                    // AI Insights Card
+                    if (_showAIByDay[day] == true) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: accentColor.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: accentColor.withOpacity(0.3)),
+                        ),
+                        child: _isLoadingAIByDay[day] == true
+                            ? Row(
+                                children: [
+                                  SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: accentColor, strokeWidth: 2)),
+                                  const SizedBox(width: 12),
+                                  const Text("A IA está analisando seu histórico...", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                                ],
+                              )
+                            : Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(Icons.auto_awesome, color: accentColor, size: 16),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        "Sugestões de Progressão (IA)",
+                                        style: TextStyle(
+                                          color: accentColor,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  if (_aiSuggestionsByDay[day] == null || _aiSuggestionsByDay[day]!.isEmpty)
+                                    const Text("Não foi possível gerar dicas baseadas no seu histórico atual.", style: TextStyle(color: Colors.white54, fontSize: 12))
+                                  else
+                                    ..._aiSuggestionsByDay[day]!.entries.map((e) => Padding(
+                                      padding: const EdgeInsets.only(bottom: 6.0),
+                                      child: RichText(
+                                        text: TextSpan(
+                                          children: [
+                                            TextSpan(text: "• ${e.key}: ", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 12)),
+                                            TextSpan(text: e.value, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                                          ],
+                                        ),
+                                      ),
+                                    )),
+                                ],
+                              ),
+                      ),
+                    ],
                   ],
                 ),
               ),

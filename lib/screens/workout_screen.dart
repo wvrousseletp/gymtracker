@@ -2604,40 +2604,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
             ],
           ),
           
-          // Progressive Overload Suggestion
-          if (!isCardio) Builder(
-            builder: (context) {
-              final workoutProvider = Provider.of<WorkoutProvider>(context, listen: false);
-              final lastPerf = workoutProvider.fetchLastPerformance(ex.name);
-              if (lastPerf == null || lastPerf['weight'] == 0) return const SizedBox.shrink();
-              final suggWeight = (lastPerf['weight']! * 1.05).ceilToDouble(); // +5%
-              return Container(
-                margin: const EdgeInsets.only(top: 12),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0xff1c1c1e),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: accentColor.withOpacity(0.3)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.trending_up, color: accentColor, size: 16),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        "Último treino: ${lastPerf['weight']!.toStringAsFixed(0)}kg. Sugestão: ${suggWeight.toStringAsFixed(0)}kg x ${lastPerf['reps']!.toInt()}",
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.8),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
+
           const SizedBox(height: 16),
 
           // Lista de Séries ou Sessão de Cardio Única

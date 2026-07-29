@@ -1,5 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../utils/routine_sharing_utils.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../providers/workout_provider.dart';
@@ -108,13 +110,27 @@ class RoutinesTab extends StatelessWidget {
       backgroundColor: Colors.transparent,
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 80.0),
-        child: FloatingActionButton(
-          onPressed: () {
-            _openRoutineForm(context, provider, null);
-          },
-          backgroundColor: accentColor,
-          mini: true,
-          child: const Icon(Icons.add, color: Colors.black),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            FloatingActionButton(
+              heroTag: "importRoutineFAB",
+              onPressed: () => _showImportRoutineDialog(context, provider, accentColor),
+              backgroundColor: Colors.white12,
+              mini: true,
+              child: const Icon(Icons.download_rounded, color: Colors.white),
+            ),
+            const SizedBox(height: 12),
+            FloatingActionButton(
+              heroTag: "addRoutineFAB",
+              onPressed: () {
+                _openRoutineForm(context, provider, null);
+              },
+              backgroundColor: accentColor,
+              mini: true,
+              child: const Icon(Icons.add, color: Colors.black),
+            ),
+          ],
         ),
       ),
       body: routines.isEmpty
@@ -378,6 +394,99 @@ class RoutinesTab extends StatelessWidget {
           RoutineFormSheet(provider: provider, existing: existing),
     );
   }
+
+  void _showImportRoutineDialog(BuildContext context, WorkoutProvider provider, Color accentColor) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: GlassCard(
+          useBlur: true,
+          borderColor: Colors.white.withOpacity(0.08),
+          borderRadius: 20,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                "Importar Rotina",
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 18),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: controller,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: "Cole o código da rotina aqui",
+                  hintStyle: const TextStyle(color: Colors.white30),
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.05),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogCtx),
+                    child: const Text("Cancelar",
+                        style: TextStyle(
+                            color: Colors.white54,
+                            fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () async {
+                      final code = controller.text.trim();
+                      if (code.isEmpty) return;
+                      
+                      final routine = RoutineSharingUtils.decodeRoutine(code);
+                      if (routine != null) {
+                        provider.addRoutine(routine.name, routine.defaultRest, routine.exercises);
+                        Navigator.pop(dialogCtx);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text("Rotina '${routine.name}' importada!"),
+                              backgroundColor: accentColor,
+                            ),
+                          );
+                        }
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Código inválido."),
+                            backgroundColor: Colors.redAccent,
+                          ),
+                        );
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: accentColor,
+                      foregroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text("Importar",
+                        style: TextStyle(fontWeight: FontWeight.w900)),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 // FORMULÁRIO DE ROTINA (SHEET)
@@ -472,6 +581,26 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                     ),
                     Row(
                       children: [
+                        if (widget.existing != null)
+                          IconButton(
+                            icon: const Icon(Icons.share_outlined,
+                                color: Colors.blueAccent, size: 20),
+                            onPressed: () {
+                              final encoded = RoutineSharingUtils.encodeRoutine(widget.existing!);
+                              Clipboard.setData(ClipboardData(text: encoded));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Código da rotina copiado!"),
+                                  backgroundColor: Colors.blueAccent,
+                                ),
+                              );
+                            },
+                            style: IconButton.styleFrom(
+                              backgroundColor: Colors.blueAccent.withOpacity(0.1),
+                              padding: const EdgeInsets.all(6),
+                            ),
+                          ),
+                        if (widget.existing != null) const SizedBox(width: 8),
                         if (widget.existing != null)
                           IconButton(
                             icon: const Icon(Icons.delete_outline,
