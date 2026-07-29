@@ -90,6 +90,20 @@ class MonthGroup {
   MonthGroup({required this.key, required this.name, required this.logs});
 }
 
+class DayGroup {
+  final String dateKey;
+  final DateTime date;
+  final String title;
+  final List<WorkoutLog> logs;
+
+  DayGroup({
+    required this.dateKey,
+    required this.date,
+    required this.title,
+    required this.logs,
+  });
+}
+
 class _HistoryTabState extends State<HistoryTab> {
   final Set<String> _expandedLogIds = {};
   final Set<String> _expandedMonths = {};
@@ -342,8 +356,38 @@ class _HistoryTabState extends State<HistoryTab> {
                     ),
 
                     if (isMonthExpanded) ...[
-                      ...group.logs.map((log) {
-                        return _buildLogCard(log, provider);
+                      ..._groupLogsByDay(group.logs).map((dayGroup) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8, bottom: 6, left: 4),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 6,
+                                    height: 6,
+                                    decoration: BoxDecoration(
+                                      color: widget.accentColor,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    dayGroup.title,
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.3,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            ...dayGroup.logs.map((log) => _buildLogCard(log, provider)),
+                          ],
+                        );
                       }),
                     ],
                   ],
@@ -359,6 +403,48 @@ class _HistoryTabState extends State<HistoryTab> {
 ); // Closes Scaffold
   }
 
+  String _formatDayHeader(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final target = DateTime(date.year, date.month, date.day);
+
+    final monthName = _monthNames[date.month] ?? '';
+
+    if (target == today) {
+      return "Hoje • ${date.day} de $monthName";
+    } else if (target == yesterday) {
+      return "Ontem • ${date.day} de $monthName";
+    } else {
+      const weekdayNames = ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado', 'Domingo'];
+      final weekdayStr = weekdayNames[date.weekday - 1];
+      return "$weekdayStr, ${date.day} de $monthName";
+    }
+  }
+
+  List<DayGroup> _groupLogsByDay(List<WorkoutLog> logs) {
+    final Map<String, List<WorkoutLog>> dayMap = {};
+    for (final log in logs) {
+      final d = DateTime.tryParse(log.date)?.toLocal() ?? DateTime.now();
+      final dayKey = "${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}";
+      dayMap.putIfAbsent(dayKey, () => []).add(log);
+    }
+
+    final List<DayGroup> dayGroups = [];
+    dayMap.forEach((key, dayLogs) {
+      final firstLogDate = DateTime.tryParse(dayLogs.first.date)?.toLocal() ?? DateTime.now();
+      dayGroups.add(DayGroup(
+        dateKey: key,
+        date: firstLogDate,
+        title: _formatDayHeader(firstLogDate),
+        logs: dayLogs,
+      ));
+    });
+
+    dayGroups.sort((a, b) => b.date.compareTo(a.date));
+    return dayGroups;
+  }
+
   Map<DateTime, List<WorkoutLog>> _groupHistoryByDay(List<WorkoutLog> history) {
     final Map<DateTime, List<WorkoutLog>> grouped = {};
     for (final log in history) {
@@ -369,48 +455,121 @@ class _HistoryTabState extends State<HistoryTab> {
     return grouped;
   }
 
-  Widget _buildCalendarCell(BuildContext context, DateTime date, List<WorkoutLog> logs, Color accent) {
-    if (logs.isEmpty) {
+  Widget _buildPremiumCalendarCell(
+    BuildContext context,
+    DateTime date,
+    List<WorkoutLog> logs,
+    Color accent, {
+    bool isToday = false,
+    bool isSelected = false,
+    bool isOutside = false,
+  }) {
+    if (isOutside) {
       return Center(
         child: Text(
           '${date.day}',
-          style: const TextStyle(color: Colors.white54),
+          style: const TextStyle(color: Colors.white24, fontSize: 12),
         ),
       );
     }
 
-    int totalVolume = 0;
+    if (logs.isEmpty) {
+      return Container(
+        margin: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: isToday ? accent.withOpacity(0.08) : Colors.transparent,
+          shape: BoxShape.circle,
+          border: isSelected
+              ? Border.all(color: Colors.white, width: 2)
+              : (isToday ? Border.all(color: accent.withOpacity(0.5), width: 1.5) : null),
+        ),
+        child: Center(
+          child: Text(
+            '${date.day}',
+            style: TextStyle(
+              color: isToday ? accent : Colors.white70,
+              fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Days with workouts
     bool isRest = false;
+    bool isCardioOnly = true;
     for (final log in logs) {
       if (log.name == 'Dia de Descanso' || log.notes.contains('Descanso registrado')) {
         isRest = true;
       }
-      totalVolume += log.totalWeight.toInt();
+      for (final ex in log.exercises) {
+        if (!ex.muscle.toLowerCase().contains('cardio') && (ex.performedCardios == null || ex.performedCardios!.isEmpty)) {
+          isCardioOnly = false;
+        }
+      }
     }
 
     Color cellColor;
     if (isRest) {
-      cellColor = Colors.grey.shade800; 
+      cellColor = Colors.blueGrey.shade800;
+    } else if (isCardioOnly) {
+      cellColor = const Color(0xff00e676); // Emerald Neon
     } else {
-      if (totalVolume > 5000) {
-        cellColor = accent; 
-      } else if (totalVolume > 2000) {
-        cellColor = accent.withOpacity(0.6); 
-      } else {
-        cellColor = accent.withOpacity(0.3); 
-      }
+      cellColor = accent;
     }
 
     return Container(
       margin: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: cellColor,
+        color: cellColor.withOpacity(0.25),
         shape: BoxShape.circle,
+        border: Border.all(
+          color: isSelected
+              ? Colors.white
+              : (isToday ? Colors.white : cellColor.withOpacity(0.7)),
+          width: isSelected ? 2.2 : (isToday ? 1.8 : 1.0),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: cellColor.withOpacity(0.3),
+            blurRadius: 6,
+            spreadRadius: 1,
+          )
+        ],
       ),
       child: Center(
-        child: Text(
-          '${date.day}',
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              '${date.day}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+                fontSize: 12,
+              ),
+            ),
+            if (logs.length > 1)
+              Container(
+                margin: const EdgeInsets.only(top: 1),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(
+                    logs.length.clamp(1, 3),
+                    (i) => Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 1),
+                      width: 3,
+                      height: 3,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );
@@ -419,90 +578,205 @@ class _HistoryTabState extends State<HistoryTab> {
   Widget _buildCalendarView(List<WorkoutLog> history, TrackerProvider provider) {
     final logsByDay = _groupHistoryByDay(history);
     
+    final selectedDayLogs = _selectedDay != null
+        ? (logsByDay[DateTime.utc(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day)] ?? [])
+        : <WorkoutLog>[];
+
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.only(bottom: 100, left: 16, right: 16),
+      padding: const EdgeInsets.only(bottom: 100, left: 16, right: 16, top: 8),
       children: [
-        TableCalendar<WorkoutLog>(
-          firstDay: DateTime.utc(2020, 1, 1),
-          lastDay: DateTime.utc(2030, 12, 31),
-          focusedDay: _focusedDay,
-          selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-          onDaySelected: (selectedDay, focusedDay) {
-            setState(() {
-              _selectedDay = selectedDay;
-              _focusedDay = focusedDay;
-            });
-          },
-          eventLoader: (day) {
-            return logsByDay[DateTime.utc(day.year, day.month, day.day)] ?? [];
-          },
-          calendarBuilders: CalendarBuilders(
-            defaultBuilder: (context, day, focusedDay) {
-              final logs = logsByDay[DateTime.utc(day.year, day.month, day.day)] ?? [];
-              return _buildCalendarCell(context, day, logs, widget.accentColor);
+        GlassCard(
+          padding: const EdgeInsets.all(12),
+          borderColor: Colors.white.withOpacity(0.08),
+          borderRadius: 20,
+          child: TableCalendar<WorkoutLog>(
+            firstDay: DateTime.utc(2020, 1, 1),
+            lastDay: DateTime.utc(2030, 12, 31),
+            focusedDay: _focusedDay,
+            selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+            onDaySelected: (selectedDay, focusedDay) {
+              setState(() {
+                _selectedDay = selectedDay;
+                _focusedDay = focusedDay;
+              });
             },
-            selectedBuilder: (context, day, focusedDay) {
-              final logs = logsByDay[DateTime.utc(day.year, day.month, day.day)] ?? [];
-              return Container(
-                margin: const EdgeInsets.all(2),
+            eventLoader: (day) {
+              return logsByDay[DateTime.utc(day.year, day.month, day.day)] ?? [];
+            },
+            calendarBuilders: CalendarBuilders(
+              defaultBuilder: (context, day, focusedDay) {
+                final logs = logsByDay[DateTime.utc(day.year, day.month, day.day)] ?? [];
+                return _buildPremiumCalendarCell(context, day, logs, widget.accentColor);
+              },
+              selectedBuilder: (context, day, focusedDay) {
+                final logs = logsByDay[DateTime.utc(day.year, day.month, day.day)] ?? [];
+                return _buildPremiumCalendarCell(context, day, logs, widget.accentColor, isSelected: true);
+              },
+              todayBuilder: (context, day, focusedDay) {
+                final logs = logsByDay[DateTime.utc(day.year, day.month, day.day)] ?? [];
+                return _buildPremiumCalendarCell(context, day, logs, widget.accentColor, isToday: true);
+              },
+              outsideBuilder: (context, day, focusedDay) {
+                return _buildPremiumCalendarCell(context, day, [], widget.accentColor, isOutside: true);
+              },
+            ),
+            calendarStyle: const CalendarStyle(
+              outsideDaysVisible: true,
+              defaultTextStyle: TextStyle(color: Colors.white),
+              weekendTextStyle: TextStyle(color: Colors.white70),
+            ),
+            headerStyle: HeaderStyle(
+              titleCentered: true,
+              titleTextStyle: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+              formatButtonVisible: false,
+              leftChevronIcon: Container(
+                padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.white, width: 2),
+                  color: Colors.white.withOpacity(0.05),
                   shape: BoxShape.circle,
                 ),
-                child: _buildCalendarCell(context, day, logs, widget.accentColor),
-              );
-            },
-            todayBuilder: (context, day, focusedDay) {
-              final logs = logsByDay[DateTime.utc(day.year, day.month, day.day)] ?? [];
-              return Container(
-                margin: const EdgeInsets.all(2),
+                child: Icon(Icons.chevron_left, color: widget.accentColor, size: 20),
+              ),
+              rightChevronIcon: Container(
+                padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  border: Border.all(color: widget.accentColor, width: 1),
+                  color: Colors.white.withOpacity(0.05),
                   shape: BoxShape.circle,
                 ),
-                child: _buildCalendarCell(context, day, logs, widget.accentColor),
-              );
-            },
-            outsideBuilder: (context, day, focusedDay) {
-              return Center(
-                child: Text(
-                  '${day.day}',
-                  style: const TextStyle(color: Colors.white24),
-                ),
-              );
-            }
-          ),
-          calendarStyle: const CalendarStyle(
-            outsideDaysVisible: true,
-            defaultTextStyle: TextStyle(color: Colors.white),
-            weekendTextStyle: TextStyle(color: Colors.white70),
-          ),
-          headerStyle: HeaderStyle(
-            titleTextStyle: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-            formatButtonVisible: false,
-            leftChevronIcon: Icon(Icons.chevron_left, color: widget.accentColor),
-            rightChevronIcon: Icon(Icons.chevron_right, color: widget.accentColor),
-          ),
-          daysOfWeekStyle: const DaysOfWeekStyle(
-            weekdayStyle: TextStyle(color: Colors.white70),
-            weekendStyle: TextStyle(color: Colors.white54),
-          ),
-        ),
-        const SizedBox(height: 20),
-        if (_selectedDay != null && (logsByDay[DateTime.utc(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day)]?.isNotEmpty ?? false))
-          ...logsByDay[DateTime.utc(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day)]!.map((log) => _buildLogCard(log, provider)),
-        if (_selectedDay != null && (logsByDay[DateTime.utc(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day)]?.isEmpty ?? true))
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.all(32.0),
-              child: Text(
-                'Nenhum treino neste dia.',
-                style: TextStyle(color: Colors.white54),
+                child: Icon(Icons.chevron_right, color: widget.accentColor, size: 20),
               ),
             ),
-          )
+            daysOfWeekStyle: const DaysOfWeekStyle(
+              weekdayStyle: TextStyle(color: Colors.white60, fontSize: 11, fontWeight: FontWeight.bold),
+              weekendStyle: TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        if (_selectedDay != null) ...[
+          _buildSelectedDayDetailSection(context, _selectedDay!, selectedDayLogs, provider),
+        ],
       ],
+    );
+  }
+
+  Widget _buildSelectedDayDetailSection(
+      BuildContext context, DateTime selectedDay, List<WorkoutLog> logs, TrackerProvider provider) {
+    if (logs.isEmpty) {
+      return GlassCard(
+        padding: const EdgeInsets.all(20),
+        borderColor: Colors.white.withOpacity(0.06),
+        borderRadius: 18,
+        child: Column(
+          children: [
+            const Icon(Icons.event_note_rounded, color: Colors.white38, size: 36),
+            const SizedBox(height: 10),
+            Text(
+              _formatDayHeader(selectedDay),
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              "Nenhum treino registrado nesta data.",
+              style: TextStyle(color: Colors.white38, fontSize: 12),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () {
+                _openAddManualLogDialog(context, provider);
+              },
+              icon: const Icon(Icons.add, size: 16),
+              label: const Text("Registrar Treino Neste Dia"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: widget.accentColor.withOpacity(0.2),
+                foregroundColor: widget.accentColor,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    int totalVolume = 0;
+    int totalDurationMinutes = 0;
+    int? avgHeartRate;
+    int? totalCalories;
+
+    for (final log in logs) {
+      totalVolume += log.totalWeight.toInt();
+      totalDurationMinutes += (log.duration ~/ 60);
+      if (log.avgHeartRate != null) avgHeartRate = log.avgHeartRate;
+      if (log.activeCalories != null) totalCalories = (totalCalories ?? 0) + log.activeCalories!;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GlassCard(
+          padding: const EdgeInsets.all(16),
+          borderColor: widget.accentColor.withOpacity(0.2),
+          borderRadius: 18,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      _formatDayHeader(selectedDay),
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: widget.accentColor.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: widget.accentColor.withOpacity(0.3)),
+                    ),
+                    child: Text(
+                      "${logs.length} ${logs.length == 1 ? 'treino' : 'treinos'}",
+                      style: TextStyle(color: widget.accentColor, fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildCalendarMiniStat("⏱️ Tempo", "${totalDurationMinutes}m"),
+                  if (totalVolume > 0)
+                    _buildCalendarMiniStat("🏋️ Volume", "${totalVolume}kg"),
+                  if (avgHeartRate != null)
+                    _buildCalendarMiniStat("❤️ Média", "${avgHeartRate}bpm"),
+                  if (totalCalories != null)
+                    _buildCalendarMiniStat("🔥 Calorias", "${totalCalories}kcal"),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...logs.map((log) => _buildLogCard(log, provider)),
+      ],
+    );
+  }
+
+  Widget _buildCalendarMiniStat(String label, String value) {
+    return Column(
+      children: [
+        Text(label, style: const TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 2),
+        Text(value, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+      ],
+    );
+  }
     );
   }
 
