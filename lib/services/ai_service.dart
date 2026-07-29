@@ -20,22 +20,6 @@ class AIService {
         model: 'gemini-1.5-flash',
         generationConfig: GenerationConfig(
           responseMimeType: 'application/json',
-          responseSchema: Schema.object(
-            properties: {
-              "suggestions": Schema.array(
-                description: "Lista de sugestões por exercício",
-                items: Schema.object(
-                  properties: {
-                    "exerciseName": Schema.string(description: "Nome do exercício"),
-                    "suggestion": Schema.string(
-                        description: "Dica curta (máx 2 frases)."),
-                  },
-                  requiredProperties: ["exerciseName", "suggestion"],
-                ),
-              ),
-            },
-            requiredProperties: ["suggestions"],
-          ),
         ),
       );
 
@@ -60,6 +44,9 @@ class AIService {
       } else {
         buffer.writeln("Com base no histórico, forneça meta de carga e repetições usando sobrecarga progressiva.");
       }
+
+      buffer.writeln("Retorne estritamente em formato JSON com a seguinte estrutura:");
+      buffer.writeln('{ "suggestions": [ { "exerciseName": "Nome", "suggestion": "Dica" } ] }');
 
       final response = await model.generateContent([
         Content.text(buffer.toString())
