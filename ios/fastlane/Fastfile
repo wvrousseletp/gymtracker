@@ -14,6 +14,7 @@ platform :ios do
 
   desc "Fetch certificates and provisioning profiles using match"
   lane :match_appstore do
+    setup_ci
     match(
       type: "appstore",
       readonly: true

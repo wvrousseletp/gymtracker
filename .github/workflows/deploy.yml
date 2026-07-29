@@ -29,16 +29,13 @@ jobs:
           bundler-cache: true
           working-directory: ios
 
-      - name: Fastlane Match (Fetch Certificates)
-        env:
-          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-          MATCH_PAT: ${{ secrets.MATCH_PAT }}
-          ASC_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-          ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
-          ASC_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
-        run: |
-          cd ios
-          bundle exec fastlane match_appstore --verbose
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: ios/Pods
+          key: ${{ runner.os }}-pods-${{ hashFiles('ios/Podfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pods-
 
       - name: Install Flutter SDK
         uses: subosito/flutter-action@v2
@@ -50,16 +47,17 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      - name: Cache CocoaPods
-        uses: actions/cache@v4
-        with:
-          path: ios/Pods
-          key: ${{ runner.os }}-pods-${{ hashFiles('ios/Podfile.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-pods-
-
-      - name: Build IPA
+      - name: Match Certificates and Build IPA
+        env:
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_PAT: ${{ secrets.MATCH_PAT }}
+          ASC_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          ASC_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
         run: |
+          cd ios
+          bundle exec fastlane match_appstore --verbose
+          cd ..
           flutter build ipa --release --verbose
           echo "=== CONTEÚDO DO DIRETÓRIO build/ ==="
           find build -maxdepth 5 -type f || true
