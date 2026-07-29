@@ -20,7 +20,7 @@ class AIService {
 
     try {
       final model = GenerativeModel(
-        model: 'gemini-1.5-flash',
+        model: 'gemini-flash-latest',
         apiKey: _apiKey,
         generationConfig: GenerationConfig(
           responseMimeType: 'application/json',
@@ -92,7 +92,7 @@ class AIService {
 
     try {
       final model = GenerativeModel(
-        model: 'gemini-1.5-flash',
+        model: 'gemini-flash-latest',
         apiKey: _apiKey,
         generationConfig: GenerationConfig(
           temperature: 0.4,
