@@ -7,6 +7,7 @@ import '../providers/workout_provider.dart';
 import '../providers/profile_provider.dart';
 import '../services/ai_service.dart';
 import '../widgets/glass_card.dart';
+import '../widgets/profile_avatar.dart';
 import '../widgets/analytics/exercise_progression_chart.dart';
 
 class ExerciseHubScreen extends StatefulWidget {
@@ -323,7 +324,7 @@ class _ExerciseHubScreenState extends State<ExerciseHubScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  log.routineName,
+                  log.name,
                   style: TextStyle(color: accentColor, fontSize: 12, fontWeight: FontWeight.w600),
                 ),
               ],

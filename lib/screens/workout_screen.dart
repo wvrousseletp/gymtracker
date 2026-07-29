@@ -2531,10 +2531,17 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                   children: [
                     GestureDetector(
                       onTap: () {
+                        final libEx = provider.state?.library.where((l) => l.id == ex.exerciseId).firstOrNull ??
+                            LibraryExercise(
+                              id: ex.exerciseId,
+                              name: ex.name,
+                              muscle: ex.muscle,
+                              measurementType: MeasurementType.reps,
+                            );
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => ExerciseHubScreen(exercise: ex),
+                            builder: (context) => ExerciseHubScreen(exercise: libEx),
                           ),
                         );
                       },

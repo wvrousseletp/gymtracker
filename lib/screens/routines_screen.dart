@@ -8,7 +8,6 @@ import '../providers/workout_provider.dart';
 import '../utils/workout_starter.dart';
 import '../providers/profile_provider.dart';
 import '../models/exercise.dart';
-import '../models/enums.dart';
 import '../models/routine.dart';
 import '../models/workout_log.dart';
 import '../widgets/glass_card.dart';

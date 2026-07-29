@@ -1961,7 +1961,8 @@ class _PrsTabState extends State<PrsTab> {
                 child: GestureDetector(
                   onTap: () {
                     final exIdStr = item['exerciseId'].toString().replaceAll('-pace', '');
-                    final libEx = provider.state?.library.where((e) => e.id == exIdStr).firstOrNull;
+                    final matches = provider.state?.library.where((e) => e.id == exIdStr);
+                    final libEx = (matches != null && matches.isNotEmpty) ? matches.first : null;
                     if (libEx != null) {
                       Navigator.push(
                         context,
