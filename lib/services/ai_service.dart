@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:firebase_ai/firebase_ai.dart';
+import 'package:firebase_vertexai/firebase_vertexai.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/workout_log.dart';
 
@@ -19,30 +19,12 @@ class AIService {
   }) async {
     if (plannedExercises.isEmpty) return {};
 
-    final googleAI = FirebaseAI.googleAI(auth: FirebaseAuth.instance);
+    final vertexAI = FirebaseVertexAI.instanceFor(auth: FirebaseAuth.instance);
 
-    final model = googleAI.generativeModel(
-      model: 'gemini-flash-latest',
+    final model = vertexAI.generativeModel(
+      model: 'gemini-1.5-flash',
       generationConfig: GenerationConfig(
         responseMimeType: 'application/json',
-        responseSchema: Schema.object(
-          properties: {
-            "suggestions": Schema.array(
-              description: "Lista de sugestões por exercício",
-              items: Schema.object(
-                properties: {
-                  "exerciseName": Schema.string(
-                      description: "Nome do exercício"),
-                  "suggestion": Schema.string(
-                      description:
-                          "Uma dica curta e acionável com sugestão de carga/repetição (máx 2 frases). Ex: 'Tente 80kg x 12. Aumente as repetições pois houve falha no último treino.'"),
-                },
-                requiredProperties: ["exerciseName", "suggestion"],
-              ),
-            ),
-          },
-          requiredProperties: ["suggestions"],
-        ),
       ),
     );
 
@@ -75,13 +57,25 @@ class AIService {
           "Com base no histórico, forneça uma meta de carga e repetições para o treino de hoje usando os princípios de sobrecarga progressiva.");
     }
 
+    buffer.writeln(
+        "\nResponda APENAS com um JSON válido no seguinte formato, sem nenhum texto adicional:");
+    buffer.writeln('{"suggestions": [');
+    buffer.writeln('  {"exerciseName": "Nome do Exercício", "suggestion": "Dica curta (máx 2 frases)."}');
+    buffer.writeln(']}');
+
     try {
       final response =
           await model.generateContent([Content.text(buffer.toString())]);
       final text = response.text;
 
       if (text != null && text.isNotEmpty) {
-        final data = jsonDecode(text) as Map<String, dynamic>;
+        // Extrai o JSON mesmo se vier com texto ao redor
+        final jsonStart = text.indexOf('{');
+        final jsonEnd = text.lastIndexOf('}');
+        if (jsonStart == -1 || jsonEnd == -1) return {};
+
+        final jsonStr = text.substring(jsonStart, jsonEnd + 1);
+        final data = jsonDecode(jsonStr) as Map<String, dynamic>;
         final suggestionsArray = data['suggestions'] as List<dynamic>? ?? [];
 
         final Map<String, String> result = {};
@@ -94,8 +88,8 @@ class AIService {
         }
         return result;
       }
-    } catch (e) {
-      // ignore in production — card will show empty state
+    } catch (_) {
+      // ignore — card mostrará estado vazio
     }
 
     return {};
