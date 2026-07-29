@@ -8,6 +8,7 @@ import '../providers/workout_provider.dart';
 import '../utils/workout_starter.dart';
 import '../providers/profile_provider.dart';
 import '../models/exercise.dart';
+import '../models/enums.dart';
 import '../models/routine.dart';
 import '../models/workout_log.dart';
 import '../widgets/glass_card.dart';
@@ -449,14 +450,55 @@ class RoutinesTab extends StatelessWidget {
                       final code = controller.text.trim();
                       if (code.isEmpty) return;
                       
-                      final routine = RoutineSharingUtils.decodeRoutine(code);
-                      if (routine != null) {
-                        provider.addRoutine(routine.name, routine.defaultRest, routine.exercises);
+                      final sharedData = RoutineSharingUtils.decodeRoutine(code);
+                      if (sharedData != null) {
+                        final routine = sharedData.routine;
+                        final updatedExercises = <RoutineExercise>[];
+
+                        for (final re in routine.exercises) {
+                          final def = sharedData.exerciseDefinitions
+                              .where((d) => d.id == re.exerciseId)
+                              .firstOrNull;
+                          String targetId = re.exerciseId;
+
+                          final existingInLib = provider.library.where((l) =>
+                              l.id == re.exerciseId ||
+                              (def != null && l.name.trim().toLowerCase() == def.name.trim().toLowerCase())
+                          ).firstOrNull;
+
+                          if (existingInLib != null) {
+                            targetId = existingInLib.id;
+                          } else if (def != null) {
+                            provider.addLibraryExercise(
+                              def.name,
+                              def.muscle,
+                              measurementTypeToString(def.measurementType),
+                              def.notes,
+                              def.executionType,
+                            );
+                            targetId = provider.library.last.id;
+                          }
+
+                          updatedExercises.add(RoutineExercise(
+                            id: re.id,
+                            exerciseId: targetId,
+                            sets: re.sets,
+                            reps: re.reps,
+                            rest: re.rest,
+                            weight: re.weight,
+                            weightsPerSet: re.weightsPerSet,
+                            repsPerSet: re.repsPerSet,
+                            isCardio: re.isCardio,
+                            allowCardioSets: re.allowCardioSets,
+                          ));
+                        }
+
+                        provider.addRoutine(routine.name, routine.defaultRest, updatedExercises);
                         Navigator.pop(dialogCtx);
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text("Rotina '${routine.name}' importada!"),
+                              content: Text("Rotina '${routine.name}' importada com sucesso!"),
                               backgroundColor: accentColor,
                             ),
                           );
@@ -586,7 +628,7 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                             icon: const Icon(Icons.share_outlined,
                                 color: Colors.blueAccent, size: 20),
                             onPressed: () {
-                              final encoded = RoutineSharingUtils.encodeRoutine(widget.existing!);
+                              final encoded = RoutineSharingUtils.encodeRoutine(widget.existing!, widget.provider.library);
                               Clipboard.setData(ClipboardData(text: encoded));
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(

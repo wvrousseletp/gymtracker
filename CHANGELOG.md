@@ -1,5 +1,11 @@
 # Changelog — Los Mooscles
 
+## 2.5.1 (Build 229) — 29/07/2026
+
+### ✨ Melhorias no Compartilhamento de Rotinas
+- **Criação Automática de Exercícios Faltantes**: Ao exportar uma rotina, as definições completas dos exercícios (nome, músculo, tipo de medição, notas) agora são incluídas no código gerado. Quando o destinatário importa a rotina, o aplicativo verifica se os exercícios existem na biblioteca dele — caso algum exercício personalizado não exista, ele é criado automaticamente na biblioteca do destinatário!
+
+---
 ## 2.5.0 (Build 228) — 29/07/2026
 
 ### ✨ Novidades
