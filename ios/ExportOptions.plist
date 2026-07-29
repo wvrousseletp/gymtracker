@@ -2,31 +2,24 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>generateAppStoreInformation</key>
-	<false/>
-	<key>manageAppVersionAndBuildNumber</key>
-	<false/>
 	<key>method</key>
 	<string>app-store</string>
-	<key>signingStyle</key>
-	<string>manual</string>
-	<key>stripSwiftSymbols</key>
+	<key>manageAppVersionAndBuildNumber</key>
 	<true/>
-	<key>teamID</key>
-	<string>PJ32UPL29J</string>
 	<key>uploadSymbols</key>
 	<true/>
+	<key>signingStyle</key>
+	<string>manual</string>
 	<key>provisioningProfiles</key>
 	<dict>
 		<key>com.vicente.losmooscles</key>
-		<string>Los Mooscles App Store Profile</string>
+		<string>match AppStore com.vicente.losmooscles</string>
 		<key>com.vicente.losmooscles.watchkitapp</key>
-		<string>Los Mooscles Watch App Store Profile</string>
-		<key>com.vicente.losmooscles.watchkitapp.WatchWidgetExtension</key>
-		<string>Los Mooscles Watch Widget App Store Profile</string>
+		<string>match AppStore com.vicente.losmooscles.watchkitapp</string>
 		<key>com.vicente.losmooscles.WorkoutWidgetExtension</key>
-		<string>Los Mooscles Widget App Store Profile</string>
+		<string>match AppStore com.vicente.losmooscles.WorkoutWidgetExtension</string>
+		<key>com.vicente.losmooscles.watchkitapp.WatchWidgetExtension</key>
+		<string>match AppStore com.vicente.losmooscles.watchkitapp.WatchWidgetExtension</string>
 	</dict>
 </dict>
-
 </plist>
