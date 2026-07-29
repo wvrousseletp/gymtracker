@@ -1796,6 +1796,14 @@ class LibraryTab extends StatefulWidget {
 
 class _LibraryTabState extends State<LibraryTab> {
   String _selectedMuscleFilter = "todos";
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = "";
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   List<String> _getMusclesList(List<LibraryExercise> library) {
     final set = <String>{};
@@ -1810,14 +1818,35 @@ class _LibraryTabState extends State<LibraryTab> {
     final provider = Provider.of<WorkoutProvider>(context);
     final library = provider.library;
 
-    final muscles = _getMusclesList(library);
-    final filteredExs = _selectedMuscleFilter == "todos"
-        ? library
-        : library.where((e) => e.muscle == _selectedMuscleFilter).toList();
+    // Calcular frequência de treinos por exercício
+    final Map<String, int> exerciseFrequency = {};
+    for (final log in provider.history) {
+      for (final ex in log.exercises) {
+        if (ex.completedSets > 0) {
+          exerciseFrequency[ex.name] = (exerciseFrequency[ex.name] ?? 0) + 1;
+        }
+      }
+    }
 
-    // Organizar biblioteca em ordem alfabética de nome
+    final muscles = _getMusclesList(library);
+    final query = _searchQuery.trim().toLowerCase();
+
+    final filteredExs = library.where((e) {
+      final matchesMuscle = _selectedMuscleFilter == "todos" || e.muscle == _selectedMuscleFilter;
+      final matchesSearch = query.isEmpty || e.name.toLowerCase().contains(query);
+      return matchesMuscle && matchesSearch;
+    }).toList();
+
+    // Organizar biblioteca: primeiro os mais treinados, depois ordem alfabética
     final sortedExs = List<LibraryExercise>.from(filteredExs)
-      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+      ..sort((a, b) {
+        final freqA = exerciseFrequency[a.name] ?? 0;
+        final freqB = exerciseFrequency[b.name] ?? 0;
+        if (freqA != freqB) {
+          return freqB.compareTo(freqA);
+        }
+        return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+      });
 
     // Agrupar por músculo
     final Map<String, List<LibraryExercise>> groupedExs = {};
@@ -1842,6 +1871,45 @@ class _LibraryTabState extends State<LibraryTab> {
       ),
       body: Column(
         children: [
+          // Caixa de busca por nome
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.04),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white.withOpacity(0.08)),
+              ),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (val) {
+                  setState(() {
+                    _searchQuery = val;
+                  });
+                },
+                style: const TextStyle(color: Colors.white, fontSize: 13),
+                decoration: InputDecoration(
+                  hintText: "Buscar exercício por nome...",
+                  hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
+                  prefixIcon: const Icon(Icons.search, color: Colors.white54, size: 18),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white54, size: 16),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() {
+                              _searchQuery = "";
+                            });
+                          },
+                        )
+                      : null,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                ),
+              ),
+            ),
+          ),
+
           // Filtro por Músculo
           Container(
             height: 48,
@@ -1923,6 +1991,7 @@ class _LibraryTabState extends State<LibraryTab> {
                             ),
                           ),
                           ...exs.map((ex) {
+                            final freq = exerciseFrequency[ex.name] ?? 0;
                             return Container(
                               margin: const EdgeInsets.only(bottom: 8),
                               child: GestureDetector(
@@ -1959,6 +2028,30 @@ class _LibraryTabState extends State<LibraryTab> {
                                                     fontWeight:
                                                         FontWeight.w700),
                                               ),
+                                              if (freq > 0) ...[
+                                                const SizedBox(width: 6),
+                                                Container(
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 6,
+                                                      vertical: 2),
+                                                  decoration: BoxDecoration(
+                                                    color: widget.accentColor
+                                                        .withOpacity(0.15),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            4),
+                                                  ),
+                                                  child: Text(
+                                                    "🔥 $freq ${freq == 1 ? 'treino' : 'treinos'}",
+                                                    style: TextStyle(
+                                                        color: widget.accentColor,
+                                                        fontSize: 9,
+                                                        fontWeight:
+                                                            FontWeight.bold),
+                                                  ),
+                                                ),
+                                              ],
                                               if (ex.measurementType ==
                                                   MeasurementType.time) ...[
                                                 const SizedBox(width: 6),

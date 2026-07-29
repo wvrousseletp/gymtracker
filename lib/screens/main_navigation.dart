@@ -271,7 +271,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
   void _checkWhatsNew() async {
     final prefs = await SharedPreferences.getInstance();
-    const currentBuild = 230;
+    const currentBuild = 231;
     final lastSeenBuild = prefs.getInt('last_seen_whats_new_build') ?? 0;
 
     if (lastSeenBuild < currentBuild) {
@@ -315,23 +315,30 @@ class _MainNavigationState extends State<MainNavigation> {
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    "Atualização v2.5.2 chegou! O seu Histórico agora é Inteligente, com suporte no Watch, IA e biblioteca rápida.",
+                    "Atualização v2.5.3 chegou! Cardio Premium, Biblioteca Inteligente com busca e ordenação por uso, e IA de Endurance.",
                     style: TextStyle(
                         color: Colors.white70, fontSize: 13, height: 1.4),
                   ),
                   const SizedBox(height: 16),
                   _whatsNewItem(
-                    Icons.insights_rounded,
+                    Icons.directions_run_rounded,
+                    const Color(0xff00e676),
+                    "Cardio Premium & Live Timer 🏃‍♂️",
+                    "Cronômetro dedicado para cardio com meta, preenchimento automático do tempo e cálculo de pace.",
+                  ),
+                  const SizedBox(height: 12),
+                  _whatsNewItem(
+                    Icons.sort_rounded,
                     Colors.amberAccent,
-                    "Central do Exercício 📊",
-                    "Toque no título de qualquer exercício (na biblioteca, na agenda ou até durante o treino) para abrir o Hub com gráficos, diário e records.",
+                    "Biblioteca Inteligente & Busca 🔍",
+                    "Busca por nome instantânea e exercícios ordenados automaticamente por quais você mais treina.",
                   ),
                   const SizedBox(height: 12),
                   _whatsNewItem(
                     Icons.auto_awesome,
                     Colors.deepPurpleAccent,
-                    "Dicas da IA (Gemini) 🤖",
-                    "A Inteligência Artificial agora avalia o seu histórico em cada exercício para sugerir ajustes de carga, variações e quebras de platô.",
+                    "IA Especializada em Cardio 🤖",
+                    "O Gemini agora analisa dados de endurance, pace e resistência para treinos de cardio.",
                   ),
                   const SizedBox(height: 12),
                   _whatsNewItem(

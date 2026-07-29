@@ -1053,12 +1053,29 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
         String searchQuery = "";
         return StatefulBuilder(
           builder: (context, setState) {
+            final Map<String, int> exerciseFrequency = {};
+            for (final log in provider.history) {
+              for (final ex in log.exercises) {
+                if (ex.completedSets > 0) {
+                  exerciseFrequency[ex.name] = (exerciseFrequency[ex.name] ?? 0) + 1;
+                }
+              }
+            }
+
             final filteredList = library.where((ex) {
               return ex.name
                       .toLowerCase()
                       .contains(searchQuery.toLowerCase()) ||
                   ex.muscle.toLowerCase().contains(searchQuery.toLowerCase());
-            }).toList();
+            }).toList()
+              ..sort((a, b) {
+                final freqA = exerciseFrequency[a.name] ?? 0;
+                final freqB = exerciseFrequency[b.name] ?? 0;
+                if (freqA != freqB) {
+                  return freqB.compareTo(freqA);
+                }
+                return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+              });
 
             return ClipRRect(
               borderRadius:
@@ -2637,6 +2654,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                 isDone: isDone,
                 initialDistance: pc?.distanceKm,
                 initialMinutes: pc != null ? pc.durationSeconds ~/ 60 : null,
+                goalMinutes: ex.reps > 0 ? ex.reps : null,
                 workoutDurationNotifier: _workoutDurationNotifier,
                 onChanged: (dist, durMinutes, done) {
                   widget.provider.completeSet(
@@ -2675,6 +2693,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                     initialDistance: pc?.distanceKm,
                     initialMinutes:
                         pc != null ? pc.durationSeconds ~/ 60 : null,
+                    goalMinutes: ex.reps > 0 ? ex.reps : null,
                     workoutDurationNotifier: _workoutDurationNotifier,
                     onChanged: (dist, durMinutes, done) {
                       widget.provider.completeSet(

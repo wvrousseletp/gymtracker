@@ -563,11 +563,13 @@ class _HistoryTabState extends State<HistoryTab> {
                         "${(log.duration ~/ 60)} min",
                         style: const TextStyle(color: Colors.white38, fontSize: 11),
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        "Volume: ${log.totalWeight.toStringAsFixed(0)}kg",
-                        style: TextStyle(color: widget.accentColor.withOpacity(0.8), fontSize: 11, fontWeight: FontWeight.bold),
-                      ),
+                      if (!log.exercises.every((e) => e.muscle.toLowerCase().contains('cardio') || (e.performedCardios != null && e.performedCardios!.isNotEmpty))) ...[
+                        const SizedBox(width: 8),
+                        Text(
+                          "Volume: ${log.totalWeight.toStringAsFixed(0)}kg",
+                          style: TextStyle(color: widget.accentColor.withOpacity(0.8), fontSize: 11, fontWeight: FontWeight.bold),
+                        ),
+                      ],
                       if (log.avgHeartRate != null) ...[
                         const SizedBox(width: 8),
                         Text(
@@ -649,12 +651,12 @@ class _HistoryTabState extends State<HistoryTab> {
               const SizedBox(height: 6),
               Column(
                 children: log.exercises.map((ex) {
-                  final isCardio = ex.performedCardios != null && ex.performedCardios!.isNotEmpty;
+                  final isCardio = ex.muscle.toLowerCase().contains('cardio') || (ex.performedCardios != null && ex.performedCardios!.isNotEmpty);
                   final done = ex.completedSets;
                   
                   String subtitle = "";
                   if (isCardio) {
-                    final doneCardios = ex.performedCardios!.where((c) => c != null).toList();
+                    final doneCardios = (ex.performedCardios ?? []).where((c) => c != null).toList();
                     if (doneCardios.isNotEmpty) {
                       subtitle = doneCardios.map((c) {
                         final d = c!.distanceKm;
@@ -668,6 +670,7 @@ class _HistoryTabState extends State<HistoryTab> {
                         return "${d.toStringAsFixed(1)}km em ${t}m";
                       }).join('\n');
                     } else {
+                        // Legacy cardio log fallback
                         final d = ex.weight;
                         final t = ex.reps;
                         if (d > 0 && t > 0) {

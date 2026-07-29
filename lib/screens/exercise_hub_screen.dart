@@ -75,9 +75,14 @@ class _ExerciseHubScreenState extends State<ExerciseHubScreen> {
       _aiError = null;
     });
 
+    final isCardio = widget.exercise.measurementType == MeasurementType.cardio ||
+        widget.exercise.muscle.toLowerCase().contains('cardio') ||
+        widget.exercise.measurementType == MeasurementType.time;
+
     final insight = await AIService().analyzeExerciseHistory(
       exerciseName: widget.exercise.name,
       exerciseHistory: _exerciseLogs,
+      isCardio: isCardio,
     );
 
     if (mounted) {

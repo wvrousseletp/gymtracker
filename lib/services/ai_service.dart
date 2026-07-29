@@ -121,6 +121,7 @@ class AIService {
   Future<String?> analyzeExerciseHistory({
     required String exerciseName,
     required List<WorkoutLog> exerciseHistory, // Logs apenas onde este exercício aparece
+    bool isCardio = false,
   }) async {
     if (exerciseHistory.isEmpty) return null;
 
@@ -131,7 +132,11 @@ class AIService {
     if (idToken == null) return null;
 
     final buffer = StringBuffer();
-    buffer.writeln("Você é um treinador de elite especialista em musculação e biomecânica.");
+    if (isCardio) {
+      buffer.writeln("Você é um treinador de elite especialista em endurance, corrida e cardio.");
+    } else {
+      buffer.writeln("Você é um treinador de elite especialista em musculação e biomecânica.");
+    }
     buffer.writeln("Estou analisando meu histórico do exercício: $exerciseName.");
     buffer.writeln("Aqui estão as minhas sessões de treino passadas em ordem decrescente (da mais recente para a mais antiga):");
 
@@ -141,13 +146,40 @@ class AIService {
     for (var log in logsToAnalyze) {
       for (var ex in log.exercises) {
         if (ex.name == exerciseName) {
-          buffer.writeln("- ${log.date}: ${ex.completedSets} séries. Peso máximo do dia: ${ex.weight}kg. Reps: ${ex.reps}. RPE: ${ex.rpe}. Falha relatada: ${ex.failureReport != null && ex.failureReport!.contains(true) ? 'Sim' : 'Não'}.");
+          if (isCardio) {
+            String cardioStats = "";
+            if (ex.performedCardios != null && ex.performedCardios!.isNotEmpty) {
+              final pcs = ex.performedCardios!.where((c) => c != null).toList();
+              for (var pc in pcs) {
+                final dist = pc!.distanceKm;
+                final dur = pc.durationSeconds ~/ 60;
+                String paceStr = "";
+                if (dist > 0 && dur > 0) {
+                   final pace = dur / dist;
+                   final m = pace.floor();
+                   final s = ((pace - m) * 60).round();
+                   paceStr = " Pace médio: $m:${s.toString().padLeft(2, '0')}/km.";
+                }
+                cardioStats += " [${dist.toStringAsFixed(2)}km em ${dur}m.$paceStr]";
+              }
+            }
+            if (cardioStats.isEmpty) {
+               cardioStats = " [${ex.weight}km em ${ex.reps}m]";
+            }
+            buffer.writeln("- ${log.date}:$cardioStats RPE do exercício: ${ex.rpe}. Batimentos do treino: ${log.avgHeartRate ?? 'N/A'}.");
+          } else {
+            buffer.writeln("- ${log.date}: ${ex.completedSets} séries. Peso máximo do dia: ${ex.weight}kg. Reps: ${ex.reps}. RPE: ${ex.rpe}. Falha relatada: ${ex.failureReport != null && ex.failureReport!.contains(true) ? 'Sim' : 'Não'}.");
+          }
         }
       }
     }
 
     buffer.writeln("\nFaça uma análise rápida, direta e motivadora (no máximo 3 ou 4 frases curtas).");
-    buffer.writeln("Identifique tendências (estagnação, progressão de volume ou carga) e me dê uma dica prática e acionável para o meu próximo treino desse exercício. Não use Markdown exagerado, apenas texto limpo.");
+    if (isCardio) {
+      buffer.writeln("Identifique tendências (melhora de pace, aumento de distância ou resistência) e me dê uma dica prática e acionável para o meu próximo treino desse exercício. Não use Markdown exagerado, apenas texto limpo.");
+    } else {
+      buffer.writeln("Identifique tendências (estagnação, progressão de volume ou carga) e me dê uma dica prática e acionável para o meu próximo treino desse exercício. Não use Markdown exagerado, apenas texto limpo.");
+    }
 
     final url = Uri.parse(
       'https://$_location-aiplatform.googleapis.com/v1/projects/$_projectId/locations/$_location/publishers/google/models/$_model:generateContent',
