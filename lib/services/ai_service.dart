@@ -39,8 +39,8 @@ class AIService {
       for (var ex in log.exercises) {
         if (plannedExercises.contains(ex.name) && ex.completedSets > 0) {
           hasHistory = true;
-          final notesPart = ex.notes.isNotEmpty ? ' Notas: ${ex.notes}' : '';
-          buffer.writeln("- ${log.date}: ${ex.name} -> ${ex.completedSets} séries de ${ex.reps} reps com ${ex.weight}kg.$notesPart");
+          buffer.writeln(
+              "- ${log.date}: ${ex.name} -> ${ex.completedSets} séries de ${ex.reps} reps com ${ex.weight}kg.");
         }
       }
     }

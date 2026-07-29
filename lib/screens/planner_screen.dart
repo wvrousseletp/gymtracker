@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../providers/tracker_provider.dart';
 import '../models/exercise.dart';
 import '../models/planner_state.dart';
-import '../models/enums.dart';
 import '../models/workout_log.dart';
 import '../services/ai_service.dart';
 import '../widgets/glass_card.dart';

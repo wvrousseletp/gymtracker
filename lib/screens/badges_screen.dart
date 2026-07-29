@@ -239,12 +239,12 @@ class _BadgeItem extends StatelessWidget {
                       color: Colors.black26,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Row(
+                    child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.lock, size: 14, color: Colors.white54),
-                        const SizedBox(width: 6),
-                        const Text("Bloqueada", style: TextStyle(color: Colors.white54, fontSize: 12)),
+                        Icon(Icons.lock, size: 14, color: Colors.white54),
+                        SizedBox(width: 6),
+                        Text("Bloqueada", style: TextStyle(color: Colors.white54, fontSize: 12)),
                       ],
                     ),
                   )
