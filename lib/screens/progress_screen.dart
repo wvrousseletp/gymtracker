@@ -777,8 +777,6 @@ class _HistoryTabState extends State<HistoryTab> {
       ],
     );
   }
-    );
-  }
 
   Widget _buildLogCard(WorkoutLog log, TrackerProvider provider) {
     final isExpanded = _expandedLogIds.contains(log.id);
