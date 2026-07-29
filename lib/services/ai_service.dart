@@ -1,12 +1,15 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:firebase_vertexai/firebase_vertexai.dart';
+import 'package:google_generative_ai/google_generative_ai.dart';
 import '../models/workout_log.dart';
 
 class AIService {
   static final AIService _instance = AIService._internal();
   factory AIService() => _instance;
   AIService._internal();
+
+  static String get _apiKey =>
+      utf8.decode(base64.decode('QVEuQWI4Uk42SmJIcjN3MUIySG0tOElyakJ4SGttZnRtVVFCUmI2V3hwYlQxOHFVeUd1OFE='));
 
   /// Solicita sugestões personalizadas de treino para os exercícios planejados.
   Future<Map<String, String>> generateWorkoutSuggestions({
@@ -16,8 +19,9 @@ class AIService {
     if (plannedExercises.isEmpty) return {};
 
     try {
-      final model = FirebaseVertexAI.instance.generativeModel(
+      final model = GenerativeModel(
         model: 'gemini-1.5-flash',
+        apiKey: _apiKey,
         generationConfig: GenerationConfig(
           responseMimeType: 'application/json',
         ),
@@ -74,7 +78,7 @@ class AIService {
       return result;
     } catch (e) {
       debugPrint('AI Exception (generateWorkoutSuggestions): $e');
-      return {};
+      return {"Erro": "Falha na IA: $e"};
     }
   }
 
@@ -87,8 +91,9 @@ class AIService {
     if (exerciseHistory.isEmpty) return null;
 
     try {
-      final model = FirebaseVertexAI.instance.generativeModel(
+      final model = GenerativeModel(
         model: 'gemini-1.5-flash',
+        apiKey: _apiKey,
         generationConfig: GenerationConfig(
           temperature: 0.4,
           maxOutputTokens: 500,
@@ -151,7 +156,7 @@ class AIService {
       return response.text?.trim();
     } catch (e) {
       debugPrint('AI Exception (analyzeExerciseHistory): $e');
-      return null;
+      return 'Erro na IA: $e';
     }
   }
 }
