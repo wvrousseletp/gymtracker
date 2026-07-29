@@ -25,7 +25,7 @@ class _ProgressScreenState extends State<ProgressScreen> with SingleTickerProvid
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -53,7 +53,6 @@ class _ProgressScreenState extends State<ProgressScreen> with SingleTickerProvid
           tabs: const [
             Tab(text: "Histórico"),
             Tab(text: "Estatísticas"),
-            Tab(text: "Recordes (PRs)"),
             Tab(text: "Medidas"),
           ],
         ),
@@ -63,7 +62,6 @@ class _ProgressScreenState extends State<ProgressScreen> with SingleTickerProvid
         children: [
           HistoryTab(accentColor: accentColor),
           AnalyticsTab(accentColor: accentColor),
-          PrsTab(accentColor: accentColor),
           MedidasTab(accentColor: accentColor),
         ],
       ),

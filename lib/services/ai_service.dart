@@ -81,7 +81,10 @@ class AIService {
         body: body,
       );
 
-      if (response.statusCode != 200) return {};
+      if (response.statusCode != 200) {
+        print('AI Error (generateWorkoutSuggestions): ${response.statusCode} - ${response.body}');
+        return {};
+      }
 
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       final candidates = data['candidates'] as List<dynamic>?;
@@ -111,7 +114,8 @@ class AIService {
         }
       }
       return result;
-    } catch (_) {
+    } catch (e) {
+      print('AI Exception (generateWorkoutSuggestions): $e');
       // Ignora erros — card mostrará estado vazio
       return {};
     }
@@ -208,7 +212,10 @@ class AIService {
         body: body,
       );
 
-      if (response.statusCode != 200) return null;
+      if (response.statusCode != 200) {
+        print('AI Error (analyzeExerciseHistory): ${response.statusCode} - ${response.body}');
+        return null;
+      }
 
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       final candidates = data['candidates'] as List<dynamic>?;
@@ -219,7 +226,8 @@ class AIService {
       final text = parts?.first['text'] as String?;
 
       return text?.trim();
-    } catch (_) {
+    } catch (e) {
+      print('AI Exception (analyzeExerciseHistory): $e');
       return null;
     }
   }
