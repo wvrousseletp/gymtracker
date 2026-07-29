@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:fl_chart/fl_chart.dart';
+
 import '../providers/tracker_provider.dart';
 import '../models/workout_log.dart';
 import '../models/medidas.dart';
@@ -10,7 +10,7 @@ import '../widgets/glass_card.dart';
 import '../widgets/profile_avatar.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'analytics_tab.dart';
-import 'exercise_hub_screen.dart';
+
 
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
