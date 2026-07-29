@@ -271,7 +271,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
   void _checkWhatsNew() async {
     final prefs = await SharedPreferences.getInstance();
-    const currentBuild = 224;
+    const currentBuild = 230;
     final lastSeenBuild = prefs.getInt('last_seen_whats_new_build') ?? 0;
 
     if (lastSeenBuild < currentBuild) {
@@ -315,30 +315,30 @@ class _MainNavigationState extends State<MainNavigation> {
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    "Atualização v2.4.0 chegou! Dashboard de Estatísticas totalmente novo, com mais dados e totalmente personalizável.",
+                    "Atualização v2.5.2 chegou! O seu Histórico agora é Inteligente, com suporte no Watch, IA e biblioteca rápida.",
                     style: TextStyle(
                         color: Colors.white70, fontSize: 13, height: 1.4),
                   ),
                   const SizedBox(height: 16),
                   _whatsNewItem(
-                    Icons.bar_chart_rounded,
+                    Icons.insights_rounded,
+                    Colors.amberAccent,
+                    "Central do Exercício 📊",
+                    "Toque no título de qualquer exercício (na biblioteca, na agenda ou até durante o treino) para abrir o Hub com gráficos, diário e records.",
+                  ),
+                  const SizedBox(height: 12),
+                  _whatsNewItem(
+                    Icons.auto_awesome,
                     Colors.deepPurpleAccent,
-                    "Dashboard Premium 📊",
-                    "Cards de KPI com sua Ofensiva de treinos, Músculo favorito e Tempo total. Filtros de período: 7 dias, 30 dias ou o ano todo.",
+                    "Dicas da IA (Gemini) 🤖",
+                    "A Inteligência Artificial agora avalia o seu histórico em cada exercício para sugerir ajustes de carga, variações e quebras de platô.",
                   ),
                   const SizedBox(height: 12),
                   _whatsNewItem(
-                    Icons.donut_large_rounded,
-                    Colors.orangeAccent,
-                    "Anéis & Donut de Macros 🍩",
-                    "Anéis de conclusão diária (Treino, Calorias e Água) no estilo Apple Fitness, mais um gráfico de distribuição dos seus macronutrientes.",
-                  ),
-                  const SizedBox(height: 12),
-                  _whatsNewItem(
-                    Icons.drag_indicator_rounded,
+                    Icons.watch,
                     Colors.blueAccent,
-                    "Reordene as Estatísticas ✏️",
-                    "Toque no ícone de lápis e arraste cada bloco para a posição que preferir. Sua ordem é salva automaticamente!",
+                    "Sincronização Veloz no Watch ⚡️",
+                    "Reescrevemos o motor de transferência para o Apple Watch. O app no relógio agora espelha seu treino perfeitamente e sem engasgos!",
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton(

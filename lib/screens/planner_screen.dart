@@ -7,6 +7,7 @@ import '../models/workout_log.dart';
 import '../services/ai_service.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/profile_avatar.dart';
+import 'exercise_hub_screen.dart';
 
 class PlannerScreen extends StatefulWidget {
   const PlannerScreen({super.key});
@@ -869,6 +870,33 @@ class _PlannerScreenState extends State<PlannerScreen> {
             ),
           ),
           const SizedBox(width: 8),
+
+          if (selectedValue.startsWith('exercise:')) ...[
+            GestureDetector(
+              onTap: () {
+                final exId = selectedValue.substring(9);
+                final libEx = library.where((e) => e.id == exId).firstOrNull;
+                if (libEx != null) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ExerciseHubScreen(exercise: libEx),
+                    ),
+                  );
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: accentColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: accentColor.withOpacity(0.3)),
+                ),
+                child: Icon(Icons.info_outline, color: accentColor, size: 16),
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
 
           // Seletor de Quantidade (séries ou min para exercícios avulsos)
           if (selectedValue.startsWith('exercise:')) ...[

@@ -21,6 +21,7 @@ import '../utils/workout_starter.dart';
 import '../services/rest_timer_service.dart';
 import '../widgets/premium_strength_set_card.dart';
 import '../widgets/workout_share_card.dart';
+import 'exercise_hub_screen.dart';
 
 import '../widgets/premium_cardio_view.dart';
 import 'notification_settings_dialog.dart';
@@ -2528,13 +2529,23 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      ex.name,
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -0.2),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ExerciseHubScreen(exercise: ex),
+                          ),
+                        );
+                      },
+                      child: Text(
+                        ex.name,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.2),
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Row(

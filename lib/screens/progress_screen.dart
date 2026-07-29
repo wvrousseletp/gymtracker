@@ -10,6 +10,7 @@ import '../widgets/glass_card.dart';
 import '../widgets/profile_avatar.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'analytics_tab.dart';
+import 'exercise_hub_screen.dart';
 
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
@@ -1957,9 +1958,22 @@ class _PrsTabState extends State<PrsTab> {
 
               return Container(
                 margin: const EdgeInsets.only(bottom: 8),
-                child: GlassCard(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  borderColor: Colors.white.withOpacity(0.04),
+                child: GestureDetector(
+                  onTap: () {
+                    final exIdStr = item['exerciseId'].toString().replaceAll('-pace', '');
+                    final libEx = provider.state?.library.where((e) => e.id == exIdStr).firstOrNull;
+                    if (libEx != null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ExerciseHubScreen(exercise: libEx),
+                        ),
+                      );
+                    }
+                  },
+                  child: GlassCard(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    borderColor: Colors.white.withOpacity(0.04),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [

@@ -116,4 +116,79 @@ class AIService {
       return {};
     }
   }
+
+  /// Solicita uma análise profunda do histórico de um único exercício para a Central do Exercício.
+  Future<String?> analyzeExerciseHistory({
+    required String exerciseName,
+    required List<WorkoutLog> exerciseHistory, // Logs apenas onde este exercício aparece
+  }) async {
+    if (exerciseHistory.isEmpty) return null;
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return null;
+    
+    final idToken = await user.getIdToken();
+    if (idToken == null) return null;
+
+    final buffer = StringBuffer();
+    buffer.writeln("Você é um treinador de elite especialista em musculação e biomecânica.");
+    buffer.writeln("Estou analisando meu histórico do exercício: $exerciseName.");
+    buffer.writeln("Aqui estão as minhas sessões de treino passadas em ordem decrescente (da mais recente para a mais antiga):");
+
+    // Limita o histórico para não estourar tokens, pegando as últimas 15 sessões
+    final logsToAnalyze = exerciseHistory.take(15).toList();
+    
+    for (var log in logsToAnalyze) {
+      for (var ex in log.exercises) {
+        if (ex.name == exerciseName) {
+          buffer.writeln("- ${log.date}: ${ex.completedSets} séries. Peso máximo do dia: ${ex.weight}kg. Reps: ${ex.reps}. RPE: ${ex.rpe}. Falha relatada: ${ex.failureReport != null && ex.failureReport!.contains(true) ? 'Sim' : 'Não'}.");
+        }
+      }
+    }
+
+    buffer.writeln("\nFaça uma análise rápida, direta e motivadora (no máximo 3 ou 4 frases curtas).");
+    buffer.writeln("Identifique tendências (estagnação, progressão de volume ou carga) e me dê uma dica prática e acionável para o meu próximo treino desse exercício. Não use Markdown exagerado, apenas texto limpo.");
+
+    final url = Uri.parse(
+      'https://$_location-aiplatform.googleapis.com/v1/projects/$_projectId/locations/$_location/publishers/google/models/$_model:generateContent',
+    );
+
+    final body = jsonEncode({
+      "contents": [
+        {
+          "role": "user",
+          "parts": [{"text": buffer.toString()}]
+        }
+      ],
+      "generationConfig": {
+        "temperature": 0.4,
+        "maxOutputTokens": 500,
+      }
+    });
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Authorization': 'Bearer $idToken',
+          'Content-Type': 'application/json',
+        },
+        body: body,
+      );
+
+      if (response.statusCode != 200) return null;
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final candidates = data['candidates'] as List<dynamic>?;
+      if (candidates == null || candidates.isEmpty) return null;
+
+      final content = candidates[0]['content'] as Map<String, dynamic>?;
+      final parts = content?['parts'] as List<dynamic>?;
+      final text = parts?.first['text'] as String?;
+
+      return text?.trim();
+    } catch (_) {
+      return null;
+    }
+  }
 }

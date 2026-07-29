@@ -15,6 +15,7 @@ import '../widgets/glass_card.dart';
 import '../widgets/profile_avatar.dart';
 
 import 'planner_screen.dart';
+import 'exercise_hub_screen.dart';
 
 String _getMeasurementTypeLabelStatic(MeasurementType type) {
   switch (type) {
@@ -1925,14 +1926,25 @@ class _LibraryTabState extends State<LibraryTab> {
                           ...exs.map((ex) {
                             return Container(
                               margin: const EdgeInsets.only(bottom: 8),
-                              child: GlassCard(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 10),
-                                borderColor: Colors.white.withOpacity(0.04),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
+                              child: GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          ExerciseHubScreen(exercise: ex),
+                                    ),
+                                  );
+                                },
+                                child: GlassCard(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 10),
+                                  borderColor: Colors.white.withOpacity(0.04),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
                                     Expanded(
                                       child: Column(
                                         crossAxisAlignment:

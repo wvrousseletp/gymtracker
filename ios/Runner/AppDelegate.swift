@@ -154,22 +154,15 @@ import WidgetKit
         msg["action"] = actionName
         msg[key] = keyVal
       }
-      session.sendMessage(msg, replyHandler: nil) { [weak self] error in
+      session.sendMessage(msg, replyHandler: nil) { error in
         print("[AppDelegate] Error sending real-time message for \(key): \(error.localizedDescription)")
-        self?.session?.transferUserInfo(msg)
+        // Removed transferUserInfo fallback to prevent queue clogging.
+        // updateApplicationContext handles state updates reliably.
       }
     } else {
-      // Fallback to transferUserInfo for background/reliability
-      var msg: [String: Any] = [:]
-      if clearActive {
-        msg["action"] = "clearActiveWorkout"
-        msg["clearActiveWorkout"] = true
-      } else if let keyVal = json {
-        let actionName = "update" + key.prefix(1).uppercased() + key.dropFirst()
-        msg["action"] = actionName
-        msg[key] = keyVal
-      }
-      session.transferUserInfo(msg)
+      // The watch is unreachable. We rely purely on updateApplicationContext 
+      // (called above) to deliver the latest state when the watch reconnects.
+      // This prevents enqueueing massive state payloads that choke WatchConnectivity.
     }
   }
 
