@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import '../models/badge.dart';
 import '../models/planner_state.dart';
+import '../models/workout_log.dart';
+import '../models/exercise.dart';
 
 class BadgesService {
   static const List<AppBadge> allBadges = [
@@ -136,8 +138,9 @@ class BadgesService {
       if (dt != null && dt.isAfter(sevenDaysAgo)) {
         for (var ex in log.exercises) {
           final libEx = library.where((e) => e.name == ex.name).firstOrNull;
-          if (libEx != null && libEx.muscle.toLowerCase().contains('cardio')) {
-            cardioMinutesThisWeek += ex.completedSets.toDouble(); // Assuming sets stores minutes for cardio
+          final muscle = libEx?.muscle ?? '';
+          if (muscle.toLowerCase().contains('cardio')) {
+            cardioMinutesThisWeek += ex.completedSets.toDouble();
           }
         }
       }

@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../../providers/tracker_provider.dart';
 import '../../../models/workout_log.dart';
-import '../../glass_card.dart';
+import '../glass_card.dart';
 import 'exercise_progression_chart.dart';
 
 class ExerciseProgressionCard extends StatefulWidget {

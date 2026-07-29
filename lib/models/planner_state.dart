@@ -242,6 +242,7 @@ class PlannerState {
   final Map<String, DietHistoryDay> dietHistory;
   final List<String> deletedHealthWorkoutIds;
   final List<String> unlockedBadgeIds;
+  final List<ActiveWorkoutState> postponedWorkouts;
 
   PlannerState({
     required this.library,

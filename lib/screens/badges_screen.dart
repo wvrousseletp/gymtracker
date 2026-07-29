@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/tracker_provider.dart';
+import '../models/badge.dart';
 import '../services/badges_service.dart';
 import '../widgets/glass_card.dart';
 
@@ -253,11 +254,12 @@ class _BadgeItem extends StatelessWidget {
           ),
         );
       },
-      child: GlassCard(
-        useBlur: true,
-        borderRadius: 20,
-        backgroundColor: bgColor,
-        borderColor: borderColor,
+      child: Container(
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: borderColor),
+        ),
         padding: const EdgeInsets.all(12),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

@@ -8,11 +8,11 @@ class AIService {
   factory AIService() => _instance;
   AIService._internal();
 
-  /// Requests personalized workout suggestions for the planned exercises.
-  /// 
-  /// [plannedExercises] is a list of exercise names planned for the day.
-  /// [recentHistory] is a list of [WorkoutLog] from the last ~3 months.
-  /// Returns a map of ExerciseName -> Suggestion Text.
+  /// Solicita sugestões personalizadas de treino para os exercícios planejados.
+  ///
+  /// [plannedExercises] é a lista de nomes dos exercícios planejados para o dia.
+  /// [recentHistory] é a lista de [WorkoutLog] dos últimos meses.
+  /// Retorna um mapa de NomeExercício → Texto da Sugestão.
   Future<Map<String, String>> generateWorkoutSuggestions({
     required List<String> plannedExercises,
     required List<WorkoutLog> recentHistory,
@@ -20,8 +20,7 @@ class AIService {
     if (plannedExercises.isEmpty) return {};
 
     final googleAI = FirebaseAI.googleAI(auth: FirebaseAuth.instance);
-    
-    // We use gemini-flash-latest per guidelines
+
     final model = googleAI.generativeModel(
       model: 'gemini-flash-latest',
       generationConfig: GenerationConfig(
@@ -29,13 +28,14 @@ class AIService {
         responseSchema: Schema.object(
           properties: {
             "suggestions": Schema.array(
-              description: "List of suggestions per exercise",
+              description: "Lista de sugestões por exercício",
               items: Schema.object(
                 properties: {
-                  "exerciseName": Schema.string(description: "Name of the exercise"),
+                  "exerciseName": Schema.string(
+                      description: "Nome do exercício"),
                   "suggestion": Schema.string(
-                    description: "A short, actionable tip with weight/rep suggestion (max 2 sentences). Example: 'Tente 80kg x 12. Aumente as repetições já que houve falha no último treino.'"
-                  ),
+                      description:
+                          "Uma dica curta e acionável com sugestão de carga/repetição (máx 2 frases). Ex: 'Tente 80kg x 12. Aumente as repetições pois houve falha no último treino.'"),
                 },
                 requiredProperties: ["exerciseName", "suggestion"],
               ),
@@ -46,36 +46,44 @@ class AIService {
       ),
     );
 
-    // Build the prompt containing history for ONLY the planned exercises
     final buffer = StringBuffer();
-    buffer.writeln("Você é um personal trainer especialista em hipertrofia e sobrecarga progressiva.");
-    buffer.writeln("O usuário fará o seguinte treino hoje: ${plannedExercises.join(', ')}");
-    buffer.writeln("Aqui está o histórico recente do usuário para esses exercícios:");
-    
+    buffer.writeln(
+        "Você é um personal trainer especialista em hipertrofia e sobrecarga progressiva.");
+    buffer.writeln(
+        "O usuário fará o seguinte treino hoje: ${plannedExercises.join(', ')}");
+    buffer.writeln(
+        "Aqui está o histórico recente do usuário para esses exercícios:");
+
     bool hasHistory = false;
     for (var log in recentHistory) {
       for (var ex in log.exercises) {
         if (plannedExercises.contains(ex.name) && ex.completedSets > 0) {
           hasHistory = true;
-          buffer.writeln("- ${log.date}: ${ex.name} -> ${ex.completedSets} séries de ${ex.reps} reps com ${ex.weight}kg. ${ex.notes.isNotEmpty ? 'Notas: ${ex.notes}' : ''}");
+          final notesPart =
+              ex.notes.isNotEmpty ? ' Notas: ${ex.notes}' : '';
+          buffer.writeln(
+              "- ${log.date}: ${ex.name} -> ${ex.completedSets} séries de ${ex.reps} reps com ${ex.weight}kg.$notesPart");
         }
       }
     }
-    
+
     if (!hasHistory) {
-      buffer.writeln("Nenhum histórico recente encontrado para esses exercícios. Forneça uma sugestão genérica para um treino de hipertrofia para cada um.");
+      buffer.writeln(
+          "Nenhum histórico recente encontrado para esses exercícios. Forneça uma sugestão genérica de hipertrofia para cada um.");
     } else {
-      buffer.writeln("Com base no histórico, forneça uma meta de carga e repetições para o treino de hoje usando os princípios de sobrecarga progressiva.");
+      buffer.writeln(
+          "Com base no histórico, forneça uma meta de carga e repetições para o treino de hoje usando os princípios de sobrecarga progressiva.");
     }
 
     try {
-      final response = await model.generateContent([Content.text(buffer.toString())]);
+      final response =
+          await model.generateContent([Content.text(buffer.toString())]);
       final text = response.text;
-      
+
       if (text != null && text.isNotEmpty) {
         final data = jsonDecode(text) as Map<String, dynamic>;
         final suggestionsArray = data['suggestions'] as List<dynamic>? ?? [];
-        
+
         final Map<String, String> result = {};
         for (var item in suggestionsArray) {
           final exName = item['exerciseName'] as String?;
@@ -87,7 +95,7 @@ class AIService {
         return result;
       }
     } catch (e) {
-      print("Erro ao gerar sugestão com IA: $e");
+      // ignore in production — card will show empty state
     }
 
     return {};

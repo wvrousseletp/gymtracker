@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../../models/workout_log.dart';
-import '../../utils/date_utils.dart';
+import '../../../models/workout_log.dart';
 
 class ExerciseProgressionChart extends StatelessWidget {
   final String exerciseName;
@@ -167,7 +166,7 @@ class ExerciseProgressionChart extends StatelessWidget {
           ],
           lineTouchData: LineTouchData(
             touchTooltipData: LineTouchTooltipData(
-              getTooltipColor: (touchedSpot) => Colors.black.withOpacity(0.8),
+              tooltipBgColor: Colors.black.withOpacity(0.8),
               getTooltipItems: (touchedSpots) {
                 return touchedSpots.map((LineBarSpot touchedSpot) {
                   final textStyle = TextStyle(
