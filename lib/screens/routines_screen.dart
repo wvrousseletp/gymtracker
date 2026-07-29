@@ -2060,7 +2060,8 @@ class _LibraryTabState extends State<LibraryTab> {
                                   ],
                                 ),
                               ),
-                            );
+                            ),
+                          );
                           }),
                         ],
                       );
