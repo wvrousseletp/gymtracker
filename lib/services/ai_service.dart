@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/workout_log.dart';
@@ -82,7 +83,7 @@ class AIService {
       );
 
       if (response.statusCode != 200) {
-        print('AI Error (generateWorkoutSuggestions): ${response.statusCode} - ${response.body}');
+        debugPrint('AI Error (generateWorkoutSuggestions): ${response.statusCode} - ${response.body}');
         return {};
       }
 
@@ -115,7 +116,7 @@ class AIService {
       }
       return result;
     } catch (e) {
-      print('AI Exception (generateWorkoutSuggestions): $e');
+      debugPrint('AI Exception (generateWorkoutSuggestions): $e');
       // Ignora erros — card mostrará estado vazio
       return {};
     }
@@ -213,7 +214,7 @@ class AIService {
       );
 
       if (response.statusCode != 200) {
-        print('AI Error (analyzeExerciseHistory): ${response.statusCode} - ${response.body}');
+        debugPrint('AI Error (analyzeExerciseHistory): ${response.statusCode} - ${response.body}');
         return null;
       }
 
@@ -227,7 +228,7 @@ class AIService {
 
       return text?.trim();
     } catch (e) {
-      print('AI Exception (analyzeExerciseHistory): $e');
+      debugPrint('AI Exception (analyzeExerciseHistory): $e');
       return null;
     }
   }
