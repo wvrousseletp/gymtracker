@@ -102,12 +102,13 @@ class AIService {
 
       final buffer = StringBuffer();
       if (isCardio) {
-        buffer.writeln("Você é um treinador de elite especialista em endurance, corrida e cardio.");
+        buffer.writeln("Você é meu treinador pessoal de cardio. Fale DIRETAMENTE comigo, como se estivesse me mandando uma mensagem rápida no WhatsApp.");
       } else {
-        buffer.writeln("Você é um treinador de elite especialista em musculação e biomecânica.");
+        buffer.writeln("Você é meu treinador pessoal de musculação e biomecânica. Fale DIRETAMENTE comigo, como se estivesse me mandando uma mensagem rápida no WhatsApp.");
       }
-      buffer.writeln("Estou analisando meu histórico do exercício: $exerciseName.");
-      buffer.writeln("Aqui estão as minhas sessões de treino passadas em ordem decrescente (da mais recente para a mais antiga):");
+      buffer.writeln("NÃO se apresente. NÃO diga 'como seu treinador' ou 'vejo que você...'. Vá direto ao ponto.");
+      buffer.writeln("O foco agora é o exercício: $exerciseName.");
+      buffer.writeln("Este é o meu histórico recente de treinos neste exercício (do mais recente para o mais antigo):");
 
       final logsToAnalyze = exerciseHistory.take(15).toList();
 
@@ -134,20 +135,20 @@ class AIService {
               if (cardioStats.isEmpty) {
                  cardioStats = " [${ex.weight}km em ${ex.reps}m]";
               }
-              buffer.writeln("- ${log.date}:$cardioStats RPE do exercício: ${ex.rpe}. Batimentos do treino: ${log.avgHeartRate ?? 'N/A'}.");
+              buffer.writeln("- Data: ${log.date}. Desempenho:$cardioStats. RPE (esforço): ${ex.rpe}. Batimentos: ${log.avgHeartRate ?? 'N/A'}.");
             } else {
-              buffer.writeln("- ${log.date}: ${ex.completedSets} séries. Peso máximo do dia: ${ex.weight}kg. Reps: ${ex.reps}. RPE: ${ex.rpe}. Falha relatada: ${ex.failureReport != null && ex.failureReport!.contains(true) ? 'Sim' : 'Não'}.");
+              buffer.writeln("- Data: ${log.date}. Volume: ${ex.completedSets} séries de ${ex.reps} reps. Carga utilizada: ${ex.weight}kg. RPE (esforço): ${ex.rpe}. Chegou à falha? ${ex.failureReport != null && ex.failureReport!.contains(true) ? 'Sim' : 'Não'}.");
             }
           }
         }
       }
 
-      buffer.writeln("\nFaça uma análise profunda, direta e motivadora.");
-      if (isCardio) {
-        buffer.writeln("Identifique tendências (melhora de pace, aumento de distância ou resistência) e me dê uma dica prática e acionável para o meu próximo treino desse exercício. Não use Markdown exagerado, apenas texto limpo.");
-      } else {
-        buffer.writeln("Identifique tendências (estagnação, progressão de volume ou carga) e me dê uma dica prática e acionável para o meu próximo treino desse exercício. Não use Markdown exagerado, apenas texto limpo.");
-      }
+      buffer.writeln("\nSua tarefa: Analisar os dados acima e me dar um insight.");
+      buffer.writeln("Regras estritas:");
+      buffer.writeln("1. Seja breve, direto e natural (máximo 2-3 parágrafos curtos).");
+      buffer.writeln("2. Destaque uma tendência que você notou (estagnação, progressão de carga, melhora, etc.).");
+      buffer.writeln("3. Dê UMA sugestão clara e prática para o treino de HOJE (ex: tentar aumentar 2kg, focar na técnica, fazer mais reps, ou descansar um pouco se o esforço anterior foi extremo).");
+      buffer.writeln("4. PROIBIDO USAR MARKDOWN (nada de *, **, #, ou listas pontilhadas). Escreva um texto fluido e contínuo.");
 
       final responseStream = model.generateContentStream([
         Content.text(buffer.toString())
