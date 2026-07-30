@@ -76,10 +76,14 @@ class _ExerciseHubScreenState extends State<ExerciseHubScreen> {
       _aiInsight = "";
     });
 
+    final isCardio = widget.exercise.measurementType == MeasurementType.cardio ||
+        widget.exercise.muscle.toLowerCase().contains('cardio') ||
+        widget.exercise.measurementType == MeasurementType.time;
+
     final stream = AIService().analyzeExerciseHistoryStream(
       exerciseName: widget.exercise.name,
       exerciseHistory: _exerciseLogs,
-      isCardio: widget.exercise.isCardio,
+      isCardio: isCardio,
     );
 
     stream.listen((chunk) {
