@@ -82,13 +82,13 @@ class AIService {
     }
   }
 
-  /// Solicita uma análise profunda do histórico de um único exercício para a Central do Exercício.
-  Future<String?> analyzeExerciseHistory({
+  /// Solicita uma análise profunda do histórico de um único exercício para a Central do Exercício em Stream.
+  Stream<String> analyzeExerciseHistoryStream({
     required String exerciseName,
     required List<WorkoutLog> exerciseHistory,
     bool isCardio = false,
-  }) async {
-    if (exerciseHistory.isEmpty) return null;
+  }) async* {
+    if (exerciseHistory.isEmpty) return;
 
     try {
       final model = GenerativeModel(
@@ -142,21 +142,25 @@ class AIService {
         }
       }
 
-      buffer.writeln("\nFaça uma análise rápida, direta e motivadora (no máximo 3 ou 4 frases curtas).");
+      buffer.writeln("\nFaça uma análise profunda, direta e motivadora.");
       if (isCardio) {
         buffer.writeln("Identifique tendências (melhora de pace, aumento de distância ou resistência) e me dê uma dica prática e acionável para o meu próximo treino desse exercício. Não use Markdown exagerado, apenas texto limpo.");
       } else {
         buffer.writeln("Identifique tendências (estagnação, progressão de volume ou carga) e me dê uma dica prática e acionável para o meu próximo treino desse exercício. Não use Markdown exagerado, apenas texto limpo.");
       }
 
-      final response = await model.generateContent([
+      final responseStream = model.generateContentStream([
         Content.text(buffer.toString())
       ]);
 
-      return response.text?.trim();
+      await for (final chunk in responseStream) {
+        if (chunk.text != null) {
+          yield chunk.text!;
+        }
+      }
     } catch (e) {
-      debugPrint('AI Exception (analyzeExerciseHistory): $e');
-      return 'Erro na IA: $e';
+      debugPrint('AI Exception (analyzeExerciseHistoryStream): $e');
+      yield '\n\nErro na IA: $e';
     }
   }
 }

@@ -69,32 +69,37 @@ class _ExerciseHubScreenState extends State<ExerciseHubScreen> {
     }
   }
 
-  Future<void> _fetchAIInsight() async {
+  void _fetchAIInsight() {
     setState(() {
       _isLoadingAI = true;
       _aiError = null;
+      _aiInsight = "";
     });
 
-    final isCardio = widget.exercise.measurementType == MeasurementType.cardio ||
-        widget.exercise.muscle.toLowerCase().contains('cardio') ||
-        widget.exercise.measurementType == MeasurementType.time;
-
-    final insight = await AIService().analyzeExerciseHistory(
+    final stream = AIService().analyzeExerciseHistoryStream(
       exerciseName: widget.exercise.name,
       exerciseHistory: _exerciseLogs,
-      isCardio: isCardio,
+      isCardio: widget.exercise.isCardio,
     );
 
-    if (mounted) {
+    stream.listen((chunk) {
+      if (!mounted) return;
       setState(() {
         _isLoadingAI = false;
-        if (insight != null) {
-          _aiInsight = insight;
-        } else {
-          _aiError = "Não foi possível gerar a análise. Tente novamente.";
-        }
+        _aiInsight = (_aiInsight ?? "") + chunk;
       });
-    }
+    }, onError: (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoadingAI = false;
+        _aiError = "Erro: $e";
+      });
+    }, onDone: () {
+      if (!mounted) return;
+      setState(() {
+        _isLoadingAI = false;
+      });
+    });
   }
 
   @override
