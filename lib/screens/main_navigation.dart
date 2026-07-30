@@ -271,7 +271,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
   void _checkWhatsNew() async {
     final prefs = await SharedPreferences.getInstance();
-    const currentBuild = 246;
+    const currentBuild = 247;
     final lastSeenBuild = prefs.getInt('last_seen_whats_new_build') ?? 0;
 
     if (lastSeenBuild < currentBuild) {
