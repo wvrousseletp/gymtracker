@@ -271,17 +271,24 @@ class _MainNavigationState extends State<MainNavigation> {
 
   void _checkWhatsNew() async {
     final prefs = await SharedPreferences.getInstance();
-    const currentBuild = 250;
+    const currentBuild = 251;
     final lastSeenBuild = prefs.getInt('last_seen_whats_new_build') ?? 0;
 
     if (lastSeenBuild < currentBuild) {
       if (!mounted) return;
-      _showWhatsNewDialog(context);
+      
+      final notesToShow = lastSeenBuild == 0
+          ? _releaseNotesHistory.where((n) => n.buildNumber == currentBuild).toList()
+          : _releaseNotesHistory.where((n) => n.buildNumber > lastSeenBuild && n.buildNumber <= currentBuild).toList();
+
+      if (notesToShow.isNotEmpty) {
+        _showWhatsNewDialog(context, notesToShow);
+      }
       await prefs.setInt('last_seen_whats_new_build', currentBuild);
     }
   }
 
-  void _showWhatsNewDialog(BuildContext context) {
+  void _showWhatsNewDialog(BuildContext context, List<_ReleaseNote> notes) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -315,39 +322,30 @@ class _MainNavigationState extends State<MainNavigation> {
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    "Atualização v2.5.3 chegou! Cardio Premium, Biblioteca Inteligente com busca e ordenação por uso, e IA de Endurance.",
+                    "Veja o que preparamos para você nesta atualização:",
                     style: TextStyle(
                         color: Colors.white70, fontSize: 13, height: 1.4),
                   ),
                   const SizedBox(height: 16),
-                  _whatsNewItem(
-                    Icons.directions_run_rounded,
-                    const Color(0xff00e676),
-                    "Cardio Premium & Live Timer 🏃‍♂️",
-                    "Cronômetro dedicado para cardio com meta, preenchimento automático do tempo e cálculo de pace.",
+                  Flexible(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: notes.map((note) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12.0),
+                            child: _whatsNewItem(
+                              note.icon,
+                              note.color,
+                              note.title,
+                              note.description,
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 12),
-                  _whatsNewItem(
-                    Icons.sort_rounded,
-                    Colors.amberAccent,
-                    "Biblioteca Inteligente & Busca 🔍",
-                    "Busca por nome instantânea e exercícios ordenados automaticamente por quais você mais treina.",
-                  ),
-                  const SizedBox(height: 12),
-                  _whatsNewItem(
-                    Icons.auto_awesome,
-                    Colors.deepPurpleAccent,
-                    "IA Especializada em Cardio 🤖",
-                    "O Gemini agora analisa dados de endurance, pace e resistência para treinos de cardio.",
-                  ),
-                  const SizedBox(height: 12),
-                  _whatsNewItem(
-                    Icons.watch,
-                    Colors.blueAccent,
-                    "Sincronização Veloz no Watch ⚡️",
-                    "Reescrevemos o motor de transferência para o Apple Watch. O app no relógio agora espelha seu treino perfeitamente e sem engasgos!",
-                  ),
-                  const SizedBox(height: 24),
                   ElevatedButton(
                     onPressed: () => Navigator.pop(dialogCtx),
                     style: ElevatedButton.styleFrom(
@@ -512,3 +510,22 @@ class _FadeIndexedStackState extends State<FadeIndexedStack>
     );
   }
 }
+
+class _ReleaseNote {
+  final int buildNumber;
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String description;
+
+  _ReleaseNote(this.buildNumber, this.icon, this.color, this.title, this.description);
+}
+
+// Histórico de notas de atualização.
+final List<_ReleaseNote> _releaseNotesHistory = [
+  _ReleaseNote(243, Icons.directions_run_rounded, const Color(0xff00e676), "Cardio Premium & Live Timer 🏃‍♂️", "Cronômetro dedicado para cardio com meta, preenchimento automático do tempo e cálculo de pace."),
+  _ReleaseNote(243, Icons.sort_rounded, Colors.amberAccent, "Biblioteca Inteligente & Busca 🔍", "Busca por nome instantânea e exercícios ordenados automaticamente por quais você mais treina."),
+  _ReleaseNote(243, Icons.watch, Colors.blueAccent, "Sincronização Veloz no Watch ⚡️", "Reescrevemos o motor de transferência para o Apple Watch. O app no relógio agora espelha seu treino perfeitamente e sem engasgos!"),
+  _ReleaseNote(248, Icons.auto_awesome, Colors.deepPurpleAccent, "Melhorias no Treinador IA 🤖", "A IA agora tem digitação em tempo real, mostra erros de rede sem travar, e ganhou uma barra de rolagem exclusiva para não engolir sua tela!"),
+  _ReleaseNote(251, Icons.fitness_center, Colors.amberAccent, "Treinador Hipertrofia 🏋️", "A IA recebeu regras estritas: agora foca 100% em hipertrofia, sugere manter a carga se você não estiver pronto, e vai direto ao ponto como seu personal real!"),
+];
