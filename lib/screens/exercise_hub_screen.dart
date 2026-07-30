@@ -222,12 +222,32 @@ class _ExerciseHubScreenState extends State<ExerciseHubScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          if (_aiInsight != null)
+          if (_aiInsight != null) ...[
             Text(
               _aiInsight!,
               style: const TextStyle(color: Colors.white70, height: 1.5, fontSize: 14),
-            )
-          else if (_isLoadingAI)
+            ),
+            if (_isLoadingAI)
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 12,
+                      height: 12,
+                      child: CircularProgressIndicator(color: accentColor, strokeWidth: 2),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text("Analisando...", style: TextStyle(color: Colors.white54, fontSize: 12)),
+                  ],
+                ),
+              ),
+            if (_aiError != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Text(_aiError!, style: const TextStyle(color: Colors.redAccent, fontSize: 12)),
+              ),
+          ] else if (_isLoadingAI)
             Center(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
