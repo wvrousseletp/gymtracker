@@ -227,9 +227,15 @@ class _ExerciseHubScreenState extends State<ExerciseHubScreen> {
           ),
           const SizedBox(height: 12),
           if (_aiInsight != null) ...[
-            Text(
-              _aiInsight!,
-              style: const TextStyle(color: Colors.white70, height: 1.5, fontSize: 14),
+            Container(
+              constraints: const BoxConstraints(maxHeight: 250),
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Text(
+                  _aiInsight!,
+                  style: const TextStyle(color: Colors.white70, height: 1.5, fontSize: 14),
+                ),
+              ),
             ),
             if (_isLoadingAI)
               Padding(
