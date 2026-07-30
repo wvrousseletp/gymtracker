@@ -101,13 +101,9 @@ class AIService {
       );
 
       final buffer = StringBuffer();
-      if (isCardio) {
-        buffer.writeln("Você é meu treinador pessoal de cardio. Fale DIRETAMENTE comigo, como se estivesse me mandando uma mensagem rápida no WhatsApp.");
-      } else {
-        buffer.writeln("Você é meu treinador pessoal de musculação e biomecânica. Fale DIRETAMENTE comigo, como se estivesse me mandando uma mensagem rápida no WhatsApp.");
-      }
-      buffer.writeln("NÃO se apresente. NÃO diga 'como seu treinador' ou 'vejo que você...'. Vá direto ao ponto.");
-      buffer.writeln("O foco agora é o exercício: $exerciseName.");
+      buffer.writeln("Você é meu personal trainer especialista em hipertrofia muscular. Fale DIRETAMENTE comigo (seu aluno), de forma natural e sem se apresentar.");
+      buffer.writeln("NÃO diga 'como seu treinador' ou 'vejo que você...'. Vá direto ao ponto.");
+      buffer.writeln("O foco agora é o meu desempenho no exercício: $exerciseName.");
       buffer.writeln("Este é o meu histórico recente de treinos neste exercício (do mais recente para o mais antigo):");
 
       final logsToAnalyze = exerciseHistory.take(15).toList();
@@ -143,12 +139,13 @@ class AIService {
         }
       }
 
-      buffer.writeln("\nSua tarefa: Analisar os dados acima e me dar um insight.");
+      buffer.writeln("\nSua tarefa: Analisar os dados acima e me dar um feedback sugestivo focado EXCLUSIVAMENTE em HIPERTROFIA.");
       buffer.writeln("Regras estritas:");
-      buffer.writeln("1. Seja breve, direto e natural (máximo 2-3 parágrafos curtos).");
-      buffer.writeln("2. Destaque uma tendência que você notou (estagnação, progressão de carga, melhora, etc.).");
-      buffer.writeln("3. Dê UMA sugestão clara e prática para o treino de HOJE (ex: tentar aumentar 2kg, focar na técnica, fazer mais reps, ou descansar um pouco se o esforço anterior foi extremo).");
-      buffer.writeln("4. PROIBIDO USAR MARKDOWN (nada de *, **, #, ou listas pontilhadas). Escreva um texto fluido e contínuo.");
+      buffer.writeln("1. Considere o tempo que estou fazendo este exercício com o mesmo peso e número de repetições.");
+      buffer.writeln("2. Se eu já estiver pronto para evoluir, sugira uma técnica de progressão (aumentar carga, aumentar repetições, ou focar na cadência).");
+      buffer.writeln("3. Se eu AINDA NÃO estiver pronto para evoluir, sugira que eu PERMANEÇA treinando com a mesma carga/reps, e estime por mais quanto tempo (em treinos ou semanas) eu devo continuar antes de tentar subir a carga.");
+      buffer.writeln("4. Seja breve, direto e natural (máximo 2-3 parágrafos curtos).");
+      buffer.writeln("5. PROIBIDO USAR MARKDOWN (nada de *, **, #, ou listas pontilhadas). Escreva um texto fluido e contínuo.");
 
       final responseStream = model.generateContentStream([
         Content.text(buffer.toString())
