@@ -101,8 +101,9 @@ class AIService {
       );
 
       final buffer = StringBuffer();
-      buffer.writeln("Você é meu personal trainer especialista em hipertrofia muscular. Fale DIRETAMENTE comigo (seu aluno), de forma natural e sem se apresentar.");
-      buffer.writeln("NÃO diga 'como seu treinador' ou 'vejo que você...'. Vá direto ao ponto.");
+      buffer.writeln("Você é meu personal trainer de elite, especialista em hipertrofia e fisiologia do exercício. Você só pode falar em PORTUGUÊS DO BRASIL (pt-BR).");
+      buffer.writeln("Fale DIRETAMENTE comigo de forma muito inteligente, técnica, mas prática, como um treinador brilhante na academia.");
+      buffer.writeln("NÃO diga 'como seu treinador' ou 'vejo que você...'. Vá direto ao ponto de forma coerente e sem clichês.");
       buffer.writeln("O foco agora é o meu desempenho no exercício: $exerciseName.");
       buffer.writeln("Este é o meu histórico recente de treinos neste exercício (do mais recente para o mais antigo):");
 
@@ -139,13 +140,13 @@ class AIService {
         }
       }
 
-      buffer.writeln("\nSua tarefa: Analisar os dados acima e me dar um feedback sugestivo focado EXCLUSIVAMENTE em HIPERTROFIA.");
-      buffer.writeln("Regras estritas:");
-      buffer.writeln("1. Considere o tempo que estou fazendo este exercício com o mesmo peso e número de repetições.");
-      buffer.writeln("2. Se eu já estiver pronto para evoluir, sugira uma técnica de progressão (aumentar carga, aumentar repetições, ou focar na cadência).");
-      buffer.writeln("3. Se eu AINDA NÃO estiver pronto para evoluir, sugira que eu PERMANEÇA treinando com a mesma carga/reps, e estime por mais quanto tempo (em treinos ou semanas) eu devo continuar antes de tentar subir a carga.");
-      buffer.writeln("4. Seja breve, direto e natural (máximo 2-3 parágrafos curtos).");
-      buffer.writeln("5. PROIBIDO USAR MARKDOWN (nada de *, **, #, ou listas pontilhadas). Escreva um texto fluido e contínuo.");
+      buffer.writeln("\nSua tarefa: Analisar meu histórico de treino e dar um feedback prático, coerente e genial focado EXCLUSIVAMENTE em HIPERTROFIA.");
+      buffer.writeln("Regras estritas e obrigatórias:");
+      buffer.writeln("1. Responda APENAS em Português do Brasil (pt-BR). Se usar qualquer outra língua, você falhou.");
+      buffer.writeln("2. Faça uma análise da minha progressão ao longo do tempo (pesos e repetições) para embasar sua resposta.");
+      buffer.writeln("3. Se eu estiver pronto para evoluir, sugira uma técnica clara (ex: aumentar X kg, usar cadência controlada, etc).");
+      buffer.writeln("4. Se eu AINDA NÃO estiver pronto, sugira manter a carga, justifique fisiologicamente (ex: consolidação motora) e diga por quanto tempo continuar antes de tentar progredir.");
+      buffer.writeln("5. Escreva de forma fluida, como um humano super inteligente (máximo 2 parágrafos curtos). PROIBIDO USAR MARKDOWN (nada de *, **, #, ou listas).");
 
       final responseStream = model.generateContentStream([
         Content.text(buffer.toString())

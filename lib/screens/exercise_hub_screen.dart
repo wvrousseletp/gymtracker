@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/exercise.dart';
@@ -34,6 +35,19 @@ class _ExerciseHubScreenState extends State<ExerciseHubScreen> {
   void initState() {
     super.initState();
     _calculateStats();
+    _loadAIInsight();
+  }
+
+  Future<void> _loadAIInsight() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedInsight = prefs.getString('ai_insight_${widget.exercise.name}');
+    if (savedInsight != null && savedInsight.isNotEmpty) {
+      if (mounted) {
+        setState(() {
+          _aiInsight = savedInsight;
+        });
+      }
+    }
   }
 
   void _calculateStats() {
@@ -98,11 +112,15 @@ class _ExerciseHubScreenState extends State<ExerciseHubScreen> {
         _isLoadingAI = false;
         _aiError = "Erro: $e";
       });
-    }, onDone: () {
+    }, onDone: () async {
       if (!mounted) return;
       setState(() {
         _isLoadingAI = false;
       });
+      if (_aiInsight != null && _aiInsight!.isNotEmpty) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('ai_insight_${widget.exercise.name}', _aiInsight!);
+      }
     });
   }
 
@@ -219,10 +237,20 @@ class _ExerciseHubScreenState extends State<ExerciseHubScreen> {
             children: [
               Icon(Icons.auto_awesome, color: accentColor, size: 20),
               const SizedBox(width: 8),
-              const Text(
-                "Treinador IA",
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
+              const Expanded(
+                child: Text(
+                  "Treinador IA",
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
+                ),
               ),
+              if (_aiInsight != null && !_isLoadingAI)
+                IconButton(
+                  icon: Icon(Icons.refresh, color: accentColor, size: 20),
+                  onPressed: _fetchAIInsight,
+                  tooltip: "Nova Consulta",
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
             ],
           ),
           const SizedBox(height: 12),
