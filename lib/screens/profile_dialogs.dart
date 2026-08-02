@@ -129,15 +129,29 @@ class _ProfileManagerSheetState extends State<ProfileManagerSheet> {
 
             if (!_isEditing) ...[
               // ACCOUNT VIEW MODE
-              const Text(
-                "Minha Conta",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Minha Conta",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, color: Colors.white, size: 22),
+                    onPressed: () => Navigator.pop(context),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.white.withOpacity(0.08),
+                      padding: const EdgeInsets.all(6),
+                      minimumSize: const Size(36, 36),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               
               // Profile Avatar
               ProfileAvatar(
@@ -286,15 +300,21 @@ class _ProfileManagerSheetState extends State<ProfileManagerSheet> {
                       color: Colors.white,
                     ),
                   ),
-                  TextButton(
+                  TextButton.icon(
                     onPressed: _isLoading ? null : () {
                       setState(() {
                         _isEditing = false;
                       });
                     },
-                    child: const Text(
+                    icon: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 18),
+                    label: const Text(
                       "Voltar",
-                      style: TextStyle(color: Colors.white54, fontWeight: FontWeight.w600),
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.white.withOpacity(0.08),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                   ),
                 ],

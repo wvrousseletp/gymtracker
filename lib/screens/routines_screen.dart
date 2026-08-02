@@ -730,12 +730,13 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                           ),
                         if (widget.existing != null) const SizedBox(width: 8),
                         IconButton(
-                          icon: Icon(Icons.close,
-                              color: Colors.white.withOpacity(0.6), size: 20),
+                          icon: const Icon(Icons.close_rounded,
+                              color: Colors.white, size: 22),
                           onPressed: () => Navigator.pop(context),
                           style: IconButton.styleFrom(
-                            backgroundColor: Colors.white.withOpacity(0.05),
+                            backgroundColor: Colors.white.withOpacity(0.08),
                             padding: const EdgeInsets.all(6),
+                            minimumSize: const Size(36, 36),
                           ),
                         ),
                       ],
@@ -1529,10 +1530,13 @@ class _ExerciseSelectionSheetState extends State<_ExerciseSelectionSheet> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.close_rounded,
-                      color: Colors.white38, size: 24),
+                      color: Colors.white, size: 22),
                   onPressed: () => Navigator.pop(context),
-                  constraints: const BoxConstraints(),
-                  padding: EdgeInsets.zero,
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.white.withOpacity(0.08),
+                    padding: const EdgeInsets.all(6),
+                    minimumSize: const Size(36, 36),
+                  ),
                 ),
               ],
             ),

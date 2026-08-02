@@ -704,12 +704,30 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                Text(
-                  routine.name,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        routine.name,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, color: Colors.white, size: 22),
+                      onPressed: () => Navigator.pop(context),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.white.withOpacity(0.08),
+                        padding: const EdgeInsets.all(6),
+                        minimumSize: const Size(36, 36),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 12),
                 Expanded(
@@ -1118,9 +1136,13 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                             ),
                           ),
                           IconButton(
-                            icon:
-                                const Icon(Icons.close, color: Colors.white54),
+                            icon: const Icon(Icons.close_rounded, color: Colors.white, size: 22),
                             onPressed: () => Navigator.pop(context),
+                            style: IconButton.styleFrom(
+                              backgroundColor: Colors.white.withOpacity(0.08),
+                              padding: const EdgeInsets.all(6),
+                              minimumSize: const Size(36, 36),
+                            ),
                           ),
                         ],
                       ),

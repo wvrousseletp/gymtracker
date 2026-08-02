@@ -56,7 +56,12 @@ class NotificationSettingsSheet extends StatelessWidget {
                 ),
                 IconButton(
                   onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close, color: Colors.white54),
+                  icon: const Icon(Icons.close_rounded, color: Colors.white, size: 22),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.white.withOpacity(0.08),
+                    padding: const EdgeInsets.all(6),
+                    minimumSize: const Size(36, 36),
+                  ),
                 ),
               ],
             ),

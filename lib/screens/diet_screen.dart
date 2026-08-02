@@ -920,12 +920,26 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
-                "Registrar Refeição",
-                style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Registrar Refeição",
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, color: Colors.white, size: 20),
+                    onPressed: () => Navigator.pop(context),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.white.withOpacity(0.08),
+                      padding: const EdgeInsets.all(4),
+                      minimumSize: const Size(32, 32),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
               Flexible(
@@ -1929,6 +1943,12 @@ class _JejumTabState extends State<JejumTab> {
             ),
           ],
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text("Cancelar", style: TextStyle(color: Colors.white60, fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
     );
   }
@@ -3286,12 +3306,13 @@ class _ManualFastingSheetState extends State<_ManualFastingSheet> {
                     ),
                   ),
                   IconButton(
-                    icon: Icon(Icons.close,
-                        color: Colors.white.withOpacity(0.6), size: 20),
+                    icon: const Icon(Icons.close_rounded,
+                        color: Colors.white, size: 22),
                     onPressed: () => Navigator.pop(context),
                     style: IconButton.styleFrom(
-                      backgroundColor: Colors.white.withOpacity(0.05),
+                      backgroundColor: Colors.white.withOpacity(0.08),
                       padding: const EdgeInsets.all(6),
+                      minimumSize: const Size(36, 36),
                     ),
                   ),
                 ],

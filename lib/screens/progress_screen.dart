@@ -1265,9 +1265,23 @@ class _ManualWorkoutLogSheetState extends State<ManualWorkoutLogSheet> {
                   margin: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
-              const Text(
-                "Registrar Exercício Externo",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Registrar Exercício Externo",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, color: Colors.white, size: 22),
+                    onPressed: () => Navigator.pop(context),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.white.withOpacity(0.08),
+                      padding: const EdgeInsets.all(6),
+                      minimumSize: const Size(36, 36),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
 
@@ -1928,9 +1942,23 @@ class _MedidasTabState extends State<MedidasTab> {
                     ),
                   ),
                 ),
-                const Text(
-                  "Registrar Medidas",
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "Registrar Medidas",
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 20),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, color: Colors.white, size: 22),
+                      onPressed: () => Navigator.pop(bottomSheetCtx),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.white.withOpacity(0.08),
+                        padding: const EdgeInsets.all(6),
+                        minimumSize: const Size(36, 36),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 24),
                 Flexible(
@@ -2068,9 +2096,23 @@ class _MedidasTabState extends State<MedidasTab> {
                     ),
                   ),
                 ),
-                const Text(
-                  "Editar Medidas",
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "Editar Medidas",
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 20),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, color: Colors.white, size: 22),
+                      onPressed: () => Navigator.pop(bottomSheetCtx),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.white.withOpacity(0.08),
+                        padding: const EdgeInsets.all(6),
+                        minimumSize: const Size(36, 36),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 24),
                 Flexible(
