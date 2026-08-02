@@ -33,7 +33,7 @@ platform :ios do
   desc "Nuke and generate new certificates and profiles"
   lane :nuke_and_generate do
     match_nuke(
-      type: "distribution",
+      type: "appstore",
       skip_confirmation: true
     )
     match(
