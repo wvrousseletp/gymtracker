@@ -72,5 +72,6 @@ jobs:
           issuer-id: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           api-key-id: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           api-private-key: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
-          wait-for-processing: false
+          wait-for-processing: true
+          skip-waiting-for-build-processing: false
 
