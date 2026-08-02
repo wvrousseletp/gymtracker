@@ -82,30 +82,30 @@ class AIService {
     }
   }
 
-  /// Solicita uma análise profunda do histórico de um único exercício para a Central do Exercício em Stream.
-  Stream<String> analyzeExerciseHistoryStream({
+  /// Solicita uma análise profunda do histórico de um único exercício para a Central do Exercício.
+  Future<String> analyzeExerciseHistory({
     required String exerciseName,
     required List<WorkoutLog> exerciseHistory,
     bool isCardio = false,
-  }) async* {
-    if (exerciseHistory.isEmpty) return;
+  }) async {
+    if (exerciseHistory.isEmpty) return "Sem dados suficientes para análise.";
 
     try {
       final model = GenerativeModel(
         model: 'gemini-flash-latest',
         apiKey: _apiKey,
         generationConfig: GenerationConfig(
-          temperature: 0.4,
-          maxOutputTokens: 500,
+          temperature: 0.5,
+          maxOutputTokens: 1000,
         ),
       );
 
       final buffer = StringBuffer();
-      buffer.writeln("Você é meu personal trainer de elite, especialista em hipertrofia e fisiologia do exercício. Você só pode falar em PORTUGUÊS DO BRASIL (pt-BR).");
-      buffer.writeln("Fale DIRETAMENTE comigo de forma muito inteligente, técnica, mas prática, como um treinador brilhante na academia.");
-      buffer.writeln("NÃO diga 'como seu treinador' ou 'vejo que você...'. Vá direto ao ponto de forma coerente e sem clichês.");
-      buffer.writeln("O foco agora é o meu desempenho no exercício: $exerciseName.");
-      buffer.writeln("Este é o meu histórico recente de treinos neste exercício (do mais recente para o mais antigo):");
+      buffer.writeln("Você é meu personal trainer de elite, especialista em hipertrofia e fisiologia do exercício.");
+      buffer.writeln("Você fala EXCLUSIVAMENTE em Português do Brasil (pt-BR).");
+      buffer.writeln("Fale diretamente comigo como um treinador genial, direto ao ponto, técnico e prático.");
+      buffer.writeln("Exercício em análise: $exerciseName.");
+      buffer.writeln("Histórico recente de treinos neste exercício (do mais recente para o mais antigo):");
 
       final logsToAnalyze = exerciseHistory.take(15).toList();
 
@@ -124,7 +124,7 @@ class AIService {
                      final pace = dur / dist;
                      final m = pace.floor();
                      final s = ((pace - m) * 60).round();
-                     paceStr = " Pace médio: $m:${s.toString().padLeft(2, '0')}/km.";
+                     paceStr = " Pace: $m:${s.toString().padLeft(2, '0')}/km.";
                   }
                   cardioStats += " [${dist.toStringAsFixed(2)}km em ${dur}m.$paceStr]";
                 }
@@ -132,34 +132,47 @@ class AIService {
               if (cardioStats.isEmpty) {
                  cardioStats = " [${ex.weight}km em ${ex.reps}m]";
               }
-              buffer.writeln("- Data: ${log.date}. Desempenho:$cardioStats. RPE (esforço): ${ex.rpe}. Batimentos: ${log.avgHeartRate ?? 'N/A'}.");
+              buffer.writeln("- Data: ${log.date}. Cardio:$cardioStats. RPE: ${ex.rpe}. Batimentos: ${log.avgHeartRate ?? 'N/A'}.");
             } else {
-              buffer.writeln("- Data: ${log.date}. Volume: ${ex.completedSets} séries de ${ex.reps} reps. Carga utilizada: ${ex.weight}kg. RPE (esforço): ${ex.rpe}. Chegou à falha? ${ex.failureReport != null && ex.failureReport!.contains(true) ? 'Sim' : 'Não'}.");
+              buffer.writeln("- Data: ${log.date}: ${ex.completedSets} séries de ${ex.reps} reps com ${ex.weight}kg. Esforço (RPE): ${ex.rpe}. Falha atingida: ${ex.failureReport != null && ex.failureReport!.contains(true) ? 'Sim' : 'Não'}.");
             }
           }
         }
       }
 
-      buffer.writeln("\nSua tarefa: Analisar meu histórico de treino e dar um feedback prático, coerente e genial focado EXCLUSIVAMENTE em HIPERTROFIA.");
-      buffer.writeln("Regras estritas e obrigatórias:");
-      buffer.writeln("1. Responda APENAS em Português do Brasil (pt-BR). Se usar qualquer outra língua, você falhou.");
-      buffer.writeln("2. Faça uma análise da minha progressão ao longo do tempo (pesos e repetições) para embasar sua resposta.");
-      buffer.writeln("3. Se eu estiver pronto para evoluir, sugira uma técnica clara (ex: aumentar X kg, usar cadência controlada, etc).");
-      buffer.writeln("4. Se eu AINDA NÃO estiver pronto, sugira manter a carga, justifique fisiologicamente (ex: consolidação motora) e diga por quanto tempo continuar antes de tentar progredir.");
-      buffer.writeln("5. Escreva de forma fluida, como um humano super inteligente (máximo 2 parágrafos curtos). PROIBIDO USAR MARKDOWN (nada de *, **, #, ou listas).");
+      buffer.writeln("\nSua tarefa e regras obrigatórias:");
+      buffer.writeln("1. Analise a evolução do peso e repetições ao longo do tempo.");
+      buffer.writeln("2. Se eu estiver pronto para progredir, sugira o ajuste exato (ex: aumentar de 1kg a 2kg, aumentar repetições ou cadência).");
+      buffer.writeln("3. Se for melhor manter a carga para consolidação neuromuscular, explique de forma técnica e diga por quanto tempo ou quantas sessões manter antes de subir o peso.");
+      buffer.writeln("4. Responda em 1 a 2 parágrafos curtos, inteligentes e completos.");
+      buffer.writeln("5. PROIBIDO usar Markdown (nada de asteriscos, títulos # ou marcadores de lista). Escreva texto corrido e limpo.");
 
-      final responseStream = model.generateContentStream([
+      final response = await model.generateContent([
         Content.text(buffer.toString())
       ]);
 
-      await for (final chunk in responseStream) {
-        if (chunk.text != null) {
-          yield chunk.text!;
-        }
+      final text = response.text?.trim();
+      if (text == null || text.isEmpty) {
+        return "Não foi possível gerar a análise.";
       }
+      return text;
     } catch (e) {
-      debugPrint('AI Exception (analyzeExerciseHistoryStream): $e');
-      yield '\n\nErro na IA: $e';
+      debugPrint('AI Exception (analyzeExerciseHistory): $e');
+      return "Erro ao analisar exercício: $e";
     }
+  }
+
+  /// Mantido para compatibilidade retroativa.
+  Stream<String> analyzeExerciseHistoryStream({
+    required String exerciseName,
+    required List<WorkoutLog> exerciseHistory,
+    bool isCardio = false,
+  }) async* {
+    final result = await analyzeExerciseHistory(
+      exerciseName: exerciseName,
+      exerciseHistory: exerciseHistory,
+      isCardio: isCardio,
+    );
+    yield result;
   }
 }

@@ -83,45 +83,41 @@ class _ExerciseHubScreenState extends State<ExerciseHubScreen> {
     }
   }
 
-  void _fetchAIInsight() {
+  Future<void> _fetchAIInsight() async {
     setState(() {
       _isLoadingAI = true;
       _aiError = null;
-      _aiInsight = "";
     });
 
     final isCardio = widget.exercise.measurementType == MeasurementType.cardio ||
         widget.exercise.muscle.toLowerCase().contains('cardio') ||
         widget.exercise.measurementType == MeasurementType.time;
 
-    final stream = AIService().analyzeExerciseHistoryStream(
-      exerciseName: widget.exercise.name,
-      exerciseHistory: _exerciseLogs,
-      isCardio: isCardio,
-    );
+    try {
+      final insight = await AIService().analyzeExerciseHistory(
+        exerciseName: widget.exercise.name,
+        exerciseHistory: _exerciseLogs,
+        isCardio: isCardio,
+      );
 
-    stream.listen((chunk) {
       if (!mounted) return;
+
       setState(() {
         _isLoadingAI = false;
-        _aiInsight = (_aiInsight ?? "") + chunk;
+        _aiInsight = insight;
       });
-    }, onError: (e) {
+
+      if (insight.isNotEmpty && !insight.startsWith("Erro")) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('ai_insight_${widget.exercise.name}', insight);
+      }
+    } catch (e) {
       if (!mounted) return;
       setState(() {
         _isLoadingAI = false;
         _aiError = "Erro: $e";
       });
-    }, onDone: () async {
-      if (!mounted) return;
-      setState(() {
-        _isLoadingAI = false;
-      });
-      if (_aiInsight != null && _aiInsight!.isNotEmpty) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('ai_insight_${widget.exercise.name}', _aiInsight!);
-      }
-    });
+    }
   }
 
   @override
@@ -243,7 +239,7 @@ class _ExerciseHubScreenState extends State<ExerciseHubScreen> {
                   style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
                 ),
               ),
-              if (_aiInsight != null && !_isLoadingAI)
+              if (!_isLoadingAI)
                 IconButton(
                   icon: Icon(Icons.refresh, color: accentColor, size: 20),
                   onPressed: _fetchAIInsight,
@@ -253,48 +249,36 @@ class _ExerciseHubScreenState extends State<ExerciseHubScreen> {
                 ),
             ],
           ),
-          const SizedBox(height: 12),
-          if (_aiInsight != null) ...[
-            Container(
-              constraints: const BoxConstraints(maxHeight: 250),
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Text(
-                  _aiInsight!,
-                  style: const TextStyle(color: Colors.white70, height: 1.5, fontSize: 14),
-                ),
-              ),
-            ),
-            if (_isLoadingAI)
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Row(
+          const SizedBox(height: 14),
+          if (_isLoadingAI)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 20.0),
+                child: Column(
                   children: [
-                    SizedBox(
-                      width: 12,
-                      height: 12,
-                      child: CircularProgressIndicator(color: accentColor, strokeWidth: 2),
+                    CircularProgressIndicator(color: accentColor, strokeWidth: 2.5),
+                    const SizedBox(height: 12),
+                    const Text(
+                      "Analisando histórico e hipertrofia...",
+                      style: TextStyle(color: Colors.white60, fontSize: 13),
                     ),
-                    const SizedBox(width: 8),
-                    const Text("Analisando...", style: TextStyle(color: Colors.white54, fontSize: 12)),
                   ],
                 ),
               ),
+            )
+          else if (_aiInsight != null && _aiInsight!.isNotEmpty) ...[
+            Text(
+              _aiInsight!,
+              style: const TextStyle(color: Colors.white70, height: 1.5, fontSize: 14),
+            ),
             if (_aiError != null)
               Padding(
                 padding: const EdgeInsets.only(top: 8.0),
                 child: Text(_aiError!, style: const TextStyle(color: Colors.redAccent, fontSize: 12)),
               ),
-          ] else if (_isLoadingAI)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: CircularProgressIndicator(color: accentColor, strokeWidth: 2),
-              ),
-            )
-          else ...[
+          ] else ...[
             Text(
-              "Obtenha uma análise profunda do seu progresso e dicas para estourar o platô neste exercício.",
+              "Obtenha uma análise profunda do seu progresso e recomendações para hipertrofia neste exercício.",
               style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 13),
             ),
             if (_aiError != null) ...[
@@ -304,15 +288,16 @@ class _ExerciseHubScreenState extends State<ExerciseHubScreen> {
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
+              child: ElevatedButton.icon(
                 onPressed: _fetchAIInsight,
+                icon: const Icon(Icons.auto_awesome, size: 18),
+                label: const Text("Analisar Histórico", style: TextStyle(fontWeight: FontWeight.bold)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: accentColor,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
-                child: const Text("Analisar Histórico", style: TextStyle(fontWeight: FontWeight.bold)),
               ),
             ),
           ]

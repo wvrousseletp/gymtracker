@@ -271,7 +271,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
   void _checkWhatsNew() async {
     final prefs = await SharedPreferences.getInstance();
-    const currentBuild = 252;
+    const currentBuild = 253;
     final lastSeenBuild = prefs.getInt('last_seen_whats_new_build') ?? 0;
 
     if (lastSeenBuild < currentBuild) {
@@ -527,5 +527,5 @@ final List<_ReleaseNote> _releaseNotesHistory = [
   _ReleaseNote(243, Icons.sort_rounded, Colors.amberAccent, "Biblioteca Inteligente & Busca 🔍", "Busca por nome instantânea e exercícios ordenados automaticamente por quais você mais treina."),
   _ReleaseNote(243, Icons.watch, Colors.blueAccent, "Sincronização Veloz no Watch ⚡️", "Reescrevemos o motor de transferência para o Apple Watch. O app no relógio agora espelha seu treino perfeitamente e sem engasgos!"),
   _ReleaseNote(248, Icons.auto_awesome, Colors.deepPurpleAccent, "Melhorias no Treinador IA 🤖", "A IA agora tem digitação em tempo real, mostra erros de rede sem travar, e ganhou uma barra de rolagem exclusiva para não engolir sua tela!"),
-  _ReleaseNote(252, Icons.fitness_center, Colors.amberAccent, "Treinador Hipertrofia 🏋️", "A IA recebeu regras estritas: agora foca 100% em hipertrofia, sugere manter a carga se você não estiver pronto, e vai direto ao ponto como seu personal real! (E fala em Português agora!)"),
+  _ReleaseNote(253, Icons.psychology_rounded, Colors.cyanAccent, "IA Completa no Exercício 🧠", "A análise de cada exercício agora entrega respostas 100% completas, sem cortes de texto, com raciocínio focado em hipertrofia e consolidação de carga."),
 ];
