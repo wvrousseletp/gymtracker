@@ -528,4 +528,5 @@ final List<_ReleaseNote> _releaseNotesHistory = [
   _ReleaseNote(243, Icons.watch, Colors.blueAccent, "Sincronização Veloz no Watch ⚡️", "Reescrevemos o motor de transferência para o Apple Watch. O app no relógio agora espelha seu treino perfeitamente e sem engasgos!"),
   _ReleaseNote(248, Icons.auto_awesome, Colors.deepPurpleAccent, "Melhorias no Treinador IA 🤖", "A IA agora tem digitação em tempo real, mostra erros de rede sem travar, e ganhou uma barra de rolagem exclusiva para não engolir sua tela!"),
   _ReleaseNote(253, Icons.psychology_rounded, Colors.cyanAccent, "IA Completa no Exercício 🧠", "A análise de cada exercício agora entrega respostas 100% completas, sem cortes de texto, com raciocínio focado em hipertrofia e consolidação de carga."),
+  _ReleaseNote(254, Icons.auto_awesome, Colors.amberAccent, "Treinador IA Sem Limite de Texto 🚀", "Aumentamos o limite de tokens da IA para gerar pareceres longos, profundos e totalmente finalizados sobre sua sobrecarga e hipertrofia."),
 ];

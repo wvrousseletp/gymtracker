@@ -24,6 +24,7 @@ class AIService {
         apiKey: _apiKey,
         generationConfig: GenerationConfig(
           responseMimeType: 'application/json',
+          maxOutputTokens: 4000,
         ),
       );
 
@@ -96,7 +97,7 @@ class AIService {
         apiKey: _apiKey,
         generationConfig: GenerationConfig(
           temperature: 0.5,
-          maxOutputTokens: 1000,
+          maxOutputTokens: 4000,
         ),
       );
 
