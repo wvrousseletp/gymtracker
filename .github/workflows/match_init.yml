@@ -28,4 +28,4 @@ jobs:
           ASC_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
         run: |
           cd ios
-          bundle exec fastlane generate_certs --verbose
+          bundle exec fastlane nuke_and_generate --verbose
