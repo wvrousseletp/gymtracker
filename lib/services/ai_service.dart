@@ -29,7 +29,8 @@ class AIService {
       );
 
       final buffer = StringBuffer();
-      buffer.writeln("Você é um personal trainer especialista em hipertrofia e sobrecarga progressiva.");
+      buffer.writeln("Você é um personal trainer de elite especialista em hipertrofia, fisiologia do exercício e sobrecarga progressiva.");
+      buffer.writeln("Você responde EXCLUSIVAMENTE em Português do Brasil (pt-BR).");
       buffer.writeln("O usuário fará o seguinte treino hoje: ${plannedExercises.join(', ')}");
       buffer.writeln("Aqui está o histórico recente do usuário para esses exercícios:");
 
@@ -39,19 +40,19 @@ class AIService {
           if (plannedExercises.contains(ex.name) && ex.completedSets > 0) {
             hasHistory = true;
             buffer.writeln(
-                "- ${log.date}: ${ex.name} -> ${ex.completedSets} séries de ${ex.reps} reps com ${ex.weight}kg.");
+                "- Data: ${log.date} | Exercício: ${ex.name} -> ${ex.completedSets} séries de ${ex.reps} reps com ${ex.weight}kg (RPE: ${ex.rpe}).");
           }
         }
       }
 
       if (!hasHistory) {
-        buffer.writeln("Nenhum histórico encontrado. Forneça sugestão genérica de hipertrofia para cada exercício.");
+        buffer.writeln("Nenhum histórico recente encontrado. Forneça uma orientação prática e direta de hipertrofia para cada exercício (faixa de 8-12 reps, cadência controlada e proximidade da falha).");
       } else {
-        buffer.writeln("Com base no histórico, forneça meta de carga e repetições usando sobrecarga progressiva.");
+        buffer.writeln("Com base no histórico e no intervalo entre treinos, forneça uma meta clara de sobrecarga progressiva para hipertrofia (ajuste de peso, aumento de repetições ou consolidação da carga atual com máxima amplitude).");
       }
 
-      buffer.writeln("Retorne estritamente em formato JSON com a seguinte estrutura:");
-      buffer.writeln('{ "suggestions": [ { "exerciseName": "Nome", "suggestion": "Dica" } ] }');
+      buffer.writeln("Retorne estritamente em formato JSON com a seguinte estrutura, sem blocos markdown adicionais além do JSON:");
+      buffer.writeln('{ "suggestions": [ { "exerciseName": "Nome", "suggestion": "Sugestão em pt-BR focada em hipertrofia" } ] }');
 
       final response = await model.generateContent([
         Content.text(buffer.toString())
@@ -142,11 +143,12 @@ class AIService {
       }
 
       buffer.writeln("\nSua tarefa e regras obrigatórias:");
-      buffer.writeln("1. Analise a evolução do peso e repetições ao longo do tempo.");
-      buffer.writeln("2. Se eu estiver pronto para progredir, sugira o ajuste exato (ex: aumentar de 1kg a 2kg, aumentar repetições ou cadência).");
-      buffer.writeln("3. Se for melhor manter a carga para consolidação neuromuscular, explique de forma técnica e diga por quanto tempo ou quantas sessões manter antes de subir o peso.");
-      buffer.writeln("4. Responda em 1 a 2 parágrafos curtos, inteligentes e completos.");
-      buffer.writeln("5. PROIBIDO usar Markdown (nada de asteriscos, títulos # ou marcadores de lista). Escreva texto corrido e limpo.");
+      buffer.writeln("1. Analise a evolução de carga, repetições, proximidade da falha e o intervalo de recuperação entre treinos ao longo do tempo.");
+      buffer.writeln("2. O objetivo absoluto é HIPERTROFIA MÁXIMA com sobrecarga progressiva estruturada e execução de alta qualidade.");
+      buffer.writeln("3. Se o histórico indicar que o estímulo já está adaptado, sugira a progressão exata (ex: subir 1kg a 2kg, buscar +1 ou +2 repetições na mesma carga ou aumentar o tempo sob tensão na fase excêntrica).");
+      buffer.writeln("4. Se for melhor consolidar neuromuscularmente antes de subir a carga, explique de forma técnica e oriente por quantas sessões manter.");
+      buffer.writeln("5. Responda em 1 a 2 parágrafos diretos, inspiradores, inteligentes e 100% completos.");
+      buffer.writeln("6. PROIBIDO usar Markdown (sem asteriscos **, sem títulos # e sem tópicos em marcadores). Escreva texto corrido, limpo e profissional.");
 
       final response = await model.generateContent([
         Content.text(buffer.toString())
