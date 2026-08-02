@@ -705,12 +705,7 @@ import WidgetKit
         let hasCachedData = data["hasCachedData"] as? Bool ?? false
         if hasCachedData {
           // Watch has cached data, only send active workout and recent changes
-          if _provider?.state?.activeWorkout != nil {
-            sendActiveWorkout(_provider!.state!.activeWorkout!)
-          } else {
-            sendActiveWorkoutCleared()
-          }
-          // Still invoke sessionActivated to ensure data consistency
+          // The Flutter side will handle this via sessionActivated
           self.invokeOrQueue(method: "sessionActivated", arguments: nil)
         } else {
           // Watch has no cached data, send full sync

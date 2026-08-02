@@ -517,6 +517,59 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             ])
         }
     }
+    
+    func updateCardio(exerciseIndex: Int, setIndex: Int, distance: Double, duration: Int) {
+        if isLocalWorkout {
+            updateCardioLocal(exerciseIndex: exerciseIndex, setIndex: setIndex, distance: distance, duration: duration)
+        } else {
+            sendToiPhone([
+                "action": "updateCardio",
+                "exerciseIndex": exerciseIndex,
+                "setIndex": setIndex,
+                "distance": distance,
+                "duration": duration
+            ])
+        }
+    }
+    
+    private func updateCardioLocal(exerciseIndex: Int, setIndex: Int, distance: Double, duration: Int) {
+        guard var active = activeWorkout else { return }
+        guard exerciseIndex < active.exercises.count else { return }
+        var exercises = active.exercises
+        var ex = exercises[exerciseIndex]
+        
+        var performedCardios = ex.performedCardios
+        performedCardios[setIndex] = WatchPerformedCardio(distanceKm: distance, durationSeconds: duration)
+        
+        let updatedEx = WatchActiveExercise(
+            name: ex.name,
+            muscle: ex.muscle,
+            sets: ex.sets,
+            reps: ex.reps,
+            rest: ex.rest,
+            weight: ex.weight,
+            setsState: ex.setsState,
+            measurementType: ex.measurementType,
+            executionType: ex.executionType,
+            performedCardios: performedCardios,
+            failureReport: ex.failureReport,
+            failureReps: ex.failureReps
+        )
+        exercises[exerciseIndex] = updatedEx
+        
+        let elapsed = max(0, Int(Date().timeIntervalSince1970 - Double(active.startTime / 1000)))
+        
+        activeWorkout = WatchActiveWorkoutState(
+            name: active.name,
+            startTime: active.startTime,
+            exercises: exercises,
+            currentExerciseIndex: active.currentExerciseIndex,
+            elapsedSeconds: elapsed,
+            paused: active.paused,
+            restTimer: active.restTimer,
+            postponed: active.postponed
+        )
+    }
 
     func skipRest() {
         if isLocalWorkout {
