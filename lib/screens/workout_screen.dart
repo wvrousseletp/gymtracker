@@ -1892,7 +1892,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
     final cal = widget.provider.todayBurnedCalories > 0
         ? widget.provider.todayBurnedCalories
         : workout.activeCalories;
-    final steps = widget.provider.todaySteps;
+
 
     final keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
 
@@ -1921,89 +1921,204 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
           // Tela Principal de Treino Ativo
           Column(
             children: [
-              // Barra superior do treino (Header Centered)
+              // Barra Superior Compacta Glass (~48px)
               Padding(
-                padding: const EdgeInsets.only(top: 16, bottom: 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    if (!keyboardOpen) ...[
-                      Text(
-                        workout.name.toUpperCase(),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: accentColor,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 2.0,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-                    ValueListenableBuilder<int>(
-                      valueListenable: _workoutDurationNotifier,
-                      builder: (context, elapsed, child) {
-                        return Text(
-                          _formatDuration(elapsed),
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: keyboardOpen ? 32 : 56,
-                            fontWeight: FontWeight.w900,
-                            fontFeatures: const [FontFeature.tabularFigures()],
-                            letterSpacing: -2.0,
+                    // Esquerda: Nome do Treino + Chip do Exercício Atual
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Flexible(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: accentColor.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                    color: accentColor.withOpacity(0.35)),
+                              ),
+                              child: Text(
+                                workout.name.toUpperCase(),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: accentColor,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.8,
+                                ),
+                              ),
+                            ),
                           ),
-                        );
-                      },
+                          if (exercises.isNotEmpty) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.06),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                "Ex. ${_currentExIdx + 1}/${exercises.length}",
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 12),
-                    // Telemetry Glass Pills
-                    if (hr > 0 || cal > 0 || steps > 0)
-                      if (!keyboardOpen)
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          alignment: WrapAlignment.center,
-                          children: [
-                            if (hr > 0)
-                              _buildTelemetryPill(
-                                  Icons.favorite, Colors.redAccent, "$hr bpm"),
-                            if (cal > 0)
-                              _buildTelemetryPill(Icons.local_fire_department,
-                                  Colors.orangeAccent, "$cal kcal"),
-                            if (steps > 0)
-                              _buildTelemetryPill(Icons.directions_walk,
-                                  Colors.blueAccent, "$steps steps"),
+
+                    // Centro/Direita: Cronômetro Compacto + Telemetria Inline + Menu
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Cronômetro digital em cápsula com telemetria
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.06),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                                color: Colors.white.withOpacity(0.1)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.timer_outlined,
+                                  color: accentColor, size: 14),
+                              const SizedBox(width: 5),
+                              ValueListenableBuilder<int>(
+                                valueListenable: _workoutDurationNotifier,
+                                builder: (context, elapsed, child) {
+                                  return Text(
+                                    _formatDuration(elapsed),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w900,
+                                      fontFeatures: [
+                                        FontFeature.tabularFigures()
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                              if (hr > 0) ...[
+                                const SizedBox(width: 8),
+                                Text("❤️ $hr",
+                                    style: const TextStyle(
+                                        color: Colors.redAccent,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold)),
+                              ],
+                              if (cal > 0) ...[
+                                const SizedBox(width: 6),
+                                Text("🔥 $cal",
+                                    style: const TextStyle(
+                                        color: Colors.orangeAccent,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold)),
+                              ],
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(width: 4),
+
+                        // Menu de Opções Rápido (Adiar / Descartar)
+                        PopupMenuButton<String>(
+                          color: const Color(0xff2c2c2e),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16)),
+                          icon: const Icon(Icons.more_vert_rounded,
+                              color: Colors.white70, size: 20),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onSelected: (value) {
+                            if (value == 'postpone') {
+                              widget.provider.postponeActiveWorkout();
+                            } else if (value == 'discard') {
+                              _confirmDiscardWorkout(context);
+                            }
+                          },
+                          itemBuilder: (context) => const [
+                            PopupMenuItem(
+                              value: 'postpone',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.snooze,
+                                      color: Colors.amberAccent, size: 20),
+                                  SizedBox(width: 12),
+                                  Text("Adiar Treino",
+                                      style: TextStyle(color: Colors.white)),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: 'discard',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.close,
+                                      color: Colors.redAccent, size: 20),
+                                  SizedBox(width: 12),
+                                  Text("Descartar",
+                                      style:
+                                          TextStyle(color: Colors.redAccent)),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
+                      ],
+                    ),
                   ],
                 ),
               ),
 
-              // Carrossel de Exercícios (PageView)
-              if (exercises.isNotEmpty) ...[
-                // Dots indicator
+              // Micro-barra de Progresso Segmentada dos Exercícios (3px de altura)
+              if (exercises.isNotEmpty)
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(exercises.length, (index) {
-                      return AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        height: 8,
-                        width: _currentExIdx == index ? 24 : 8,
-                        decoration: BoxDecoration(
-                          color: _currentExIdx == index
-                              ? accentColor
-                              : Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(4),
+                      final isCurrent = _currentExIdx == index;
+                      final isCompleted = index < _currentExIdx ||
+                          (exercises[index].setsState.isNotEmpty &&
+                              exercises[index]
+                                  .setsState
+                                  .every((done) => done));
+                      return Expanded(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          margin: const EdgeInsets.symmetric(horizontal: 2),
+                          height: 3,
+                          decoration: BoxDecoration(
+                            color: isCurrent
+                                ? accentColor
+                                : isCompleted
+                                    ? accentColor.withOpacity(0.4)
+                                    : Colors.white.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
                         ),
                       );
                     }),
                   ),
                 ),
 
+              // Carrossel de Exercícios (PageView)
+              if (exercises.isNotEmpty)
                 Expanded(
                   child: PageView.builder(
                     controller: _pageController,
@@ -2018,10 +2133,11 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                     itemCount: exercises.length,
                     itemBuilder: (context, index) {
                       return SingleChildScrollView(
-                        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                        keyboardDismissBehavior:
+                            ScrollViewKeyboardDismissBehavior.onDrag,
                         controller: _scrollControllers[index],
                         padding: const EdgeInsets.only(
-                            left: 8, right: 8, top: 8, bottom: 60),
+                            left: 8, right: 8, top: 4, bottom: 40),
                         child: Column(
                           children: [
                             _buildExerciseCard(
@@ -2031,19 +2147,19 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                             if (index == exercises.length - 1)
                               Padding(
                                 padding: const EdgeInsets.only(
-                                    top: 32.0, bottom: 100.0),
+                                    top: 24.0, bottom: 80.0),
                                 child: ElevatedButton.icon(
                                   onPressed: () {
                                     _showFinishWorkoutDialog(context);
                                   },
                                   icon: const Icon(Icons.check_circle_outline,
-                                      size: 24, color: Colors.black),
+                                      size: 22, color: Colors.black),
                                   label: const Text(
                                     "FINALIZAR TREINO",
                                     style: TextStyle(
                                         color: Colors.black,
                                         fontWeight: FontWeight.w900,
-                                        fontSize: 16,
+                                        fontSize: 15,
                                         letterSpacing: 1),
                                   ),
                                   style: ElevatedButton.styleFrom(
@@ -2052,142 +2168,140 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                                         borderRadius:
                                             BorderRadius.circular(20)),
                                     padding: const EdgeInsets.symmetric(
-                                        horizontal: 24, vertical: 16),
+                                        horizontal: 24, vertical: 14),
                                     elevation: 8,
                                     shadowColor: accentColor.withOpacity(0.5),
                                   ),
                                 ),
                               )
                             else
-                              const SizedBox(
-                                  height:
-                                      160), // Espaço maior para a Action Bar
+                              const SizedBox(height: 80),
                           ],
                         ),
                       );
                     },
                   ),
                 ),
-              ],
             ],
           ),
 
-          // FLOATING BOTTOM ACTION BAR (Glassmorphism)
+          // FLOATING BOTTOM ACTION BAR (Ultra-sleek Glass Capsule)
           if (!keyboardOpen)
             Positioned(
-            left: 16,
-            right: 16,
-            bottom: 104,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(30),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(30),
-                    border: Border.all(color: Colors.white.withOpacity(0.2)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      )
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Mais Opções (Adiar / Descartar)
-                      PopupMenuButton<String>(
-                        color: const Color(0xff2c2c2e),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16)),
-                        icon: const Icon(Icons.more_vert, color: Colors.white),
-                        onSelected: (value) {
-                          if (value == 'postpone') {
-                            widget.provider.postponeActiveWorkout();
-                          } else if (value == 'discard') {
-                            _confirmDiscardWorkout(context);
-                          }
-                        },
-                        itemBuilder: (context) => const [
-                          PopupMenuItem(
-                            value: 'postpone',
+              left: 20,
+              right: 20,
+              bottom: 96,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xff1c1c1e).withOpacity(0.85),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                          color: Colors.white.withOpacity(0.12), width: 1),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.35),
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
+                        )
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Botão Play/Pause Compacto
+                        GestureDetector(
+                          onTap: () {
+                            widget.provider.pauseWorkout(!workout.paused);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: workout.paused
+                                  ? Colors.amberAccent.withOpacity(0.2)
+                                  : accentColor.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: workout.paused
+                                    ? Colors.amberAccent.withOpacity(0.5)
+                                    : accentColor.withOpacity(0.4),
+                              ),
+                            ),
                             child: Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.snooze,
-                                    color: Colors.amberAccent, size: 20),
-                                SizedBox(width: 12),
-                                Text("Adiar Treino",
-                                    style: TextStyle(color: Colors.white)),
+                                Icon(
+                                  workout.paused
+                                      ? Icons.play_arrow_rounded
+                                      : Icons.pause_rounded,
+                                  color: workout.paused
+                                      ? Colors.amberAccent
+                                      : accentColor,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  workout.paused ? "PAUSADO" : "PAUSAR",
+                                  style: TextStyle(
+                                    color: workout.paused
+                                        ? Colors.amberAccent
+                                        : accentColor,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
                               ],
                             ),
-                          ),
-                          PopupMenuItem(
-                            value: 'discard',
-                            child: Row(
-                              children: [
-                                Icon(Icons.close,
-                                    color: Colors.redAccent, size: 20),
-                                SizedBox(width: 12),
-                                Text("Descartar",
-                                    style: TextStyle(color: Colors.redAccent)),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      // Botão Play/Pause Gigante no Centro
-                      GestureDetector(
-                        onTap: () {
-                          widget.provider.pauseWorkout(!workout.paused);
-                        },
-                        child: Container(
-                          width: 60,
-                          height: 60,
-                          decoration: BoxDecoration(
-                            color: workout.paused ? Colors.white : accentColor,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: (workout.paused
-                                        ? Colors.white
-                                        : accentColor)
-                                    .withOpacity(0.4),
-                                blurRadius: 12,
-                                spreadRadius: 2,
-                              )
-                            ],
-                          ),
-                          child: Icon(
-                            workout.paused
-                                ? Icons.play_arrow_rounded
-                                : Icons.pause_rounded,
-                            color: Colors.black,
-                            size: 32,
                           ),
                         ),
-                      ),
 
-                      // Botão Finalizar Minimalista
-                      IconButton(
-                        icon: const Icon(Icons.check_circle_outline,
-                            color: Colors.white70),
-                        tooltip: "Finalizar Treino",
-                        onPressed: () {
-                          _showFinishWorkoutDialog(context);
-                        },
-                      ),
-                    ],
+                        // Botão Finalizar Treino (Direita)
+                        GestureDetector(
+                          onTap: () {
+                            _showFinishWorkoutDialog(context);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: accentColor,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.check_circle_outline_rounded,
+                                  color: Colors.black,
+                                  size: 16,
+                                ),
+                                SizedBox(width: 6),
+                                Text(
+                                  "FINALIZAR",
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.8,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
 
           // OVERLAY DE DESCANSO / PREPARO ATIVO (CircularProgressTimer) - REDESENHO PREMIUM TELA CHEIA
           if (_timerActive)
@@ -2788,31 +2902,6 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
     );
   }
 
-  Widget _buildTelemetryPill(IconData icon, Color color, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color, size: 14),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   void _showEditSetWeightRepsDialog(
       BuildContext context, int exIdx, int setIdx, ActiveExercise ex) {
