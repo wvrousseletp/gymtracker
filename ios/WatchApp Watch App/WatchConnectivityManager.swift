@@ -42,6 +42,30 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     private let cache = WatchDataCache.shared
     private let localWorkoutManager = WatchLocalWorkoutManager.shared
     private let cloudBackup = WatchCloudBackupManager.shared
+    
+    // Debounce timers for health metrics
+    private var healthMetricsDebounceTimer: Timer?
+    private var pendingHeartRate: Double?
+    private var pendingCalories: Double?
+    
+    // Track last sent workout state for differential updates
+    private var lastSentWorkoutHash: String?
+    private var workoutUpdateDebounceTimer: Timer?
+    
+    // Batch queue for set updates
+    private var pendingSetUpdates: [[String: Any]] = []
+    private var setUpdateBatchTimer: Timer?
+    
+    // Message priority system
+    enum MessagePriority: Int {
+        case critical = 0  // Workout start/complete, emergency
+        case high = 1      // Active workout updates, set completions
+        case normal = 2    // Health metrics, water updates
+        case low = 3       // Routine/library sync, planner updates
+    }
+    
+    private var messageQueue: [(message: [String: Any], priority: MessagePriority)] = []
+    private var isProcessingQueue = false
 
     private override init() {
         super.init()
@@ -416,22 +440,8 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         if isLocalWorkout {
             toggleSetLocal(exerciseIndex: exerciseIndex, setIndex: setIndex, isDone: isDone, isFailure: isFailure, failureRep: failureRep, distance: distance, duration: duration)
         } else {
-            // Optimistic Update
-            if var current = self.activeWorkout {
-                if exerciseIndex >= 0 && exerciseIndex < current.exercises.count {
-                    var exercise = current.exercises[exerciseIndex]
-                    if setIndex >= 0 && setIndex < exercise.setsState.count {
-                        exercise.setsState[setIndex] = isDone
-                        if isFailure, setIndex < exercise.failureReport.count {
-                            exercise.failureReport[setIndex] = true
-                        }
-                        current.exercises[exerciseIndex] = exercise
-                        self.activeWorkout = current
-                    }
-                }
-            }
-            
-            var msg: [String: Any] = [
+            // Add to batch queue instead of sending immediately
+            var update: [String: Any] = [
                 "action": "toggleSet",
                 "exerciseIndex": exerciseIndex,
                 "setIndex": setIndex,
@@ -439,30 +449,36 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                 "isFailure": isFailure
             ]
             if let rep = failureRep {
-                msg["failureRep"] = rep
+                update["failureRep"] = rep
             }
             if let dist = distance {
-                msg["distance"] = dist
+                update["distance"] = dist
             }
             if let dur = duration {
-                msg["duration"] = dur
+                update["duration"] = dur
             }
-            sendToiPhone(msg)
+            
+            pendingSetUpdates.append(update)
+            
+            // Debounce batch sending - send after 200ms of no new updates
+            setUpdateBatchTimer?.invalidate()
+            setUpdateBatchTimer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: false) { [weak self] _ in
+                self?.flushSetUpdateBatch()
+            }
         }
     }
-
-    func updateCardio(exerciseIndex: Int, setIndex: Int, distance: Double, duration: Int) {
-        if isLocalWorkout {
-            toggleSetLocal(exerciseIndex: exerciseIndex, setIndex: setIndex, isDone: true, isFailure: false, failureRep: nil, distance: distance, duration: duration)
-        } else {
-            sendToiPhone([
-                "action": "updateCardio",
-                "exerciseIndex": exerciseIndex,
-                "setIndex": setIndex,
-                "distance": distance,
-                "duration": duration
-            ])
-        }
+    
+    private func flushSetUpdateBatch() {
+        guard !pendingSetUpdates.isEmpty else { return }
+        
+        // Send all pending updates in a single batch message
+        let batchMessage: [String: Any] = [
+            "action": "batchSetUpdates",
+            "updates": pendingSetUpdates
+        ]
+        
+        sendToiPhone(batchMessage)
+        pendingSetUpdates.removeAll()
     }
 
     func updateFailure(exerciseIndex: Int, setIndex: Int, isFailure: Bool, failureRep: Int?) {
@@ -587,6 +603,9 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     }
 
     func requestSync() {
+        // Check if we have cached data before requesting full sync
+        let hasCachedData = !routines.isEmpty || !library.isEmpty || !planner.isEmpty
+        
         DispatchQueue.main.async {
             self.isSyncing = true
             // Timeout to prevent infinite loading if iPhone doesn't respond
@@ -596,7 +615,20 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                 }
             }
         }
-        sendToiPhone(["action": "requestSync"])
+        
+        // If we have cached data, only request active workout and recent changes
+        // Otherwise request full sync
+        if hasCachedData {
+            sendToiPhone([
+                "action": "requestSync",
+                "hasCachedData": true
+            ])
+        } else {
+            sendToiPhone([
+                "action": "requestSync",
+                "hasCachedData": false
+            ])
+        }
     }
 
     func updateWaterIntake(newAmountMl: Int) {
@@ -628,20 +660,63 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     }
 
     func sendHealthMetrics(heartRate: Double, calories: Double) {
-        sendToiPhone([
-            "action": "updateHealthMetrics",
-            "heartRate": heartRate,
-            "activeCalories": calories
-        ])
+        // Store pending values
+        self.pendingHeartRate = heartRate
+        self.pendingCalories = calories
+        
+        // Cancel existing timer
+        healthMetricsDebounceTimer?.invalidate()
+        
+        // Set new timer with 1.5 second debounce
+        healthMetricsDebounceTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: false) { [weak self] _ in
+            guard let self = self else { return }
+            if let hr = self.pendingHeartRate, let cal = self.pendingCalories {
+                self.sendToiPhone([
+                    "action": "updateHealthMetrics",
+                    "heartRate": hr,
+                    "activeCalories": cal
+                ])
+                self.pendingHeartRate = nil
+                self.pendingCalories = nil
+            }
+        }
     }
 
     private func sendToiPhone(_ message: [String: Any]) {
         guard let session = session else { return }
+        
+        // Determine message priority
+        let priority = determinePriority(for: message)
+        
+        // Critical and high priority messages are sent immediately
+        if priority == .critical || priority == .high {
+            sendImmediate(message: message, session: session)
+        } else {
+            // Normal and low priority messages go through queue
+            enqueueMessage(message: message, priority: priority)
+        }
+    }
+    
+    private func determinePriority(for message: [String: Any]) -> MessagePriority {
+        guard let action = message["action"] as? String else { return .normal }
+        
+        switch action {
+        case "startWorkout", "completeWorkout", "cancelWorkout", "postponeWorkout", "resumeWorkout":
+            return .critical
+        case "toggleSet", "updateCardio", "updateFailure", "updateActiveWorkout", "skipRest", "changeExercise":
+            return .high
+        case "updateHealthMetrics", "updateWaterIntake":
+            return .normal
+        case "updateRoutines", "updateLibrary", "updatePlanner", "requestSync":
+            return .low
+        default:
+            return .normal
+        }
+    }
+    
+    private func sendImmediate(message: [String: Any], session: WCSession) {
         if session.isReachable {
             session.sendMessage(message, replyHandler: nil) { error in
-                // sendMessage failed (e.g. iOS app was backgrounded/suspended).
-                // Fall back to guaranteed-delivery transferUserInfo so the action
-                // is not silently lost.
                 WatchLogger.connectivity.warning("sendMessage failed (\(error.localizedDescription)) – retrying via transferUserInfo")
                 DispatchQueue.global().async {
                     session.transferUserInfo(message)
@@ -649,6 +724,40 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             }
         } else {
             session.transferUserInfo(message)
+        }
+    }
+    
+    private func enqueueMessage(message: [String: Any], priority: MessagePriority) {
+        messageQueue.append((message, priority))
+        messageQueue.sort { $0.priority.rawValue < $1.priority.rawValue }
+        
+        if !isProcessingQueue {
+            processMessageQueue()
+        }
+    }
+    
+    private func processMessageQueue() {
+        guard !messageQueue.isEmpty else {
+            isProcessingQueue = false
+            return
+        }
+        
+        isProcessingQueue = true
+        let (message, _) = messageQueue.removeFirst()
+        
+        guard let session = session else {
+            // Continue processing next message
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+                self?.processMessageQueue()
+            }
+            return
+        }
+        
+        sendImmediate(message: message, session: session)
+        
+        // Process next message after short delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
+            self?.processMessageQueue()
         }
     }
 
@@ -741,15 +850,43 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
 
         // Mirror the updated state to iPhone via transferUserInfo so the iOS side
         // stays in sync even while we're in local/offline mode.
-        if let updatedActive = activeWorkout,
-           let data = try? JSONEncoder().encode(updatedActive),
-           let json = String(data: data, encoding: .utf8),
-           let sess = session {
-            sess.transferUserInfo([
-                "action": "updateActiveWorkout",
-                "activeWorkout": json
-            ])
+        // Use differential update with debounce to reduce bandwidth
+        if let updatedActive = activeWorkout {
+            let currentHash = generateWorkoutHash(updatedActive)
+            
+            // Only send if state changed significantly
+            if currentHash != lastSentWorkoutHash {
+                lastSentWorkoutHash = currentHash
+                
+                // Debounce workout updates to avoid excessive messages
+                workoutUpdateDebounceTimer?.invalidate()
+                workoutUpdateDebounceTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: false) { [weak self] _ in
+                    guard let self = self else { return }
+                    if let data = try? JSONEncoder().encode(updatedActive),
+                       let json = String(data: data, encoding: .utf8),
+                       let sess = self.session {
+                        sess.transferUserInfo([
+                            "action": "updateActiveWorkout",
+                            "activeWorkout": json
+                        ])
+                    }
+                }
+            }
         }
+    }
+    
+    private func generateWorkoutHash(_ workout: WatchActiveWorkoutState) -> String {
+        // Create a hash of the workout state excluding frequently changing fields
+        let hashString = "\(workout.name)|\(workout.startTime)|\(workout.currentExerciseIndex)|\(workout.paused)|\(workout.postponed)"
+        
+        // Include exercise states (setsState, weight, reps)
+        var exerciseStates: [String] = []
+        for ex in workout.exercises {
+            let exState = "\(ex.setsState.hashValue)|\(ex.weight)|\(ex.reps)|\(ex.failureReport.hashValue)"
+            exerciseStates.append(exState)
+        }
+        
+        return "\(hashString)|\(exerciseStates.joined(separator: ","))"
     }
 
     private func updateExerciseWeightRepsLocal(exerciseIndex: Int, weight: Double, reps: Int) {

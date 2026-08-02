@@ -12,7 +12,8 @@ class WatchService {
   static final WatchService instance = WatchService._internal();
   WatchService._internal();
 
-  final MethodChannel _channel = const MethodChannel('com.vicente.losmooscles/watch');
+  final MethodChannel _channel =
+      const MethodChannel('com.vicente.losmooscles/watch');
   TrackerProvider? _provider;
 
   String? _lastSentRoutinesJson;
@@ -26,10 +27,11 @@ class WatchService {
   void init(TrackerProvider provider) {
     _provider = provider;
     _channel.setMethodCallHandler(_handleMethodCall);
-    
+
     // Only send initial data if state is available
     if (provider.state != null) {
-      sendRoutines(provider.state!.routines);
+      // Send only today's routines for selective sync
+      sendTodayRoutines(provider.state!.routines, provider.state!.planner);
       sendLibrary(provider.state!.library);
       sendPlanner(provider.state!.planner);
       if (provider.state!.activeWorkout != null) {
@@ -39,7 +41,8 @@ class WatchService {
     }
   }
 
-  Future<void> syncNotificationPreferences(NotificationPreferences prefs) async {
+  Future<void> syncNotificationPreferences(
+      NotificationPreferences prefs) async {
     try {
       await _channel.invokeMethod('syncNotificationPreferences', prefs.toMap());
     } catch (e) {
@@ -67,12 +70,14 @@ class WatchService {
 
         final existing = _provider!.state?.activeWorkout;
         if (existing != null && !existing.postponed) {
-          debugPrint('[WatchService] startWorkout from Watch ignored — iOS already has active workout');
+          debugPrint(
+              '[WatchService] startWorkout from Watch ignored — iOS already has active workout');
           sendActiveWorkout(existing, force: true);
           break;
         }
 
-        final baseRoutine = _provider!.state?.routines.firstWhere((r) => r.id == routineId);
+        final baseRoutine =
+            _provider!.state?.routines.firstWhere((r) => r.id == routineId);
         if (baseRoutine != null) {
           Routine routineToStart = baseRoutine;
           if (customExercisesJson != null) {
@@ -82,7 +87,7 @@ class WatchService {
               final int sets = (item['sets'] as num).toInt();
               final int reps = (item['reps'] as num).toInt();
               final double weight = (item['weight'] as num).toDouble();
-              
+
               final orig = baseRoutine.exercises.firstWhere(
                 (e) => e.exerciseId == exId,
                 orElse: () => baseRoutine.exercises.first,
@@ -104,8 +109,12 @@ class WatchService {
               isDynamicExercise: baseRoutine.isDynamicExercise,
             );
           }
-          
-          _provider!.startWorkout(routineToStart, WorkoutRecovery(sleepOk: SleepQuality.okay, pain: [], warmUpDone: false), false);
+
+          _provider!.startWorkout(
+              routineToStart,
+              WorkoutRecovery(
+                  sleepOk: SleepQuality.okay, pain: [], warmUpDone: false),
+              false);
           _provider!.persistActiveWorkoutState();
           // Envia de volta o estado atualizado do treino ativo
           if (_provider!.state?.activeWorkout != null) {
@@ -120,9 +129,10 @@ class WatchService {
         final bool isDone = call.arguments['isDone'] as bool;
         final bool isFailure = call.arguments['isFailure'] as bool? ?? false;
         final int? failureRep = call.arguments['failureRep'] as int?;
-        final double? distance = (call.arguments['distance'] as num?)?.toDouble();
+        final double? distance =
+            (call.arguments['distance'] as num?)?.toDouble();
         final int? duration = call.arguments['duration'] as int?;
-        
+
         _provider!.completeSet(
           exerciseIndex,
           setIndex,
@@ -132,7 +142,7 @@ class WatchService {
           isFailure: isFailure,
           failureRep: failureRep,
         );
-        
+
         // Envia de volta o estado atualizado do treino ativo
         if (_provider!.state?.activeWorkout != null) {
           sendActiveWorkout(_provider!.state!.activeWorkout!);
@@ -144,7 +154,7 @@ class WatchService {
         final int setIndex = call.arguments['setIndex'] as int;
         final double distance = (call.arguments['distance'] as num).toDouble();
         final int duration = call.arguments['duration'] as int;
-        
+
         final active = _provider!.state?.activeWorkout;
         if (active != null && exerciseIndex < active.exercises.length) {
           final ex = active.exercises[exerciseIndex];
@@ -170,12 +180,14 @@ class WatchService {
         final int setIndex = call.arguments['setIndex'] as int;
         final bool isFailure = call.arguments['isFailure'] as bool;
         final int? failureRep = call.arguments['failureRep'] as int?;
-        
+
         final active = _provider!.state?.activeWorkout;
         if (active != null && exerciseIndex < active.exercises.length) {
           final ex = active.exercises[exerciseIndex];
           if (setIndex < ex.setsState.length) {
-            final pc = setIndex < ex.performedCardios.length ? ex.performedCardios[setIndex] : null;
+            final pc = setIndex < ex.performedCardios.length
+                ? ex.performedCardios[setIndex]
+                : null;
             _provider!.completeSet(
               exerciseIndex,
               setIndex,
@@ -235,7 +247,8 @@ class WatchService {
 
       case 'startSingleExercise':
         final String exerciseId = call.arguments as String;
-        final exercise = _provider!.state?.library.firstWhere((e) => e.id == exerciseId);
+        final exercise =
+            _provider!.state?.library.firstWhere((e) => e.id == exerciseId);
         if (exercise != null) {
           _provider!.startSingleExercise(exercise);
           if (_provider!.state?.activeWorkout != null) {
@@ -306,7 +319,7 @@ class WatchService {
           } else {
             sendActiveWorkoutCleared();
           }
-          
+
           // Envia dados de água para o Watch
           sendWaterData(
             _provider!.state?.diet.waterIntakeMl ?? 0,
@@ -318,11 +331,13 @@ class WatchService {
         break;
 
       case 'syncOfflineWorkout':
-        final Map<String, dynamic> workoutData = Map<String, dynamic>.from(call.arguments as Map);
+        final Map<String, dynamic> workoutData =
+            Map<String, dynamic>.from(call.arguments as Map);
         try {
           final log = WorkoutLog.fromJson(workoutData);
           _provider!.addManualWorkoutLog(log);
-          debugPrint("[WatchService] Synced offline workout from watch: ${log.name}");
+          debugPrint(
+              "[WatchService] Synced offline workout from watch: ${log.name}");
           final workoutId = workoutData['id'] as String?;
           if (workoutId != null && workoutId.isNotEmpty) {
             await _channel.invokeMethod('ackOfflineWorkout', workoutId);
@@ -347,7 +362,8 @@ class WatchService {
 
       case 'updateHealthMetrics':
         final int heartRate = (call.arguments['heartRate'] as num).toInt();
-        final int activeCalories = (call.arguments['activeCalories'] as num).toInt();
+        final int activeCalories =
+            (call.arguments['activeCalories'] as num).toInt();
         _provider!.updateHealthMetrics(heartRate, activeCalories);
         break;
 
@@ -356,21 +372,21 @@ class WatchService {
         onNavigateToWorkout?.call();
         break;
 
-
       case 'updateActiveWorkoutFromWatch':
         // The Watch pushed its in-progress workout state to iOS.
         // Apply it so the iOS side can mirror/reconcile the workout.
         final String workoutJson = call.arguments as String;
         try {
-          final Map<String, dynamic> watchData = Map<String, dynamic>.from(
-              json.decode(workoutJson) as Map);
+          final Map<String, dynamic> watchData =
+              Map<String, dynamic>.from(json.decode(workoutJson) as Map);
           _provider!.applyActiveWorkoutFromWatch(watchData);
           _provider!.persistActiveWorkoutState();
           if (_provider!.state?.activeWorkout != null) {
             sendActiveWorkout(_provider!.state!.activeWorkout!);
           }
         } catch (e) {
-          debugPrint('[WatchService] Error applying active workout from Watch: $e');
+          debugPrint(
+              '[WatchService] Error applying active workout from Watch: $e');
         }
         break;
 
@@ -397,11 +413,10 @@ class WatchService {
     }
   }
 
-
-
   Future<void> sendRoutines(List<Routine> routines) async {
     try {
-      final List<Map<String, dynamic>> routinesJson = routines.map((r) => r.toJson()).toList();
+      final List<Map<String, dynamic>> routinesJson =
+          routines.map((r) => r.toJson()).toList();
       final serialized = json.encode(routinesJson);
       if (serialized == _lastSentRoutinesJson) return;
       _lastSentRoutinesJson = serialized;
@@ -411,9 +426,62 @@ class WatchService {
     }
   }
 
+  Future<void> sendTodayRoutines(
+      List<Routine> routines, Map<String, List<String>> planner) async {
+    try {
+      // Calculate today's routine
+      final calendar = DateTime.now();
+      final weekday = calendar.weekday;
+      final String todayKey;
+      switch (weekday) {
+        case 7:
+          todayKey = "dom";
+          break;
+        case 1:
+          todayKey = "seg";
+          break;
+        case 2:
+          todayKey = "ter";
+          break;
+        case 3:
+          todayKey = "qua";
+          break;
+        case 4:
+          todayKey = "qui";
+          break;
+        case 5:
+          todayKey = "sex";
+          break;
+        case 6:
+          todayKey = "sab";
+          break;
+        default:
+          todayKey = "seg";
+      }
+
+      final plannedIds = planner[todayKey] ?? [];
+      final todayRoutines = routines
+          .where((r) =>
+              plannedIds.contains(r.id) ||
+              plannedIds.contains("routine:${r.id}"))
+          .toList();
+
+      // Send only today's routines to reduce bandwidth
+      final List<Map<String, dynamic>> routinesJson =
+          todayRoutines.map((r) => r.toJson()).toList();
+      final serialized = json.encode(routinesJson);
+      if (serialized == _lastSentRoutinesJson) return;
+      _lastSentRoutinesJson = serialized;
+      await _channel.invokeMethod('updateRoutines', serialized);
+    } on PlatformException catch (e) {
+      debugPrint("[WatchService] Erro ao enviar rotinas de hoje: $e");
+    }
+  }
+
   Future<void> sendLibrary(List<LibraryExercise> library) async {
     try {
-      final List<Map<String, dynamic>> libraryJson = library.map((e) => e.toJson()).toList();
+      final List<Map<String, dynamic>> libraryJson =
+          library.map((e) => e.toJson()).toList();
       final serialized = json.encode(libraryJson);
       if (serialized == _lastSentLibraryJson) return;
       _lastSentLibraryJson = serialized;
@@ -423,7 +491,8 @@ class WatchService {
     }
   }
 
-  Future<void> sendActiveWorkout(ActiveWorkoutState activeWorkout, {bool force = false}) async {
+  Future<void> sendActiveWorkout(ActiveWorkoutState activeWorkout,
+      {bool force = false}) async {
     try {
       final jsonMap = activeWorkout.toJson();
       final structureMap = Map<String, dynamic>.from(jsonMap)
@@ -475,43 +544,70 @@ class WatchService {
     try {
       final state = _provider?.state;
       if (state == null) return;
-      
+
       // Calculate today's routine
       final calendar = DateTime.now();
       final weekday = calendar.weekday;
       final String todayKey;
       switch (weekday) {
-        case 7: todayKey = "dom"; break;
-        case 1: todayKey = "seg"; break;
-        case 2: todayKey = "ter"; break;
-        case 3: todayKey = "qua"; break;
-        case 4: todayKey = "qui"; break;
-        case 5: todayKey = "sex"; break;
-        case 6: todayKey = "sab"; break;
-        default: todayKey = "seg";
+        case 7:
+          todayKey = "dom";
+          break;
+        case 1:
+          todayKey = "seg";
+          break;
+        case 2:
+          todayKey = "ter";
+          break;
+        case 3:
+          todayKey = "qua";
+          break;
+        case 4:
+          todayKey = "qui";
+          break;
+        case 5:
+          todayKey = "sex";
+          break;
+        case 6:
+          todayKey = "sab";
+          break;
+        default:
+          todayKey = "seg";
       }
-      
+
       final plannedIds = state.planner[todayKey] ?? [];
-      final todayRoutines = state.routines.where((r) => plannedIds.contains(r.id) || plannedIds.contains("routine:${r.id}")).toList();
-      
-      final String todayRoutineName = todayRoutines.isNotEmpty ? todayRoutines.first.name : "Nenhum treino planejado";
-      final int todayRoutineExerciseCount = todayRoutines.isNotEmpty ? todayRoutines.first.exercises.length : 0;
-      final List<String> todayRoutineExercises = todayRoutines.isNotEmpty 
+      final todayRoutines = state.routines
+          .where((r) =>
+              plannedIds.contains(r.id) ||
+              plannedIds.contains("routine:${r.id}"))
+          .toList();
+
+      final String todayRoutineName = todayRoutines.isNotEmpty
+          ? todayRoutines.first.name
+          : "Nenhum treino planejado";
+      final int todayRoutineExerciseCount =
+          todayRoutines.isNotEmpty ? todayRoutines.first.exercises.length : 0;
+      final List<String> todayRoutineExercises = todayRoutines.isNotEmpty
           ? todayRoutines.first.exercises.map<String>((e) {
               final libEx = state.library.firstWhere(
                 (l) => l.id == e.exerciseId,
-                orElse: () => LibraryExercise(id: '', name: 'Exercício', muscle: '', measurementType: MeasurementType.reps),
+                orElse: () => LibraryExercise(
+                    id: '',
+                    name: 'Exercício',
+                    muscle: '',
+                    measurementType: MeasurementType.reps),
               );
               return libEx.name;
-            }).toList() 
+            }).toList()
           : [];
-      
+
       final int waterIntakeCurrent = state.diet.waterIntakeMl;
       final int waterIntakeTarget = state.diet.waterGoalMl;
-      
+
       final now = DateTime.now();
-      final todayStr = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
-      
+      final todayStr =
+          "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+
       await _channel.invokeMethod('updateWidgetData', {
         'todayRoutineName': todayRoutineName,
         'todayRoutineExerciseCount': todayRoutineExerciseCount,
@@ -543,17 +639,20 @@ class WatchService {
 
   Future<int?> getSharedWaterIntake() async {
     try {
-      final int? value = await _channel.invokeMethod<int>('getSharedWaterIntake');
+      final int? value =
+          await _channel.invokeMethod<int>('getSharedWaterIntake');
       return value;
     } on PlatformException catch (e) {
-      debugPrint("[WatchService] Erro ao buscar ingestão de água compartilhada: $e");
+      debugPrint(
+          "[WatchService] Erro ao buscar ingestão de água compartilhada: $e");
       return null;
     }
   }
 
   Future<Map<String, dynamic>?> getSharedActiveWorkout() async {
     try {
-      final Map? res = await _channel.invokeMethod<Map>('getSharedActiveWorkout');
+      final Map? res =
+          await _channel.invokeMethod<Map>('getSharedActiveWorkout');
       if (res != null) {
         return Map<String, dynamic>.from(res);
       }
@@ -567,14 +666,16 @@ class WatchService {
   Future<void> sendWaterData(int current, int target) async {
     try {
       final now = DateTime.now();
-      final todayStr = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+      final todayStr =
+          "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
       await _channel.invokeMethod('updateWidgetData', {
         'waterIntakeCurrent': current,
         'waterIntakeTarget': target,
         'waterIntakeDate': todayStr,
       });
     } on PlatformException catch (e) {
-      debugPrint("[WatchService] Erro ao enviar dados de água para o Watch: $e");
+      debugPrint(
+          "[WatchService] Erro ao enviar dados de água para o Watch: $e");
     }
   }
 }
