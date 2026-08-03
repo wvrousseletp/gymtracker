@@ -41,6 +41,8 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
   bool _healthAuthorized = false;
 
   Timer? _saveDebounceTimer;
+  Timer? _dailyResetTimer;
+  String _lastCheckedDay = '';
 
   int get todaySteps => _todaySteps;
   int get todayBurnedCalories => _todayBurnedCalories;
@@ -113,12 +115,36 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _firebaseSync.dispose();
+    _dailyResetTimer?.cancel();
+    _saveDebounceTimer?.cancel();
     super.dispose();
   }
 
   Future<void> _init() async {
     WidgetsBinding.instance.addObserver(this);
     WatchService.instance.init(this);
+    _startDailyResetTimer();
+  }
+
+  void _startDailyResetTimer() {
+    _dailyResetTimer?.cancel();
+    _dailyResetTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      _checkDayChange();
+    });
+  }
+
+  void _checkDayChange() {
+    final now = DateTime.now();
+    final todayStr =
+        "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+
+    if (_lastCheckedDay != todayStr) {
+      _lastCheckedDay = todayStr;
+      checkAndResetDailyDiet();
+      checkAndResetPostponedWorkouts();
+      debugPrint(
+          '[TrackerProvider] Day changed to $todayStr, reset daily data');
+    }
   }
 
   Future<void> _testFirebaseConnection(String uid) async {
@@ -183,6 +209,12 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     }
 
     await loadCurrentState();
+
+    // Initialize last checked day to today
+    final now = DateTime.now();
+    _lastCheckedDay =
+        "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+
     checkAndResetDailyDiet();
     checkAndResetPostponedWorkouts();
     await syncWaterFromWidget();
