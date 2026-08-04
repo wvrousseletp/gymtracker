@@ -17,7 +17,8 @@ platform :ios do
     setup_ci
     match(
       type: "appstore",
-      readonly: false
+      readonly: false,
+      force: true
     )
   end
 
