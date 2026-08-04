@@ -58,6 +58,17 @@ jobs:
           cd ios
           bundle exec fastlane match_appstore --verbose
           cd ..
+          # Unlock the keychain created by Fastlane's setup_ci so Xcode can access certs
+          KEYCHAIN_PATH="$HOME/Library/Keychains/fastlane_tmp_keychain-db"
+          if [ -f "$KEYCHAIN_PATH" ]; then
+            security unlock-keychain -p "" fastlane_tmp_keychain
+            security list-keychains -s fastlane_tmp_keychain login.keychain
+            security default-keychain -s fastlane_tmp_keychain
+            echo "Keychain unlocked and set as default"
+          else
+            echo "WARNING: fastlane_tmp_keychain not found at $KEYCHAIN_PATH"
+            security list-keychains
+          fi
           flutter build ipa --release --export-options-plist=ios/ExportOptions.plist --verbose
           echo "=== CONTEÚDO DO DIRETÓRIO build/ ==="
           find build -maxdepth 5 -type f || true
