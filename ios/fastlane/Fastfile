@@ -15,11 +15,6 @@ platform :ios do
   desc "Fetch certificates and provisioning profiles using match"
   lane :match_appstore do
     setup_ci
-    match_nuke(
-      type: "appstore",
-      skip_confirmation: true,
-      readonly: false
-    )
     match(
       type: "appstore",
       readonly: false,
