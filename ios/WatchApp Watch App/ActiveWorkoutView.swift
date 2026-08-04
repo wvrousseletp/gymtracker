@@ -680,55 +680,15 @@ struct ActiveWorkoutView: View {
                             }) {
                                 let key = "\(exercise.name)_\(exIndex)_\(setIndex)"
                                 let isPulsing = pulsingFailureSetIndex == key
-                                
-                                VStack(spacing: 2) {
-                                    let labelText = "\(setIndex + 1)"
-                                    let labelColor: Color = isSelected ? .black : .white
-                                    Text(labelText)
-                                        .font(.system(size: 9, weight: .bold))
-                                        .foregroundColor(labelColor)
-                                    
-                                    if isFailure && !isCardio {
-                                        Image(systemName: "xmark.octagon.fill")
-                                            .font(.system(size: 8))
-                                            .foregroundColor(.red)
-                                    } else if isCompleted {
-                                        Image(systemName: "checkmark.circle.fill")
-                                            .font(.system(size: 8, weight: .bold))
-                                            .foregroundColor(isSelected ? .black : checkmarkColor)
-                                    } else {
-                                        Image(systemName: "circle")
-                                            .font(.system(size: 8))
-                                            .foregroundColor(isSelected ? .black.opacity(0.4) : .white.opacity(0.3))
-                                    }
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 4)
-                                .background(
-                                    isSelected 
-                                    ? (isCompleted ? Color.green : Color.orange) 
-                                    : (isCompleted ? Color.green.opacity(0.15) : Color.white.opacity(0.04))
+                                setButtonView(
+                                    setIndex: setIndex,
+                                    isSelected: isSelected,
+                                    isCompleted: isCompleted,
+                                    isFailure: isFailure,
+                                    isCardio: isCardio,
+                                    isPulsing: isPulsing,
+                                    checkmarkColor: checkmarkColor
                                 )
-                                .cornerRadius(6)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 6)
-                                        .stroke(
-                                            isFailure && isPulsing 
-                                            ? Color.red.opacity(0.8) 
-                                            : (isSelected ? Color.white.opacity(0.8) : Color.white.opacity(0.06)), 
-                                            lineWidth: isFailure && isPulsing ? 2 : 1
-                                        )
-                                )
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 6)
-                                        .stroke(Color.red, lineWidth: isFailure && isPulsing ? 3 : 0)
-                                        .opacity(isFailure && isPulsing ? 0.5 : 0)
-                                        .blur(radius: isFailure && isPulsing ? 4 : 0)
-                                )
-                                .scaleEffect(isFailure && isPulsing ? 1.05 : 1.0)
-                                .animation(isFailure && isPulsing ? .easeInOut(duration: 0.8).repeatForever(autoreverses: true) : .default, value: isPulsing)
-                                .accessibilityLabel(accessibilityLabelForSet(setIndex: setIndex, isCompleted: isCompleted, isFailure: isFailure, isSelected: isSelected))
-                                .accessibilityHint(isCompleted ? "Toque para desmarcar" : "Toque para marcar como concluída")
                             }
                             .buttonStyle(PlainButtonStyle())
                         }
@@ -1027,27 +987,72 @@ struct ActiveWorkoutView: View {
     @State private var motionUpdateTimer: Timer?
     #endif
     
+    @ViewBuilder
+    private func setButtonView(
+        setIndex: Int,
+        isSelected: Bool,
+        isCompleted: Bool,
+        isFailure: Bool,
+        isCardio: Bool,
+        isPulsing: Bool,
+        checkmarkColor: Color
+    ) -> some View {
+        let bgColor: Color = isSelected 
+            ? (isCompleted ? .green : .orange) 
+            : (isCompleted ? .green.opacity(0.15) : .white.opacity(0.04))
+        let strokeColor: Color = isFailure && isPulsing 
+            ? .red.opacity(0.8) 
+            : (isSelected ? .white.opacity(0.8) : .white.opacity(0.06))
+        
+        VStack(spacing: 2) {
+            Text("\(setIndex + 1)")
+                .font(.system(size: 9, weight: .bold))
+                .foregroundColor(isSelected ? .black : .white)
+            
+            if isFailure && !isCardio {
+                Image(systemName: "xmark.octagon.fill")
+                    .font(.system(size: 8))
+                    .foregroundColor(.red)
+            } else if isCompleted {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundColor(isSelected ? .black : checkmarkColor)
+            } else {
+                Image(systemName: "circle")
+                    .font(.system(size: 8))
+                    .foregroundColor(isSelected ? .black.opacity(0.4) : .white.opacity(0.3))
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 4)
+        .background(bgColor)
+        .cornerRadius(6)
+        .overlay(
+            RoundedRectangle(cornerRadius: 6)
+                .stroke(strokeColor, lineWidth: isFailure && isPulsing ? 2 : 1)
+        )
+        .accessibilityLabel(accessibilityLabelForSet(setIndex: setIndex, isCompleted: isCompleted, isFailure: isFailure, isSelected: isSelected))
+    }
+
     private func startCinemaModeMonitoring() {
         #if os(watchOS)
         guard motionManager.isAccelerometerAvailable else { return }
         
         motionManager.accelerometerUpdateInterval = 0.5
-        motionManager.startAccelerometerUpdates(to: .main) { [weak self] data, error in
-            guard let self = self, let acceleration = data?.acceleration else { return }
+        motionManager.startAccelerometerUpdates(to: .main) { data, error in
+            guard let acceleration = data?.acceleration else { return }
             
             // Detect if wrist is down (negative z acceleration)
             let isWristDown = acceleration.z < -0.5
             
             // Enable cinema mode when wrist is down and battery saver is active
-            if isWristDown && self.batterySaver.isBatterySaverEnabled {
-                if !self.cinemaModeEnabled {
-                    self.cinemaModeEnabled = true
-                    // Note: WKInterfaceDevice.setScreenBrightness not available; brightness managed by system
+            if isWristDown && batterySaver.isBatterySaverEnabled {
+                if !cinemaModeEnabled {
+                    cinemaModeEnabled = true
                 }
             } else {
-                if self.cinemaModeEnabled {
-                    self.cinemaModeEnabled = false
-                    // Restore brightness via system
+                if cinemaModeEnabled {
+                    cinemaModeEnabled = false
                 }
             }
         }
@@ -1063,11 +1068,35 @@ struct ActiveWorkoutView: View {
         // Restore normal brightness
         if cinemaModeEnabled {
             cinemaModeEnabled = false
-            // brightness restored by system
         }
         #endif
     }
     
+    @ViewBuilder
+    private func activeWorkoutMainView(activeWorkout: WatchActiveWorkoutState) -> some View {
+        TabView {
+            currentExercisePageView(activeWorkout: activeWorkout)
+            workoutControlsPageView(activeWorkout: activeWorkout)
+        }
+        .tabViewStyle(.page(indexDisplayMode: .never))
+        .focusable()
+        .digitalCrownRotation($crownValue, from: 0, through: 100, sensitivity: .medium, isContinuous: true, isHapticFeedbackEnabled: true)
+        .digitalCrownIdle($isCrownLongPressed)
+        .onChange(of: crownValue) { newValue in
+            if isControlsPageFocused {
+                adjustFontSize(delta: newValue - lastCrownValue)
+            } else {
+                handleCrownRotation(newValue: newValue, oldValue: lastCrownValue, activeWorkout: activeWorkout)
+            }
+            lastCrownValue = newValue
+        }
+        .onChange(of: isCrownLongPressed) { isPressed in
+            if isPressed {
+                handleCrownLongPress(activeWorkout: activeWorkout)
+            }
+        }
+    }
+
     var body: some View {
         Group {
             if let activeWorkout = connectivityManager.activeWorkout {
@@ -1075,41 +1104,6 @@ struct ActiveWorkoutView: View {
                     RestTimerView(restTimer: restTimer)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
-                    TabView {
-                        currentExercisePageView(activeWorkout: activeWorkout)
-                        workoutControlsPageView(activeWorkout: activeWorkout)
-                    }
-                    .tabViewStyle(.page(indexDisplayMode: .never))
-                    .focusable()
-                    .digitalCrownRotation($crownValue, from: 0, through: 100, sensitivity: .medium, isContinuous: true, isHapticFeedbackEnabled: true)
-                    .digitalCrownIdle($isCrownLongPressed)
-                    .onChange(of: crownValue) { newValue in
-                        // Adjust font size when crown focus is on controls page
-                        if isControlsPageFocused {
-                            adjustFontSize(delta: newValue - lastCrownValue)
-                        } else {
-                            handleCrownRotation(newValue: newValue, oldValue: lastCrownValue, activeWorkout: activeWorkout)
-                        }
-                        lastCrownValue = newValue
-                    }
-                    .onChange(of: isCrownLongPressed) { isPressed in
-                        if isPressed {
-                            handleCrownLongPress(activeWorkout: activeWorkout)
-                        }
-                    }
-                    .onAppear {
-                        timerCancellable = stopwatchTimer.sink { _ in
-                            elapsedSeconds += 1
-                        }
-                        loadFontSizeScale()
-                        startCinemaModeMonitoring()
-                    }
-                    .onDisappear {
-                        timerCancellable?.cancel()
-                        stopCinemaModeMonitoring()
-                    }
-                }
-            } else {
                 VStack(spacing: 12) {
                     Image(systemName: "figure.walk")
                         .font(.system(size: 32))
