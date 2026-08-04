@@ -17,7 +17,8 @@ platform :ios do
     setup_ci
     match_nuke(
       type: "appstore",
-      skip_confirmation: true
+      skip_confirmation: true,
+      readonly: false
     )
     match(
       type: "appstore",
