@@ -190,7 +190,7 @@ struct WorkoutSelectionView: View {
     
     private var favoriteRoutines: Set<String> {
         get {
-            UserDefaults.standard.stringArray(forKey: "favorite_routines") ?? []
+            Set(UserDefaults.standard.stringArray(forKey: "favorite_routines") ?? [])
         }
         set {
             UserDefaults.standard.set(Array(newValue), forKey: "favorite_routines")
@@ -198,10 +198,9 @@ struct WorkoutSelectionView: View {
     }
     
     private var muscleGroups: [String] {
-        let muscles = connectivityManager.routines.flatMap { routine in
-            routine.exercises.map { $0.muscle }
-        }
-        return Array(Set(muscles)).sorted()
+        // WatchRoutineExercise only has exerciseId, sets, reps, rest, weight
+        // Muscle info not available on watch model
+        return []
     }
     
     private var filteredRoutines: [WatchRoutine] {
@@ -210,17 +209,12 @@ struct WorkoutSelectionView: View {
         // Filter by search text
         if !searchText.isEmpty {
             routines = routines.filter { routine in
-                routine.name.localizedCaseInsensitiveContains(searchText) ||
-                routine.exercises.contains { $0.name.localizedCaseInsensitiveContains(searchText) }
+                routine.name.localizedCaseInsensitiveContains(searchText)
             }
         }
         
-        // Filter by muscle group
-        if let muscle = selectedMuscleFilter {
-            routines = routines.filter { routine in
-                routine.exercises.contains { $0.muscle == muscle }
-            }
-        }
+        // Muscle filter not available (WatchRoutineExercise lacks muscle field)
+        let _ = selectedMuscleFilter
         
         // Filter by favorites
         if showFavoritesOnly {
@@ -256,7 +250,7 @@ struct WorkoutSelectionView: View {
         } else {
             favorites.insert(routineId)
         }
-        favoriteRoutines = favorites
+        UserDefaults.standard.set(Array(favorites), forKey: "favorite_routines")
     }
 
     var body: some View {
@@ -345,9 +339,9 @@ struct WorkoutSelectionView: View {
                                         }
                                         .buttonStyle(PlainButtonStyle())
                                         
-                                        // Muscle filter
+                                        // Muscle filter (disabled: no muscle data on watch model)
                                         if !muscleGroups.isEmpty {
-                                            Menu {
+                                            Button {
                                                 Button("Todos") {
                                                     selectedMuscleFilter = nil
                                                 }

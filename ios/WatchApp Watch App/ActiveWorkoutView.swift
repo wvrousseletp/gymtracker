@@ -418,7 +418,7 @@ struct ActiveWorkoutView: View {
         .background(batterySaver.isCriticalBattery ? Color.red.opacity(0.2) : Color.white.opacity(0.05))
         .cornerRadius(6)
         .accessibilityLabel(accessibilityLabelForBattery())
-        .accessibilityHint(batterySaver.isBatterySaverEnabled ? "Modo economia de bateria ativado" : nil)
+        .accessibilityHint(batterySaver.isBatterySaverEnabled ? "Modo economia de bateria ativado" : "")
     }
     
     private func accessibilityLabelForBattery() -> String {
@@ -682,9 +682,11 @@ struct ActiveWorkoutView: View {
                                 let isPulsing = pulsingFailureSetIndex == key
                                 
                                 VStack(spacing: 2) {
-                                    Text("\(setIndex + 1)")
+                                    let labelText = "\(setIndex + 1)"
+                                    let labelColor: Color = isSelected ? .black : .white
+                                    Text(labelText)
                                         .font(.system(size: 9, weight: .bold))
-                                        .foregroundColor(isSelected ? .black : .white)
+                                        .foregroundColor(labelColor)
                                     
                                     if isFailure && !isCardio {
                                         Image(systemName: "xmark.octagon.fill")
@@ -1022,7 +1024,7 @@ struct ActiveWorkoutView: View {
     
     #if os(watchOS)
     private let motionManager = CMMotionManager()
-    private var motionUpdateTimer: Timer?
+    @State private var motionUpdateTimer: Timer?
     #endif
     
     private func startCinemaModeMonitoring() {
@@ -1040,12 +1042,12 @@ struct ActiveWorkoutView: View {
             if isWristDown && self.batterySaver.isBatterySaverEnabled {
                 if !self.cinemaModeEnabled {
                     self.cinemaModeEnabled = true
-                    WKInterfaceDevice.current().setScreenBrightness(0.3)
+                    // Note: WKInterfaceDevice.setScreenBrightness not available; brightness managed by system
                 }
             } else {
                 if self.cinemaModeEnabled {
                     self.cinemaModeEnabled = false
-                    WKInterfaceDevice.current().setScreenBrightness(1.0)
+                    // Restore brightness via system
                 }
             }
         }
@@ -1061,7 +1063,7 @@ struct ActiveWorkoutView: View {
         // Restore normal brightness
         if cinemaModeEnabled {
             cinemaModeEnabled = false
-            WKInterfaceDevice.current().setScreenBrightness(1.0)
+            // brightness restored by system
         }
         #endif
     }
