@@ -1104,6 +1104,20 @@ struct ActiveWorkoutView: View {
                     RestTimerView(restTimer: restTimer)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
+                    activeWorkoutMainView(activeWorkout: activeWorkout)
+                        .onAppear {
+                            timerCancellable = stopwatchTimer.sink { _ in
+                                elapsedSeconds += 1
+                            }
+                            loadFontSizeScale()
+                            startCinemaModeMonitoring()
+                        }
+                        .onDisappear {
+                            timerCancellable?.cancel()
+                            stopCinemaModeMonitoring()
+                        }
+                }
+            } else {
                 VStack(spacing: 12) {
                     Image(systemName: "figure.walk")
                         .font(.system(size: 32))
