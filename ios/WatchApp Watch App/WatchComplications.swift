@@ -401,7 +401,7 @@ struct TodayWorkoutComplicationProvider: TimelineProvider {
                let routines = try? JSONDecoder().decode([WatchRoutine].self, from: routinesData) {
                 
                 let todayRoutines = routines.filter { routine in
-                    routineIds.contains(routine.libraryId)
+                    routineIds.contains(routine.id)
                 }
                 
                 if let firstRoutine = todayRoutines.first {

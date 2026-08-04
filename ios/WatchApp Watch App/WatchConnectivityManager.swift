@@ -412,7 +412,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         // Filter routines for today based on planner
         if let todayRoutineIds = planner[todayStr] {
             todaysRoutines = routines.filter { routine in
-                todayRoutineIds.contains(routine.libraryId)
+                todayRoutineIds.contains(routine.id)
             }
             lastPreloadDate = todayStr
             
