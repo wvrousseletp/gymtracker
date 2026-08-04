@@ -1081,7 +1081,6 @@ struct ActiveWorkoutView: View {
         .tabViewStyle(.page(indexDisplayMode: .never))
         .focusable()
         .digitalCrownRotation($crownValue, from: 0, through: 100, sensitivity: .medium, isContinuous: true, isHapticFeedbackEnabled: true)
-        .digitalCrownIdle($isCrownLongPressed)
         .onChange(of: crownValue) { newValue in
             if isControlsPageFocused {
                 adjustFontSize(delta: newValue - lastCrownValue)
@@ -1089,11 +1088,6 @@ struct ActiveWorkoutView: View {
                 handleCrownRotation(newValue: newValue, oldValue: lastCrownValue, activeWorkout: activeWorkout)
             }
             lastCrownValue = newValue
-        }
-        .onChange(of: isCrownLongPressed) { isPressed in
-            if isPressed {
-                handleCrownLongPress(activeWorkout: activeWorkout)
-            }
         }
     }
 
