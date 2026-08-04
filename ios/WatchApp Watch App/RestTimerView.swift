@@ -12,6 +12,7 @@ struct RestTimerView: View {
     
     @State private var pulseScale: CGFloat = 1.0
     @State private var pulseOpacity: Double = 0.5
+    @State private var rotationAngle: Double = 0
     @Environment(\.isLuminanceReduced) var isLuminanceReduced
 
     private var themeColor: Color {
@@ -51,13 +52,23 @@ struct RestTimerView: View {
                 Circle()
                     .trim(from: 0.0, to: restTimer.totalSeconds > 0 ? CGFloat(timeRemaining) / CGFloat(restTimer.totalSeconds) : 0)
                     .stroke(
-                        themeColor,
+                        AngularGradient(
+                            colors: [themeColor, themeColor.opacity(0.6)],
+                            center: .center,
+                            startAngle: .degrees(0),
+                            endAngle: .degrees(360)
+                        ),
                         style: StrokeStyle(lineWidth: 4, lineCap: .round)
                     )
-                    .rotationEffect(Angle(degrees: -90))
+                    .rotationEffect(Angle(degrees: -90 + rotationAngle))
                     .padding(4)
                     .shadow(color: themeColor.opacity(0.5), radius: 6)
                     .animation(.linear(duration: 0.5), value: timeRemaining)
+                    .onAppear {
+                        withAnimation(.linear(duration: Double(restTimer.totalSeconds)).repeatForever(autoreverses: false)) {
+                            rotationAngle = 360
+                        }
+                    }
             }
 
             VStack(spacing: 0) {

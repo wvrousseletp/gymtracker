@@ -3,9 +3,13 @@ import Combine
 #if canImport(WatchKit)
 import WatchKit
 #endif
+#if os(watchOS)
+import CoreMotion
+#endif
 
 struct PRCelebrationBanner: View {
     let exerciseNames: [String]
+    @ObservedObject var batterySaver = WatchBatterySaverManager.shared
     @State private var glowOpacity: Double = 0.3
 
     var body: some View {
@@ -14,7 +18,7 @@ struct PRCelebrationBanner: View {
                 .font(.system(size: 20, weight: .bold))
                 .foregroundColor(.yellow)
                 .shadow(color: .yellow.opacity(0.8), radius: 6)
-                .scaleEffect(glowOpacity > 0.5 ? 1.1 : 1.0)
+                .scaleEffect(batterySaver.isBatterySaverEnabled ? 1.0 : (glowOpacity > 0.5 ? 1.1 : 1.0))
 
             Text("NOVO RECORDE!")
                 .font(.system(size: 11, weight: .black, design: .rounded))
@@ -49,10 +53,12 @@ struct PRCelebrationBanner: View {
                         )
                 )
         )
-        .shadow(color: .yellow.opacity(glowOpacity), radius: 12)
+        .shadow(color: .yellow.opacity(batterySaver.isBatterySaverEnabled ? 0.3 : glowOpacity), radius: 12)
         .onAppear {
-            withAnimation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true)) {
-                glowOpacity = 0.9
+            if !batterySaver.isBatterySaverEnabled {
+                withAnimation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true)) {
+                    glowOpacity = 0.9
+                }
             }
         }
     }
@@ -61,7 +67,12 @@ struct PRCelebrationBanner: View {
 struct ActiveWorkoutView: View {
     @ObservedObject var connectivityManager = WatchConnectivityManager.shared
     @ObservedObject var workoutManager = WorkoutManager.shared
+    @ObservedObject var batterySaver = WatchBatterySaverManager.shared
     private let hapticManager = WatchHapticManager.shared
+    
+    @State private var syncIndicatorOpacity: Double = 0.0
+    @State private var fontSizeScale: Double = 1.0
+    @State private var cinemaModeEnabled: Bool = false
     
     enum CrownFocusedField: Hashable {
         case weight
@@ -81,6 +92,10 @@ struct ActiveWorkoutView: View {
     @State private var crownValue: Double = 0
     @State private var lastCrownValue: Double = 0
     @State private var timerCancellable: Cancellable?
+    @State private var isLongWorkout: Bool = false
+    @State private var uiRefreshInterval: Double = 1.0
+    @State private var pulsingFailureSetIndex: String? = nil
+    @State private var isCrownLongPressed = false
     let stopwatchTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     private func formatDuration(_ seconds: Int) -> String {
@@ -371,11 +386,162 @@ struct ActiveWorkoutView: View {
             }
         }
     }
+    
+    // MARK: - Battery Indicator View
+    
+    private func batteryIndicatorView() -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: batterySaver.batteryState == .charging ? "battery.charging.fill" : "battery.fill")
+                .font(.system(size: 8))
+                .foregroundColor(batteryColor())
+            
+            Text("\(batterySaver.batteryPercentage)%")
+                .font(.system(size: 8, weight: .bold))
+                .foregroundColor(batteryColor())
+            
+            if batterySaver.isBatterySaverEnabled {
+                Image(systemName: "leaf.fill")
+                    .font(.system(size: 7))
+                    .foregroundColor(.yellow)
+            }
+            
+            // Sync indicator
+            Image(systemName: "arrow.triangle.2.circlepath")
+                .font(.system(size: 7))
+                .foregroundColor(.blue)
+                .opacity(syncIndicatorOpacity)
+                .rotationEffect(.degrees(syncIndicatorOpacity > 0 ? 360 : 0))
+                .animation(syncIndicatorOpacity > 0 ? .linear(duration: 1).repeatForever(autoreverses: false) : .default, value: syncIndicatorOpacity)
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 3)
+        .background(batterySaver.isCriticalBattery ? Color.red.opacity(0.2) : Color.white.opacity(0.05))
+        .cornerRadius(6)
+        .accessibilityLabel(accessibilityLabelForBattery())
+        .accessibilityHint(batterySaver.isBatterySaverEnabled ? "Modo economia de bateria ativado" : nil)
+    }
+    
+    private func accessibilityLabelForBattery() -> String {
+        var label = "Bateria: \(batterySaver.batteryPercentage)%"
+        if batterySaver.batteryState == .charging {
+            label += ", carregando"
+        }
+        if batterySaver.isCriticalBattery {
+            label += ", bateria crítica"
+        } else if batterySaver.isLowBattery {
+            label += ", bateria baixa"
+        }
+        return label
+    }
+    
+    private func batteryColor() -> Color {
+        if batterySaver.isCriticalBattery {
+            return .red
+        } else if batterySaver.isLowBattery {
+            return .orange
+        } else if batterySaver.isBatterySaverEnabled {
+            return .yellow
+        } else {
+            return .green
+        }
+    }
+    
+    private func showSyncIndicator() {
+        withAnimation {
+            syncIndicatorOpacity = 1.0
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            withAnimation {
+                syncIndicatorOpacity = 0.0
+            }
+        }
+    }
+    
+    // MARK: - Accessibility Helpers
+    
+    private func accessibilityLabelForSet(setIndex: Int, isCompleted: Bool, isFailure: Bool, isSelected: Bool) -> String {
+        var label = "Série \(setIndex + 1)"
+        if isCompleted {
+            label += ", concluída"
+        }
+        if isFailure {
+            label += ", falha registrada"
+        }
+        if isSelected {
+            label += ", selecionada"
+        }
+        return label
+    }
+    
+    // MARK: - Workout Progress Indicator
+    
+    private func workoutProgressView(activeWorkout: WatchActiveWorkoutState) -> some View {
+        let totalExercises = activeWorkout.exercises.count
+        let currentExerciseIndex = activeWorkout.currentExerciseIndex + 1
+        let totalSets = activeWorkout.exercises.reduce(0) { $0 + $1.sets }
+        let completedSets = activeWorkout.exercises.reduce(0) { $0 + $1.setsState.filter { $0 }.count }
+        let progress = totalSets > 0 ? Double(completedSets) / Double(totalSets) : 0.0
+        
+        return VStack(spacing: 2) {
+            HStack(spacing: 8) {
+                // Exercise progress
+                HStack(spacing: 2) {
+                    Image(systemName: "figure.strengthtraining.traditional")
+                        .font(.system(size: 6))
+                        .foregroundColor(.orange)
+                    Text("\(currentExerciseIndex)/\(totalExercises)")
+                        .font(.system(size: 7, weight: .bold))
+                        .foregroundColor(.white)
+                }
+                
+                // Sets progress
+                HStack(spacing: 2) {
+                    Image(systemName: "checkmark.circle")
+                        .font(.system(size: 6))
+                        .foregroundColor(.green)
+                    Text("\(completedSets)/\(totalSets)")
+                        .font(.system(size: 7, weight: .bold))
+                        .foregroundColor(.white)
+                }
+            }
+            
+            // Progress bar
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    Rectangle()
+                        .fill(Color.white.opacity(0.1))
+                        .frame(height: 3)
+                    
+                    Rectangle()
+                        .fill(LinearGradient(
+                            colors: [Color.orange, Color.green],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        ))
+                        .frame(width: geometry.size.width * progress, height: 3)
+                }
+                .cornerRadius(1.5)
+            }
+            .frame(height: 3)
+        }
+        .padding(.horizontal, 4)
+        .accessibilityLabel("Progresso do treino: exercício \(currentExerciseIndex) de \(totalExercises), \(completedSets) de \(totalSets) séries concluídas")
+        .accessibilityValue("\(Int(progress * 100))%")
+    }
 
     private func currentExercisePageView(activeWorkout: WatchActiveWorkoutState) -> some View {
         let exIndex = activeWorkout.currentExerciseIndex
         
         return VStack(spacing: 0) {
+            // Battery Indicator
+            batteryIndicatorView()
+                .padding(.horizontal, 4)
+                .padding(.top, 2)
+            
+            // Workout Progress
+            workoutProgressView(activeWorkout: activeWorkout)
+                .padding(.bottom, 2)
+            
             if exIndex < activeWorkout.exercises.count {
                 let exercise = activeWorkout.exercises[exIndex]
                 let isCardio = exercise.muscle.lowercased().contains("cardio")
@@ -435,6 +601,19 @@ struct ActiveWorkoutView: View {
                         .frame(width: 24, height: 24)
                     }
                     .padding(.horizontal, 2)
+                    .gesture(
+                        DragGesture()
+                            .onEnded { value in
+                                let threshold: CGFloat = 50
+                                if value.translation.width > threshold && exIndex > 0 {
+                                    // Swipe right - previous exercise
+                                    connectivityManager.changeExercise(to: exIndex - 1)
+                                } else if value.translation.width < -threshold && exIndex + 1 < activeWorkout.exercises.count {
+                                    // Swipe left - next exercise
+                                    connectivityManager.changeExercise(to: exIndex + 1)
+                                }
+                            }
+                    )
                     
                     Divider().background(Color.white.opacity(0.08))
                     
@@ -476,6 +655,17 @@ struct ActiveWorkoutView: View {
                                         duration: pc?.durationSeconds
                                     )
                                     
+                                    showSyncIndicator()
+                                    
+                                    // Trigger pulse effect when failure is registered
+                                    if !isCompleted && isFailure {
+                                        let key = "\(exercise.name)_\(exIndex)_\(setIndex)"
+                                        pulsingFailureSetIndex = key
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                            pulsingFailureSetIndex = nil
+                                        }
+                                    }
+                                    
                                     if !isCompleted {
                                         let willCompleteWorkout = checkAllSetsCompleted(activeWorkout: activeWorkout, overridingSet: (exIdx: exIndex, setIdx: setIndex, isDone: true))
                                         if willCompleteWorkout {
@@ -488,6 +678,9 @@ struct ActiveWorkoutView: View {
                                     setSelectedSetIndex(for: exercise, index: exIndex, setIndex: setIndex)
                                 }
                             }) {
+                                let key = "\(exercise.name)_\(exIndex)_\(setIndex)"
+                                let isPulsing = pulsingFailureSetIndex == key
+                                
                                 VStack(spacing: 2) {
                                     Text("\(setIndex + 1)")
                                         .font(.system(size: 9, weight: .bold))
@@ -517,8 +710,23 @@ struct ActiveWorkoutView: View {
                                 .cornerRadius(6)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 6)
-                                        .stroke(isSelected ? Color.white.opacity(0.8) : Color.white.opacity(0.06), lineWidth: 1)
+                                        .stroke(
+                                            isFailure && isPulsing 
+                                            ? Color.red.opacity(0.8) 
+                                            : (isSelected ? Color.white.opacity(0.8) : Color.white.opacity(0.06)), 
+                                            lineWidth: isFailure && isPulsing ? 2 : 1
+                                        )
                                 )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .stroke(Color.red, lineWidth: isFailure && isPulsing ? 3 : 0)
+                                        .opacity(isFailure && isPulsing ? 0.5 : 0)
+                                        .blur(radius: isFailure && isPulsing ? 4 : 0)
+                                )
+                                .scaleEffect(isFailure && isPulsing ? 1.05 : 1.0)
+                                .animation(isFailure && isPulsing ? .easeInOut(duration: 0.8).repeatForever(autoreverses: true) : .default, value: isPulsing)
+                                .accessibilityLabel(accessibilityLabelForSet(setIndex: setIndex, isCompleted: isCompleted, isFailure: isFailure, isSelected: isSelected))
+                                .accessibilityHint(isCompleted ? "Toque para desmarcar" : "Toque para marcar como concluída")
                             }
                             .buttonStyle(PlainButtonStyle())
                         }
@@ -784,6 +992,80 @@ struct ActiveWorkoutView: View {
         #endif
     }
     
+    private func handleCrownLongPress(activeWorkout: WatchActiveWorkoutState) {
+        // Long press on crown toggles pause/resume
+        connectivityManager.togglePause(currentlyPaused: activeWorkout.paused)
+        
+        #if canImport(WatchKit)
+        WKInterfaceDevice.current().play(.notification)
+        #endif
+    }
+    
+    // MARK: - Font Size Adjustment
+    
+    private func adjustFontSize(delta: Double) {
+        let newScale = max(0.8, min(1.3, fontSizeScale + delta * 0.05))
+        fontSizeScale = newScale
+        
+        // Save to UserDefaults
+        UserDefaults.standard.set(fontSizeScale, forKey: "font_size_scale")
+    }
+    
+    private func loadFontSizeScale() {
+        let savedScale = UserDefaults.standard.double(forKey: "font_size_scale")
+        if savedScale > 0 {
+            fontSizeScale = savedScale
+        }
+    }
+    
+    // MARK: - Cinema Mode (Accelerometer-based)
+    
+    #if os(watchOS)
+    private let motionManager = CMMotionManager()
+    private var motionUpdateTimer: Timer?
+    #endif
+    
+    private func startCinemaModeMonitoring() {
+        #if os(watchOS)
+        guard motionManager.isAccelerometerAvailable else { return }
+        
+        motionManager.accelerometerUpdateInterval = 0.5
+        motionManager.startAccelerometerUpdates(to: .main) { [weak self] data, error in
+            guard let self = self, let acceleration = data?.acceleration else { return }
+            
+            // Detect if wrist is down (negative z acceleration)
+            let isWristDown = acceleration.z < -0.5
+            
+            // Enable cinema mode when wrist is down and battery saver is active
+            if isWristDown && self.batterySaver.isBatterySaverEnabled {
+                if !self.cinemaModeEnabled {
+                    self.cinemaModeEnabled = true
+                    WKInterfaceDevice.current().setScreenBrightness(0.3)
+                }
+            } else {
+                if self.cinemaModeEnabled {
+                    self.cinemaModeEnabled = false
+                    WKInterfaceDevice.current().setScreenBrightness(1.0)
+                }
+            }
+        }
+        #endif
+    }
+    
+    private func stopCinemaModeMonitoring() {
+        #if os(watchOS)
+        motionManager.stopAccelerometerUpdates()
+        motionUpdateTimer?.invalidate()
+        motionUpdateTimer = nil
+        
+        // Restore normal brightness
+        if cinemaModeEnabled {
+            cinemaModeEnabled = false
+            WKInterfaceDevice.current().setScreenBrightness(1.0)
+        }
+        #endif
+    }
+    
     var body: some View {
         Group {
             if let activeWorkout = connectivityManager.activeWorkout {
@@ -798,17 +1080,31 @@ struct ActiveWorkoutView: View {
                     .tabViewStyle(.page(indexDisplayMode: .never))
                     .focusable()
                     .digitalCrownRotation($crownValue, from: 0, through: 100, sensitivity: .medium, isContinuous: true, isHapticFeedbackEnabled: true)
+                    .digitalCrownIdle($isCrownLongPressed)
                     .onChange(of: crownValue) { newValue in
-                        handleCrownRotation(newValue: newValue, oldValue: lastCrownValue, activeWorkout: activeWorkout)
+                        // Adjust font size when crown focus is on controls page
+                        if isControlsPageFocused {
+                            adjustFontSize(delta: newValue - lastCrownValue)
+                        } else {
+                            handleCrownRotation(newValue: newValue, oldValue: lastCrownValue, activeWorkout: activeWorkout)
+                        }
                         lastCrownValue = newValue
+                    }
+                    .onChange(of: isCrownLongPressed) { isPressed in
+                        if isPressed {
+                            handleCrownLongPress(activeWorkout: activeWorkout)
+                        }
                     }
                     .onAppear {
                         timerCancellable = stopwatchTimer.sink { _ in
                             elapsedSeconds += 1
                         }
+                        loadFontSizeScale()
+                        startCinemaModeMonitoring()
                     }
                     .onDisappear {
                         timerCancellable?.cancel()
+                        stopCinemaModeMonitoring()
                     }
                 }
             } else {
@@ -895,13 +1191,27 @@ struct ActiveWorkoutView: View {
     }
 
     private func updateStopwatch() {
-        guard let activeWorkout = connectivityManager.activeWorkout else { return }
-        if activeWorkout.paused {
-            elapsedSeconds = activeWorkout.elapsedSeconds
-        } else {
-            let currentTimeMs = Int64(Date().timeIntervalSince1970 * 1000)
-            let diff = currentTimeMs - activeWorkout.startTime
-            elapsedSeconds = max(0, Int(diff / 1000))
+        // Check if workout is long (>30 minutes) and adjust UI refresh rate
+        if elapsedSeconds > 1800 && !isLongWorkout {
+            isLongWorkout = true
+            uiRefreshInterval = 5.0 // Update UI every 5 seconds for long workouts
+        } else if elapsedSeconds <= 1800 && isLongWorkout {
+            isLongWorkout = false
+            uiRefreshInterval = 1.0 // Restore normal refresh rate
+        }
+        
+        // Only update UI if enough time has passed based on refresh interval
+        let shouldUpdateUI = elapsedSeconds % Int(uiRefreshInterval) == 0
+        
+        if shouldUpdateUI {
+            guard let activeWorkout = connectivityManager.activeWorkout else { return }
+            if activeWorkout.paused {
+                elapsedSeconds = activeWorkout.elapsedSeconds
+            } else {
+                let currentTimeMs = Int64(Date().timeIntervalSince1970 * 1000)
+                let diff = currentTimeMs - activeWorkout.startTime
+                elapsedSeconds = max(0, Int(diff / 1000))
+            }
         }
     }
 }

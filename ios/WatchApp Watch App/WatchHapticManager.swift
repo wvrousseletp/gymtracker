@@ -154,6 +154,19 @@ class WatchHapticManager {
         play(.warning)
     }
     
+    /// Play haptic when battery becomes critical
+    func playBatteryCritical() {
+        play(.warning)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            self.play(.warning)
+        }
+    }
+    
+    /// Play haptic when workout is cancelled
+    func playWorkoutCancelled() {
+        play(.failure)
+    }
+    
     // MARK: - Custom Patterns
     
     /// Play custom haptic pattern with specified delays

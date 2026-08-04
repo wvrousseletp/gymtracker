@@ -358,6 +358,158 @@ struct InlineWaterComplicationView: View {
     }
 }
 
+// MARK: - Today's Workout Complication
+
+struct TodayWorkoutComplicationProvider: TimelineProvider {
+    func placeholder(in context: Context) -> TodayWorkoutEntry {
+        TodayWorkoutEntry(date: Date(), routineName: "Treino de Hoje", exerciseCount: 5)
+    }
+
+    func getSnapshot(in context: Context, completion: @escaping (TodayWorkoutEntry) -> Void) {
+        let entry = loadTodayWorkoutData()
+        completion(entry)
+    }
+
+    func getTimeline(in context: Context, completion: @escaping (Timeline<TodayWorkoutEntry>) -> Void) {
+        let entry = loadTodayWorkoutData()
+        // Update every hour
+        let nextUpdate = Calendar.current.date(byAdding: .hour, value: 1, to: Date())!
+        let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
+        completion(timeline)
+    }
+    
+    private func loadTodayWorkoutData() -> TodayWorkoutEntry {
+        let defaults = UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        let todayStr = dateFormatter.string(from: today)
+        
+        // Get today's routine IDs from planner
+        var routineName = "Sem treino"
+        var exerciseCount = 0
+        
+        if let plannerJson = defaults.string(forKey: "cached_planner"),
+           let jsonData = plannerJson.data(using: .utf8),
+           let planner = try? JSONDecoder().decode([String: [String]].self, from: jsonData),
+           let routineIds = planner[todayStr] {
+            
+            // Get routines
+            if let routinesJson = defaults.string(forKey: "cached_routines"),
+               let routinesData = routinesJson.data(using: .utf8),
+               let routines = try? JSONDecoder().decode([WatchRoutine].self, from: routinesData) {
+                
+                let todayRoutines = routines.filter { routine in
+                    routineIds.contains(routine.libraryId)
+                }
+                
+                if let firstRoutine = todayRoutines.first {
+                    routineName = firstRoutine.name
+                    exerciseCount = firstRoutine.exercises.count
+                }
+            }
+        }
+        
+        return TodayWorkoutEntry(date: Date(), routineName: routineName, exerciseCount: exerciseCount)
+    }
+}
+
+struct TodayWorkoutEntry: TimelineEntry {
+    let date: Date
+    let routineName: String
+    let exerciseCount: Int
+}
+
+struct TodayWorkoutComplicationEntryView: View {
+    var entry: TodayWorkoutComplicationProvider.Entry
+    @Environment(\.widgetFamily) var family
+
+    var body: some View {
+        Group {
+            switch family {
+            case .accessoryCircular:
+                CircularTodayWorkoutView(entry: entry)
+            case .accessoryCorner:
+                CornerTodayWorkoutView(entry: entry)
+            case .accessoryRectangular:
+                RectangularTodayWorkoutView(entry: entry)
+            case .accessoryInline:
+                InlineTodayWorkoutView(entry: entry)
+            default:
+                Text("💪")
+            }
+        }
+        .widgetURL(URL(string: "losmooscles://workouts"))
+    }
+}
+
+struct CircularTodayWorkoutView: View {
+    let entry: TodayWorkoutEntry
+    
+    var body: some View {
+        ZStack {
+            AccessoryWidgetBackground()
+            VStack(spacing: 0) {
+                Image(systemName: "calendar")
+                    .font(.system(size: 10))
+                    .foregroundColor(.green)
+                Text("\(entry.exerciseCount)")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundColor(.white)
+            }
+        }
+    }
+}
+
+struct CornerTodayWorkoutView: View {
+    let entry: TodayWorkoutEntry
+    
+    var body: some View {
+        Image(systemName: "calendar")
+            .foregroundColor(.green)
+            .widgetLabel {
+                Text(entry.routineName)
+                    .foregroundColor(.green)
+            }
+    }
+}
+
+struct RectangularTodayWorkoutView: View {
+    let entry: TodayWorkoutEntry
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 4) {
+                Image(systemName: "calendar")
+                    .foregroundColor(.green)
+                    .font(.system(size: 11))
+                Text("Treino de Hoje")
+                    .font(.system(size: 11, weight: .bold))
+            }
+            Text(entry.routineName)
+                .font(.system(size: 10))
+                .foregroundColor(.white.opacity(0.8))
+                .lineLimit(1)
+            HStack {
+                Text("\(entry.exerciseCount) exercícios")
+                    .font(.system(size: 9))
+                    .foregroundColor(.green)
+                Spacer()
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+struct InlineTodayWorkoutView: View {
+    let entry: TodayWorkoutEntry
+    
+    var body: some View {
+        Text("📅 \(entry.routineName) • \(entry.exerciseCount) ex")
+    }
+}
+
 // MARK: - Widgets Configurations
 
 struct WatchComplications: Widget {
@@ -391,5 +543,19 @@ struct WatchWidgetsBundle: WidgetBundle {
     var body: some Widget {
         WatchComplications()
         WatchWaterComplication()
+        TodayWorkoutComplication()
+    }
+}
+
+struct TodayWorkoutComplication: Widget {
+    let kind: String = "TodayWorkoutComplication"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: TodayWorkoutComplicationProvider()) { entry in
+            TodayWorkoutComplicationEntryView(entry: entry)
+        }
+        .configurationDisplayName("Treino de Hoje")
+        .description("Veja o treino programado para hoje.")
+        .supportedFamilies([.accessoryCircular, .accessoryCorner, .accessoryRectangular, .accessoryInline])
     }
 }

@@ -6,11 +6,43 @@ import WatchKit
 struct WeeklyStatsView: View {
     @ObservedObject var connectivityManager = WatchConnectivityManager.shared
     @State private var ringProgress: Double = 0.0
+    @State private var barAnimation: Double = 0.0
     @FocusState private var isFocused: Bool
     @Environment(\.scenePhase) private var scenePhase
 
     private var streak: WatchStreak {
         connectivityManager.streak
+    }
+    
+    // Simulated weekly data for the bar chart (last 4 weeks)
+    private var weeklyData: [Int] {
+        let currentWeek = streak.currentWeekCount
+        let previousWeeks = [3, 4, 2, 5] // Simulated historical data
+        return previousWeeks + [currentWeek]
+    }
+    
+    private var trend: String {
+        let lastTwo = weeklyData.suffix(2)
+        if lastTwo.count >= 2 {
+            if lastTwo[1] > lastTwo[0] {
+                return "↑"
+            } else if lastTwo[1] < lastTwo[0] {
+                return "↓"
+            }
+        }
+        return "→"
+    }
+    
+    private var trendColor: Color {
+        let lastTwo = weeklyData.suffix(2)
+        if lastTwo.count >= 2 {
+            if lastTwo[1] > lastTwo[0] {
+                return .green
+            } else if lastTwo[1] < lastTwo[0] {
+                return .red
+            }
+        }
+        return .gray
     }
 
     private var lastWorkoutFormatted: String {
@@ -152,6 +184,57 @@ struct WeeklyStatsView: View {
                         .stroke(Color.white.opacity(0.06), lineWidth: 1)
                 )
                 .padding(.horizontal, 4)
+
+                // MARK: - Weekly Trend Chart
+                VStack(spacing: 4) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "chart.bar.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(.blue)
+                        Text("Trend semanal")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundColor(.white)
+                        Spacer()
+                        Text(trend)
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(trendColor)
+                    }
+                    
+                    // Simple bar chart
+                    HStack(spacing: 4) {
+                        ForEach(0..<weeklyData.count, id: \.self) { index in
+                            let value = weeklyData[index]
+                            let maxValue = max(weeklyData.max() ?? 1, 1)
+                            let barHeight = CGFloat(value) / CGFloat(maxValue)
+                            
+                            VStack(spacing: 2) {
+                                Rectangle()
+                                    .fill(index == weeklyData.count - 1 ? Color.blue : Color.blue.opacity(0.5))
+                                    .frame(width: 8, height: 30 * barHeight * barAnimation)
+                                    .cornerRadius(2)
+                                Text("\(value)")
+                                    .font(.system(size: 6, weight: .bold))
+                                    .foregroundColor(.white)
+                            }
+                        }
+                        Spacer()
+                    }
+                    .frame(height: 40)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
+                .background(Color.white.opacity(0.04))
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                )
+                .padding(.horizontal, 4)
+                .onAppear {
+                    withAnimation(.easeOut(duration: 0.8)) {
+                        barAnimation = 1.0
+                    }
+                }
 
                 // MARK: - Last Workout
                 HStack(spacing: 6) {

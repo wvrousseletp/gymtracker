@@ -63,6 +63,15 @@ class WatchBatterySaverManager: ObservableObject {
         if batteryLevel > 0.30 && isBatterySaverEnabled {
             disableBatterySaver(auto: true)
         }
+        
+        // Increase HealthKit sync interval for critical battery
+        if batteryLevel <= criticalBatteryThreshold {
+            WorkoutManager.shared.setCriticalBatterySampling(enabled: true)
+            // Play haptic warning when battery becomes critical
+            WatchHapticManager.shared.playBatteryCritical()
+        } else if batteryLevel > 0.15 {
+            WorkoutManager.shared.setCriticalBatterySampling(enabled: false)
+        }
         #endif
     }
     
@@ -229,6 +238,15 @@ extension WorkoutManager {
         }
     }
     
+    private var criticalBatterySamplingEnabled: Bool {
+        get {
+            return UserDefaults.standard.bool(forKey: "critical_battery_sampling_enabled")
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: "critical_battery_sampling_enabled")
+        }
+    }
+    
     func setReducedSensorSampling(enabled: Bool) {
         reducedSamplingEnabled = enabled
         
@@ -240,5 +258,20 @@ extension WorkoutManager {
         }
         
         os_log("Reduced sensor sampling: %d", log: OSLog(subsystem: "com.losmooscles.watch", category: "HealthKit"), type: .info, enabled ? 1 : 0)
+    }
+    
+    func setCriticalBatterySampling(enabled: Bool) {
+        criticalBatterySamplingEnabled = enabled
+        
+        // Further increase health sync interval for critical battery
+        if enabled {
+            healthSyncInterval = 20 // Sync every 20 seconds for critical battery
+        } else if reducedSamplingEnabled {
+            healthSyncInterval = 10 // Restore to reduced sampling if still enabled
+        } else {
+            healthSyncInterval = 5 // Restore to normal sampling
+        }
+        
+        os_log("Critical battery sampling: %d", log: OSLog(subsystem: "com.losmooscles.watch", category: "HealthKit"), type: .info, enabled ? 1 : 0)
     }
 }

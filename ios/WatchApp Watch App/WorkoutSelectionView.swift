@@ -169,6 +169,9 @@ struct WorkoutSelectionView: View {
     @ObservedObject var connectivityManager = WatchConnectivityManager.shared
     @ObservedObject var workoutManager = WorkoutManager.shared
     @State private var activeTab = 0
+    @State private var searchText = ""
+    @State private var selectedMuscleFilter: String? = nil
+    @State private var showFavoritesOnly = false
 
     private var todayPlannedItems: [PlannedWatchItem] {
         WatchPlannerHelper.resolveTodayPlannedItems(
@@ -183,6 +186,77 @@ struct WorkoutSelectionView: View {
             library: connectivityManager.library,
             planner: connectivityManager.planner
         )
+    }
+    
+    private var favoriteRoutines: Set<String> {
+        get {
+            UserDefaults.standard.stringArray(forKey: "favorite_routines") ?? []
+        }
+        set {
+            UserDefaults.standard.set(Array(newValue), forKey: "favorite_routines")
+        }
+    }
+    
+    private var muscleGroups: [String] {
+        let muscles = connectivityManager.routines.flatMap { routine in
+            routine.exercises.map { $0.muscle }
+        }
+        return Array(Set(muscles)).sorted()
+    }
+    
+    private var filteredRoutines: [WatchRoutine] {
+        var routines = connectivityManager.routines
+        
+        // Filter by search text
+        if !searchText.isEmpty {
+            routines = routines.filter { routine in
+                routine.name.localizedCaseInsensitiveContains(searchText) ||
+                routine.exercises.contains { $0.name.localizedCaseInsensitiveContains(searchText) }
+            }
+        }
+        
+        // Filter by muscle group
+        if let muscle = selectedMuscleFilter {
+            routines = routines.filter { routine in
+                routine.exercises.contains { $0.muscle == muscle }
+            }
+        }
+        
+        // Filter by favorites
+        if showFavoritesOnly {
+            routines = routines.filter { favoriteRoutines.contains($0.id) }
+        }
+        
+        return routines
+    }
+    
+    private var filteredExercises: [WatchLibraryExercise] {
+        var exercises = filteredLibrary
+        
+        // Filter by search text
+        if !searchText.isEmpty {
+            exercises = exercises.filter { exercise in
+                exercise.name.localizedCaseInsensitiveContains(searchText) ||
+                exercise.muscle.localizedCaseInsensitiveContains(searchText)
+            }
+        }
+        
+        // Filter by muscle group
+        if let muscle = selectedMuscleFilter {
+            exercises = exercises.filter { $0.muscle == muscle }
+        }
+        
+        return exercises
+    }
+    
+    private func toggleFavorite(routineId: String) {
+        var favorites = favoriteRoutines
+        if favorites.contains(routineId) {
+            favorites.remove(routineId)
+        } else {
+            favorites.insert(routineId)
+        }
+        favoriteRoutines = favorites
     }
 
     var body: some View {
@@ -224,21 +298,101 @@ struct WorkoutSelectionView: View {
                             }
                             .padding()
                         } else {
-                            List {
-                                if !connectivityManager.isReachable {
-                                    Section {
-                                        HStack(spacing: 6) {
-                                            Image(systemName: "wifi.slash")
-                                                .font(.system(size: 10, weight: .bold))
-                                                .foregroundColor(.yellow)
-                                            Text("Modo Offline Ativo")
-                                                .font(.system(size: 10, weight: .bold))
-                                                .foregroundColor(.yellow)
+                            VStack(spacing: 0) {
+                                // Search and Filter Bar
+                                VStack(spacing: 4) {
+                                    // Search bar
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "magnifyingglass")
+                                            .font(.system(size: 10))
+                                            .foregroundColor(.gray)
+                                        TextField("Buscar treinos...", text: $searchText)
+                                            .font(.system(size: 10))
+                                            .foregroundColor(.white)
+                                            .autocorrectionDisabled()
+                                        if !searchText.isEmpty {
+                                            Button(action: {
+                                                searchText = ""
+                                            }) {
+                                                Image(systemName: "xmark.circle.fill")
+                                                    .font(.system(size: 10))
+                                                    .foregroundColor(.gray)
+                                            }
                                         }
-                                        .frame(maxWidth: .infinity, alignment: .center)
-                                        .padding(.vertical, 2)
+                                    }
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 6)
+                                    .background(Color.white.opacity(0.08))
+                                    .cornerRadius(8)
+                                    
+                                    // Filter buttons
+                                    HStack(spacing: 4) {
+                                        // Favorites toggle
+                                        Button(action: {
+                                            showFavoritesOnly.toggle()
+                                        }) {
+                                            HStack(spacing: 2) {
+                                                Image(systemName: showFavoritesOnly ? "star.fill" : "star")
+                                                    .font(.system(size: 8))
+                                                Text("Favoritos")
+                                                    .font(.system(size: 8, weight: .semibold))
+                                            }
+                                            .foregroundColor(showFavoritesOnly ? .yellow : .gray)
+                                            .padding(.horizontal, 6)
+                                            .padding(.vertical, 4)
+                                            .background(showFavoritesOnly ? Color.yellow.opacity(0.15) : Color.white.opacity(0.06))
+                                            .cornerRadius(6)
+                                        }
+                                        .buttonStyle(PlainButtonStyle())
+                                        
+                                        // Muscle filter
+                                        if !muscleGroups.isEmpty {
+                                            Menu {
+                                                Button("Todos") {
+                                                    selectedMuscleFilter = nil
+                                                }
+                                                ForEach(muscleGroups, id: \.self) { muscle in
+                                                    Button(muscle) {
+                                                        selectedMuscleFilter = muscle
+                                                    }
+                                                }
+                                            } label: {
+                                                HStack(spacing: 2) {
+                                                    Image(systemName: "line.3.horizontal.decrease.circle")
+                                                        .font(.system(size: 8))
+                                                    Text(selectedMuscleFilter ?? "Músculos")
+                                                        .font(.system(size: 8, weight: .semibold))
+                                                        .lineLimit(1)
+                                                }
+                                                .foregroundColor(selectedMuscleFilter != nil ? .blue : .gray)
+                                                .padding(.horizontal, 6)
+                                                .padding(.vertical, 4)
+                                                .background(selectedMuscleFilter != nil ? Color.blue.opacity(0.15) : Color.white.opacity(0.06))
+                                                .cornerRadius(6)
+                                            }
+                                        }
+                                        
+                                        Spacer()
                                     }
                                 }
+                                .padding(.horizontal, 4)
+                                .padding(.bottom, 4)
+                                
+                                List {
+                                    if !connectivityManager.isReachable {
+                                        Section {
+                                            HStack(spacing: 6) {
+                                                Image(systemName: "wifi.slash")
+                                                    .font(.system(size: 10, weight: .bold))
+                                                    .foregroundColor(.yellow)
+                                                Text("Modo Offline Ativo")
+                                                    .font(.system(size: 10, weight: .bold))
+                                                    .foregroundColor(.yellow)
+                                            }
+                                            .frame(maxWidth: .infinity, alignment: .center)
+                                            .padding(.vertical, 2)
+                                        }
+                                    }
 
                                 // Seção 0: Treino Adiado em Andamento
                                 if let activeWorkout = connectivityManager.activeWorkout, activeWorkout.postponed {
@@ -316,7 +470,7 @@ struct WorkoutSelectionView: View {
                                 }
 
                                 // Seção 1: Todos os Treinos
-                                if !connectivityManager.routines.isEmpty {
+                                if !filteredRoutines.isEmpty {
                                     Section(header: 
                                         HStack(spacing: 4) {
                                             Image(systemName: "list.bullet")
@@ -326,18 +480,72 @@ struct WorkoutSelectionView: View {
                                         }
                                         .foregroundColor(.orange)
                                     ) {
-                                        ForEach(connectivityManager.routines) { routine in
+                                        ForEach(filteredRoutines) { routine in
                                             let isCompleted = connectivityManager.streak.completedTodayRoutines.contains(routine.name)
-                                            RoutineRow(
-                                                routine: routine,
-                                                isCompleted: isCompleted
+                                            let isFavorite = favoriteRoutines.contains(routine.id)
+                                            
+                                            NavigationLink(destination: WorkoutSetupView(routine: routine)) {
+                                                HStack(spacing: 8) {
+                                                    ZStack {
+                                                        Circle()
+                                                            .fill(isCompleted ? Color.green.opacity(0.12) : Color.green.opacity(0.12))
+                                                            .frame(width: 24, height: 24)
+                                                        Image(systemName: isCompleted ? "checkmark.seal.fill" : "play.fill")
+                                                            .font(.system(size: 10))
+                                                            .foregroundColor(isCompleted ? .green : .green)
+                                                    }
+                                                    
+                                                    VStack(alignment: .leading, spacing: 1) {
+                                                        Text(routine.name)
+                                                            .font(.system(size: 12, weight: .bold))
+                                                            .foregroundColor(isCompleted ? .gray : .white)
+                                                            .strikethrough(isCompleted, color: .gray)
+                                                        Text(isCompleted ? "Treino concluído hoje" : "\(routine.exercises.count) exercícios")
+                                                            .font(.system(size: 9))
+                                                            .foregroundColor(isCompleted ? .green.opacity(0.8) : .gray)
+                                                    }
+                                                    Spacer()
+                                                    
+                                                    // Favorite button
+                                                    Button(action: {
+                                                        toggleFavorite(routineId: routine.id)
+                                                    }) {
+                                                        Image(systemName: isFavorite ? "star.fill" : "star")
+                                                            .font(.system(size: 10))
+                                                            .foregroundColor(isFavorite ? .yellow : .gray)
+                                                    }
+                                                    .buttonStyle(PlainButtonStyle())
+                                                }
+                                                .padding(.vertical, 4)
+                                            }
+                                            .buttonStyle(PlainButtonStyle())
+                                            .padding(8)
+                                            .background(isCompleted ? Color.black.opacity(0.2) : Color.white.opacity(0.04))
+                                            .cornerRadius(10)
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 10)
+                                                    .stroke(isCompleted ? Color.green.opacity(0.2) : Color.white.opacity(0.06), lineWidth: 1)
                                             )
+                                            .accessibilityLabel(isCompleted ? "\(routine.name), treino concluído" : "\(routine.name), \(routine.exercises.count) exercícios")
+                                            .accessibilityHint(isCompleted ? "Toque para ver detalhes" : "Toque para configurar e iniciar treino")
                                         }
+                                    }
+                                } else if !connectivityManager.routines.isEmpty {
+                                    // Show message when filters return no results
+                                    Section {
+                                        HStack {
+                                            Spacer()
+                                            Text("Nenhum treino encontrado")
+                                                .font(.system(size: 10))
+                                                .foregroundColor(.gray)
+                                            Spacer()
+                                        }
+                                        .padding(.vertical, 8)
                                     }
                                 }
                                 
                                 // Seção 2: Exercícios Avulsos
-                                if !filteredLibrary.isEmpty {
+                                if !filteredExercises.isEmpty {
                                     Section(header: 
                                         HStack(spacing: 4) {
                                             Image(systemName: "dumbbell.fill")
@@ -347,7 +555,7 @@ struct WorkoutSelectionView: View {
                                         }
                                         .foregroundColor(.blue)
                                     ) {
-                                        ForEach(filteredLibrary) { exercise in
+                                        ForEach(filteredExercises) { exercise in
                                             Button(action: {
                                                 connectivityManager.startSingleExercise(exerciseId: exercise.id)
                                             }) {
@@ -386,9 +594,22 @@ struct WorkoutSelectionView: View {
                                             )
                                         }
                                     }
+                                } else if !filteredLibrary.isEmpty {
+                                    // Show message when filters return no results
+                                    Section {
+                                        HStack {
+                                            Spacer()
+                                            Text("Nenhum exercício encontrado")
+                                                .font(.system(size: 10))
+                                                .foregroundColor(.gray)
+                                            Spacer()
+                                        }
+                                        .padding(.vertical, 8)
+                                    }
                                 }
                             }
                             .listStyle(.carousel)
+                            }
                         }
                     }
                 }

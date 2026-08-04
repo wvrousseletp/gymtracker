@@ -66,6 +66,10 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     
     private var messageQueue: [(message: [String: Any], priority: MessagePriority)] = []
     private var isProcessingQueue = false
+    
+    // Pre-loaded today's routines cache
+    private var todaysRoutines: [WatchRoutine] = []
+    private var lastPreloadDate: String?
 
     private override init() {
         super.init()
@@ -84,6 +88,9 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         }
         
         checkAndResetDailyWater()
+        
+        // Pre-load today's routines for faster access
+        preloadTodaysRoutines()
         
         // Sync from iCloud on startup if local data is empty
         if routines.isEmpty && library.isEmpty {
@@ -388,7 +395,48 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         }
     }
 
-    // MARK: - Actions Sent to iPhone
+    // MARK: - Pre-load Today's Routines
+    
+    private func preloadTodaysRoutines() {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        let todayStr = dateFormatter.string(from: today)
+        
+        // Check if we already preloaded today's routines
+        if lastPreloadDate == todayStr && !todaysRoutines.isEmpty {
+            return
+        }
+        
+        // Filter routines for today based on planner
+        if let todayRoutineIds = planner[todayStr] {
+            todaysRoutines = routines.filter { routine in
+                todayRoutineIds.contains(routine.libraryId)
+            }
+            lastPreloadDate = todayStr
+            
+            os_log("Preloaded %d routines for today", log: OSLog(subsystem: "com.losmooscles.watch", category: "Connectivity"), type: .info, todaysRoutines.count)
+        } else {
+            todaysRoutines = []
+            lastPreloadDate = todayStr
+        }
+    }
+    
+    func getTodaysRoutines() -> [WatchRoutine] {
+        // Reload if date changed
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        let todayStr = dateFormatter.string(from: today)
+        
+        if lastPreloadDate != todayStr {
+            preloadTodaysRoutines()
+        }
+        
+        return todaysRoutines
+    }
 
     // MARK: - Actions Sent to iPhone
 
