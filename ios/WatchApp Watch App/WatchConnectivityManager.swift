@@ -441,6 +441,11 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     // MARK: - Actions Sent to iPhone
 
     func startWorkout(routineId: String, customExercises: [[String: Any]]? = nil) {
+        // Clear any existing sync state to prevent infinite loading
+        DispatchQueue.main.async {
+            self.isSyncing = false
+        }
+        
         // Start the HealthKit session first to ensure isReachable becomes true if the iOS app is in the background
         WorkoutManager.shared.startWorkout()
         
@@ -467,6 +472,11 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     }
 
     func startSingleExercise(exerciseId: String) {
+        // Clear any existing sync state to prevent infinite loading
+        DispatchQueue.main.async {
+            self.isSyncing = false
+        }
+        
         WorkoutManager.shared.startWorkout()
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
@@ -710,8 +720,9 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         DispatchQueue.main.async {
             self.isSyncing = true
             // Timeout to prevent infinite loading if iPhone doesn't respond
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
                 if self.isSyncing {
+                    WatchLogger.connectivity.warning("Sync timeout - iPhone did not respond")
                     self.isSyncing = false
                 }
             }
