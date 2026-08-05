@@ -898,8 +898,7 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                               final isCardio = ref.measurementType ==
                                       MeasurementType.cardio ||
                                   ref.measurementType ==
-                                      MeasurementType.distance ||
-                                  ref.measurementType == MeasurementType.time;
+                                      MeasurementType.distance;
                               return Container(
                                 key: ValueKey(ex.id),
                                 margin: const EdgeInsets.only(bottom: 12),
@@ -1411,8 +1410,7 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
           setState(() {
             for (final ex in selectedExercises) {
               final isCardioEx = ex.measurementType == MeasurementType.cardio ||
-                  ex.measurementType == MeasurementType.distance ||
-                  ex.measurementType == MeasurementType.time;
+                  ex.measurementType == MeasurementType.distance;
               _exercises.add(RoutineExercise(
                 id: "e-${const Uuid().v4()}",
                 exerciseId: ex.id,

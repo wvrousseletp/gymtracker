@@ -280,7 +280,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
               final libEx = state.library.where((e) => e.id == re.exerciseId).firstOrNull;
               if (libEx != null) {
                 final muscle = libEx.muscle;
-                final isCardio = muscle.toLowerCase().contains('cardio') || libEx.measurementType == MeasurementType.time;
+                final isCardio = muscle.toLowerCase().contains('cardio');
                 if (isCardio) {
                   cardioMap[muscle] = (cardioMap[muscle] ?? 0) + re.sets.toInt();
                 } else {
@@ -297,7 +297,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
             final libEx = state.library.where((e) => e.id == exId).firstOrNull;
             if (libEx != null) {
               final muscle = libEx.muscle;
-              final isCardio = muscle.toLowerCase().contains('cardio') || libEx.measurementType == MeasurementType.time;
+              final isCardio = muscle.toLowerCase().contains('cardio');
               if (isCardio) {
                 cardioMap[muscle] = (cardioMap[muscle] ?? 0) + quantity;
               } else {
@@ -312,7 +312,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
               final libEx = state.library.where((e) => e.id == re.exerciseId).firstOrNull;
               if (libEx != null) {
                 final muscle = libEx.muscle;
-                final isCardio = muscle.toLowerCase().contains('cardio') || libEx.measurementType == MeasurementType.time;
+                final isCardio = muscle.toLowerCase().contains('cardio');
                 if (isCardio) {
                   cardioMap[muscle] = (cardioMap[muscle] ?? 0) + re.sets.toInt();
                 } else {

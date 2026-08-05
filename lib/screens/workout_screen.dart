@@ -143,10 +143,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               final libEx =
                   provider.library.where((l) => l.id == exerciseId).firstOrNull;
               if (libEx != null) {
-                final isCardio =
-                    libEx.measurementType == MeasurementType.cardio ||
-                        libEx.measurementType == MeasurementType.distance ||
-                        libEx.measurementType == MeasurementType.time;
+                final isCardio = (libEx.measurementType == MeasurementType.cardio ||
+                        libEx.measurementType == MeasurementType.distance) &&
+                    libEx.measurementType != MeasurementType.time;
                 return Routine(
                   id: "temp-$exerciseId-$sets",
                   name: "${libEx.name} (Avulso)",

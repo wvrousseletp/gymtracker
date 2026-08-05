@@ -164,10 +164,10 @@ class WorkoutProvider extends ChangeNotifier {
       );
 
       // Determine if this is cardio based on measurementType or existing flags
-      final isCardio = ex.isCardio ||
+      final isCardio = (ex.isCardio ||
           ref.measurementType == MeasurementType.cardio ||
-          ref.measurementType == MeasurementType.distance ||
-          ref.measurementType == MeasurementType.time;
+          ref.measurementType == MeasurementType.distance) &&
+          ref.measurementType != MeasurementType.time;
 
       // For cardio exercises without sets, use 1 set for UI consistency
       final effectiveSets = (isCardio && !ex.allowCardioSets) ? 1 : ex.sets;
@@ -210,9 +210,9 @@ class WorkoutProvider extends ChangeNotifier {
 
   void startSingleExercise(LibraryExercise exercise) {
     // Determine if this is a cardio exercise based on measurement type
-    final isCardio = exercise.measurementType == MeasurementType.cardio ||
-        exercise.measurementType == MeasurementType.distance ||
-        exercise.measurementType == MeasurementType.time;
+    final isCardio = (exercise.measurementType == MeasurementType.cardio ||
+        exercise.measurementType == MeasurementType.distance) &&
+        exercise.measurementType != MeasurementType.time;
 
     final tempRoutine = Routine(
       id: 'temp_${DateTime.now().millisecondsSinceEpoch}',

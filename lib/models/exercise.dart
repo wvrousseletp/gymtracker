@@ -214,7 +214,8 @@ class ActiveExercise {
       failureReps: json['failureReps'] != null
           ? List<int?>.from(json['failureReps'])
           : List<int?>.filled(setsVal, null),
-      isCardio: json['isCardio'] ?? false,
+      isCardio: (json['isCardio'] ?? false) &&
+          measurementTypeFromString(json['measurementType'] ?? 'reps') != MeasurementType.time,
       allowCardioSets: json['allowCardioSets'] ?? false,
       isStationary: json['isStationary'] ?? false,
       singleCardioSession: json['singleCardioSession'] != null
