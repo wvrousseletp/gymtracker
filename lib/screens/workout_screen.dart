@@ -2856,6 +2856,9 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                     accentColor: accentColor,
                     onEditTap: () => _showEditSetWeightRepsDialog(
                         context, exIdx, setIdx, ex),
+                    onSaveValues: (w, r) {
+                      widget.provider.updateExerciseSetWeightReps(exIdx, setIdx, w, r);
+                    },
                     onFailureTap: () {
                       widget.provider.completeSet(
                         exIdx,

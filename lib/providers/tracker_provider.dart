@@ -644,17 +644,17 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void addLibraryExercise(String name, String muscle, String measurementType,
-      String? notes, String? executionType) {
+      String? notes, String? executionType, {bool isStationary = false}) {
     if (_workoutProvider == null) return;
     _workoutProvider!.addLibraryExercise(
-        name, muscle, measurementType, notes, executionType);
+        name, muscle, measurementType, notes, executionType, isStationary: isStationary);
   }
 
   void updateLibraryExercise(String id, String name, String muscle,
-      String measurementType, String? notes, String? executionType) {
+      String measurementType, String? notes, String? executionType, {bool isStationary = false}) {
     if (_workoutProvider == null) return;
     _workoutProvider!.updateLibraryExercise(
-        id, name, muscle, measurementType, notes, executionType);
+        id, name, muscle, measurementType, notes, executionType, isStationary: isStationary);
   }
 
   void deleteLibraryExercise(String id) {

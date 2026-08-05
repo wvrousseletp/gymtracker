@@ -2254,6 +2254,7 @@ class _LibraryTabState extends State<LibraryTab> {
       }
     }
     final notesCtrl = TextEditingController(text: existing?.notes ?? "");
+    bool isStationary = existing?.isStationary ?? false;
 
     showDialog(
       context: context,
@@ -2712,6 +2713,46 @@ class _LibraryTabState extends State<LibraryTab> {
                         const SizedBox(height: 16),
                       ],
 
+                      // Exercício Estacionário / Indoor
+                      if (category == "Cardio" || measurement == "Tempo de Isometria") ...[
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "Estacionário / Indoor",
+                                    style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                  SizedBox(height: 2),
+                                  Text(
+                                    "Para bike ergométrica, esteira, etc.",
+                                    style: TextStyle(
+                                        color: Colors.white30,
+                                        fontSize: 10),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Switch.adaptive(
+                              value: isStationary,
+                              activeColor: widget.accentColor,
+                              onChanged: (val) {
+                                setState(() {
+                                  isStationary = val;
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+
                       // Observação
                       TextField(
                         controller: notesCtrl,
@@ -2719,24 +2760,24 @@ class _LibraryTabState extends State<LibraryTab> {
                         style:
                             const TextStyle(color: Colors.white, fontSize: 13),
                         decoration: InputDecoration(
-                          filled: true,
-                          fillColor: Colors.white.withOpacity(0.03),
-                          hintText: "Observação (Opcional)",
-                          hintStyle: const TextStyle(
-                              color: Colors.white30, fontSize: 12),
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(
-                                color: Colors.white.withOpacity(0.08)),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(
-                                color: widget.accentColor.withOpacity(0.5),
-                                width: 1.5),
-                          ),
+                           filled: true,
+                           fillColor: Colors.white.withOpacity(0.03),
+                           hintText: "Observação (Opcional)",
+                           hintStyle: const TextStyle(
+                               color: Colors.white30, fontSize: 12),
+                           contentPadding: const EdgeInsets.symmetric(
+                               horizontal: 16, vertical: 12),
+                           enabledBorder: OutlineInputBorder(
+                             borderRadius: BorderRadius.circular(12),
+                             borderSide: BorderSide(
+                                 color: Colors.white.withOpacity(0.08)),
+                           ),
+                           focusedBorder: OutlineInputBorder(
+                             borderRadius: BorderRadius.circular(12),
+                             borderSide: BorderSide(
+                                 color: widget.accentColor.withOpacity(0.5),
+                                 width: 1.5),
+                           ),
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -2792,6 +2833,7 @@ class _LibraryTabState extends State<LibraryTab> {
                                       mType,
                                       notesCtrl.text.trim(),
                                       execType,
+                                      isStationary: isStationary,
                                     );
                                   } else {
                                     provider.updateLibraryExercise(
@@ -2801,6 +2843,7 @@ class _LibraryTabState extends State<LibraryTab> {
                                       mType,
                                       notesCtrl.text.trim(),
                                       execType,
+                                      isStationary: isStationary,
                                     );
                                   }
                                   Navigator.pop(dialogCtx);

@@ -1208,7 +1208,7 @@ class WorkoutProvider extends ChangeNotifier {
 
   // --- LIBRARY OPERATIONS ---
   void addLibraryExercise(String name, String muscle, String measurementType,
-      String? notes, String? executionType) {
+      String? notes, String? executionType, {bool isStationary = false}) {
     final newEx = LibraryExercise(
       id: "lib-${DateTime.now().millisecondsSinceEpoch}",
       name: name,
@@ -1216,13 +1216,14 @@ class WorkoutProvider extends ChangeNotifier {
       measurementType: measurementTypeFromString(measurementType),
       notes: notes,
       executionType: executionType,
+      isStationary: isStationary,
     );
     library = List<LibraryExercise>.from(library)..add(newEx);
     _save();
   }
 
   void updateLibraryExercise(String id, String name, String muscle,
-      String measurementType, String? notes, String? executionType) {
+      String measurementType, String? notes, String? executionType, {bool isStationary = false}) {
     final idx = library.indexWhere((e) => e.id == id);
     if (idx != -1) {
       library[idx] = LibraryExercise(
@@ -1232,6 +1233,7 @@ class WorkoutProvider extends ChangeNotifier {
         measurementType: measurementTypeFromString(measurementType),
         notes: notes,
         executionType: executionType,
+        isStationary: isStationary,
       );
       _save();
     }
@@ -1279,6 +1281,71 @@ class WorkoutProvider extends ChangeNotifier {
       routines[idx] = r;
       _save();
       unawaited(_firebaseSync.syncRoutine(currentUserId, r));
+    }
+  }
+
+  void updateRoutineExerciseSettings(
+      String routineId, String exerciseId,
+      {double? weight, int? reps, int? sets, int? rest}) {
+    final rIdx = routines.indexWhere((r) => r.id == routineId);
+    if (rIdx != -1) {
+      final routine = routines[rIdx];
+      final newExercises = routine.exercises.map((ex) {
+        if (ex.exerciseId == exerciseId) {
+          final s = sets ?? ex.sets;
+          
+          // Re-initialize weightsPerSet and repsPerSet arrays if they exist or sets count changed
+          List<double>? newWeights = ex.weightsPerSet;
+          if (newWeights != null || weight != null) {
+            final oldWeights = newWeights ?? List<double>.filled(ex.sets, ex.weight);
+            final targetWeight = weight ?? ex.weight;
+            newWeights = List<double>.filled(s, targetWeight);
+            for (int i = 0; i < s && i < oldWeights.length; i++) {
+              newWeights[i] = oldWeights[i];
+            }
+            if (weight != null) {
+              // If weight is specifically updated, overwrite all sets
+              newWeights = List<double>.filled(s, weight);
+            }
+          }
+
+          List<int>? newRepsList = ex.repsPerSet;
+          if (newRepsList != null || reps != null) {
+            final oldReps = newRepsList ?? List<int>.filled(ex.sets, ex.reps);
+            final targetReps = reps ?? ex.reps;
+            newRepsList = List<int>.filled(s, targetReps);
+            for (int i = 0; i < s && i < oldReps.length; i++) {
+              newRepsList[i] = oldReps[i];
+            }
+            if (reps != null) {
+              // If reps are specifically updated, overwrite all sets
+              newRepsList = List<int>.filled(s, reps);
+            }
+          }
+
+          return RoutineExercise(
+            id: ex.id,
+            exerciseId: ex.exerciseId,
+            sets: s,
+            reps: reps ?? ex.reps,
+            rest: rest ?? ex.rest,
+            weight: weight ?? ex.weight,
+            weightsPerSet: newWeights,
+            repsPerSet: newRepsList,
+            isCardio: ex.isCardio,
+            allowCardioSets: ex.allowCardioSets,
+          );
+        }
+        return ex;
+      }).toList();
+      
+      updateRoutine(Routine(
+        id: routine.id,
+        name: routine.name,
+        defaultRest: routine.defaultRest,
+        exercises: newExercises,
+        isDynamicExercise: routine.isDynamicExercise,
+      ));
     }
   }
 

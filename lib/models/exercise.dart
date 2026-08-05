@@ -7,6 +7,7 @@ class LibraryExercise {
   final MeasurementType measurementType;
   final String? executionType;  // 'isometric' ou null
   final String? notes;
+  final bool isStationary;
 
   LibraryExercise({
     required this.id,
@@ -15,6 +16,7 @@ class LibraryExercise {
     required this.measurementType,
     this.executionType,
     this.notes,
+    this.isStationary = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -24,6 +26,7 @@ class LibraryExercise {
     'measurementType': measurementTypeToString(measurementType),
     'executionType': executionType ?? 'Livre',
     'notes': notes,
+    'isStationary': isStationary,
   };
 
   factory LibraryExercise.fromJson(Map<String, dynamic> json) => LibraryExercise(
@@ -33,6 +36,7 @@ class LibraryExercise {
     measurementType: measurementTypeFromString(json['measurementType'] ?? 'reps'),
     executionType: json['executionType'] ?? 'Livre',
     notes: json['notes'],
+    isStationary: json['isStationary'] ?? false,
   );
 }
 
@@ -136,6 +140,7 @@ class ActiveExercise {
   // Cardio-specific fields
   final bool isCardio;
   final bool allowCardioSets;
+  final bool isStationary;
   // Single cardio session data (for non-set cardio)
   PerformedCardio? singleCardioSession;
 
@@ -157,6 +162,7 @@ class ActiveExercise {
     this.repsPerSet,
     this.isCardio = false,
     this.allowCardioSets = false,
+    this.isStationary = false,
     this.singleCardioSession,
   }) : failureReps = failureReps ?? List<int?>.filled(sets, null);
 
@@ -178,6 +184,7 @@ class ActiveExercise {
     'failureReps': failureReps,
     'isCardio': isCardio,
     'allowCardioSets': allowCardioSets,
+    'isStationary': isStationary,
     'singleCardioSession': singleCardioSession?.toJson(),
   };
 
@@ -209,6 +216,7 @@ class ActiveExercise {
           : List<int?>.filled(setsVal, null),
       isCardio: json['isCardio'] ?? false,
       allowCardioSets: json['allowCardioSets'] ?? false,
+      isStationary: json['isStationary'] ?? false,
       singleCardioSession: json['singleCardioSession'] != null
           ? PerformedCardio.fromJson(json['singleCardioSession'])
           : null,

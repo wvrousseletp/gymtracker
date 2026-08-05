@@ -96,7 +96,18 @@ struct ActiveWorkoutView: View {
     @State private var uiRefreshInterval: Double = 1.0
     @State private var pulsingFailureSetIndex: String? = nil
     @State private var isCrownLongPressed = false
+    
+    // Cardio/Isometria state
+    @State private var selectedCardioField: String = "distance"
+    @State private var isTimeTimerRunning: Bool = false
+    @State private var timeTimerElapsed: Int = 0
+
     let stopwatchTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+
+    private func resetTimeTimer() {
+        isTimeTimerRunning = false
+        timeTimerElapsed = 0
+    }
 
     private func formatDuration(_ seconds: Int) -> String {
         let h = seconds / 3600
@@ -147,12 +158,33 @@ struct ActiveWorkoutView: View {
         let distance = pc?.distanceKm ?? 0.0
         let durationSec = pc?.durationSeconds ?? 0
         let durationMin = durationSec / 60
+        let isStationary = exercise.isStationary
 
         return VStack(spacing: 6) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("DISTÂNCIA")
-                    .font(.system(size: 8, weight: .bold))
-                    .foregroundColor(.gray)
+                HStack {
+                    Text("DISTÂNCIA")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundColor(selectedCardioField == "distance" ? .orange : .gray)
+                    
+                    Spacer()
+                    
+                    if !isStationary && workoutManager.distance > 0 {
+                        Button(action: {
+                            let gpsDist = workoutManager.distance / 1000.0
+                            connectivityManager.updateCardio(exerciseIndex: exIndex, setIndex: selectedSetIdx, distance: gpsDist, duration: durationSec)
+                        }) {
+                            Text(String(format: "GPS: %.2f km", workoutManager.distance / 1000.0))
+                                .font(.system(size: 8, weight: .bold))
+                                .foregroundColor(.blue)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 2)
+                                .background(Color.blue.opacity(0.15))
+                                .cornerRadius(4)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
                 
                 HStack {
                     Spacer()
@@ -193,20 +225,24 @@ struct ActiveWorkoutView: View {
                         .accessibilityHint("Aumenta 0.1 km")
                     }
                     .padding(3)
-                    .background(Color.white.opacity(0.04))
+                    .background(selectedCardioField == "distance" ? Color.orange.opacity(0.1) : Color.white.opacity(0.04))
                     .cornerRadius(14)
                     .overlay(
                         RoundedRectangle(cornerRadius: 14)
-                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                            .stroke(selectedCardioField == "distance" ? Color.orange.opacity(0.4) : Color.white.opacity(0.08), lineWidth: 1)
                     )
                     Spacer()
                 }
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                selectedCardioField = "distance"
             }
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("DURAÇÃO")
                     .font(.system(size: 8, weight: .bold))
-                    .foregroundColor(.gray)
+                    .foregroundColor(selectedCardioField == "duration" ? .orange : .gray)
                 
                 HStack {
                     Spacer()
@@ -247,14 +283,18 @@ struct ActiveWorkoutView: View {
                         .accessibilityHint("Aumenta 1 minuto")
                     }
                     .padding(3)
-                    .background(Color.white.opacity(0.04))
+                    .background(selectedCardioField == "duration" ? Color.orange.opacity(0.1) : Color.white.opacity(0.04))
                     .cornerRadius(14)
                     .overlay(
                         RoundedRectangle(cornerRadius: 14)
-                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                            .stroke(selectedCardioField == "duration" ? Color.orange.opacity(0.4) : Color.white.opacity(0.08), lineWidth: 1)
                     )
                     Spacer()
                 }
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                selectedCardioField = "duration"
             }
         }
     }
@@ -298,6 +338,62 @@ struct ActiveWorkoutView: View {
                 .cornerRadius(8)
                 
                 Spacer()
+            }
+            
+            if exercise.measurementType == "time" {
+                HStack(spacing: 6) {
+                    Button(action: {
+                        isTimeTimerRunning.toggle()
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: isTimeTimerRunning ? "pause.fill" : "play.fill")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundColor(isTimeTimerRunning ? .orange : .green)
+                            
+                            let timeToShow = timeTimerElapsed > 0 ? timeTimerElapsed : exercise.reps
+                            Text(String(format: "%02d:%02d", timeToShow / 60, timeToShow % 60))
+                                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                .foregroundColor(.white)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 5)
+                        .background(Color.white.opacity(0.08))
+                        .cornerRadius(6)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    if timeTimerElapsed > 0 {
+                        Button(action: {
+                            resetTimeTimer()
+                        }) {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundColor(.gray)
+                                .frame(width: 24, height: 22)
+                                .background(Color.white.opacity(0.08))
+                                .cornerRadius(6)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        
+                        Button(action: {
+                            // Record time
+                            connectivityManager.updateExerciseWeightReps(exerciseIndex: exIndex, weight: exercise.weight, reps: timeTimerElapsed)
+                            #if canImport(WatchKit)
+                            hapticManager.playSetCompleted()
+                            #endif
+                            resetTimeTimer()
+                        }) {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundColor(.green)
+                                .frame(width: 24, height: 22)
+                                .background(Color.white.opacity(0.08))
+                                .cornerRadius(6)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+                .padding(.top, 2)
             }
             
             // Compact Failure Toggle
@@ -938,10 +1034,18 @@ struct ActiveWorkoutView: View {
         let isCardio = exercise.muscle.lowercased().contains("cardio")
         
         if isCardio {
-            // Adjust cardio duration
-            let currentDuration = exercise.reps
-            let newDuration = max(10, currentDuration + delta * 5)
-            connectivityManager.updateCardio(exerciseIndex: activeWorkout.currentExerciseIndex, setIndex: 0, distance: 0.0, duration: newDuration)
+            let activeSetIdx = getSelectedSetIndex(for: exercise, index: activeWorkout.currentExerciseIndex)
+            let pc = activeSetIdx < exercise.performedCardios.count ? exercise.performedCardios[activeSetIdx] : nil
+            let currentDistance = pc?.distanceKm ?? 0.0
+            let currentDuration = pc?.durationSeconds ?? 0
+            
+            if selectedCardioField == "distance" {
+                let newDistance = max(0.0, currentDistance + Double(delta) * 0.1)
+                connectivityManager.updateCardio(exerciseIndex: activeWorkout.currentExerciseIndex, setIndex: activeSetIdx, distance: newDistance, duration: currentDuration)
+            } else {
+                let newDuration = max(0, currentDuration + delta * 30) // Scroll shifts by 30s
+                connectivityManager.updateCardio(exerciseIndex: activeWorkout.currentExerciseIndex, setIndex: activeSetIdx, distance: currentDistance, duration: newDuration)
+            }
         } else {
             // Adjust weight
             let currentWeight = exercise.weight
@@ -1172,9 +1276,26 @@ struct ActiveWorkoutView: View {
                 isControlsPageFocused = true
             }
         }
+        .onChange(of: connectivityManager.activeWorkout?.currentExerciseIndex) { _ in
+            resetTimeTimer()
+        }
         .onReceive(stopwatchTimer) { _ in
             if !isLuminanceReduced {
                 updateStopwatch()
+            }
+            if isTimeTimerRunning {
+                timeTimerElapsed += 1
+                if let activeWorkout = connectivityManager.activeWorkout {
+                    let exIdx = activeWorkout.currentExerciseIndex
+                    if exIdx < activeWorkout.exercises.count {
+                        let exercise = activeWorkout.exercises[exIdx]
+                        if timeTimerElapsed == exercise.reps {
+                            #if canImport(WatchKit)
+                            WKInterfaceDevice.current().play(.success)
+                            #endif
+                        }
+                    }
+                }
             }
         }
         .onChange(of: isLuminanceReduced) { reduced in

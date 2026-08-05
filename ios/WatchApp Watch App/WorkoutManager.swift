@@ -68,26 +68,26 @@ class WorkoutManager: NSObject, ObservableObject {
     func requestAuthorization() {
         guard HKHealthStore.isHealthDataAvailable() else { return }
         
-        let typesToShare: Set = [
-            HKQuantityType.workoutType(),
-            HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)!,
-            HKQuantityType.quantityType(forIdentifier: .heartRate)!,
-            HKQuantityType.quantityType(forIdentifier: .basalEnergyBurned)!,
-            HKQuantityType.quantityType(forIdentifier: .stepCount)!,
-            HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning)!,
-            HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!,
-            HKQuantityType.quantityType(forIdentifier: .oxygenSaturation)!
+        let shareList: [HKSampleType?] = [
+            HKObjectType.workoutType(),
+            HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned),
+            HKQuantityType.quantityType(forIdentifier: .basalEnergyBurned),
+            HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning)
         ]
         
-        let typesToRead: Set = [
-            HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)!,
-            HKQuantityType.quantityType(forIdentifier: .heartRate)!,
-            HKQuantityType.quantityType(forIdentifier: .basalEnergyBurned)!,
-            HKQuantityType.quantityType(forIdentifier: .stepCount)!,
-            HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning)!,
-            HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!,
-            HKQuantityType.quantityType(forIdentifier: .oxygenSaturation)!
+        let readList: [HKObjectType?] = [
+            HKObjectType.workoutType(),
+            HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned),
+            HKQuantityType.quantityType(forIdentifier: .heartRate),
+            HKQuantityType.quantityType(forIdentifier: .basalEnergyBurned),
+            HKQuantityType.quantityType(forIdentifier: .stepCount),
+            HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning),
+            HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN),
+            HKQuantityType.quantityType(forIdentifier: .oxygenSaturation)
         ]
+        
+        let typesToShare = Set(shareList.compactMap { $0 })
+        let typesToRead = Set(readList.compactMap { $0 })
         
         healthStore.requestAuthorization(toShare: typesToShare, read: typesToRead) { success, error in
             if success {

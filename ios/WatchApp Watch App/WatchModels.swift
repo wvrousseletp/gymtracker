@@ -85,9 +85,10 @@ struct WatchLibraryExercise: Codable, Identifiable {
     let muscle: String
     let executionType: String
     let measurementType: String
+    let isStationary: Bool
 
     enum CodingKeys: String, CodingKey {
-        case id, name, muscle, executionType, measurementType
+        case id, name, muscle, executionType, measurementType, isStationary
     }
 
     init(from decoder: Decoder) throws {
@@ -97,6 +98,7 @@ struct WatchLibraryExercise: Codable, Identifiable {
         muscle = try container.decode(String.self, forKey: .muscle)
         executionType = (try? container.decode(String.self, forKey: .executionType)) ?? "Livre"
         measurementType = (try? container.decode(String.self, forKey: .measurementType)) ?? "reps"
+        isStationary = (try? container.decode(Bool.self, forKey: .isStationary)) ?? false
     }
 }
 
@@ -354,12 +356,13 @@ struct WatchActiveExercise: Codable, Identifiable {
     let performedCardios: [WatchPerformedCardio?]
     var failureReport: [Bool]
     let failureReps: [Int?]
+    let isStationary: Bool
 
     enum CodingKeys: String, CodingKey {
-        case instanceId, name, muscle, sets, reps, rest, weight, setsState, measurementType, executionType, performedCardios, failureReport, failureReps
+        case instanceId, name, muscle, sets, reps, rest, weight, setsState, measurementType, executionType, performedCardios, failureReport, failureReps, isStationary
     }
 
-    init(name: String, muscle: String, sets: Int, reps: Int, rest: Int, weight: Double, setsState: [Bool], measurementType: String, executionType: String?, performedCardios: [WatchPerformedCardio?], failureReport: [Bool], failureReps: [Int?], instanceId: String = UUID().uuidString) {
+    init(name: String, muscle: String, sets: Int, reps: Int, rest: Int, weight: Double, setsState: [Bool], measurementType: String, executionType: String?, performedCardios: [WatchPerformedCardio?], failureReport: [Bool], failureReps: [Int?], isStationary: Bool = false, instanceId: String = UUID().uuidString) {
         self.instanceId = instanceId
         self.name = name
         self.muscle = muscle
@@ -373,6 +376,7 @@ struct WatchActiveExercise: Codable, Identifiable {
         self.performedCardios = performedCardios
         self.failureReport = failureReport
         self.failureReps = failureReps
+        self.isStationary = isStationary
     }
 
     init(from decoder: Decoder) throws {
@@ -383,6 +387,7 @@ struct WatchActiveExercise: Codable, Identifiable {
         setsState = try container.decode([Bool].self, forKey: .setsState)
         measurementType = (try? container.decode(String.self, forKey: .measurementType)) ?? (muscle.lowercased().contains("cardio") ? "time" : "reps")
         executionType = try? container.decodeIfPresent(String.self, forKey: .executionType)
+        isStationary = (try? container.decode(Bool.self, forKey: .isStationary)) ?? false
 
         if let val = try? container.decode(Int.self, forKey: .sets) {
             sets = val
@@ -445,7 +450,8 @@ struct WatchActiveExercise: Codable, Identifiable {
             "executionType": executionType ?? "Livre",
             "performedCardios": performedCardios.map { $0?.toJSON() ?? [:] },
             "failureReport": failureReport,
-            "failureReps": failureReps.map { $0 ?? 0 }
+            "failureReps": failureReps.map { $0 ?? 0 },
+            "isStationary": isStationary
         ]
     }
 }

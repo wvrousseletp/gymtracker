@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/exercise.dart';
 import '../models/enums.dart';
 
-class PremiumStrengthSetCard extends StatelessWidget {
+class PremiumStrengthSetCard extends StatefulWidget {
   final int setIndex;
   final ActiveExercise ex;
   final bool isDone;
@@ -12,6 +14,7 @@ class PremiumStrengthSetCard extends StatelessWidget {
   final VoidCallback onEditTap;
   final VoidCallback onDoneTap;
   final VoidCallback onFailureTap;
+  final void Function(double weight, int reps)? onSaveValues;
 
   const PremiumStrengthSetCard({
     super.key,
@@ -24,41 +27,108 @@ class PremiumStrengthSetCard extends StatelessWidget {
     required this.onEditTap,
     required this.onDoneTap,
     required this.onFailureTap,
+    this.onSaveValues,
   });
 
   @override
+  State<PremiumStrengthSetCard> createState() => _PremiumStrengthSetCardState();
+}
+
+class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
+  Timer? _timer;
+  int _elapsed = 0;
+  bool _isRunning = false;
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _toggleTimer(int targetReps) {
+    if (_isRunning) {
+      _timer?.cancel();
+      setState(() {
+        _isRunning = false;
+      });
+      _saveLocalTime();
+    } else {
+      setState(() {
+        _isRunning = true;
+      });
+      _timer = Timer.periodic(const Duration(seconds: 1), (t) {
+        setState(() {
+          _elapsed++;
+        });
+        _saveLocalTime();
+        if (_elapsed == targetReps) {
+          HapticFeedback.heavyImpact();
+        }
+      });
+    }
+  }
+
+  void _resetTimer() {
+    _timer?.cancel();
+    setState(() {
+      _isRunning = false;
+      _elapsed = 0;
+    });
+    _saveLocalTime();
+  }
+
+  void _saveLocalTime() {
+    if (widget.onSaveValues != null) {
+      final weight = (widget.ex.weightsPerSet != null && widget.setIndex < widget.ex.weightsPerSet!.length)
+          ? widget.ex.weightsPerSet![widget.setIndex]
+          : widget.ex.weight;
+      widget.onSaveValues!(weight, _elapsed > 0 ? _elapsed : widget.ex.reps);
+    }
+  }
+
+  String _formatTime(int seconds) {
+    final m = seconds ~/ 60;
+    final s = seconds % 60;
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final reps = (ex.repsPerSet != null && setIndex < ex.repsPerSet!.length)
-        ? ex.repsPerSet![setIndex]
-        : ex.reps;
+    final reps = (widget.ex.repsPerSet != null && widget.setIndex < widget.ex.repsPerSet!.length)
+        ? widget.ex.repsPerSet![widget.setIndex]
+        : widget.ex.reps;
     final weight =
-        (ex.weightsPerSet != null && setIndex < ex.weightsPerSet!.length)
-            ? ex.weightsPerSet![setIndex]
-            : ex.weight;
-    final isTime = ex.measurementType == MeasurementType.time;
+        (widget.ex.weightsPerSet != null && widget.setIndex < widget.ex.weightsPerSet!.length)
+            ? widget.ex.weightsPerSet![widget.setIndex]
+            : widget.ex.weight;
+    final isTime = widget.ex.measurementType == MeasurementType.time;
     final weightStr = weight > 0
         ? "${weight.toStringAsFixed(1).replaceAll('.0', '')} kg"
         : "- kg";
     final repsStr = isTime ? "$reps s" : "$reps reps";
 
     // ─── 1. SÉRIE ATIVA: HERO CARD (DESTAQUE TOTAL) ───
-    if (isActive) {
+    if (widget.isActive) {
+      final targetSeconds = reps;
+      final progress = targetSeconds > 0 ? _elapsed / targetSeconds : 0.0;
+      final cappedProgress = progress.clamp(0.0, 1.0);
+
       return RepaintBoundary(
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
           decoration: BoxDecoration(
-            color: accentColor.withOpacity(0.08),
+            color: widget.accentColor.withOpacity(0.08),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: isFailure
+              color: widget.isFailure
                   ? Colors.redAccent.withOpacity(0.7)
-                  : accentColor.withOpacity(0.6),
+                  : widget.accentColor.withOpacity(0.6),
               width: 2.0,
             ),
             boxShadow: [
               BoxShadow(
-                color: (isFailure ? Colors.redAccent : accentColor)
+                color: (widget.isFailure ? Colors.redAccent : widget.accentColor)
                     .withOpacity(0.20),
                 blurRadius: 20,
                 spreadRadius: 2,
@@ -80,11 +150,11 @@ class PremiumStrengthSetCard extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
-                            color: accentColor,
+                            color: widget.accentColor,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            "SÉRIE ${setIndex + 1} DE ${ex.sets}",
+                            "SÉRIE ${widget.setIndex + 1} DE ${widget.ex.sets}",
                             style: const TextStyle(
                               color: Colors.black,
                               fontWeight: FontWeight.w900,
@@ -113,7 +183,7 @@ class PremiumStrengthSetCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    if (isFailure)
+                    if (widget.isFailure)
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 5),
@@ -147,7 +217,7 @@ class PremiumStrengthSetCard extends StatelessWidget {
 
                 // Reps and Weight Values (Tap to Edit)
                 InkWell(
-                  onTap: onEditTap,
+                  onTap: widget.onEditTap,
                   borderRadius: BorderRadius.circular(18),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -189,6 +259,100 @@ class PremiumStrengthSetCard extends StatelessWidget {
                   ),
                 ),
 
+                // ─── CRONÔMETRO INLINE PARA ISOMETRIA ───
+                if (isTime) ...[
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.02),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: Colors.white.withOpacity(0.06)),
+                    ),
+                    child: Row(
+                      children: [
+                        Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            SizedBox(
+                              width: 50,
+                              height: 50,
+                              child: CircularProgressIndicator(
+                                value: cappedProgress,
+                                strokeWidth: 3.5,
+                                backgroundColor: Colors.white.withOpacity(0.05),
+                                valueColor: AlwaysStoppedAnimation(
+                                  _elapsed >= targetSeconds ? Colors.greenAccent : widget.accentColor,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              _formatTime(_elapsed > 0 ? _elapsed : targetSeconds),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                fontFeatures: [FontFeature.tabularFigures()],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _isRunning ? "CRONÔMETRO ATIVO" : "ISOMETRIA",
+                                style: TextStyle(
+                                  color: _isRunning ? widget.accentColor : Colors.white60,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.0,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                _isRunning
+                                    ? "Tempo sob tensão correndo..."
+                                    : "Toque para cronometrar a série",
+                                style: const TextStyle(
+                                  color: Colors.white30,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            if (_elapsed > 0) ...[
+                              IconButton(
+                                onPressed: _resetTimer,
+                                icon: const Icon(Icons.refresh_rounded, color: Colors.white60, size: 20),
+                                tooltip: "Reiniciar",
+                                constraints: const BoxConstraints(),
+                                padding: const EdgeInsets.all(8),
+                              ),
+                              const SizedBox(width: 4),
+                            ],
+                            IconButton(
+                              onPressed: () => _toggleTimer(targetSeconds),
+                              icon: Icon(
+                                _isRunning ? Icons.pause_circle_filled_rounded : Icons.play_circle_filled_rounded,
+                                color: _isRunning ? Colors.orangeAccent : widget.accentColor,
+                                size: 36,
+                              ),
+                              constraints: const BoxConstraints(),
+                              padding: EdgeInsets.zero,
+                            ),
+                          ],
+                        )
+                      ],
+                    ),
+                  ),
+                ],
+
                 const SizedBox(height: 16),
 
                 // Action Buttons
@@ -198,26 +362,26 @@ class PremiumStrengthSetCard extends StatelessWidget {
                     Expanded(
                       flex: 1,
                       child: OutlinedButton.icon(
-                        onPressed: onFailureTap,
+                        onPressed: widget.onFailureTap,
                         icon: Icon(
                           Icons.whatshot,
                           size: 18,
-                          color: isFailure ? Colors.white : Colors.redAccent,
+                          color: widget.isFailure ? Colors.white : Colors.redAccent,
                         ),
                         label: Text(
                           "FALHA",
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 13,
-                            color: isFailure ? Colors.white : Colors.redAccent,
+                            color: widget.isFailure ? Colors.white : Colors.redAccent,
                           ),
                         ),
                         style: OutlinedButton.styleFrom(
-                          backgroundColor: isFailure
+                          backgroundColor: widget.isFailure
                               ? Colors.redAccent
                               : Colors.redAccent.withOpacity(0.1),
                           side: BorderSide(
-                            color: isFailure
+                            color: widget.isFailure
                                 ? Colors.redAccent
                                 : Colors.redAccent.withOpacity(0.5),
                             width: 1.5,
@@ -234,7 +398,13 @@ class PremiumStrengthSetCard extends StatelessWidget {
                     Expanded(
                       flex: 2,
                       child: ElevatedButton.icon(
-                        onPressed: onDoneTap,
+                        onPressed: () {
+                          if (_isRunning) {
+                            _timer?.cancel();
+                            _isRunning = false;
+                          }
+                          widget.onDoneTap();
+                        },
                         icon: const Icon(
                           Icons.check_circle_rounded,
                           size: 22,
@@ -250,13 +420,13 @@ class PremiumStrengthSetCard extends StatelessWidget {
                           ),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: accentColor,
+                          backgroundColor: widget.accentColor,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
                           elevation: 6,
-                          shadowColor: accentColor.withOpacity(0.5),
+                          shadowColor: widget.accentColor.withOpacity(0.5),
                         ),
                       ),
                     ),
@@ -270,7 +440,7 @@ class PremiumStrengthSetCard extends StatelessWidget {
     }
 
     // ─── 2. SÉRIE CONCLUÍDA: LINHA COMPACTA ELEGANTE ───
-    if (isDone) {
+    if (widget.isDone) {
       return Container(
         margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -278,7 +448,7 @@ class PremiumStrengthSetCard extends StatelessWidget {
           color: Colors.white.withOpacity(0.03),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isFailure
+            color: widget.isFailure
                 ? Colors.redAccent.withOpacity(0.3)
                 : Colors.greenAccent.withOpacity(0.2),
             width: 1,
@@ -288,14 +458,14 @@ class PremiumStrengthSetCard extends StatelessWidget {
           children: [
             // Checkmark Icon
             Icon(
-              isFailure ? Icons.whatshot : Icons.check_circle_rounded,
-              color: isFailure ? Colors.redAccent : Colors.greenAccent,
+              widget.isFailure ? Icons.whatshot : Icons.check_circle_rounded,
+              color: widget.isFailure ? Colors.redAccent : Colors.greenAccent,
               size: 20,
             ),
             const SizedBox(width: 10),
             // Set name
             Text(
-              "Série ${setIndex + 1}",
+              "Série ${widget.setIndex + 1}",
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w800,
@@ -323,7 +493,7 @@ class PremiumStrengthSetCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  if (isFailure) ...[
+                  if (widget.isFailure) ...[
                     const SizedBox(width: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -347,7 +517,7 @@ class PremiumStrengthSetCard extends StatelessWidget {
             ),
             // Edit button
             IconButton(
-              onPressed: onEditTap,
+              onPressed: widget.onEditTap,
               icon: const Icon(Icons.edit_outlined,
                   color: Colors.white38, size: 18),
               padding: EdgeInsets.zero,
@@ -357,7 +527,7 @@ class PremiumStrengthSetCard extends StatelessWidget {
             const SizedBox(width: 8),
             // Reopen / Undo button
             IconButton(
-              onPressed: onDoneTap,
+              onPressed: widget.onDoneTap,
               icon: const Icon(Icons.undo_rounded,
                   color: Colors.white38, size: 18),
               padding: EdgeInsets.zero,
@@ -371,7 +541,7 @@ class PremiumStrengthSetCard extends StatelessWidget {
 
     // ─── 3. SÉRIE FUTURA: PRÉVIA COMPACTA E DISCRETA ───
     return InkWell(
-      onTap: onEditTap,
+      onTap: widget.onEditTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
@@ -401,7 +571,7 @@ class PremiumStrengthSetCard extends StatelessWidget {
             const SizedBox(width: 10),
             // Set label
             Text(
-              "Série ${setIndex + 1}",
+              "Série ${widget.setIndex + 1}",
               style: const TextStyle(
                 color: Colors.white54,
                 fontWeight: FontWeight.w600,

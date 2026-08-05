@@ -207,10 +207,11 @@ struct WeeklyStatsView: View {
                             let maxValue = max(weeklyData.max() ?? 1, 1)
                             let barHeight = CGFloat(value) / CGFloat(maxValue)
                             
+                            let calculatedHeight = CGFloat(30.0) * barHeight * CGFloat(barAnimation)
                             VStack(spacing: 2) {
                                 Rectangle()
                                     .fill(index == weeklyData.count - 1 ? Color.blue : Color.blue.opacity(0.5))
-                                    .frame(width: 8, height: 30 * barHeight * barAnimation)
+                                    .frame(width: 8, height: max(calculatedHeight, 2.0))
                                     .cornerRadius(2)
                                 Text("\(value)")
                                     .font(.system(size: 6, weight: .bold))

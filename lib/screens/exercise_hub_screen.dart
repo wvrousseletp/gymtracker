@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/exercise.dart';
 import '../models/workout_log.dart';
+import '../models/routine.dart';
 import '../providers/workout_provider.dart';
 import '../providers/profile_provider.dart';
 import '../services/ai_service.dart';
@@ -122,6 +123,7 @@ class _ExerciseHubScreenState extends State<ExerciseHubScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<WorkoutProvider>(context);
     final accentColor = context.select<ProfileProvider, Color>(
       (p) => ThemeUtils.getColor(p.currentProfile.colorAccent),
     );
@@ -176,6 +178,10 @@ class _ExerciseHubScreenState extends State<ExerciseHubScreen> {
 
             // KPIs Grid
             _buildKPIsGrid(accentColor),
+            const SizedBox(height: 24),
+
+            // Modelos de Treino (Rotinas)
+            _buildRoutinesSection(context, provider, accentColor),
             const SizedBox(height: 24),
 
             // Progression Chart
@@ -404,6 +410,235 @@ class _ExerciseHubScreenState extends State<ExerciseHubScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildRoutinesSection(BuildContext context, WorkoutProvider provider, Color accentColor) {
+    final containingRoutines = provider.routines.where((routine) {
+      return routine.exercises.any((ex) => ex.exerciseId == widget.exercise.id);
+    }).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          "Modelos / Rotinas de Treino",
+          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 12),
+        if (containingRoutines.isEmpty)
+          const GlassCard(
+            padding: EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline_rounded, color: Colors.white30, size: 20),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    "Este exercício não está incluído em nenhuma rotina ainda.",
+                    style: TextStyle(color: Colors.white30, fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          Column(
+            children: containingRoutines.map((routine) {
+              final routineEx = routine.exercises.firstWhere((ex) => ex.exerciseId == widget.exercise.id);
+              final isTime = widget.exercise.measurementType == MeasurementType.time;
+              
+              String details = "${routineEx.sets} séries x ${routineEx.reps}";
+              if (isTime) {
+                details += "s";
+              } else {
+                details += " reps";
+              }
+              if (routineEx.weight > 0) {
+                details += " @ ${routineEx.weight.toStringAsFixed(1).replaceAll('.0', '')} kg";
+              }
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: GlassCard(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: accentColor.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.folder_open_rounded, color: accentColor, size: 20),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              routine.name,
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              details,
+                              style: const TextStyle(color: Colors.white54, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.edit_note_rounded, color: accentColor, size: 24),
+                        onPressed: () => _showEditRoutineExerciseDialog(context, provider, routine, routineEx),
+                        tooltip: "Ajustar Carga e Repetições",
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+      ],
+    );
+  }
+
+  void _showEditRoutineExerciseDialog(
+      BuildContext context, WorkoutProvider provider, Routine routine, RoutineExercise routineEx) {
+    final weightCtrl = TextEditingController(text: routineEx.weight.toStringAsFixed(1).replaceAll('.0', ''));
+    final repsCtrl = TextEditingController(text: routineEx.reps.toString());
+    final setsCtrl = TextEditingController(text: routineEx.sets.toString());
+    final restCtrl = TextEditingController(text: routineEx.rest.toString());
+
+    final isTime = widget.exercise.measurementType == MeasurementType.time;
+    final isCardio = widget.exercise.measurementType == MeasurementType.cardio ||
+        widget.exercise.measurementType == MeasurementType.distance;
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        final theme = Theme.of(context);
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1E1E24),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(
+            "Ajustar no Modelo: ${routine.name}",
+            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Séries
+                const Text("Séries", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: setsCtrl,
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.05),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Reps / Tempo
+                Text(
+                  isTime ? "Tempo (segundos)" : "Repetições",
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: repsCtrl,
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.05),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Carga / Resistência
+                Text(
+                  isCardio ? "Resistência / Nível" : "Carga (kg)",
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: weightCtrl,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.05),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Descanso
+                const Text("Descanso (segundos)", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: restCtrl,
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.05),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogCtx),
+              child: const Text("Cancelar", style: TextStyle(color: Colors.white54)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final double? w = double.tryParse(weightCtrl.text.replaceAll(',', '.'));
+                final int? r = int.tryParse(repsCtrl.text);
+                final int? s = int.tryParse(setsCtrl.text);
+                final int? rst = int.tryParse(restCtrl.text);
+
+                provider.updateRoutineExerciseSettings(
+                  routine.id,
+                  widget.exercise.id,
+                  weight: w,
+                  reps: r,
+                  sets: s,
+                  rest: rst,
+                );
+                
+                Navigator.pop(dialogCtx);
+                
+                // Show confirmation snackbar
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text("Modelo '${routine.name}' atualizado com sucesso!"),
+                    backgroundColor: Colors.green,
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.primaryColor,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              child: const Text("Salvar", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
     );
   }
 }

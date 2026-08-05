@@ -10,7 +10,7 @@ import HealthKit
 import WatchKit
 import UserNotifications
 
-class ExtensionDelegate: NSObject, WKApplicationDelegate, WKExtensionDelegate, UNUserNotificationCenterDelegate {
+class ExtensionDelegate: NSObject, WKApplicationDelegate, UNUserNotificationCenterDelegate {
     func applicationDidFinishLaunching() {
         WorkoutManager.shared.recoverOrphanedSession()
         UNUserNotificationCenter.current().delegate = self

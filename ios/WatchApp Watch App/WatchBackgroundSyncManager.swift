@@ -38,7 +38,7 @@ class WatchBackgroundSyncManager: NSObject, ObservableObject {
     
     func scheduleBackgroundSync() {
         let userInfo = ["reason": "periodic_sync"] as NSDictionary
-        WKExtension.shared().scheduleBackgroundRefresh(
+        WKApplication.shared().scheduleBackgroundRefresh(
             withPreferredDate: Date().addingTimeInterval(1800), // 30 minutes
             userInfo: userInfo as? (NSSecureCoding & NSObjectProtocol)
         ) { error in
@@ -177,7 +177,7 @@ extension WatchBackgroundSyncManager {
         
         // Monitor app state changes
         NotificationCenter.default.addObserver(
-            forName: WKExtension.applicationDidBecomeActiveNotification,
+            forName: WKApplication.didBecomeActiveNotification,
             object: nil,
             queue: .main
         ) { _ in
@@ -185,7 +185,7 @@ extension WatchBackgroundSyncManager {
         }
         
         NotificationCenter.default.addObserver(
-            forName: WKExtension.applicationDidEnterBackgroundNotification,
+            forName: WKApplication.didEnterBackgroundNotification,
             object: nil,
             queue: .main
         ) { _ in
