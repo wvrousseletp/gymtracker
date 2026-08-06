@@ -3151,28 +3151,12 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
     if (allCompleted) {
       if (fromUserSwipe) return;
       
-      // Automatic transition to next exercise when all sets are completed!
-      if (exIdx < active.exercises.length - 1) {
-        Future.delayed(const Duration(milliseconds: 350), () {
-          if (_pageController.hasClients) {
-            _pageController.animateToPage(
-              exIdx + 1,
-              duration: const Duration(milliseconds: 400),
-              curve: Curves.easeInOut,
-            );
-          }
-        });
+      // If RPE has not been answered yet, show the RPE dialog instead of transitioning.
+      if (ex.rpe == null) {
+        _onSetCompleted(exIdx);
       } else {
-        // Last exercise completed - scroll smoothly to the finish workout button
-        if (exIdx < _scrollControllers.length &&
-            _scrollControllers[exIdx].hasClients) {
-          final sc = _scrollControllers[exIdx];
-          sc.animateTo(
-            sc.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 400),
-            curve: Curves.easeInOut,
-          );
-        }
+        // Transition immediately since RPE is already recorded
+        _scrollToNextExerciseAfterRpe(exIdx);
       }
     } else {
       if (fromUserSwipe) return;
@@ -3199,14 +3183,78 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
     }
   }
 
-  void _showFinishWorkoutDialog(BuildContext context) {
-    double rpeVal = 7.0;
-    final notesCtrl = TextEditingController();
+  void _onSetCompleted(int exIdx) {
+    final active = widget.provider.state?.activeWorkout;
+    if (active == null || exIdx < 0 || exIdx >= active.exercises.length) return;
+
+    final ex = active.exercises[exIdx];
+    final allCompleted = ex.setsState.every((isDone) => isDone);
+
+    if (allCompleted && ex.rpe == null) {
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          _showExerciseRpeDialog(context, exIdx, ex);
+        }
+      });
+    }
+  }
+
+  void _scrollToNextExerciseAfterRpe(int exIdx) {
+    final active = widget.provider.state?.activeWorkout;
+    if (active == null) return;
+    if (exIdx < active.exercises.length - 1) {
+      if (_pageController.hasClients) {
+        _pageController.animateToPage(
+          exIdx + 1,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOut,
+        );
+      }
+    } else {
+      // Last exercise completed - scroll smoothly to the finish workout button
+      if (exIdx < _scrollControllers.length &&
+          _scrollControllers[exIdx].hasClients) {
+        final sc = _scrollControllers[exIdx];
+        sc.animateTo(
+          sc.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOut,
+        );
+      }
+    }
+  }
+
+  String _getRpeDescription(int rpe) {
+    switch (rpe) {
+      case 1:
+      case 2:
+        return "Muito Leve (Aquecimento)";
+      case 3:
+      case 4:
+        return "Leve (Fácil de completar)";
+      case 5:
+      case 6:
+        return "Moderado (Esforço perceptível)";
+      case 7:
+      case 8:
+        return "Difícil (Série de trabalho pesada)";
+      case 9:
+        return "Muito Difícil (Quase falha, 1 rep na reserva)";
+      case 10:
+        return "Esforço Máximo (Falha total, 0 reps na reserva)";
+      default:
+        return "";
+    }
+  }
+
+  void _showExerciseRpeDialog(BuildContext context, int exIdx, ActiveExercise ex) {
+    double rpeVal = 8.0;
     final accentColor =
         ThemeUtils.getColor(widget.provider.currentProfile.colorAccent);
 
     showDialog(
       context: context,
+      barrierDismissible: false, // Force they explicitly save or skip
       builder: (dialogCtx) => StatefulBuilder(
         builder: (context, setDialogState) {
           return Dialog(
@@ -3222,18 +3270,29 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const Text(
-                      "Concluir Treino 🎉",
+                      "RPE do Exercício 💪",
                       style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w800,
                           fontSize: 16),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      ex.name,
+                      style: TextStyle(
+                          color: accentColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14),
+                      textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 16),
                     const Text(
-                      "Como foi o esforço da sessão? (RPE)",
+                      "Qual foi a intensidade do esforço para este exercício?",
                       style: TextStyle(color: Colors.white70, fontSize: 12),
+                      textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -3241,11 +3300,11 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                             style:
                                 TextStyle(color: Colors.white30, fontSize: 10)),
                         Text(
-                          "Esforço: ${rpeVal.toInt()}/10",
+                          "RPE: ${rpeVal.toInt()}/10",
                           style: TextStyle(
                               color: accentColor,
                               fontWeight: FontWeight.bold,
-                              fontSize: 13),
+                              fontSize: 14),
                         ),
                         const Text("Máximo (10)",
                             style:
@@ -3265,58 +3324,42 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                         });
                       },
                     ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      "Notas ou observações do treino",
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
-                    ),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: notesCtrl,
-                      maxLines: 3,
-                      style: const TextStyle(color: Colors.white, fontSize: 13),
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: Colors.white.withOpacity(0.05),
-                        hintText: "Como se sentiu hoje? Aumentou cargas?",
-                        hintStyle: const TextStyle(color: Colors.white30),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide:
-                              BorderSide(color: Colors.white.withOpacity(0.08)),
-                        ),
+                    const SizedBox(height: 8),
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      child: Text(
+                        _getRpeDescription(rpeVal.toInt()),
+                        key: ValueKey<int>(rpeVal.toInt()),
+                        style: TextStyle(
+                            color: accentColor.withOpacity(0.8),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            fontStyle: FontStyle.italic),
+                        textAlign: TextAlign.center,
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 24),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         TextButton(
-                          onPressed: () => Navigator.pop(dialogCtx),
-                          child: const Text("Voltar",
+                          onPressed: () {
+                            Navigator.pop(dialogCtx);
+                            _scrollToNextExerciseAfterRpe(exIdx);
+                          },
+                          child: const Text("Pular",
                               style: TextStyle(
-                                  color: Colors.white54,
+                                  color: Colors.white30,
                                   fontWeight: FontWeight.bold)),
                         ),
                         const SizedBox(width: 8),
                         TextButton(
                           onPressed: () {
-                            widget.provider.finishWorkout(
-                              _workoutDurationNotifier.value,
-                              rpeVal.toInt(),
-                              notesCtrl.text.trim(),
-                            );
+                            widget.provider.updateExerciseRpe(exIdx, rpeVal.toInt());
                             Navigator.pop(dialogCtx);
-                            
-                            // Show Share Dialog
-                            final workoutProvider = Provider.of<WorkoutProvider>(context, listen: false);
-                            final history = workoutProvider.history;
-                            if (history.isNotEmpty) {
-                               final savedLog = history.first; // newest is at index 0
-                               _showShareWorkoutDialog(context, savedLog, accentColor);
-                            }
+                            _scrollToNextExerciseAfterRpe(exIdx);
                           },
-                          child: Text("Salvar Treino",
+                          child: Text("Salvar",
                               style: TextStyle(
                                   color: accentColor,
                                   fontWeight: FontWeight.bold)),
@@ -3329,6 +3372,98 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
             ),
           );
         },
+      ),
+    );
+  }
+
+  void _showFinishWorkoutDialog(BuildContext context) {
+    final notesCtrl = TextEditingController();
+    final accentColor =
+        ThemeUtils.getColor(widget.provider.currentProfile.colorAccent);
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: GlassCard(
+          useBlur: true,
+          borderColor: Colors.white.withOpacity(0.08),
+          borderRadius: 24,
+          padding: const EdgeInsets.all(20),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  "Concluir Treino 🎉",
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  "Notas ou observações do treino",
+                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: notesCtrl,
+                  maxLines: 3,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.05),
+                    hintText: "Como se sentiu hoje? Aumentou cargas?",
+                    hintStyle: const TextStyle(color: Colors.white30),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide:
+                          BorderSide(color: Colors.white.withOpacity(0.08)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogCtx),
+                      child: const Text("Voltar",
+                          style: TextStyle(
+                              color: Colors.white54,
+                              fontWeight: FontWeight.bold)),
+                    ),
+                    const SizedBox(width: 8),
+                    TextButton(
+                      onPressed: () {
+                        widget.provider.finishWorkout(
+                          _workoutDurationNotifier.value,
+                          8, // calculatedRpe is automatically resolved inside the provider
+                          notesCtrl.text.trim(),
+                        );
+                        Navigator.pop(dialogCtx);
+                        
+                        // Show Share Dialog
+                        final workoutProvider = Provider.of<WorkoutProvider>(context, listen: false);
+                        final history = workoutProvider.history;
+                        if (history.isNotEmpty) {
+                           final savedLog = history.first; // newest is at index 0
+                           _showShareWorkoutDialog(context, savedLog, accentColor);
+                        }
+                      },
+                      child: Text("Salvar Treino",
+                          style: TextStyle(
+                              color: accentColor,
+                              fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

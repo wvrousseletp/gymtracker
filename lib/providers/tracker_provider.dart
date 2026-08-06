@@ -543,6 +543,11 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
         .updateExerciseSetWeightReps(exIndex, setIdx, weight, reps);
   }
 
+  void updateExerciseRpe(int exIndex, int rpe) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.updateExerciseRpe(exIndex, rpe);
+  }
+
   void updateWorkoutTimer(int seconds, {bool isWarmupTimer = false}) {
     if (_workoutProvider == null) return;
     _workoutProvider!.updateWorkoutTimer(seconds, isWarmupTimer: isWarmupTimer);

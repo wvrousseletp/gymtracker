@@ -528,6 +528,18 @@ class WorkoutProvider extends ChangeNotifier {
     _save();
   }
 
+  void updateExerciseRpe(int exIndex, int rpe) {
+    if (activeWorkout == null) return;
+    final active = activeWorkout!;
+    final exercises = List<ActiveExercise>.from(active.exercises);
+    final ex = exercises[exIndex];
+    exercises[exIndex] = ex.copyWith(rpe: rpe);
+    activeWorkout = active.copyWith(exercises: exercises);
+    WatchService.instance.sendActiveWorkout(activeWorkout!);
+    _save();
+    notifyListeners();
+  }
+
   void updateWorkoutTimer(int seconds, {bool isWarmupTimer = false}) {
     if (activeWorkout == null) return;
     final active = activeWorkout!;
@@ -781,12 +793,17 @@ class WorkoutProvider extends ChangeNotifier {
         reps: finalReps,
         weight: finalWeight,
         performedCardios: ex.performedCardios,
-        rpe: rpeValue,
+        rpe: ex.rpe ?? rpeValue,
         failureReport: ex.failureReport,
         failureReps: ex.failureReps,
         executionType: ex.executionType,
       );
     }).toList();
+
+    final exercisesWithRpe = active.exercises.where((e) => e.rpe != null && e.rpe! > 0).toList();
+    final calculatedRpe = exercisesWithRpe.isNotEmpty
+        ? (exercisesWithRpe.map((e) => e.rpe!).reduce((a, b) => a + b) / exercisesWithRpe.length).round()
+        : rpeValue;
 
     final log = WorkoutLog(
       id: "log-${DateTime.now().millisecondsSinceEpoch}",
@@ -796,7 +813,7 @@ class WorkoutProvider extends ChangeNotifier {
       completedSets: completedSets,
       totalSets: totalSets,
       totalWeight: totalWeightVolume,
-      rpe: rpeValue,
+      rpe: calculatedRpe,
       notes: notes,
       recovery: active.recovery,
       exercises: exercisesSummary,

@@ -143,6 +143,7 @@ class ActiveExercise {
   final bool isStationary;
   // Single cardio session data (for non-set cardio)
   PerformedCardio? singleCardioSession;
+  final int? rpe;
 
   ActiveExercise({
     required this.id,
@@ -164,6 +165,7 @@ class ActiveExercise {
     this.allowCardioSets = false,
     this.isStationary = false,
     this.singleCardioSession,
+    this.rpe,
   }) : failureReps = failureReps ?? List<int?>.filled(sets, null);
 
   Map<String, dynamic> toJson() => {
@@ -186,6 +188,7 @@ class ActiveExercise {
     'allowCardioSets': allowCardioSets,
     'isStationary': isStationary,
     'singleCardioSession': singleCardioSession?.toJson(),
+    'rpe': rpe,
   };
 
   factory ActiveExercise.fromJson(Map<String, dynamic> json) {
@@ -221,6 +224,53 @@ class ActiveExercise {
       singleCardioSession: json['singleCardioSession'] != null
           ? PerformedCardio.fromJson(json['singleCardioSession'])
           : null,
+      rpe: json['rpe'] as int?,
+    );
+  }
+
+  ActiveExercise copyWith({
+    String? id,
+    String? name,
+    String? muscle,
+    String? executionType,
+    MeasurementType? measurementType,
+    int? sets,
+    int? reps,
+    int? rest,
+    double? weight,
+    List<bool>? setsState,
+    List<PerformedCardio?>? performedCardios,
+    List<bool>? failureReport,
+    List<int?>? failureReps,
+    List<double>? weightsPerSet,
+    List<int>? repsPerSet,
+    bool? isCardio,
+    bool? allowCardioSets,
+    bool? isStationary,
+    PerformedCardio? singleCardioSession,
+    int? rpe,
+  }) {
+    return ActiveExercise(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      muscle: muscle ?? this.muscle,
+      executionType: executionType ?? this.executionType,
+      measurementType: measurementType ?? this.measurementType,
+      sets: sets ?? this.sets,
+      reps: reps ?? this.reps,
+      rest: rest ?? this.rest,
+      weight: weight ?? this.weight,
+      setsState: setsState ?? this.setsState,
+      performedCardios: performedCardios ?? this.performedCardios,
+      failureReport: failureReport ?? this.failureReport,
+      failureReps: failureReps ?? this.failureReps,
+      weightsPerSet: weightsPerSet ?? this.weightsPerSet,
+      repsPerSet: repsPerSet ?? this.repsPerSet,
+      isCardio: isCardio ?? this.isCardio,
+      allowCardioSets: allowCardioSets ?? this.allowCardioSets,
+      isStationary: isStationary ?? this.isStationary,
+      singleCardioSession: singleCardioSession ?? this.singleCardioSession,
+      rpe: rpe ?? this.rpe,
     );
   }
 }

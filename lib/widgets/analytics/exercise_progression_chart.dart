@@ -21,6 +21,7 @@ class ExerciseProgressionChart extends StatelessWidget {
     // Extract data points
     final List<FlSpot> spots = [];
     final List<String> dates = [];
+    final List<int> rpes = [];
     
     // Sort history by date ascending for the chart
     final sortedHistory = List<WorkoutLog>.from(history)
@@ -40,6 +41,7 @@ class ExerciseProgressionChart extends StatelessWidget {
           double val = showWeight ? ex.weight : ex.reps.toDouble();
           if (val > 0) {
             spots.add(FlSpot(index.toDouble(), val));
+            rpes.add(ex.rpe);
             
             final dt = DateTime.tryParse(log.date);
             if (dt != null) {
@@ -169,13 +171,16 @@ class ExerciseProgressionChart extends StatelessWidget {
               tooltipBgColor: Colors.black.withOpacity(0.8),
               getTooltipItems: (touchedSpots) {
                 return touchedSpots.map((LineBarSpot touchedSpot) {
+                  final i = touchedSpot.x.toInt();
+                  final rpe = (i >= 0 && i < rpes.length) ? rpes[i] : 0;
                   final textStyle = TextStyle(
                     color: accentColor,
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                   );
+                  final rpeSuffix = rpe > 0 ? "\nRPE: $rpe/10" : "";
                   return LineTooltipItem(
-                    '${touchedSpot.y.toStringAsFixed(1)} ${showWeight ? 'kg' : 'reps'}',
+                    '${touchedSpot.y.toStringAsFixed(1)} ${showWeight ? 'kg' : 'reps'}$rpeSuffix',
                     textStyle,
                   );
                 }).toList();
