@@ -63,10 +63,10 @@ platform :ios do
       end
 
       if ENV['sigh_com.vicente.losmooscles_appstore_profile-name']
-        content.gsub!("match AppStore com.vicente.losmooscles.watchkitapp.WatchWidgetExtension", ENV['sigh_com.vicente.losmooscles.watchkitapp.WatchWidgetExtension_appstore_profile-name'])
-        content.gsub!("match AppStore com.vicente.losmooscles.WorkoutWidgetExtension", ENV['sigh_com.vicente.losmooscles.WorkoutWidgetExtension_appstore_profile-name'])
-        content.gsub!("match AppStore com.vicente.losmooscles.watchkitapp", ENV['sigh_com.vicente.losmooscles.watchkitapp_appstore_profile-name'])
-        content.gsub!("match AppStore com.vicente.losmooscles", ENV['sigh_com.vicente.losmooscles_appstore_profile-name'])
+        content.gsub!("\"match AppStore com.vicente.losmooscles.watchkitapp.WatchWidgetExtension\"", "\"#{ENV['sigh_com.vicente.losmooscles.watchkitapp.WatchWidgetExtension_appstore_profile-name']}\"")
+        content.gsub!("\"match AppStore com.vicente.losmooscles.WorkoutWidgetExtension\"", "\"#{ENV['sigh_com.vicente.losmooscles.WorkoutWidgetExtension_appstore_profile-name']}\"")
+        content.gsub!("\"match AppStore com.vicente.losmooscles.watchkitapp\"", "\"#{ENV['sigh_com.vicente.losmooscles.watchkitapp_appstore_profile-name']}\"")
+        content.gsub!("\"match AppStore com.vicente.losmooscles\"", "\"#{ENV['sigh_com.vicente.losmooscles_appstore_profile-name']}\"")
         File.write(pbxproj_path, content, mode: "wb")
         UI.message("Successfully updated project.pbxproj with new profile specifiers!")
       else
@@ -83,10 +83,10 @@ platform :ios do
       UI.message("ExportOptions.plist exists. Reading...")
       content = File.read(plist_path, mode: "rb")
       if ENV['sigh_com.vicente.losmooscles_appstore_profile-name']
-        content.gsub!("match AppStore com.vicente.losmooscles.watchkitapp.WatchWidgetExtension", ENV['sigh_com.vicente.losmooscles.watchkitapp.WatchWidgetExtension_appstore_profile-name'])
-        content.gsub!("match AppStore com.vicente.losmooscles.WorkoutWidgetExtension", ENV['sigh_com.vicente.losmooscles.WorkoutWidgetExtension_appstore_profile-name'])
-        content.gsub!("match AppStore com.vicente.losmooscles.watchkitapp", ENV['sigh_com.vicente.losmooscles.watchkitapp_appstore_profile-name'])
-        content.gsub!("match AppStore com.vicente.losmooscles", ENV['sigh_com.vicente.losmooscles_appstore_profile-name'])
+        content.gsub!("<string>match AppStore com.vicente.losmooscles.watchkitapp.WatchWidgetExtension</string>", "<string>#{ENV['sigh_com.vicente.losmooscles.watchkitapp.WatchWidgetExtension_appstore_profile-name']}</string>")
+        content.gsub!("<string>match AppStore com.vicente.losmooscles.WorkoutWidgetExtension</string>", "<string>#{ENV['sigh_com.vicente.losmooscles.WorkoutWidgetExtension_appstore_profile-name']}</string>")
+        content.gsub!("<string>match AppStore com.vicente.losmooscles.watchkitapp</string>", "<string>#{ENV['sigh_com.vicente.losmooscles.watchkitapp_appstore_profile-name']}</string>")
+        content.gsub!("<string>match AppStore com.vicente.losmooscles</string>", "<string>#{ENV['sigh_com.vicente.losmooscles_appstore_profile-name']}</string>")
         File.write(plist_path, content, mode: "wb")
         UI.message("Successfully updated ExportOptions.plist with new profile names!")
       else
