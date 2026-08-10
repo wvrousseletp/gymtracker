@@ -38,14 +38,16 @@ class WatchBackgroundSyncManager: NSObject, ObservableObject {
     
     func scheduleBackgroundSync() {
         let userInfo = ["reason": "periodic_sync"] as NSDictionary
-        WKApplication.shared().scheduleBackgroundRefresh(
-            withPreferredDate: Date().addingTimeInterval(1800), // 30 minutes
-            userInfo: userInfo as? (NSSecureCoding & NSObjectProtocol)
-        ) { error in
-            if let error = error {
-                os_log("Failed to schedule background refresh: %{public}@", log: OSLog(subsystem: "com.losmooscles.watch", category: "BackgroundSync"), type: .error, error.localizedDescription)
-            } else {
-                os_log("Background refresh scheduled", log: OSLog(subsystem: "com.losmooscles.watch", category: "BackgroundSync"), type: .info)
+        DispatchQueue.main.async {
+            WKApplication.shared().scheduleBackgroundRefresh(
+                withPreferredDate: Date().addingTimeInterval(1800), // 30 minutes
+                userInfo: userInfo as? (NSSecureCoding & NSObjectProtocol)
+            ) { error in
+                if let error = error {
+                    os_log("Failed to schedule background refresh: %{public}@", log: OSLog(subsystem: "com.losmooscles.watch", category: "BackgroundSync"), type: .error, error.localizedDescription)
+                } else {
+                    os_log("Background refresh scheduled", log: OSLog(subsystem: "com.losmooscles.watch", category: "BackgroundSync"), type: .info)
+                }
             }
         }
     }
