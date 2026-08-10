@@ -1,2 +1,4 @@
 #include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"
 #include "Generated.xcconfig"
+
+LIBRARY_SEARCH_PATHS = $(inherited) "$(SDKROOT)/usr/lib/swift" "$(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)" "$(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)"

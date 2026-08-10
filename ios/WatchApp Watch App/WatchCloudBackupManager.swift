@@ -4,170 +4,24 @@ import os.log
 class WatchCloudBackupManager {
     static let shared = WatchCloudBackupManager()
     
-    private let iCloudStore = NSUbiquitousKeyValueStore.default
     private let cache = WatchDataCache.shared
     private let syncQueue = DispatchQueue(label: "com.losmooscles.watch.cloud", qos: .utility)
-    
-    // Keys for iCloud storage
-    private enum CloudKey: String {
-        case routines = "cloud_routines"
-        case library = "cloud_library"
-        case planner = "cloud_planner"
-        case streak = "cloud_streak"
-        case waterTarget = "cloud_water_target"
-        case lastSync = "cloud_last_sync"
-        case version = "cloud_version"
-    }
-    
     private let currentVersion = "1.0"
     
-    private init() {
-        setupCloudNotifications()
-    }
+    private init() {}
     
-    // MARK: - Setup
-    
-    private func setupCloudNotifications() {
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(iCloudStoreDidChange(_:)),
-            name: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
-            object: iCloudStore
-        )
-    }
-    
-    @objc private func iCloudStoreDidChange(_ notification: Notification) {
-        guard let userInfo = notification.userInfo,
-              let reason = userInfo[NSUbiquitousKeyValueStoreChangeReasonKey] as? Int else {
-            return
-        }
-        
-        switch reason {
-        case NSUbiquitousKeyValueStoreAccountChange, NSUbiquitousKeyValueStoreInitialSyncChange, NSUbiquitousKeyValueStoreQuotaViolationChange:
-            os_log("iCloud sync changed: reason %d", log: OSLog(subsystem: "com.losmooscles.watch", category: "Cloud"), type: .info, reason)
-            syncFromCloud()
-        case NSUbiquitousKeyValueStoreServerChange:
-            os_log("iCloud data changed on server", log: OSLog(subsystem: "com.losmooscles.watch", category: "Cloud"), type: .info)
-            syncFromCloud()
-        default:
-            break
-        }
-    }
-    
-    // MARK: - Upload to iCloud
+    // MARK: - Upload to Cloud (Safe no-op without iCloud entitlement)
     
     func syncToCloud() {
-        syncQueue.async { [weak self] in
-            guard let self = self else { return }
-            
-            os_log("Starting sync to iCloud", log: OSLog(subsystem: "com.losmooscles.watch", category: "Cloud"), type: .info)
-            
-            // Upload routines
-            let routines = self.cache.getRoutines()
-            if let routinesData = try? JSONEncoder().encode(routines),
-               let routinesString = String(data: routinesData, encoding: .utf8) {
-                self.iCloudStore.set(routinesString, forKey: CloudKey.routines.rawValue)
-            }
-            
-            // Upload library (truncated if too large)
-            let library = self.cache.getLibrary()
-            let truncatedLibrary = Array(library.prefix(50)) // Limit to 50 exercises
-            if let libraryData = try? JSONEncoder().encode(truncatedLibrary),
-               let libraryString = String(data: libraryData, encoding: .utf8) {
-                self.iCloudStore.set(libraryString, forKey: CloudKey.library.rawValue)
-            }
-            
-            // Upload planner
-            let planner = self.cache.getPlanner()
-            if let plannerData = try? JSONEncoder().encode(planner),
-               let plannerString = String(data: plannerData, encoding: .utf8) {
-                self.iCloudStore.set(plannerString, forKey: CloudKey.planner.rawValue)
-            }
-            
-            // Upload streak
-            let streak = self.cache.getStreak()
-            if let streakData = try? JSONEncoder().encode(streak),
-               let streakString = String(data: streakData, encoding: .utf8) {
-                self.iCloudStore.set(streakString, forKey: CloudKey.streak.rawValue)
-            }
-            
-            // Upload water target
-            let waterTarget = self.cache.getWaterIntakeTarget()
-            self.iCloudStore.set(waterTarget, forKey: CloudKey.waterTarget.rawValue)
-            
-            // Upload version and timestamp
-            self.iCloudStore.set(self.currentVersion, forKey: CloudKey.version.rawValue)
-            self.iCloudStore.set(Int64(Date().timeIntervalSince1970), forKey: CloudKey.lastSync.rawValue)
-            
-            self.iCloudStore.synchronize()
-            
-            os_log("Sync to iCloud completed", log: OSLog(subsystem: "com.losmooscles.watch", category: "Cloud"), type: .info)
-        }
+        // Watch sync is handled directly via WCSession with the companion iPhone app
+        os_log("Cloud sync requested (companion sync active)", log: OSLog(subsystem: "com.losmooscles.watch", category: "Cloud"), type: .info)
     }
     
-    // MARK: - Download from iCloud
+    // MARK: - Download from Cloud (Safe no-op without iCloud entitlement)
     
     func syncFromCloud() {
-        syncQueue.async { [weak self] in
-            guard let self = self else { return }
-            
-            os_log("Starting sync from iCloud", log: OSLog(subsystem: "com.losmooscles.watch", category: "Cloud"), type: .info)
-            
-            // Check version compatibility
-            let cloudVersion = self.iCloudStore.string(forKey: CloudKey.version.rawValue)
-            if cloudVersion != self.currentVersion {
-                os_log("Version mismatch: local=%s, cloud=%s", log: OSLog(subsystem: "com.losmooscles.watch", category: "Cloud"), type: .error, self.currentVersion, cloudVersion ?? "nil")
-            }
-            
-            // Download routines if local is empty or cloud is newer
-            let localRoutines = self.cache.getRoutines()
-            if localRoutines.isEmpty,
-               let routinesString = self.iCloudStore.string(forKey: CloudKey.routines.rawValue),
-               let routinesData = routinesString.data(using: .utf8),
-               let routines = try? JSONDecoder().decode([WatchRoutine].self, from: routinesData) {
-                self.cache.setRoutines(routines)
-                os_log("Restored %d routines from iCloud", log: OSLog(subsystem: "com.losmooscles.watch", category: "Cloud"), type: .info, routines.count)
-            }
-            
-            // Download library if local is empty
-            let localLibrary = self.cache.getLibrary()
-            if localLibrary.isEmpty,
-               let libraryString = self.iCloudStore.string(forKey: CloudKey.library.rawValue),
-               let libraryData = libraryString.data(using: .utf8),
-               let library = try? JSONDecoder().decode([WatchLibraryExercise].self, from: libraryData) {
-                self.cache.setLibrary(library)
-                os_log("Restored %d library exercises from iCloud", log: OSLog(subsystem: "com.losmooscles.watch", category: "Cloud"), type: .info, library.count)
-            }
-            
-            // Download planner if local is empty
-            let localPlanner = self.cache.getPlanner()
-            if localPlanner.isEmpty,
-               let plannerString = self.iCloudStore.string(forKey: CloudKey.planner.rawValue),
-               let plannerData = plannerString.data(using: .utf8),
-               let planner = try? JSONDecoder().decode([String: [String]].self, from: plannerData) {
-                self.cache.setPlanner(planner)
-                os_log("Restored planner from iCloud", log: OSLog(subsystem: "com.losmooscles.watch", category: "Cloud"), type: .info)
-            }
-            
-            // Download streak if local is default
-            let localStreak = self.cache.getStreak()
-            if localStreak.currentWeekCount == 0 && localStreak.consecutiveWeeks == 0,
-               let streakString = self.iCloudStore.string(forKey: CloudKey.streak.rawValue),
-               let streakData = streakString.data(using: .utf8),
-               let streak = try? JSONDecoder().decode(WatchStreak.self, from: streakData) {
-                self.cache.setStreak(streak)
-                os_log("Restored streak from iCloud", log: OSLog(subsystem: "com.losmooscles.watch", category: "Cloud"), type: .info)
-            }
-            
-            // Download water target
-            if let cloudWaterTargetObj = self.iCloudStore.object(forKey: CloudKey.waterTarget.rawValue) as? Int,
-               cloudWaterTargetObj > 0 {
-                self.cache.setWaterIntakeTarget(cloudWaterTargetObj)
-                os_log("Restored water target from iCloud: %d ml", log: OSLog(subsystem: "com.losmooscles.watch", category: "Cloud"), type: .info, cloudWaterTargetObj)
-            }
-            
-            os_log("Sync from iCloud completed", log: OSLog(subsystem: "com.losmooscles.watch", category: "Cloud"), type: .info)
-        }
+        // Data is synchronized directly from the companion iOS app via WatchConnectivity
+        os_log("Cloud fetch requested (companion sync active)", log: OSLog(subsystem: "com.losmooscles.watch", category: "Cloud"), type: .info)
     }
     
     // MARK: - Manual Backup/Restore
@@ -248,14 +102,10 @@ class WatchCloudBackupManager {
     // MARK: - Status
     
     func getLastSyncTimestamp() -> Int64? {
-        return iCloudStore.object(forKey: CloudKey.lastSync.rawValue) as? Int64
+        return nil
     }
     
     func isCloudAvailable() -> Bool {
-        return iCloudStore.synchronize()
-    }
-    
-    deinit {
-        NotificationCenter.default.removeObserver(self)
+        return false
     }
 }

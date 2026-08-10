@@ -12,8 +12,10 @@ import UserNotifications
 
 class ExtensionDelegate: NSObject, WKApplicationDelegate, UNUserNotificationCenterDelegate {
     func applicationDidFinishLaunching() {
-        WorkoutManager.shared.recoverOrphanedSession()
         UNUserNotificationCenter.current().delegate = self
+        DispatchQueue.global(qos: .utility).async {
+            WorkoutManager.shared.recoverOrphanedSession()
+        }
     }
 
     func handle(_ workoutConfiguration: HKWorkoutConfiguration) {
@@ -38,7 +40,9 @@ class ExtensionDelegate: NSObject, WKApplicationDelegate, UNUserNotificationCent
         }
         
         // Pull latest workout state from iPhone (application context may already be in flight).
-        WatchConnectivityManager.shared.requestSync()
+        DispatchQueue.main.async {
+            WatchConnectivityManager.shared.requestSync()
+        }
     }
     
     // Hide notifications if the app is already in the foreground
@@ -61,8 +65,10 @@ struct WatchApp_Watch_AppApp: App {
                     }
                 }
                 .onAppear {
-                    WorkoutManager.shared.requestAuthorization()
-                    WatchBackgroundSyncManager.setupBackgroundSync()
+                    DispatchQueue.global(qos: .utility).async {
+                        WorkoutManager.shared.requestAuthorization()
+                        WatchBackgroundSyncManager.setupBackgroundSync()
+                    }
                     
                     UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
                         print("[WatchApp] Notifications granted on appear: \(granted)")

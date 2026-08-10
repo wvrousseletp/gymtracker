@@ -152,7 +152,7 @@ class WatchBackgroundSyncManager: NSObject, ObservableObject {
         group.leave()
         
         // 4. Request sync from iPhone if reachable
-        if WCSession.default.isReachable {
+        if WCSession.isSupported() && WCSession.default.activationState == .activated && WCSession.default.isReachable {
             group.enter()
             connectivityManager.requestSync()
             group.leave()

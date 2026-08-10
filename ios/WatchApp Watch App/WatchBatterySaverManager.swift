@@ -9,7 +9,9 @@ class WatchBatterySaverManager: ObservableObject {
     
     @Published var isBatterySaverEnabled = false
     @Published var batteryLevel: Double = 1.0
+    #if os(watchOS)
     @Published var batteryState: WKInterfaceDeviceBatteryState = .charging
+    #endif
     
     private var batteryCheckTimer: Timer?
     private let batteryCheckInterval: TimeInterval = 60 // Check every minute
@@ -25,7 +27,10 @@ class WatchBatterySaverManager: ObservableObject {
     
     private init() {
         #if os(watchOS)
-        startBatteryMonitoring()
+        // Defer initial battery check slightly to let system complete launch
+        DispatchQueue.main.async { [weak self] in
+            self?.startBatteryMonitoring()
+        }
         #endif
     }
     
@@ -33,6 +38,7 @@ class WatchBatterySaverManager: ObservableObject {
     
     private func startBatteryMonitoring() {
         #if os(watchOS)
+        WKInterfaceDevice.current().isBatteryMonitoringEnabled = true
         updateBatteryInfo()
         
         batteryCheckTimer = Timer.scheduledTimer(withTimeInterval: batteryCheckInterval, repeats: true) { [weak self] _ in
@@ -45,15 +51,19 @@ class WatchBatterySaverManager: ObservableObject {
     private func updateBatteryInfo() {
         #if os(watchOS)
         let device = WKInterfaceDevice.current()
-        batteryLevel = Double(device.batteryLevel)
-        batteryState = device.batteryState
-        
-        os_log("Battery level: %.2f, state: %d", log: OSLog(subsystem: "com.losmooscles.watch", category: "Battery"), type: .info, batteryLevel, batteryState.rawValue)
+        let level = Double(device.batteryLevel)
+        if level >= 0.0 {
+            batteryLevel = level
+            batteryState = device.batteryState
+            os_log("Battery level: %.2f, state: %d", log: OSLog(subsystem: "com.losmooscles.watch", category: "Battery"), type: .info, batteryLevel, batteryState.rawValue)
+        }
         #endif
     }
     
     private func checkBatteryThresholds() {
         #if os(watchOS)
+        guard batteryLevel >= 0.0 else { return }
+        
         // Auto-enable battery saver when battery is low
         if batteryLevel <= lowBatteryThreshold && !isBatterySaverEnabled {
             enableBatterySaver(auto: true)
@@ -67,8 +77,6 @@ class WatchBatterySaverManager: ObservableObject {
         // Increase HealthKit sync interval for critical battery
         if batteryLevel <= criticalBatteryThreshold {
             WorkoutManager.shared.setCriticalBatterySampling(enabled: true)
-            // Play haptic warning when battery becomes critical
-            WatchHapticManager.shared.playBatteryCritical()
         } else if batteryLevel > 0.15 {
             WorkoutManager.shared.setCriticalBatterySampling(enabled: false)
         }
@@ -83,11 +91,6 @@ class WatchBatterySaverManager: ObservableObject {
         isBatterySaverEnabled = true
         
         #if os(watchOS)
-        // Reduce refresh rate
-        if reducedRefreshRate {
-            WKInterfaceDevice.current().isBatteryMonitoringEnabled = true
-        }
-        
         // Reduce sensor sampling in WorkoutManager
         if reducedSensorSampling {
             WorkoutManager.shared.setReducedSensorSampling(enabled: true)
@@ -108,11 +111,6 @@ class WatchBatterySaverManager: ObservableObject {
         isBatterySaverEnabled = false
         
         #if os(watchOS)
-        // Restore refresh rate
-        if reducedRefreshRate {
-            WKInterfaceDevice.current().isBatteryMonitoringEnabled = false
-        }
-        
         // Restore sensor sampling in WorkoutManager
         if reducedSensorSampling {
             WorkoutManager.shared.setReducedSensorSampling(enabled: false)
@@ -139,12 +137,6 @@ class WatchBatterySaverManager: ObservableObject {
     
     func setReducedRefreshRate(_ enabled: Bool) {
         reducedRefreshRate = enabled
-        if isBatterySaverEnabled {
-            // Apply setting immediately if battery saver is active
-            #if os(watchOS)
-            WKInterfaceDevice.current().isBatteryMonitoringEnabled = enabled
-            #endif
-        }
     }
     
     func setReducedSensorSampling(_ enabled: Bool) {
@@ -164,20 +156,19 @@ class WatchBatterySaverManager: ObservableObject {
     // MARK: - Battery Status
     
     var isLowBattery: Bool {
-        return batteryLevel <= lowBatteryThreshold
+        return batteryLevel >= 0.0 && batteryLevel <= lowBatteryThreshold
     }
     
     var isCriticalBattery: Bool {
-        return batteryLevel <= criticalBatteryThreshold
+        return batteryLevel >= 0.0 && batteryLevel <= criticalBatteryThreshold
     }
     
     var batteryPercentage: Int {
-        return Int(batteryLevel * 100)
+        return max(0, Int(batteryLevel * 100))
     }
     
     var estimatedTimeRemaining: String? {
         #if os(watchOS)
-        // This is an approximation - actual time remaining depends on usage
         if batteryState == .charging {
             return "Carregando"
         }
@@ -204,9 +195,11 @@ class WatchBatterySaverManager: ObservableObject {
             tips.append("Ative o modo de economia de bateria")
         }
         
+        #if os(watchOS)
         if batteryState == .charging {
             tips.append("Carregue o Apple Watch")
         }
+        #endif
         
         if WorkoutManager.shared.workoutSessionState == .running {
             tips.append("Termine o treino atual")

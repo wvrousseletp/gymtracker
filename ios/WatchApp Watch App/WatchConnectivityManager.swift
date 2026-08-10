@@ -74,43 +74,49 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     private override init() {
         super.init()
         
-        // Load cached data using WatchDataCache
-        self.routines = cache.getRoutines()
-        self.library = cache.getLibrary()
-        self.planner = cache.getPlanner()
-        self.streak = cache.getStreak()
-        self.waterIntakeCurrent = cache.getWaterIntakeCurrent()
-        self.waterIntakeTarget = cache.getWaterIntakeTarget()
-        self.isLocalWorkout = cache.isLocalWorkout()
-        
-        if let localWorkout = cache.getLocalWorkoutState() {
-            self.activeWorkout = localWorkout
-        }
-        
-        checkAndResetDailyWater()
-        
-        // Pre-load today's routines for faster access
-        preloadTodaysRoutines()
-        
-        // Sync from iCloud on startup if local data is empty
-        if routines.isEmpty && library.isEmpty {
-            cloudBackup.syncFromCloud()
-        }
-        
-        if WCSession.isSupported() {
-            session = WCSession.default
-            session?.delegate = self
-            session?.activate()
+        // Fast background load of initial cache to prevent watchdog timeout on startup
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
+            let loadedRoutines = self.cache.getRoutines()
+            let loadedLibrary = self.cache.getLibrary()
+            let loadedPlanner = self.cache.getPlanner()
+            let loadedStreak = self.cache.getStreak()
+            let loadedWaterCurrent = self.cache.getWaterIntakeCurrent()
+            let loadedWaterTarget = self.cache.getWaterIntakeTarget()
+            let loadedIsLocal = self.cache.isLocalWorkout()
+            let loadedActiveWorkout = self.cache.getLocalWorkoutState()
             
-            // Check if session is already activated and load cached application context
-            if session?.activationState == .activated {
-                if let context = session?.receivedApplicationContext {
-                    handleIncomingData(context)
+            DispatchQueue.main.async {
+                self.routines = loadedRoutines
+                self.library = loadedLibrary
+                self.planner = loadedPlanner
+                self.streak = loadedStreak
+                self.waterIntakeCurrent = loadedWaterCurrent
+                self.waterIntakeTarget = loadedWaterTarget
+                self.isLocalWorkout = loadedIsLocal
+                if let localWorkout = loadedActiveWorkout {
+                    self.activeWorkout = localWorkout
                 }
+                self.checkAndResetDailyWater()
+                self.preloadTodaysRoutines()
+                self.activateSessionIfNeeded()
             }
         }
-        
-        syncOfflineWorkouts()
+    }
+
+    private func activateSessionIfNeeded() {
+        guard WCSession.isSupported() else { return }
+        if session == nil {
+            let defaultSession = WCSession.default
+            session = defaultSession
+            defaultSession.delegate = self
+            defaultSession.activate()
+        } else if session?.activationState == .activated {
+            if let context = session?.receivedApplicationContext, !context.isEmpty {
+                handleIncomingData(context)
+            }
+            syncOfflineWorkouts()
+        }
     }
 
     func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {

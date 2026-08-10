@@ -10,6 +10,19 @@ import ActivityKit
 import WidgetKit
 #endif
 
+// Swift compatibility stubs for Xcode 16 linker resolution
+@_silgen_name("__swift_FORCE_LOAD_$_swiftCompatibility56")
+func _force_load_swiftCompatibility56() {}
+
+@_silgen_name("__swift_FORCE_LOAD_$_swiftCompatibility51")
+func _force_load_swiftCompatibility51() {}
+
+@_silgen_name("__swift_FORCE_LOAD_$_swiftCompatibility50")
+func _force_load_swiftCompatibility50() {}
+
+@_silgen_name("__swift_FORCE_LOAD_$_swiftCompatibilityDynamicReplacements")
+func _force_load_swiftCompatibilityDynamicReplacements() {}
+
 @UIApplicationMain
 @objc class AppDelegate: FlutterAppDelegate, WCSessionDelegate {
   

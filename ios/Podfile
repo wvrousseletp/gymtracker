@@ -101,11 +101,13 @@ post_install do |installer|
     puts "Warning: gRPC-Core's basic_seq.h not found at #{basic_seq_path}"
   end
 
-  # Configure user project configurations to allow non-modular includes
+  # Configure user project configurations to allow non-modular includes and Swift search paths
   installer.aggregate_targets.each do |target|
     target.user_project.build_configurations.each do |config|
       config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
       config.build_settings['CLANG_WARN_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'NO'
+      config.build_settings['ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES'] = 'YES'
+      config.build_settings['LIBRARY_SEARCH_PATHS'] = ['$(inherited)', '$(SDKROOT)/usr/lib/swift', '$(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)']
     end
     target.user_project.save
   end

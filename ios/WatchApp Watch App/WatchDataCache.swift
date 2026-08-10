@@ -11,12 +11,10 @@ class WatchDataCache {
     // In-memory cache with debouncing
     private var memoryCache: [String: Any] = [:]
     private var pendingWrites: [String: Any] = [:]
-    private var writeTimer: Timer?
-    private let writeDelay: TimeInterval = 2.0
+    private var debounceWorkItem: DispatchWorkItem?
     
     private init() {
         self.userDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard
-        startWriteTimer()
     }
     
     // MARK: - Public API
@@ -193,67 +191,42 @@ class WatchDataCache {
     
     private func scheduleWrite(key: String, value: Any?) {
         cacheQueue.async { [weak self] in
-            self?.pendingWrites[key] = value
-        }
-    }
-    
-    private func startWriteTimer() {
-        writeTimer = Timer.scheduledTimer(withTimeInterval: writeDelay, repeats: true) { [weak self] _ in
-            self?.flushPendingWrites()
+            guard let self = self else { return }
+            self.pendingWrites[key] = value
+            self.debounceWorkItem?.cancel()
+            let workItem = DispatchWorkItem { [weak self] in
+                self?.flushPendingWrites()
+            }
+            self.debounceWorkItem = workItem
+            self.cacheQueue.asyncAfter(deadline: .now() + 1.0, execute: workItem)
         }
     }
     
     private func flushPendingWrites() {
         cacheQueue.async { [weak self] in
             guard let self = self else { return }
-            
             guard !self.pendingWrites.isEmpty else { return }
             
             let writes = self.pendingWrites
             self.pendingWrites.removeAll()
             
-            DispatchQueue.main.async {
-                for (key, value) in writes {
-                    if let stringValue = value as? String {
-                        self.userDefaults.set(stringValue, forKey: key)
-                        if key.contains("water") || key.contains("Intake") {
-                            UserDefaults.standard.set(stringValue, forKey: key)
-                        }
-                    } else if let intValue = value as? Int {
-                        self.userDefaults.set(intValue, forKey: key)
-                        if key.contains("water") || key.contains("Intake") {
-                            UserDefaults.standard.set(intValue, forKey: key)
-                        }
-                    } else if let boolValue = value as? Bool {
-                        self.userDefaults.set(boolValue, forKey: key)
-                        if key.contains("water") || key.contains("Intake") {
-                            UserDefaults.standard.set(boolValue, forKey: key)
-                        }
-                    } else if let dataValue = value as? Data {
-                        self.userDefaults.set(dataValue, forKey: key)
-                        if key.contains("water") || key.contains("Intake") {
-                            UserDefaults.standard.set(dataValue, forKey: key)
-                        }
-                    } else if let codable = value as? Encodable {
-                        if let encoded = try? JSONEncoder().encode(codable),
-                           let jsonString = String(data: encoded, encoding: .utf8) {
-                            self.userDefaults.set(jsonString, forKey: key)
-                            if key.contains("water") || key.contains("Intake") {
-                                UserDefaults.standard.set(jsonString, forKey: key)
-                            }
-                        }
-                    } else {
-                        // Value is nil, remove the key
-                        self.userDefaults.removeObject(forKey: key)
-                        UserDefaults.standard.removeObject(forKey: key)
+            for (key, value) in writes {
+                if let stringValue = value as? String {
+                    self.userDefaults.set(stringValue, forKey: key)
+                } else if let intValue = value as? Int {
+                    self.userDefaults.set(intValue, forKey: key)
+                } else if let boolValue = value as? Bool {
+                    self.userDefaults.set(boolValue, forKey: key)
+                } else if let dataValue = value as? Data {
+                    self.userDefaults.set(dataValue, forKey: key)
+                } else if let codable = value as? Encodable {
+                    if let encoded = try? JSONEncoder().encode(codable),
+                       let jsonString = String(data: encoded, encoding: .utf8) {
+                        self.userDefaults.set(jsonString, forKey: key)
                     }
+                } else {
+                    self.userDefaults.removeObject(forKey: key)
                 }
-                self.userDefaults.synchronize()
-                UserDefaults.standard.synchronize()
-                os_log("Flushed %d pending writes to UserDefaults", log: OSLog(subsystem: "com.losmooscles.watch", category: "Cache"), type: .debug, writes.count)
-                
-                // Reload widget timelines AFTER synchronize to prevent race conditions
-                WidgetCenter.shared.reloadAllTimelines()
             }
         }
     }
@@ -267,15 +240,17 @@ class WatchDataCache {
         cacheQueue.async { [weak self] in
             guard let self = self else { return }
             self.pendingWrites.removeAll()
-            
-            DispatchQueue.main.async {
-                let domain = self.userDefaults.persistentDomain(forName: "group.com.vicente.losmooscles")
-                self.userDefaults.removePersistentDomain(forName: "group.com.vicente.losmooscles")
-                if let domain = domain {
-                    self.userDefaults.setPersistentDomain(domain, forName: "group.com.vicente.losmooscles")
-                }
-                os_log("Cleared all cache", log: OSLog(subsystem: "com.losmooscles.watch", category: "Cache"), type: .info)
-            }
+            self.debounceWorkItem?.cancel()
+            self.userDefaults.removeObject(forKey: "cached_routines")
+            self.userDefaults.removeObject(forKey: "cached_library")
+            self.userDefaults.removeObject(forKey: "cached_planner")
+            self.userDefaults.removeObject(forKey: "cached_streak")
+            self.userDefaults.removeObject(forKey: "cached_water_intake")
+            self.userDefaults.removeObject(forKey: "cached_water_target")
+            self.userDefaults.removeObject(forKey: "cached_water_date")
+            self.userDefaults.removeObject(forKey: "local_workout_state")
+            self.userDefaults.removeObject(forKey: "local_workout_is_local")
+            os_log("Cleared all cache", log: OSLog(subsystem: "com.losmooscles.watch", category: "Cache"), type: .info)
         }
     }
 }
