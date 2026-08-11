@@ -502,7 +502,8 @@ class _HistoryTabState extends State<HistoryTab> {
         isRest = true;
       }
       for (final ex in log.exercises) {
-        if (!ex.muscle.toLowerCase().contains('cardio') && (ex.performedCardios == null || ex.performedCardios!.isEmpty)) {
+        final hasActualCardios = ex.performedCardios != null && ex.performedCardios!.any((c) => c != null);
+        if (!ex.muscle.toLowerCase().contains('cardio') && !hasActualCardios) {
           isCardioOnly = false;
         }
       }
@@ -833,7 +834,7 @@ class _HistoryTabState extends State<HistoryTab> {
                         "${(log.duration ~/ 60)} min",
                         style: const TextStyle(color: Colors.white38, fontSize: 11),
                       ),
-                      if (!log.exercises.every((e) => e.muscle.toLowerCase().contains('cardio') || (e.performedCardios != null && e.performedCardios!.isNotEmpty))) ...[
+                      if (!log.exercises.every((e) => e.muscle.toLowerCase().contains('cardio') || (e.performedCardios != null && e.performedCardios!.any((c) => c != null)))) ...[
                         const SizedBox(width: 8),
                         Text(
                           "Volume: ${log.totalWeight.toStringAsFixed(0)}kg",
@@ -921,7 +922,8 @@ class _HistoryTabState extends State<HistoryTab> {
               const SizedBox(height: 6),
               Column(
                 children: log.exercises.map((ex) {
-                  final isCardio = ex.muscle.toLowerCase().contains('cardio') || (ex.performedCardios != null && ex.performedCardios!.isNotEmpty);
+                  final hasActualCardios = ex.performedCardios != null && ex.performedCardios!.any((c) => c != null);
+                  final isCardio = ex.muscle.toLowerCase().contains('cardio') || hasActualCardios;
                   final done = ex.completedSets;
                   
                   String subtitle = "";
@@ -939,7 +941,7 @@ class _HistoryTabState extends State<HistoryTab> {
                         }
                         return "${d.toStringAsFixed(1)}km em ${t}m";
                       }).join('\n');
-                    } else {
+                    } else if (ex.muscle.toLowerCase().contains('cardio')) {
                         // Legacy cardio log fallback
                         final d = ex.weight;
                         final t = ex.reps;
@@ -951,6 +953,8 @@ class _HistoryTabState extends State<HistoryTab> {
                         } else {
                             subtitle = "${d}km em ${t}min";
                         }
+                    } else {
+                        subtitle = "${ex.sets} séries x ${ex.reps} reps @ ${ex.weight.toStringAsFixed(1).replaceAll('.0', '')}kg";
                     }
                   } else {
                     subtitle = "${ex.sets} séries x ${ex.reps} reps @ ${ex.weight.toStringAsFixed(1).replaceAll('.0', '')}kg";

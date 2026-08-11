@@ -116,7 +116,7 @@ class AIService {
           if (ex.name == exerciseName) {
             if (isCardio) {
               String cardioStats = "";
-              if (ex.performedCardios != null && ex.performedCardios!.isNotEmpty) {
+              if (ex.performedCardios != null && ex.performedCardios!.any((c) => c != null)) {
                 final pcs = ex.performedCardios!.where((c) => c != null).toList();
                 for (var pc in pcs) {
                   final dist = pc!.distanceKm;

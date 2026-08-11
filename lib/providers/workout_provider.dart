@@ -1035,7 +1035,7 @@ class WorkoutProvider extends ChangeNotifier {
           libEx.measurementType == MeasurementType.time;
 
       if (isCardio) {
-        if (ex.performedCardios != null && ex.performedCardios!.isNotEmpty) {
+        if (ex.performedCardios != null && ex.performedCardios!.any((c) => c != null)) {
           final completedList =
               ex.performedCardios!.where((c) => c != null).toList();
           if (completedList.isNotEmpty) {
