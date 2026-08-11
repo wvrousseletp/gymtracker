@@ -1269,17 +1269,8 @@
 				DEVELOPMENT_TEAM = PJ32UPL29J;
 				ENABLE_PREVIEWS = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Los Mooscles";
-				INFOPLIST_KEY_CFBundleName = "Los Mooscles";
-				INFOPLIST_KEY_CFBundleShortVersionString = "$(MARKETING_VERSION)";
-				INFOPLIST_KEY_CFBundleVersion = "$(CURRENT_PROJECT_VERSION)";
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "Este aplicativo precisa ler seus dados de saúde (como treinos e batimentos cardíacos) para acompanhar seu progresso físico e histórico de exercícios.";
-				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Este aplicativo precisa salvar seus treinos e dados de exercícios no aplicativo Saúde para manter seu histórico de atividades atualizado.";
-				INFOPLIST_KEY_UIBackgroundModes = ( "workout-processing" );
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.vicente.losmooscles;
-				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "WatchApp Watch App/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -1322,17 +1313,8 @@
 				DEVELOPMENT_TEAM = PJ32UPL29J;
 				ENABLE_PREVIEWS = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Los Mooscles";
-				INFOPLIST_KEY_CFBundleName = "Los Mooscles";
-				INFOPLIST_KEY_CFBundleShortVersionString = "$(MARKETING_VERSION)";
-				INFOPLIST_KEY_CFBundleVersion = "$(CURRENT_PROJECT_VERSION)";
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "Este aplicativo precisa ler seus dados de saúde (como treinos e batimentos cardíacos) para acompanhar seu progresso físico e histórico de exercícios.";
-				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Este aplicativo precisa salvar seus treinos e dados de exercícios no aplicativo Saúde para manter seu histórico de atividades atualizado.";
-				INFOPLIST_KEY_UIBackgroundModes = ( "workout-processing" );
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.vicente.losmooscles;
-				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "WatchApp Watch App/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -1372,17 +1354,8 @@
 				DEVELOPMENT_TEAM = PJ32UPL29J;
 				ENABLE_PREVIEWS = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Los Mooscles";
-				INFOPLIST_KEY_CFBundleName = "Los Mooscles";
-				INFOPLIST_KEY_CFBundleShortVersionString = "$(MARKETING_VERSION)";
-				INFOPLIST_KEY_CFBundleVersion = "$(CURRENT_PROJECT_VERSION)";
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "Este aplicativo precisa ler seus dados de saúde (como treinos e batimentos cardíacos) para acompanhar seu progresso físico e histórico de exercícios.";
-				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Este aplicativo precisa salvar seus treinos e dados de exercícios no aplicativo Saúde para manter seu histórico de atividades atualizado.";
-				INFOPLIST_KEY_UIBackgroundModes = ( "workout-processing" );
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.vicente.losmooscles;
-				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "WatchApp Watch App/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
