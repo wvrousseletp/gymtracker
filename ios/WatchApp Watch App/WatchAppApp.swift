@@ -13,7 +13,9 @@ import UserNotifications
 class ExtensionDelegate: NSObject, WKApplicationDelegate, UNUserNotificationCenterDelegate {
     func applicationDidFinishLaunching() {
         UNUserNotificationCenter.current().delegate = self
-        DispatchQueue.global(qos: .utility).async {
+        // Delay session recovery to avoid crashing during early launch
+        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 2.0) {
+            guard HKHealthStore.isHealthDataAvailable() else { return }
             WorkoutManager.shared.recoverOrphanedSession()
         }
     }
