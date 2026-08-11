@@ -766,7 +766,7 @@ struct ActiveWorkoutView: View {
                                         let willCompleteWorkout = checkAllSetsCompleted(activeWorkout: activeWorkout, overridingSet: (exIdx: exIndex, setIdx: setIndex, isDone: true))
                                         if willCompleteWorkout {
                                             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                                                showingFinishSheet = true
+                                                connectivityManager.completeWorkout(rpe: 8, notes: "Treino concluído via Apple Watch")
                                             }
                                         }
                                     }
@@ -834,7 +834,7 @@ struct ActiveWorkoutView: View {
                                 let willCompleteWorkout = checkAllSetsCompleted(activeWorkout: activeWorkout, overridingSet: (exIdx: exIndex, setIdx: activeSetIdx, isDone: true))
                                 if willCompleteWorkout {
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                                        showingFinishSheet = true
+                                        connectivityManager.completeWorkout(rpe: 8, notes: "Treino concluído via Apple Watch")
                                     }
                                 }
                             }
@@ -968,9 +968,8 @@ struct ActiveWorkoutView: View {
                 }
                 .buttonStyle(PlainButtonStyle())
 
-                // Finalizar Treino
                 Button(action: {
-                    showingFinishSheet = true
+                    connectivityManager.completeWorkout(rpe: 8, notes: "Treino concluído via Apple Watch")
                 }) {
                     HStack(spacing: 4) {
                         Image(systemName: "checkmark.seal.fill")

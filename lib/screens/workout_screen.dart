@@ -1819,7 +1819,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
       _autoFinishDialogShowing = true;
       // Schedule dialog launch after current build frame to avoid layout errors
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showFinishWorkoutDialog(context);
+        _finishWorkoutDirectly(context);
       });
     }
 
@@ -2149,7 +2149,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                                     top: 24.0, bottom: 80.0),
                                 child: ElevatedButton.icon(
                                   onPressed: () {
-                                    _showFinishWorkoutDialog(context);
+                                    _finishWorkoutDirectly(context);
                                   },
                                   icon: const Icon(Icons.check_circle_outline,
                                       size: 22, color: Colors.black),
@@ -2264,7 +2264,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                         // Botão Finalizar Treino (Direita)
                         GestureDetector(
                           onTap: () {
-                            _showFinishWorkoutDialog(context);
+                            _finishWorkoutDirectly(context);
                           },
                           child: Container(
                             padding: const EdgeInsets.symmetric(
@@ -3376,96 +3376,23 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
     );
   }
 
-  void _showFinishWorkoutDialog(BuildContext context) {
-    final notesCtrl = TextEditingController();
+  void _finishWorkoutDirectly(BuildContext context) {
     final accentColor =
         ThemeUtils.getColor(widget.provider.currentProfile.colorAccent);
 
-    showDialog(
-      context: context,
-      builder: (dialogCtx) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: GlassCard(
-          useBlur: true,
-          borderColor: Colors.white.withOpacity(0.08),
-          borderRadius: 24,
-          padding: const EdgeInsets.all(20),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text(
-                  "Concluir Treino 🎉",
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 16),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  "Notas ou observações do treino",
-                  style: TextStyle(color: Colors.white70, fontSize: 12),
-                ),
-                const SizedBox(height: 6),
-                TextField(
-                  controller: notesCtrl,
-                  maxLines: 3,
-                  style: const TextStyle(color: Colors.white, fontSize: 13),
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: Colors.white.withOpacity(0.05),
-                    hintText: "Como se sentiu hoje? Aumentou cargas?",
-                    hintStyle: const TextStyle(color: Colors.white30),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide:
-                          BorderSide(color: Colors.white.withOpacity(0.08)),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(dialogCtx),
-                      child: const Text("Voltar",
-                          style: TextStyle(
-                              color: Colors.white54,
-                              fontWeight: FontWeight.bold)),
-                    ),
-                    const SizedBox(width: 8),
-                    TextButton(
-                      onPressed: () {
-                        widget.provider.finishWorkout(
-                          _workoutDurationNotifier.value,
-                          8, // calculatedRpe is automatically resolved inside the provider
-                          notesCtrl.text.trim(),
-                        );
-                        Navigator.pop(dialogCtx);
-                        
-                        // Show Share Dialog
-                        final workoutProvider = Provider.of<WorkoutProvider>(context, listen: false);
-                        final history = workoutProvider.history;
-                        if (history.isNotEmpty) {
-                           final savedLog = history.first; // newest is at index 0
-                           _showShareWorkoutDialog(context, savedLog, accentColor);
-                        }
-                      },
-                      child: Text("Salvar Treino",
-                          style: TextStyle(
-                              color: accentColor,
-                              fontWeight: FontWeight.bold)),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+    widget.provider.finishWorkout(
+      _workoutDurationNotifier.value,
+      8, // calculatedRpe is automatically resolved inside the provider
+      "",
     );
+    
+    // Show Share Dialog
+    final workoutProvider = Provider.of<WorkoutProvider>(context, listen: false);
+    final history = workoutProvider.history;
+    if (history.isNotEmpty) {
+      final savedLog = history.first; // newest is at index 0
+      _showShareWorkoutDialog(context, savedLog, accentColor);
+    }
   }
 
   String _formatDuration(int totalSeconds) {
