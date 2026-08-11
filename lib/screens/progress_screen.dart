@@ -938,6 +938,10 @@ class _HistoryTabState extends State<HistoryTab> {
                             final m = pace.floor();
                             final s = ((pace - m) * 60).round();
                             return "${d.toStringAsFixed(1)}km em ${t}m (Pace: $m:${s.toString().padLeft(2, '0')})";
+                        } else if (d > 0) {
+                            return "${d.toStringAsFixed(1)}km";
+                        } else if (t > 0) {
+                            return "${t}m";
                         }
                         return "${d.toStringAsFixed(1)}km em ${t}m";
                       }).join('\n');
@@ -949,15 +953,25 @@ class _HistoryTabState extends State<HistoryTab> {
                             final pace = t / d;
                             final m = pace.floor();
                             final s = ((pace - m) * 60).round();
-                            subtitle = "${d}km em ${t}min (Pace: $m:${s.toString().padLeft(2, '0')})";
+                            subtitle = "${d.toStringAsFixed(1)}km em ${t}min (Pace: $m:${s.toString().padLeft(2, '0')})";
+                        } else if (d > 0) {
+                            subtitle = "${d.toStringAsFixed(1)}km";
+                        } else if (t > 0) {
+                            subtitle = "${t}min";
                         } else {
                             subtitle = "${d}km em ${t}min";
                         }
                     } else {
                         subtitle = "${ex.sets} séries x ${ex.reps} reps @ ${ex.weight.toStringAsFixed(1).replaceAll('.0', '')}kg";
+                        if (ex.rpe > 0) {
+                          subtitle += " • RPE ${ex.rpe}";
+                        }
                     }
                   } else {
                     subtitle = "${ex.sets} séries x ${ex.reps} reps @ ${ex.weight.toStringAsFixed(1).replaceAll('.0', '')}kg";
+                    if (ex.rpe > 0) {
+                      subtitle += " • RPE ${ex.rpe}";
+                    }
                   }
 
                   final failedSets = <String>[];

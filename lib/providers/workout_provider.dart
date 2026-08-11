@@ -267,8 +267,10 @@ class WorkoutProvider extends ChangeNotifier {
           weight: ex.weight,
           weightsPerSet: ex.weightsPerSet,
           repsPerSet: ex.repsPerSet,
-          setsState: List<bool>.filled(1, true), // Mark as completed
-          performedCardios: List<PerformedCardio?>.filled(1, null),
+          setsState: List<bool>.filled(1, isDone), // Mark as completed
+          performedCardios: [
+            PerformedCardio(distanceKm: distance, durationSeconds: duration)
+          ],
           failureReport: List<bool>.filled(1, false),
           failureReps: List<int?>.filled(1, null),
           isCardio: ex.isCardio,
@@ -759,11 +761,14 @@ class WorkoutProvider extends ChangeNotifier {
       int finalReps = ex.reps;
       final isCardio = ex.isCardio;
 
+      List<PerformedCardio?>? logCardios = ex.performedCardios;
+
       if (isCardio) {
         // For single cardio sessions, use singleCardioSession
         if (!ex.allowCardioSets && ex.singleCardioSession != null) {
           finalWeight = ex.singleCardioSession!.distanceKm;
           finalReps = ex.singleCardioSession!.durationSeconds ~/ 60;
+          logCardios = [ex.singleCardioSession!];
         } else {
           // For cardio with sets (HIIT), use performedCardios
           final completedList =
@@ -775,6 +780,7 @@ class WorkoutProvider extends ChangeNotifier {
                 0, (sum, c) => sum + (c!.durationSeconds ~/ 60));
             finalWeight = totalDist / completedList.length;
             finalReps = totalDurMin ~/ completedList.length;
+            logCardios = completedList;
           }
         }
       } else {
@@ -792,7 +798,7 @@ class WorkoutProvider extends ChangeNotifier {
         completedSets: done,
         reps: finalReps,
         weight: finalWeight,
-        performedCardios: ex.performedCardios,
+        performedCardios: logCardios,
         rpe: ex.rpe ?? rpeValue,
         failureReport: ex.failureReport,
         failureReps: ex.failureReps,
