@@ -18,7 +18,7 @@ platform :ios do
     match(
       type: "appstore",
       readonly: false,
-      force: true
+      force: false
     )
     update_project_provisioning(
       xcodeproj: "Runner.xcodeproj",
