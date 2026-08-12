@@ -85,7 +85,22 @@ struct WatchLibraryExercise: Codable, Identifiable {
     let muscle: String
     let executionType: String
     let measurementType: String
-    let isStationary: Bool
+    var isCardio: Bool {
+        let nameLower = name.lowercased()
+        let muscleLower = muscle.lowercased()
+        let execLower = executionType.lowercased()
+        return muscleLower.contains("cardio") ||
+               execLower.contains("cardio") ||
+               nameLower.contains("cardio") ||
+               nameLower.contains("corrida") ||
+               nameLower.contains("esteira") ||
+               nameLower.contains("bicicleta") ||
+               nameLower.contains("bike") ||
+               nameLower.contains("elíptico") ||
+               nameLower.contains("eliptico") ||
+               nameLower.contains("caminhada") ||
+               measurementType == "time"
+    }
 
     enum CodingKeys: String, CodingKey {
         case id, name, muscle, executionType, measurementType, isStationary
