@@ -473,13 +473,21 @@ class _HistoryTabState extends State<HistoryTab> {
 
     if (logs.isEmpty) {
       return Container(
-        margin: const EdgeInsets.all(4),
+        margin: const EdgeInsets.all(3),
         decoration: BoxDecoration(
-          color: isToday ? accent.withOpacity(0.08) : Colors.transparent,
+          color: isToday ? accent.withOpacity(0.12) : Colors.transparent,
           shape: BoxShape.circle,
           border: isSelected
               ? Border.all(color: Colors.white, width: 2)
-              : (isToday ? Border.all(color: accent.withOpacity(0.5), width: 1.5) : null),
+              : (isToday ? Border.all(color: accent, width: 1.8) : null),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.white.withOpacity(0.2),
+                    blurRadius: 8,
+                  )
+                ]
+              : null,
         ),
         child: Center(
           child: Text(
@@ -487,7 +495,7 @@ class _HistoryTabState extends State<HistoryTab> {
             style: TextStyle(
               color: isToday ? accent : Colors.white70,
               fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-              fontSize: 13,
+              fontSize: 12,
             ),
           ),
         ),
@@ -503,37 +511,42 @@ class _HistoryTabState extends State<HistoryTab> {
       }
       for (final ex in log.exercises) {
         final hasActualCardios = ex.performedCardios != null && ex.performedCardios!.any((c) => c != null);
-        if (!ex.muscle.toLowerCase().contains('cardio') && !hasActualCardios) {
+        if (!ex.isCardio && !hasActualCardios) {
           isCardioOnly = false;
         }
       }
     }
 
     Color cellColor;
+    IconData cellIcon;
+
     if (isRest) {
-      cellColor = Colors.blueGrey.shade800;
+      cellColor = const Color(0xFF7C4DFF); // Vibrant Deep Purple / Indigo
+      cellIcon = Icons.bedtime_rounded;
     } else if (isCardioOnly) {
-      cellColor = const Color(0xff00e676); // Emerald Neon
+      cellColor = const Color(0xFF00E676); // Emerald Neon
+      cellIcon = Icons.directions_run_rounded;
     } else {
-      cellColor = accent;
+      cellColor = accent; // Musculação / Força
+      cellIcon = Icons.fitness_center_rounded;
     }
 
     return Container(
-      margin: const EdgeInsets.all(4),
+      margin: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: cellColor.withOpacity(0.25),
+        color: cellColor.withOpacity(0.28),
         shape: BoxShape.circle,
         border: Border.all(
           color: isSelected
               ? Colors.white
-              : (isToday ? Colors.white : cellColor.withOpacity(0.7)),
-          width: isSelected ? 2.2 : (isToday ? 1.8 : 1.0),
+              : (isToday ? Colors.white : cellColor.withOpacity(0.85)),
+          width: isSelected ? 2.2 : (isToday ? 2.0 : 1.2),
         ),
         boxShadow: [
           BoxShadow(
-            color: cellColor.withOpacity(0.3),
-            blurRadius: 6,
-            spreadRadius: 1,
+            color: cellColor.withOpacity(0.4),
+            blurRadius: isSelected ? 10 : 6,
+            spreadRadius: isSelected ? 2 : 0,
           )
         ],
       ),
@@ -546,31 +559,59 @@ class _HistoryTabState extends State<HistoryTab> {
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w900,
-                fontSize: 12,
+                fontSize: 11,
               ),
             ),
-            if (logs.length > 1)
-              Container(
-                margin: const EdgeInsets.only(top: 1),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                    logs.length.clamp(1, 3),
-                    (i) => Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 1),
-                      width: 3,
-                      height: 3,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+            const SizedBox(height: 1),
+            Icon(
+              cellIcon,
+              size: 10,
+              color: isRest ? const Color(0xFFB388FF) : (isCardioOnly ? const Color(0xFFB9F6CA) : Colors.white),
+            ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildCalendarLegend() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildLegendItem("Treino", widget.accentColor, Icons.fitness_center_rounded),
+          _buildLegendItem("Cardio", const Color(0xFF00E676), Icons.directions_run_rounded),
+          _buildLegendItem("Descanso", const Color(0xFF7C4DFF), Icons.bedtime_rounded),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLegendItem(String label, Color color, IconData icon) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.2),
+            shape: BoxShape.circle,
+            border: Border.all(color: color.withOpacity(0.6), width: 1),
+          ),
+          child: Icon(icon, color: color, size: 11),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: const TextStyle(color: Colors.white87, fontSize: 11, fontWeight: FontWeight.w600),
+        ),
+      ],
     );
   }
 
@@ -585,6 +626,7 @@ class _HistoryTabState extends State<HistoryTab> {
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.only(bottom: 100, left: 16, right: 16, top: 8),
       children: [
+        _buildCalendarLegend(),
         GlassCard(
           padding: const EdgeInsets.all(12),
           borderColor: Colors.white.withOpacity(0.08),
@@ -660,6 +702,31 @@ class _HistoryTabState extends State<HistoryTab> {
     );
   }
 
+  void _markDayAsRest(BuildContext context, TrackerProvider provider, DateTime date) {
+    final restLog = WorkoutLog(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      name: 'Dia de Descanso',
+      date: date.toIso8601String(),
+      duration: 0,
+      completedSets: 0,
+      totalSets: 0,
+      totalWeight: 0,
+      rpe: 0,
+      notes: 'Descanso registrado no calendário.',
+      exercises: [],
+    );
+    provider.addManualWorkoutLog(restLog);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Dia de descanso registrado! 💤'),
+        backgroundColor: const Color(0xFF7C4DFF),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
   Widget _buildSelectedDayDetailSection(
       BuildContext context, DateTime selectedDay, List<WorkoutLog> logs, TrackerProvider provider) {
     if (logs.isEmpty) {
@@ -669,7 +736,14 @@ class _HistoryTabState extends State<HistoryTab> {
         borderRadius: 18,
         child: Column(
           children: [
-            const Icon(Icons.event_note_rounded, color: Colors.white38, size: 36),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.05),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.event_available_rounded, color: Colors.white38, size: 30),
+            ),
             const SizedBox(height: 10),
             Text(
               _formatDayHeader(selectedDay),
@@ -677,27 +751,55 @@ class _HistoryTabState extends State<HistoryTab> {
             ),
             const SizedBox(height: 4),
             const Text(
-              "Nenhum treino registrado nesta data.",
+              "Nenhum treino ou descanso registrado nesta data.",
               style: TextStyle(color: Colors.white38, fontSize: 12),
             ),
             const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () {
-                _openAddManualLogDialog(context, provider);
-              },
-              icon: const Icon(Icons.add, size: 16),
-              label: const Text("Registrar Treino Neste Dia"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: widget.accentColor.withOpacity(0.2),
-                foregroundColor: widget.accentColor,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      _openAddManualLogDialog(context, provider, date: selectedDay);
+                    },
+                    icon: const Icon(Icons.add_rounded, size: 16),
+                    label: const Text("Registrar Treino"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: widget.accentColor.withOpacity(0.2),
+                      foregroundColor: widget.accentColor,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: widget.accentColor.withOpacity(0.4)),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      _markDayAsRest(context, provider, selectedDay);
+                    },
+                    icon: const Icon(Icons.bedtime_rounded, size: 16),
+                    label: const Text("Marcar Descanso"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF7C4DFF).withOpacity(0.2),
+                      foregroundColor: const Color(0xFFB388FF),
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: const Color(0xFF7C4DFF).withOpacity(0.4)),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
-      );
     }
 
     int totalVolume = 0;
@@ -778,6 +880,55 @@ class _HistoryTabState extends State<HistoryTab> {
   }
 
   Widget _buildLogCard(WorkoutLog log, TrackerProvider provider) {
+    if (log.name == 'Dia de Descanso' || log.notes.contains('Descanso registrado')) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        child: GlassCard(
+          padding: const EdgeInsets.all(16),
+          borderColor: const Color(0xFF7C4DFF).withOpacity(0.3),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF7C4DFF).withOpacity(0.2),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFF7C4DFF).withOpacity(0.5)),
+                ),
+                child: const Icon(Icons.bedtime_rounded, color: Color(0xFFB388FF), size: 22),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Dia de Descanso 💤",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _formatLogDate(log.date),
+                      style: const TextStyle(color: Colors.white54, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                onPressed: () => _confirmDeleteLog(context, provider, log),
+                icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 20),
+                tooltip: "Excluir descanso",
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final isExpanded = _expandedLogIds.contains(log.id);
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -1161,13 +1312,13 @@ class _HistoryTabState extends State<HistoryTab> {
     );
   }
 
-  void _openAddManualLogDialog(BuildContext context, TrackerProvider provider) {
+  void _openAddManualLogDialog(BuildContext context, TrackerProvider provider, {DateTime? date}) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black.withOpacity(0.4),
       isScrollControlled: true,
-      builder: (context) => ManualWorkoutLogSheet(provider: provider),
+      builder: (context) => ManualWorkoutLogSheet(provider: provider, initialDate: date),
     );
   }
 }
@@ -1177,7 +1328,8 @@ class _HistoryTabState extends State<HistoryTab> {
 // ==========================================
 class ManualWorkoutLogSheet extends StatefulWidget {
   final TrackerProvider provider;
-  const ManualWorkoutLogSheet({super.key, required this.provider});
+  final DateTime? initialDate;
+  const ManualWorkoutLogSheet({super.key, required this.provider, this.initialDate});
 
   @override
   State<ManualWorkoutLogSheet> createState() => _ManualWorkoutLogSheetState();
@@ -1185,8 +1337,14 @@ class ManualWorkoutLogSheet extends StatefulWidget {
 
 class _ManualWorkoutLogSheetState extends State<ManualWorkoutLogSheet> {
   final _formKey = GlobalKey<FormState>();
-  DateTime _selectedDate = DateTime.now();
+  late DateTime _selectedDate;
   LibraryExercise? _selectedExercise;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedDate = widget.initialDate ?? DateTime.now();
+  }
   
   int _setsCount = 3;
   int _repsCount = 10;
