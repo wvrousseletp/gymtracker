@@ -864,13 +864,13 @@ class _HistoryTabState extends State<HistoryTab> {
             // Detalhes expandidos
             if (isExpanded) ...[
               const Divider(color: Colors.white10, height: 20),
-              // Métricas gerais (RPE, Sono, Dores, etc.)
+              // Métricas gerais (RPE, Séries, Exercícios)
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   _buildMetricItem("Esforço (RPE)", "${log.rpe}/10"),
                   _buildMetricItem("Séries Concl.", "${log.completedSets}/${log.totalSets}"),
-                  _buildMetricItem("Sono", sleepQualityToString(log.recovery?.sleepOk ?? SleepQuality.okay).toUpperCase()),
+                  _buildMetricItem("Exercícios", "${log.exercises.length}"),
                 ],
               ),
               if (log.avgHeartRate != null || log.activeCalories != null) ...[
@@ -915,24 +915,41 @@ class _HistoryTabState extends State<HistoryTab> {
               const SizedBox(height: 12),
 
               // Lista de exercícios concluídos
-              const Text(
-                "Exercícios Executados:",
-                style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w700),
+              Text(
+                "Exercícios Realizados (${log.exercises.length})",
+                style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 6),
               Column(
                 children: log.exercises.map((ex) {
                   final hasActualCardios = ex.performedCardios != null && ex.performedCardios!.any((c) => c != null);
-                  final isCardio = ex.muscle.toLowerCase().contains('cardio') || hasActualCardios;
-                  final done = ex.completedSets;
+                  final nameLower = ex.name.toLowerCase();
+                  final muscleLower = ex.muscle.toLowerCase();
+                  final execLower = (ex.executionType ?? '').toLowerCase();
+                  final isCardio = muscleLower.contains('cardio') || 
+                                   execLower.contains('cardio') || 
+                                   nameLower.contains('cardio') || 
+                                   nameLower.contains('corrida') || 
+                                   nameLower.contains('esteira') || 
+                                   nameLower.contains('bicicleta') || 
+                                   nameLower.contains('bike') || 
+                                   nameLower.contains('elíptico') || 
+                                   nameLower.contains('caminhada') || 
+                                   hasActualCardios;
                   
                   String subtitle = "";
                   if (isCardio) {
                     final doneCardios = (ex.performedCardios ?? []).where((c) => c != null).toList();
                     if (doneCardios.isNotEmpty) {
                       subtitle = doneCardios.map((c) {
-                        final d = c!.distanceKm;
-                        final t = c.durationSeconds ~/ 60;
+                        double d = c!.distanceKm;
+                        if (d == 0.0 && ex.weight > 0.0) {
+                          d = ex.weight;
+                        }
+                        int t = c.durationSeconds ~/ 60;
+                        if (t == 0 && ex.reps > 0) {
+                          t = ex.reps;
+                        }
                         if (d > 0 && t > 0) {
                             final pace = t / d;
                             final m = pace.floor();
@@ -945,10 +962,9 @@ class _HistoryTabState extends State<HistoryTab> {
                         }
                         return "${d.toStringAsFixed(1)}km em ${t}m";
                       }).join('\n');
-                    } else if (ex.muscle.toLowerCase().contains('cardio')) {
-                        // Legacy cardio log fallback
-                        final d = ex.weight;
-                        final t = ex.reps;
+                    } else {
+                        double d = ex.weight;
+                        int t = ex.reps;
                         if (d > 0 && t > 0) {
                             final pace = t / d;
                             final m = pace.floor();
@@ -959,12 +975,7 @@ class _HistoryTabState extends State<HistoryTab> {
                         } else if (t > 0) {
                             subtitle = "${t}min";
                         } else {
-                            subtitle = "${d}km em ${t}min";
-                        }
-                    } else {
-                        subtitle = "${ex.sets} séries x ${ex.reps} reps @ ${ex.weight.toStringAsFixed(1).replaceAll('.0', '')}kg";
-                        if (ex.rpe > 0) {
-                          subtitle += " • RPE ${ex.rpe}";
+                            subtitle = "Cardio concluído";
                         }
                     }
                   } else {
