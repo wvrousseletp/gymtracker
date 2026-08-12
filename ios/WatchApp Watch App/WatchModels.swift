@@ -358,6 +358,24 @@ struct WatchActiveExercise: Codable, Identifiable {
     let failureReps: [Int?]
     let isStationary: Bool
 
+    var isCardio: Bool {
+        let nameLower = name.lowercased()
+        let muscleLower = muscle.lowercased()
+        let execLower = (executionType ?? "").lowercased()
+        return muscleLower.contains("cardio") ||
+               execLower.contains("cardio") ||
+               nameLower.contains("cardio") ||
+               nameLower.contains("corrida") ||
+               nameLower.contains("esteira") ||
+               nameLower.contains("bicicleta") ||
+               nameLower.contains("bike") ||
+               nameLower.contains("elíptico") ||
+               nameLower.contains("eliptico") ||
+               nameLower.contains("caminhada") ||
+               measurementType == "time" ||
+               performedCardios.contains(where: { $0 != nil })
+    }
+
     enum CodingKeys: String, CodingKey {
         case instanceId, name, muscle, sets, reps, rest, weight, setsState, measurementType, executionType, performedCardios, failureReport, failureReps, isStationary
     }
@@ -385,7 +403,8 @@ struct WatchActiveExercise: Codable, Identifiable {
         name = try container.decode(String.self, forKey: .name)
         muscle = try container.decode(String.self, forKey: .muscle)
         setsState = try container.decode([Bool].self, forKey: .setsState)
-        measurementType = (try? container.decode(String.self, forKey: .measurementType)) ?? (muscle.lowercased().contains("cardio") ? "time" : "reps")
+        let isCardioName = name.lowercased().contains("corrida") || name.lowercased().contains("esteira") || name.lowercased().contains("bicicleta") || name.lowercased().contains("bike") || name.lowercased().contains("elíptico") || name.lowercased().contains("caminhada") || name.lowercased().contains("cardio") || muscle.lowercased().contains("cardio")
+        measurementType = (try? container.decode(String.self, forKey: .measurementType)) ?? (isCardioName ? "time" : "reps")
         executionType = try? container.decodeIfPresent(String.self, forKey: .executionType)
         isStationary = (try? container.decode(Bool.self, forKey: .isStationary)) ?? false
 

@@ -1077,7 +1077,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             totalSets += ex.sets
             completedSets += done
             
-            let isCardio = ex.muscle.lowercased().contains("cardio")
+            let isCardio = ex.isCardio
             var finalWeight = ex.weight
             var finalReps = ex.reps
             

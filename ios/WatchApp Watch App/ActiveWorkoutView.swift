@@ -640,7 +640,7 @@ struct ActiveWorkoutView: View {
             
             if exIndex < activeWorkout.exercises.count {
                 let exercise = activeWorkout.exercises[exIndex]
-                let isCardio = exercise.muscle.lowercased().contains("cardio")
+                let isCardio = exercise.isCardio
                 
                 VStack(spacing: 4) {
                     // 1. Exercise Info Header with Navigation Chevrons (More Compact)
@@ -1030,7 +1030,7 @@ struct ActiveWorkoutView: View {
         
         guard activeWorkout.currentExerciseIndex < activeWorkout.exercises.count else { return }
         let exercise = activeWorkout.exercises[activeWorkout.currentExerciseIndex]
-        let isCardio = exercise.muscle.lowercased().contains("cardio")
+        let isCardio = exercise.isCardio
         
         if isCardio {
             let activeSetIdx = getSelectedSetIndex(for: exercise, index: activeWorkout.currentExerciseIndex)

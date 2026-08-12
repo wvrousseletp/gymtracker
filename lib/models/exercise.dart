@@ -38,6 +38,24 @@ class LibraryExercise {
     notes: json['notes'],
     isStationary: json['isStationary'] ?? false,
   );
+
+  bool get isCardio {
+    final nameLower = name.toLowerCase();
+    final muscleLower = muscle.toLowerCase();
+    final execLower = (executionType ?? '').toLowerCase();
+    return muscleLower.contains('cardio') ||
+           execLower.contains('cardio') ||
+           nameLower.contains('cardio') ||
+           nameLower.contains('corrida') ||
+           nameLower.contains('esteira') ||
+           nameLower.contains('bicicleta') ||
+           nameLower.contains('bike') ||
+           nameLower.contains('elíptico') ||
+           nameLower.contains('eliptico') ||
+           nameLower.contains('caminhada') ||
+           measurementType == MeasurementType.cardio ||
+           measurementType == MeasurementType.time;
+  }
 }
 
 class RoutineExercise {

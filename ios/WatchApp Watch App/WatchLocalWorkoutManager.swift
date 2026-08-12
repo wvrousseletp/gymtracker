@@ -225,7 +225,7 @@ class WatchLocalWorkoutManager {
             totalSets += ex.sets
             completedSets += done
             
-            let isCardio = ex.muscle.lowercased().contains("cardio")
+            let isCardio = ex.isCardio
             
             if !isCardio {
                 totalWeightVolume += Double(done) * ex.weight

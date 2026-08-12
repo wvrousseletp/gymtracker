@@ -111,7 +111,7 @@ class WorkoutManager: NSObject, ObservableObject {
         } else {
             configuration = HKWorkoutConfiguration()
             // Auto-detect workout type based on exercises
-            let hasCardio = exercises?.contains(where: { $0.muscle.lowercased().contains("cardio") }) ?? false
+            let hasCardio = exercises?.contains(where: { $0.isCardio }) ?? false
             configuration.activityType = hasCardio ? .other : .traditionalStrengthTraining
             configuration.locationType = .indoor
         }

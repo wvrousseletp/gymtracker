@@ -45,7 +45,7 @@ enum WatchPlannerHelper {
                 let exerciseId = parts[1]
                 let sets = parts.count >= 3 ? Int(parts[2]) ?? 3 : 3
                 guard let libEx = library.first(where: { $0.id == exerciseId }) else { continue }
-                let isCardio = libEx.muscle.lowercased().contains("cardio")
+                let isCardio = libEx.isCardio
                 items.append(
                     PlannedWatchItem(
                         id: "planned-ex-\(exerciseId)-\(sets)",

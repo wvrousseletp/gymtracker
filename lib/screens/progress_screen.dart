@@ -1437,7 +1437,7 @@ class _ManualWorkoutLogSheetState extends State<ManualWorkoutLogSheet> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    if (!_selectedExercise!.muscle.toLowerCase().contains('cardio'))
+                    if (!_selectedExercise!.isCardio)
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1479,7 +1479,7 @@ class _ManualWorkoutLogSheetState extends State<ManualWorkoutLogSheet> {
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: _setsCount,
                   itemBuilder: (context, idx) {
-                    final isCardio = _selectedExercise!.muscle.toLowerCase().contains('cardio');
+                    final isCardio = _selectedExercise!.isCardio;
                     return Container(
                       margin: const EdgeInsets.only(bottom: 8),
                       padding: const EdgeInsets.all(8),
@@ -1668,7 +1668,7 @@ class _ManualWorkoutLogSheetState extends State<ManualWorkoutLogSheet> {
                   child: ElevatedButton(
                     onPressed: () {
                       if (_formKey.currentState!.validate() && _selectedExercise != null) {
-                        final isCardio = _selectedExercise!.muscle.toLowerCase().contains('cardio');
+                        final isCardio = _selectedExercise!.isCardio;
                         final completedCount = _setsCompleted.where((s) => s).length;
                         if (completedCount == 0) {
                           ScaffoldMessenger.of(context).showSnackBar(
