@@ -511,7 +511,20 @@ class _HistoryTabState extends State<HistoryTab> {
       }
       for (final ex in log.exercises) {
         final hasActualCardios = ex.performedCardios != null && ex.performedCardios!.any((c) => c != null);
-        if (!ex.isCardio && !hasActualCardios) {
+        final nameLower = ex.name.toLowerCase();
+        final muscleLower = ex.muscle.toLowerCase();
+        final execLower = (ex.executionType ?? '').toLowerCase();
+        final isExCardio = muscleLower.contains('cardio') || 
+                           execLower.contains('cardio') || 
+                           nameLower.contains('cardio') || 
+                           nameLower.contains('corrida') || 
+                           nameLower.contains('esteira') || 
+                           nameLower.contains('bicicleta') || 
+                           nameLower.contains('bike') || 
+                           nameLower.contains('elíptico') || 
+                           nameLower.contains('caminhada') || 
+                           hasActualCardios;
+        if (!isExCardio) {
           isCardioOnly = false;
         }
       }
@@ -609,7 +622,7 @@ class _HistoryTabState extends State<HistoryTab> {
         const SizedBox(width: 6),
         Text(
           label,
-          style: const TextStyle(color: Colors.white87, fontSize: 11, fontWeight: FontWeight.w600),
+          style: TextStyle(color: Colors.white.withOpacity(0.87), fontSize: 11, fontWeight: FontWeight.w600),
         ),
       ],
     );
@@ -800,6 +813,7 @@ class _HistoryTabState extends State<HistoryTab> {
             ),
           ],
         ),
+      );
     }
 
     int totalVolume = 0;
