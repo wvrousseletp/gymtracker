@@ -85,6 +85,8 @@ struct WatchLibraryExercise: Codable, Identifiable {
     let muscle: String
     let executionType: String
     let measurementType: String
+    let isStationary: Bool
+
     var isCardio: Bool {
         let nameLower = name.lowercased()
         let muscleLower = muscle.lowercased()
