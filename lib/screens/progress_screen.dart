@@ -922,6 +922,7 @@ class _HistoryTabState extends State<HistoryTab> {
               const SizedBox(height: 6),
               Column(
                 children: log.exercises.map((ex) {
+                  final done = ex.completedSets;
                   final hasActualCardios = ex.performedCardios != null && ex.performedCardios!.any((c) => c != null);
                   final nameLower = ex.name.toLowerCase();
                   final muscleLower = ex.muscle.toLowerCase();
