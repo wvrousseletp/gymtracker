@@ -22,8 +22,10 @@ platform :ios do
       type: "appstore",
       readonly: false,
       force: true,
-      renew_expired_certs: true
+      renew_expired_certs: true,
+      safe_remove_certs: true
     )
+
 
 
     update_project_provisioning(
