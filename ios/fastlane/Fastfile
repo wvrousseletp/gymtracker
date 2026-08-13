@@ -2,15 +2,18 @@ default_platform(:ios)
 
 platform :ios do
   before_all do
-    # Fetch from custom environment variables to avoid Fastlane's automatic env matching
-    app_store_connect_api_key(
-      key_id: ENV["ASC_KEY_ID"],
-      issuer_id: ENV["ASC_ISSUER_ID"],
-      key_content: ENV["ASC_KEY_CONTENT"],
-      is_key_content_base64: false,
-      in_house: false
-    )
+    # Fetch from custom environment variables if present
+    if ENV["ASC_KEY_ID"] && !ENV["ASC_KEY_ID"].empty?
+      app_store_connect_api_key(
+        key_id: ENV["ASC_KEY_ID"],
+        issuer_id: ENV["ASC_ISSUER_ID"],
+        key_content: ENV["ASC_KEY_CONTENT"],
+        is_key_content_base64: false,
+        in_house: false
+      )
+    end
   end
+
 
   desc "Fetch certificates and provisioning profiles using match"
   lane :match_appstore do
@@ -18,8 +21,10 @@ platform :ios do
     match(
       type: "appstore",
       readonly: false,
-      force: false
+      force: false,
+      renew_expired_certs: true
     )
+
     update_project_provisioning(
       xcodeproj: "Runner.xcodeproj",
       profile: ENV["sigh_com.vicente.losmooscles_appstore_profile-path"],

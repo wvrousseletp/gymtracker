@@ -31,6 +31,14 @@ Fetch certificates and provisioning profiles using match
 
 Generate new certificates and profiles
 
+### ios nuke_and_generate
+
+```sh
+[bundle exec] fastlane ios nuke_and_generate
+```
+
+Nuke and generate new certificates and profiles
+
 ----
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.

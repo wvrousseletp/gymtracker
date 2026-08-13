@@ -69,7 +69,8 @@ jobs:
             echo "WARNING: fastlane_tmp_keychain not found at $KEYCHAIN_PATH"
             security list-keychains
           fi
-          flutter build ipa --release --export-options-plist=ios/ExportOptions.plist --verbose
+          flutter build ipa --release --export-options-plist=ios/ExportOptions.plist --allow-provisioning-updates --verbose
+
           echo "=== CONTEÚDO DO DIRETÓRIO build/ ==="
           find build -maxdepth 5 -type f || true
           IPA_PATH=$(find build -name "*.ipa" | head -n 1)
