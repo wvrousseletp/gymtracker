@@ -55,7 +55,8 @@ jobs:
         run: |
           mkdir -p ~/.appstoreconnect/private_keys
           echo "$ASC_KEY_CONTENT" > ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
-          flutter build ipa --release --export-options-plist=ExportOptions.plist --allow-provisioning-updates --verbose
+          flutter build ipa --release --export-options-plist=ExportOptions.plist --verbose
+
           echo "=== CONTEÚDO DO DIRETÓRIO build/ ==="
           find build -maxdepth 5 -type f || true
           IPA_PATH=$(find build -name "*.ipa" | head -n 1)
