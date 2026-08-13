@@ -21,10 +21,9 @@ platform :ios do
     match(
       type: "appstore",
       readonly: false,
-      force: true,
-      renew_expired_certs: true,
-      safe_remove_certs: true
+      skip_certificate_matching: true
     )
+
 
 
 
