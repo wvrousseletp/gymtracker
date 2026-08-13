@@ -55,13 +55,32 @@ jobs:
         run: |
           mkdir -p ~/.appstoreconnect/private_keys
           echo "$ASC_KEY_CONTENT" > ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
-          flutter build ipa --release --export-options-plist=ExportOptions.plist --verbose
+          
+          # Build Flutter iOS bundle assets
+          flutter build ios --release --no-codesign
+          
+          # Archive using xcodebuild with automatic provisioning updates & App Store Connect API Key
+          xcodebuild -workspace ios/Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/ios/archive/Runner.xcarchive \
+            -allowProvisioningUpdates \
+            archive
+            
+          # Export IPA
+          xcodebuild -exportArchive \
+            -archivePath build/ios/archive/Runner.xcarchive \
+            -exportOptionsPlist ExportOptions.plist \
+            -exportPath build/ios/ipa \
+            -allowProvisioningUpdates
 
           echo "=== CONTEÚDO DO DIRETÓRIO build/ ==="
           find build -maxdepth 5 -type f || true
           IPA_PATH=$(find build -name "*.ipa" | head -n 1)
           echo "IPA_PATH=$IPA_PATH" >> $GITHUB_ENV
           echo "Encontrado IPA em: $IPA_PATH"
+
 
 
       - name: Upload to App Store Connect (TestFlight)
