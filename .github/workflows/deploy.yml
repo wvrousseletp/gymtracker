@@ -47,35 +47,21 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      - name: Match Certificates and Build IPA
+      - name: Build IPA with App Store Connect API Key
         env:
-          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-          MATCH_PAT: ${{ secrets.MATCH_PAT }}
           ASC_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           ASC_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
         run: |
-          cd ios
-          bundle exec fastlane match_appstore --verbose
-          cd ..
-          # Unlock the keychain created by Fastlane's setup_ci so Xcode can access certs
-          KEYCHAIN_PATH="$HOME/Library/Keychains/fastlane_tmp_keychain-db"
-          if [ -f "$KEYCHAIN_PATH" ]; then
-            security unlock-keychain -p "" fastlane_tmp_keychain
-            security list-keychains -s fastlane_tmp_keychain login.keychain
-            security default-keychain -s fastlane_tmp_keychain
-            echo "Keychain unlocked and set as default"
-          else
-            echo "WARNING: fastlane_tmp_keychain not found at $KEYCHAIN_PATH"
-            security list-keychains
-          fi
-          flutter build ipa --release --export-options-plist=ios/ExportOptions.plist --allow-provisioning-updates --verbose
-
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "$ASC_KEY_CONTENT" > ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
+          flutter build ipa --release --export-options-plist=ExportOptions.plist --allow-provisioning-updates --verbose
           echo "=== CONTEÚDO DO DIRETÓRIO build/ ==="
           find build -maxdepth 5 -type f || true
           IPA_PATH=$(find build -name "*.ipa" | head -n 1)
           echo "IPA_PATH=$IPA_PATH" >> $GITHUB_ENV
           echo "Encontrado IPA em: $IPA_PATH"
+
 
       - name: Upload to App Store Connect (TestFlight)
         uses: apple-actions/upload-testflight-build@v5
