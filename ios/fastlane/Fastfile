@@ -21,9 +21,10 @@ platform :ios do
     match(
       type: "appstore",
       readonly: false,
-      force: false,
+      force: true,
       renew_expired_certs: true
     )
+
 
     update_project_provisioning(
       xcodeproj: "Runner.xcodeproj",
