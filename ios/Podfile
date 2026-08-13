@@ -50,66 +50,20 @@ post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
     target.build_configurations.each do |config|
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '17.0'
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
       config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
       config.build_settings['CLANG_WARN_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'NO'
-      
-      if config.build_settings['OTHER_CFLAGS'].is_a?(Array)
-        config.build_settings['OTHER_CFLAGS'] << '-Wno-error=non-modular-include-in-framework-module'
-        config.build_settings['OTHER_CFLAGS'] << '-Wno-non-modular-include-in-framework-module'
-      elsif config.build_settings['OTHER_CFLAGS'].is_a?(String)
-        config.build_settings['OTHER_CFLAGS'] += ' -Wno-error=non-modular-include-in-framework-module -Wno-non-modular-include-in-framework-module'
-      else
-        config.build_settings['OTHER_CFLAGS'] = ['$(inherited)', '-Wno-error=non-modular-include-in-framework-module', '-Wno-non-modular-include-in-framework-module']
-      end
-
-      existing_flags = config.build_settings['WARNING_CFLAGS']
-      if existing_flags.is_a?(Array)
-        config.build_settings['WARNING_CFLAGS'] << '-Wno-missing-template-arg-list-after-template-kw'
-      elsif existing_flags.is_a?(String)
-        config.build_settings['WARNING_CFLAGS'] += ' -Wno-missing-template-arg-list-after-template-kw'
-      else
-        config.build_settings['WARNING_CFLAGS'] = ['-Wno-missing-template-arg-list-after-template-kw']
-      end
-    end
-    
-    if target.name == 'BoringSSL-GRPC'
-      target.source_build_phase.files.each do |file|
-        if file.settings && file.settings['COMPILER_FLAGS']
-          flags = file.settings['COMPILER_FLAGS'].split
-          flags.reject! { |flag| flag == '-GCC_WARN_INHIBIT_ALL_WARNINGS' }
-          file.settings['COMPILER_FLAGS'] = flags.join(' ')
-        end
-      end
     end
   end
 
-  # Patch para o erro de template do gRPC-Core no Xcode 16 / Clang
-  basic_seq_path = File.join(installer.sandbox.root, 'gRPC-Core/src/core/lib/promise/detail/basic_seq.h')
-  if File.exist?(basic_seq_path)
-    puts "Patching gRPC-Core's basic_seq.h for Xcode 16 compatibility..."
-    File.chmod(0644, basic_seq_path) rescue nil
-    content = File.read(basic_seq_path)
-    if content.include?('Traits::template CallSeqFactory(f_, *cur_, std::move(arg))')
-      new_content = content.gsub('Traits::template CallSeqFactory(f_, *cur_, std::move(arg))', 'Traits::template CallSeqFactory<>(f_, *cur_, std::move(arg))')
-      File.write(basic_seq_path, new_content)
-      puts "gRPC-Core's basic_seq.h successfully patched."
-    else
-      puts "gRPC-Core's basic_seq.h already patched or pattern not found."
+  # Configure Pods-Runner xcconfig for swiftCompatibility56 (Xcode 14 + Firebase 10.29.0)
+  Dir.glob("#{installer.sandbox.root}/Target Support Files/Pods-Runner/*.xcconfig").each do |xcconfig_file|
+    content = File.read(xcconfig_file)
+    unless content.include?('libswiftCompatibility56.a')
+      File.open(xcconfig_file, 'a') do |f|
+        f.puts ''
+        f.puts 'OTHER_LDFLAGS[sdk=iphoneos*] = $(inherited) -force_load "${PODS_ROOT}/../libswiftCompatibility56.a"'
+      end
     end
-  else
-    puts "Warning: gRPC-Core's basic_seq.h not found at #{basic_seq_path}"
-  end
-
-  # Configure user project configurations to allow non-modular includes and Swift search paths
-  installer.aggregate_targets.each do |target|
-    target.user_project.build_configurations.each do |config|
-      config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
-      config.build_settings['CLANG_WARN_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'NO'
-      config.build_settings['ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES'] = 'YES'
-      config.build_settings['LIBRARY_SEARCH_PATHS'] = ['$(inherited)', '$(SDKROOT)/usr/lib/swift', '$(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)']
-    end
-    target.user_project.save
   end
 end
-

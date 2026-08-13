@@ -69,6 +69,7 @@ struct WatchApp_Watch_AppApp: App {
                 .onAppear {
                     DispatchQueue.global(qos: .utility).async {
                         WorkoutManager.shared.requestAuthorization()
+                        HealthKitWorkoutManager.shared.requestAuthorization()
                     }
                     
                     UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in

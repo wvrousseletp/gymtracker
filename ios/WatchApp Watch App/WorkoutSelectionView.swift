@@ -166,8 +166,8 @@ struct RoutineRow: View {
 }
 
 struct WorkoutSelectionView: View {
-    @ObservedObject var connectivityManager = WatchConnectivityManager.shared
-    @ObservedObject var workoutManager = WorkoutManager.shared
+    @StateObject var connectivityManager = WatchConnectivityManager.shared
+    @StateObject var workoutManager = WorkoutManager.shared
     @State private var activeTab = 0
     @State private var searchText = ""
     @State private var selectedMuscleFilter: String? = nil
@@ -650,7 +650,7 @@ struct WorkoutSelectionView: View {
 // MARK: - Water Tracker View Implementation
 
 struct WatchWaterView: View {
-    @ObservedObject var connectivityManager = WatchConnectivityManager.shared
+    @StateObject var connectivityManager = WatchConnectivityManager.shared
     @State private var showRemoveSheet = false
     
     // Quick add presets

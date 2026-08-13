@@ -13,13 +13,11 @@ class HealthKitWorkoutManager {
     private let cardioWorkout = HKWorkoutActivityType.other
     private let functionalStrengthWorkout = HKWorkoutActivityType.functionalStrengthTraining
     
-    private init() {
-        requestAuthorization()
-    }
+    private init() {}
     
     // MARK: - Authorization
     
-    private func requestAuthorization() {
+    func requestAuthorization() {
         let typesToShare: Set<HKSampleType> = [
             HKObjectType.workoutType()
         ]

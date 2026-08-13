@@ -5,7 +5,7 @@ import WatchKit
 
 struct RestTimerView: View {
     let restTimer: WatchRestTimer
-    @ObservedObject var connectivityManager = WatchConnectivityManager.shared
+    @StateObject var connectivityManager = WatchConnectivityManager.shared
     @State private var timeRemaining: Int = 0
     @State private var didAutoSkip = false
     @State private var timer = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()

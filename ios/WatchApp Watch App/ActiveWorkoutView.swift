@@ -9,7 +9,7 @@ import CoreMotion
 
 struct PRCelebrationBanner: View {
     let exerciseNames: [String]
-    @ObservedObject var batterySaver = WatchBatterySaverManager.shared
+    @StateObject var batterySaver = WatchBatterySaverManager.shared
     @State private var glowOpacity: Double = 0.3
 
     var body: some View {
@@ -65,9 +65,9 @@ struct PRCelebrationBanner: View {
 }
 
 struct ActiveWorkoutView: View {
-    @ObservedObject var connectivityManager = WatchConnectivityManager.shared
-    @ObservedObject var workoutManager = WorkoutManager.shared
-    @ObservedObject var batterySaver = WatchBatterySaverManager.shared
+    @StateObject var connectivityManager = WatchConnectivityManager.shared
+    @StateObject var workoutManager = WorkoutManager.shared
+    @StateObject var batterySaver = WatchBatterySaverManager.shared
     private let hapticManager = WatchHapticManager.shared
     
     @State private var syncIndicatorOpacity: Double = 0.0

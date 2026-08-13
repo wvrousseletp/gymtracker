@@ -4,7 +4,7 @@ import WatchKit
 #endif
 
 struct WeeklyStatsView: View {
-    @ObservedObject var connectivityManager = WatchConnectivityManager.shared
+    @StateObject var connectivityManager = WatchConnectivityManager.shared
     @State private var ringProgress: Double = 0.0
     @State private var barAnimation: Double = 0.0
     @FocusState private var isFocused: Bool

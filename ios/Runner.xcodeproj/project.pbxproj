@@ -22,7 +22,7 @@
 		D316F3322FE20CC8008A94F4 /* WatchApp_Watch_AppTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D316F3312FE20CC8008A94F4 /* WatchApp_Watch_AppTests.swift */; };
 		D316F33C2FE20CC9008A94F4 /* WatchApp_Watch_AppUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D316F33B2FE20CC9008A94F4 /* WatchApp_Watch_AppUITests.swift */; };
 		D316F33E2FE20CC9008A94F4 /* WatchApp_Watch_AppUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D316F33D2FE20CC9008A94F4 /* WatchApp_Watch_AppUITestsLaunchTests.swift */; };
-		D316F3412FE20CC9008A94F4 /* WatchApp Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = D316F31E2FE20CC4008A94F4 /* WatchApp Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		D316F3412FE20CC9008A94F4 /* Los Mooscles.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = D316F31E2FE20CC4008A94F4 /* Los Mooscles.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		D35555552FE20CC4008A9570 /* WatchComplications.swift in Sources */ = {isa = PBXBuildFile; fileRef = D37777772FE20CC4008A94FA /* WatchComplications.swift */; };
 		D35555552FE20CC4008A9580 /* WatchModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39999992FE20CC4008A95C1 /* WatchModels.swift */; };
 		D35555552FE20CC4008A95E0 /* WatchWidgetExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = D35555552FE20CC4008A9560 /* WatchWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -116,7 +116,7 @@
 			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
 			dstSubfolderSpec = 16;
 			files = (
-				D316F3412FE20CC9008A94F4 /* WatchApp Watch App.app in Embed Watch Content */,
+				D316F3412FE20CC9008A94F4 /* Los Mooscles.app in Embed Watch Content */,
 			);
 			name = "Embed Watch Content";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -167,7 +167,7 @@
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A3600077AD8C9018BA9C885A /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
-		D316F31E2FE20CC4008A94F4 /* WatchApp Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "WatchApp Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		D316F31E2FE20CC4008A94F4 /* Los Mooscles.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Los Mooscles.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		D316F3202FE20CC4008A94F4 /* WatchAppApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchAppApp.swift; sourceTree = "<group>"; };
 		D316F3242FE20CC7008A94F4 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D316F3272FE20CC8008A94F4 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
@@ -318,7 +318,7 @@
 				97C146EE1CF9000F007C117D /* Runner.app */,
 				D38888882FE20CC4008A9560 /* WorkoutWidgetExtension.appex */,
 				331C8081294A63A400263BE5 /* RunnerTests.xctest */,
-				D316F31E2FE20CC4008A94F4 /* WatchApp Watch App.app */,
+				D316F31E2FE20CC4008A94F4 /* Los Mooscles.app */,
 				D35555552FE20CC4008A9560 /* WatchWidgetExtension.appex */,
 				D316F32D2FE20CC8008A94F4 /* WatchApp Watch AppTests.xctest */,
 				D316F3372FE20CC8008A94F4 /* WatchApp Watch AppUITests.xctest */,
@@ -484,7 +484,7 @@
 			);
 			name = "WatchApp Watch App";
 			productName = "WatchApp Watch App";
-			productReference = D316F31E2FE20CC4008A94F4 /* WatchApp Watch App.app */;
+			productReference = D316F31E2FE20CC4008A94F4 /* Los Mooscles.app */;
 			productType = "com.apple.product-type.application";
 		};
 		D316F32C2FE20CC8008A94F4 /* WatchApp Watch AppTests */ = {
@@ -954,7 +954,6 @@
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
@@ -990,11 +989,9 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = "";
-				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = PJ32UPL29J;
+				DEVELOPMENT_TEAM = PJ32UPL29J;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1004,7 +1001,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.vicente.losmooscles;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "match AppStore com.vicente.losmooscles";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -1096,7 +1092,6 @@
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1161,7 +1156,6 @@
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
@@ -1199,11 +1193,9 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = "";
-				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = PJ32UPL29J;
+				DEVELOPMENT_TEAM = PJ32UPL29J;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1213,7 +1205,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.vicente.losmooscles;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "match AppStore com.vicente.losmooscles";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -1229,11 +1220,9 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = "";
-				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = PJ32UPL29J;
+				DEVELOPMENT_TEAM = PJ32UPL29J;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1243,7 +1232,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.vicente.losmooscles;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "match AppStore com.vicente.losmooscles";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -1306,8 +1294,7 @@
 				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CODE_SIGN_ENTITLEMENTS = "WatchApp Watch App/WatchApp.entitlements";
-				"CODE_SIGN_IDENTITY[sdk=watchos*]" = "Apple Distribution";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_ASSET_PATHS = "\"WatchApp Watch App/Preview Content\"";
 				DEVELOPMENT_TEAM = PJ32UPL29J;
@@ -1323,7 +1310,7 @@
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.vicente.losmooscles.watchkitapp;
 				PRODUCT_NAME = "Los Mooscles";
-				PROVISIONING_PROFILE_SPECIFIER = "match AppStore com.vicente.losmooscles.watchkitapp";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "watchos watchsimulator";
@@ -1347,8 +1334,7 @@
 				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CODE_SIGN_ENTITLEMENTS = "WatchApp Watch App/WatchApp.entitlements";
-				"CODE_SIGN_IDENTITY[sdk=watchos*]" = "Apple Distribution";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_ASSET_PATHS = "\"WatchApp Watch App/Preview Content\"";
 				DEVELOPMENT_TEAM = PJ32UPL29J;
@@ -1364,7 +1350,7 @@
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.vicente.losmooscles.watchkitapp;
 				PRODUCT_NAME = "Los Mooscles";
-				PROVISIONING_PROFILE_SPECIFIER = "match AppStore com.vicente.losmooscles.watchkitapp";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "watchos watchsimulator";
@@ -1558,6 +1544,20 @@
 			};
 			name = Profile;
 		};
+		D333AB4C302E31BC0010D804 /* Profile */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = WorkoutWidgetExtension;
+			};
+			name = Profile;
+		};
+		D333AB4D302E31BC0010D804 /* Profile */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = WatchWidgetExtension;
+			};
+			name = Profile;
+		};
 		D35555552FE20CC4008A9521 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 9740EEB31CF90195004384FC /* Generated.xcconfig */;
@@ -1610,8 +1610,7 @@
 				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CODE_SIGN_ENTITLEMENTS = "WatchApp Watch App/WatchWidgetExtension/WatchWidgetExtension.entitlements";
-				"CODE_SIGN_IDENTITY[sdk=watchos*]" = "Apple Distribution";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = PJ32UPL29J;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -1625,7 +1624,7 @@
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.vicente.losmooscles.watchkitapp.WatchWidgetExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE_SPECIFIER = "match AppStore com.vicente.losmooscles.watchkitapp.WatchWidgetExtension";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "watchos watchsimulator";
@@ -1687,7 +1686,7 @@
 				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CODE_SIGN_ENTITLEMENTS = WorkoutWidget/WorkoutWidget.entitlements;
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = PJ32UPL29J;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -1702,7 +1701,7 @@
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.vicente.losmooscles.WorkoutWidgetExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE_SPECIFIER = "match AppStore com.vicente.losmooscles.WorkoutWidgetExtension";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SWIFT_VERSION = 5.0;
@@ -1778,6 +1777,7 @@
 			buildConfigurations = (
 				D35555552FE20CC4008A9521 /* Debug */,
 				D35555552FE20CC4008A9522 /* Release */,
+				D333AB4D302E31BC0010D804 /* Profile */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -1787,6 +1787,7 @@
 			buildConfigurations = (
 				D38888882FE20CC4008A9521 /* Debug */,
 				D38888882FE20CC4008A9522 /* Release */,
+				D333AB4C302E31BC0010D804 /* Profile */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

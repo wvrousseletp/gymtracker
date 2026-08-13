@@ -8,7 +8,9 @@ class WatchLocalWorkoutManager {
     private let cache = WatchDataCache.shared
     
     private init() {
-        loadOfflineQueue()
+        DispatchQueue.global(qos: .userInitiated).async {
+            self.loadOfflineQueue()
+        }
     }
     
     // MARK: - Offline Workout Queue

@@ -145,7 +145,7 @@ struct ExerciseSetupCard: View {
 struct WorkoutSetupView: View {
     let routine: WatchRoutine
     @Environment(\.presentationMode) var presentationMode
-    @ObservedObject var connectivityManager = WatchConnectivityManager.shared
+    @StateObject var connectivityManager = WatchConnectivityManager.shared
 
     @State private var customSets: [String: Int] = [:]
     @State private var customReps: [String: Int] = [:]
