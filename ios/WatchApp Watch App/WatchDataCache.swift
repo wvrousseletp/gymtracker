@@ -14,7 +14,13 @@ class WatchDataCache {
     private var debounceWorkItem: DispatchWorkItem?
     
     private init() {
-        self.userDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles") ?? UserDefaults.standard
+        // Try to use app group UserDefaults, fall back to standard if it fails
+        if let suiteDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles") {
+            self.userDefaults = suiteDefaults
+        } else {
+            print("[WatchDataCache] App group not available, using standard UserDefaults")
+            self.userDefaults = UserDefaults.standard
+        }
     }
     
     // MARK: - Public API

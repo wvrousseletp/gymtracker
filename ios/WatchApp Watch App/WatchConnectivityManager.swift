@@ -77,29 +77,45 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         // Fast background load of initial cache to prevent watchdog timeout on startup
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self else { return }
-            let loadedRoutines = self.cache.getRoutines()
-            let loadedLibrary = self.cache.getLibrary()
-            let loadedPlanner = self.cache.getPlanner()
-            let loadedStreak = self.cache.getStreak()
-            let loadedWaterCurrent = self.cache.getWaterIntakeCurrent()
-            let loadedWaterTarget = self.cache.getWaterIntakeTarget()
-            let loadedIsLocal = self.cache.isLocalWorkout()
-            let loadedActiveWorkout = self.cache.getLocalWorkoutState()
             
-            DispatchQueue.main.async {
-                self.routines = loadedRoutines
-                self.library = loadedLibrary
-                self.planner = loadedPlanner
-                self.streak = loadedStreak
-                self.waterIntakeCurrent = loadedWaterCurrent
-                self.waterIntakeTarget = loadedWaterTarget
-                self.isLocalWorkout = loadedIsLocal
-                if let localWorkout = loadedActiveWorkout {
-                    self.activeWorkout = localWorkout
+            do {
+                let loadedRoutines = self.cache.getRoutines()
+                let loadedLibrary = self.cache.getLibrary()
+                let loadedPlanner = self.cache.getPlanner()
+                let loadedStreak = self.cache.getStreak()
+                let loadedWaterCurrent = self.cache.getWaterIntakeCurrent()
+                let loadedWaterTarget = self.cache.getWaterIntakeTarget()
+                let loadedIsLocal = self.cache.isLocalWorkout()
+                let loadedActiveWorkout = self.cache.getLocalWorkoutState()
+                
+                DispatchQueue.main.async {
+                    self.routines = loadedRoutines
+                    self.library = loadedLibrary
+                    self.planner = loadedPlanner
+                    self.streak = loadedStreak
+                    self.waterIntakeCurrent = loadedWaterCurrent
+                    self.waterIntakeTarget = loadedWaterTarget
+                    self.isLocalWorkout = loadedIsLocal
+                    if let localWorkout = loadedActiveWorkout {
+                        self.activeWorkout = localWorkout
+                    }
+                    self.checkAndResetDailyWater()
+                    self.preloadTodaysRoutines()
+                    self.activateSessionIfNeeded()
                 }
-                self.checkAndResetDailyWater()
-                self.preloadTodaysRoutines()
-                self.activateSessionIfNeeded()
+            } catch {
+                print("[WatchConnectivityManager] Error loading cache during init: \(error)")
+                DispatchQueue.main.async {
+                    // Set default values if cache loading fails
+                    self.routines = []
+                    self.library = []
+                    self.planner = [:]
+                    self.streak = WatchStreak(currentWeekCount: 0, consecutiveWeeks: 0, lastWorkoutDate: "")
+                    self.waterIntakeCurrent = 0
+                    self.waterIntakeTarget = 2000
+                    self.isLocalWorkout = false
+                    self.activateSessionIfNeeded()
+                }
             }
         }
     }

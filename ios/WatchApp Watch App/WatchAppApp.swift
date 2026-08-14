@@ -16,7 +16,11 @@ class ExtensionDelegate: NSObject, WKApplicationDelegate, UNUserNotificationCent
         // Delay session recovery to avoid crashing during early launch
         DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 2.0) {
             guard HKHealthStore.isHealthDataAvailable() else { return }
-            WorkoutManager.shared.recoverOrphanedSession()
+            do {
+                WorkoutManager.shared.recoverOrphanedSession()
+            } catch {
+                print("[ExtensionDelegate] Error recovering orphaned session: \(error)")
+            }
         }
     }
 
@@ -68,12 +72,20 @@ struct WatchApp_Watch_AppApp: App {
                 }
                 .onAppear {
                     DispatchQueue.global(qos: .utility).async {
-                        WorkoutManager.shared.requestAuthorization()
-                        HealthKitWorkoutManager.shared.requestAuthorization()
+                        do {
+                            WorkoutManager.shared.requestAuthorization()
+                            HealthKitWorkoutManager.shared.requestAuthorization()
+                        } catch {
+                            print("[WatchApp] Error requesting HealthKit authorization: \(error)")
+                        }
                     }
                     
                     UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
-                        print("[WatchApp] Notifications granted on appear: \(granted)")
+                        if let error = error {
+                            print("[WatchApp] Error requesting notification authorization: \(error)")
+                        } else {
+                            print("[WatchApp] Notifications granted on appear: \(granted)")
+                        }
                     }
                 }
         }
