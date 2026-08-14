@@ -32,7 +32,7 @@ class WatchService {
     // Only send initial data if state is available
     if (provider.state != null) {
       // Send only today's routines for selective sync
-      sendTodayRoutines(provider.state!);
+      sendTodayRoutines(provider.state!.settings, provider.state!.planner, provider.state!.routines, provider.state!.streak);
       sendLibrary(provider.state!.library);
       sendPlanner(provider.state!.planner);
       if (provider.state!.activeWorkout != null) {
@@ -427,20 +427,18 @@ class WatchService {
     }
   }
 
-  List<Routine> _getTodayRoutines(PlannerState state) {
-    final mode = state.settings.organizationMode;
-    final planner = state.planner;
-    final routines = state.routines;
+  List<Routine> _getTodayRoutines(SettingsState settings, Map<String, List<String>> planner, List<Routine> routines, WorkoutStreak streak) {
+    final mode = settings.organizationMode;
 
     if (mode == OrganizationMode.continuousList) {
       final list = planner['continuous'] ?? [];
       if (list.isEmpty) return [];
-      final idx = state.settings.continuousListCurrentIndex % list.length;
+      final idx = settings.continuousListCurrentIndex % list.length;
       final targetId = list[idx];
       return routines.where((r) => targetId == r.id || targetId == "routine:${r.id}").toList();
     } else if (mode == OrganizationMode.weeklyGoals) {
       final list = planner['weekly'] ?? [];
-      final completed = state.streak.completedThisWeekRoutines;
+      final completed = streak.completedThisWeekRoutines;
       final remaining = list.where((id) {
          final actualId = id.startsWith('routine:') ? id.substring(8) : id;
          final routine = routines.firstWhere((r) => r.id == actualId, orElse: () => Routine(id: '', name: '', defaultRest: 0, exercises: []));
@@ -491,9 +489,9 @@ class WatchService {
         .toList();
   }
 
-  Future<void> sendTodayRoutines(PlannerState state) async {
+  Future<void> sendTodayRoutines(SettingsState settings, Map<String, List<String>> planner, List<Routine> routines, WorkoutStreak streak) async {
     try {
-      final todayRoutines = _getTodayRoutines(state);
+      final todayRoutines = _getTodayRoutines(settings, planner, routines, streak);
 
       // Send only today's routines to reduce bandwidth
       final List<Map<String, dynamic>> routinesJson =
@@ -574,7 +572,7 @@ class WatchService {
       final state = _provider?.state;
       if (state == null) return;
 
-      final todayRoutines = _getTodayRoutines(state);
+      final todayRoutines = _getTodayRoutines(state.settings, state.planner, state.routines, state.streak);
 
       final String todayRoutineName = todayRoutines.isNotEmpty
           ? todayRoutines.first.name
