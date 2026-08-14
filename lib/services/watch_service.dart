@@ -7,7 +7,6 @@ import '../models/planner_state.dart';
 import '../models/workout_log.dart';
 import '../models/notification_preferences.dart';
 import '../providers/tracker_provider.dart';
-import '../models/enums.dart';
 
 class WatchService {
   static final WatchService instance = WatchService._internal();

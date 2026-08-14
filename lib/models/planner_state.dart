@@ -4,7 +4,6 @@ import 'workout_log.dart';
 import 'medidas.dart';
 import 'diet.dart';
 
-import 'enums.dart';
 
 class WorkoutStreak {
   final int currentWeekCount;   // Treinos feitos na semana atual
