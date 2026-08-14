@@ -703,6 +703,11 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     _workoutProvider!.updateSettings(sound, vibration, prepSeconds);
   }
 
+  void setOrganizationMode(OrganizationMode mode) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.setOrganizationMode(mode);
+  }
+
   void updateWaterIntake(int quantityMl) {
     if (_dietProvider == null) return;
     _dietProvider!.updateWaterIntake(quantityMl);

@@ -1479,7 +1479,20 @@ class WorkoutProvider extends ChangeNotifier {
       );
       _save();
       // Envia nova configuração para o Watch, pois as rotinas de "hoje" mudaram
-      final s = _getPlannerState();
+      final s = PlannerState(
+        library: library,
+        routines: routines,
+        planner: planner,
+        history: history,
+        prs: prs,
+        medidas: medidas,
+        settings: settings,
+        activeWorkout: activeWorkout,
+        postponedWorkouts: postponedWorkouts,
+        streak: streak,
+        deletedHealthWorkoutIds: deletedHealthWorkoutIds,
+        unlockedBadgeIds: unlockedBadgeIds,
+      );
       WatchService.instance.sendTodayRoutines(s);
       WatchService.instance.syncWidgetData();
     }
@@ -1494,7 +1507,20 @@ class WorkoutProvider extends ChangeNotifier {
       continuousListCurrentIndex: index,
     );
     _save();
-    final s = _getPlannerState();
+    final s = PlannerState(
+      library: library,
+      routines: routines,
+      planner: planner,
+      history: history,
+      prs: prs,
+      medidas: medidas,
+      settings: settings,
+      activeWorkout: activeWorkout,
+      postponedWorkouts: postponedWorkouts,
+      streak: streak,
+      deletedHealthWorkoutIds: deletedHealthWorkoutIds,
+      unlockedBadgeIds: unlockedBadgeIds,
+    );
     WatchService.instance.sendTodayRoutines(s);
     WatchService.instance.syncWidgetData();
   }
