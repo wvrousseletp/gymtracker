@@ -60,3 +60,32 @@ String measurementTypeToString(MeasurementType t) {
       return 'reps';
   }
 }
+
+enum OrganizationMode {
+  fixedDays,
+  continuousList,
+  weeklyGoals,
+}
+
+OrganizationMode organizationModeFromString(String val) {
+  switch (val) {
+    case 'continuousList':
+      return OrganizationMode.continuousList;
+    case 'weeklyGoals':
+      return OrganizationMode.weeklyGoals;
+    case 'fixedDays':
+    default:
+      return OrganizationMode.fixedDays;
+  }
+}
+
+String organizationModeToString(OrganizationMode mode) {
+  switch (mode) {
+    case OrganizationMode.continuousList:
+      return 'continuousList';
+    case OrganizationMode.weeklyGoals:
+      return 'weeklyGoals';
+    case OrganizationMode.fixedDays:
+      return 'fixedDays';
+  }
+}

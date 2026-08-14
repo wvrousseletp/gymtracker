@@ -7,6 +7,7 @@ import '../models/planner_state.dart';
 import '../models/workout_log.dart';
 import '../models/notification_preferences.dart';
 import '../providers/tracker_provider.dart';
+import '../models/enums.dart';
 
 class WatchService {
   static final WatchService instance = WatchService._internal();
@@ -31,7 +32,7 @@ class WatchService {
     // Only send initial data if state is available
     if (provider.state != null) {
       // Send only today's routines for selective sync
-      sendTodayRoutines(provider.state!.routines, provider.state!.planner);
+      sendTodayRoutines(provider.state!);
       sendLibrary(provider.state!.library);
       sendPlanner(provider.state!.planner);
       if (provider.state!.activeWorkout != null) {
@@ -426,45 +427,73 @@ class WatchService {
     }
   }
 
-  Future<void> sendTodayRoutines(
-      List<Routine> routines, Map<String, List<String>> planner) async {
-    try {
-      // Calculate today's routine
-      final calendar = DateTime.now();
-      final weekday = calendar.weekday;
-      final String todayKey;
-      switch (weekday) {
-        case 7:
-          todayKey = "dom";
-          break;
-        case 1:
-          todayKey = "seg";
-          break;
-        case 2:
-          todayKey = "ter";
-          break;
-        case 3:
-          todayKey = "qua";
-          break;
-        case 4:
-          todayKey = "qui";
-          break;
-        case 5:
-          todayKey = "sex";
-          break;
-        case 6:
-          todayKey = "sab";
-          break;
-        default:
-          todayKey = "seg";
-      }
+  List<Routine> _getTodayRoutines(PlannerState state) {
+    final mode = state.settings.organizationMode;
+    final planner = state.planner;
+    final routines = state.routines;
 
-      final plannedIds = planner[todayKey] ?? [];
-      final todayRoutines = routines
-          .where((r) =>
-              plannedIds.contains(r.id) ||
-              plannedIds.contains("routine:${r.id}"))
-          .toList();
+    if (mode == OrganizationMode.continuousList) {
+      final list = planner['continuous'] ?? [];
+      if (list.isEmpty) return [];
+      final idx = state.settings.continuousListCurrentIndex % list.length;
+      final targetId = list[idx];
+      return routines.where((r) => targetId == r.id || targetId == "routine:${r.id}").toList();
+    } else if (mode == OrganizationMode.weeklyGoals) {
+      final list = planner['weekly'] ?? [];
+      final completed = state.streak.completedThisWeekRoutines;
+      final remaining = list.where((id) {
+         final actualId = id.startsWith('routine:') ? id.substring(8) : id;
+         final routine = routines.firstWhere((r) => r.id == actualId, orElse: () => Routine(id: '', name: '', defaultRest: 0, exercises: []));
+         if (routine.id.isEmpty) return false;
+         return !completed.contains(routine.name);
+      }).toList();
+      
+      if (remaining.isEmpty) return [];
+      final targetId = remaining.first;
+      return routines.where((r) => targetId == r.id || targetId == "routine:${r.id}").toList();
+    }
+
+    // Default: fixedDays
+    final calendar = DateTime.now();
+    final weekday = calendar.weekday;
+    final String todayKey;
+    switch (weekday) {
+      case 7:
+        todayKey = "dom";
+        break;
+      case 1:
+        todayKey = "seg";
+        break;
+      case 2:
+        todayKey = "ter";
+        break;
+      case 3:
+        todayKey = "qua";
+        break;
+      case 4:
+        todayKey = "qui";
+        break;
+      case 5:
+        todayKey = "sex";
+        break;
+      case 6:
+        todayKey = "sab";
+        break;
+      default:
+        todayKey = "seg";
+    }
+
+    final plannedIds = planner[todayKey] ?? [];
+    return routines
+        .where((r) =>
+            plannedIds.contains(r.id) ||
+            plannedIds.contains("routine:${r.id}"))
+        .toList();
+  }
+
+  Future<void> sendTodayRoutines(PlannerState state) async {
+    try {
+      final todayRoutines = _getTodayRoutines(state);
 
       // Send only today's routines to reduce bandwidth
       final List<Map<String, dynamic>> routinesJson =
@@ -545,42 +574,7 @@ class WatchService {
       final state = _provider?.state;
       if (state == null) return;
 
-      // Calculate today's routine
-      final calendar = DateTime.now();
-      final weekday = calendar.weekday;
-      final String todayKey;
-      switch (weekday) {
-        case 7:
-          todayKey = "dom";
-          break;
-        case 1:
-          todayKey = "seg";
-          break;
-        case 2:
-          todayKey = "ter";
-          break;
-        case 3:
-          todayKey = "qua";
-          break;
-        case 4:
-          todayKey = "qui";
-          break;
-        case 5:
-          todayKey = "sex";
-          break;
-        case 6:
-          todayKey = "sab";
-          break;
-        default:
-          todayKey = "seg";
-      }
-
-      final plannedIds = state.planner[todayKey] ?? [];
-      final todayRoutines = state.routines
-          .where((r) =>
-              plannedIds.contains(r.id) ||
-              plannedIds.contains("routine:${r.id}"))
-          .toList();
+      final todayRoutines = _getTodayRoutines(state);
 
       final String todayRoutineName = todayRoutines.isNotEmpty
           ? todayRoutines.first.name

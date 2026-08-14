@@ -4,12 +4,15 @@ import 'workout_log.dart';
 import 'medidas.dart';
 import 'diet.dart';
 
+import 'enums.dart';
+
 class WorkoutStreak {
   final int currentWeekCount;   // Treinos feitos na semana atual
   final int consecutiveWeeks;   // Semanas consecutivas com pelo menos 1 treino
   final String lastWorkoutDate; // ISO8601
   final List<int> weekdaysTrained; // Dias da semana treinados (1 = Segunda, 7 = Domingo)
   final List<String> completedTodayRoutines; // Rotinas concluídas hoje
+  final List<String> completedThisWeekRoutines; // IDs das rotinas concluídas nesta semana (usado para Metas Semanais)
 
   WorkoutStreak({
     required this.currentWeekCount,
@@ -17,6 +20,7 @@ class WorkoutStreak {
     required this.lastWorkoutDate,
     this.weekdaysTrained = const [],
     this.completedTodayRoutines = const [],
+    this.completedThisWeekRoutines = const [],
   });
 
   Map<String, dynamic> toJson() => {
@@ -25,6 +29,7 @@ class WorkoutStreak {
     'lastWorkoutDate': lastWorkoutDate,
     'weekdaysTrained': weekdaysTrained,
     'completedTodayRoutines': completedTodayRoutines,
+    'completedThisWeekRoutines': completedThisWeekRoutines,
   };
 
   factory WorkoutStreak.fromJson(Map<String, dynamic> json) => WorkoutStreak(
@@ -33,6 +38,7 @@ class WorkoutStreak {
     lastWorkoutDate: json['lastWorkoutDate'] ?? '',
     weekdaysTrained: (json['weekdaysTrained'] as List?)?.map((e) => (e as num).toInt()).toList() ?? const [],
     completedTodayRoutines: (json['completedTodayRoutines'] as List?)?.map((e) => e.toString()).toList() ?? const [],
+    completedThisWeekRoutines: (json['completedThisWeekRoutines'] as List?)?.map((e) => e.toString()).toList() ?? const [],
   );
 }
 
@@ -40,23 +46,31 @@ class SettingsState {
   final bool sound;
   final bool vibration;
   final int prepSeconds;
+  final OrganizationMode organizationMode;
+  final int continuousListCurrentIndex;
 
   SettingsState({
     required this.sound,
     required this.vibration,
     required this.prepSeconds,
+    this.organizationMode = OrganizationMode.fixedDays,
+    this.continuousListCurrentIndex = 0,
   });
 
   Map<String, dynamic> toJson() => {
     'sound': sound,
     'vibration': vibration,
     'prepSeconds': prepSeconds,
+    'organizationMode': organizationModeToString(organizationMode),
+    'continuousListCurrentIndex': continuousListCurrentIndex,
   };
 
   factory SettingsState.fromJson(Map<String, dynamic> json) => SettingsState(
     sound: json['sound'] ?? true,
     vibration: json['vibration'] ?? true,
     prepSeconds: (json['prepSeconds'] as num?)?.toInt() ?? 5,
+    organizationMode: json['organizationMode'] != null ? organizationModeFromString(json['organizationMode']) : OrganizationMode.fixedDays,
+    continuousListCurrentIndex: (json['continuousListCurrentIndex'] as num?)?.toInt() ?? 0,
   );
 }
 

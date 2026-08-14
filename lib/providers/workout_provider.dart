@@ -840,6 +840,14 @@ class WorkoutProvider extends ChangeNotifier {
 
     activeWorkout = null;
     _updateStreak();
+
+    // Advance continuous list if needed
+    if (settings.organizationMode == OrganizationMode.continuousList) {
+      final continuousList = planner['continuous'] ?? [];
+      if (continuousList.isNotEmpty) {
+        setContinuousListIndex((settings.continuousListCurrentIndex + 1) % continuousList.length);
+      }
+    }
     
     // Evaluate new badges
     final newlyUnlocked = BadgesService.evaluateNewBadges(
@@ -1166,10 +1174,20 @@ class WorkoutProvider extends ChangeNotifier {
     }
 
     final Set<String> completedTodayRoutinesSet = {};
+    final Set<String> completedThisWeekRoutinesSet = {};
     final nowLocal = DateTime.now();
     for (final log in history) {
       try {
         final logDate = parseUtcDate(log.date);
+        
+        // This Week routines
+        if (!logDate.isBefore(thisWeekStart)) {
+          if (log.name.isNotEmpty) {
+            completedThisWeekRoutinesSet.add(log.name);
+          }
+        }
+
+        // Today routines
         if (logDate.year == nowLocal.year &&
             logDate.month == nowLocal.month &&
             logDate.day == nowLocal.day) {
@@ -1181,6 +1199,8 @@ class WorkoutProvider extends ChangeNotifier {
     }
     final List<String> completedTodayRoutines =
         completedTodayRoutinesSet.toList();
+    final List<String> completedThisWeekRoutines =
+        completedThisWeekRoutinesSet.toList();
 
     final lastDate = history.isNotEmpty ? history.first.date : '';
     streak = WorkoutStreak(
@@ -1189,6 +1209,7 @@ class WorkoutProvider extends ChangeNotifier {
       lastWorkoutDate: lastDate,
       weekdaysTrained: weekdaysTrained,
       completedTodayRoutines: completedTodayRoutines,
+      completedThisWeekRoutines: completedThisWeekRoutines,
     );
 
     WatchService.instance.sendStreak(streak);
@@ -1441,8 +1462,41 @@ class WorkoutProvider extends ChangeNotifier {
       sound: sound,
       vibration: vibration,
       prepSeconds: prepSeconds,
+      organizationMode: settings.organizationMode,
+      continuousListCurrentIndex: settings.continuousListCurrentIndex,
     );
     _save();
+  }
+
+  void setOrganizationMode(OrganizationMode mode) {
+    if (settings.organizationMode != mode) {
+      settings = SettingsState(
+        sound: settings.sound,
+        vibration: settings.vibration,
+        prepSeconds: settings.prepSeconds,
+        organizationMode: mode,
+        continuousListCurrentIndex: settings.continuousListCurrentIndex,
+      );
+      _save();
+      // Envia nova configuração para o Watch, pois as rotinas de "hoje" mudaram
+      final s = _getPlannerState();
+      WatchService.instance.sendTodayRoutines(s);
+      WatchService.instance.syncWidgetData();
+    }
+  }
+
+  void setContinuousListIndex(int index) {
+    settings = SettingsState(
+      sound: settings.sound,
+      vibration: settings.vibration,
+      prepSeconds: settings.prepSeconds,
+      organizationMode: settings.organizationMode,
+      continuousListCurrentIndex: index,
+    );
+    _save();
+    final s = _getPlannerState();
+    WatchService.instance.sendTodayRoutines(s);
+    WatchService.instance.syncWidgetData();
   }
 
   void checkAndPopulateDefaultLibrary() {

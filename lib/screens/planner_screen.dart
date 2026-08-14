@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/tracker_provider.dart';
 import '../models/exercise.dart';
 import '../models/planner_state.dart';
+import '../models/enums.dart';
 import '../models/workout_log.dart';
 import '../services/ai_service.dart';
 import '../widgets/glass_card.dart';
@@ -550,189 +551,17 @@ class _PlannerScreenState extends State<PlannerScreen> {
           _buildPlannedVolumeHeader(context, provider, state, accentColor),
           const SizedBox(height: 24),
 
-          // Seção Cronograma Semanal
-          Row(
-            children: [
-              const Icon(Icons.calendar_month, color: Colors.white70, size: 20),
-              const SizedBox(width: 8),
-              const Text(
-                "Cronograma Semanal",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const Spacer(),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.white.withOpacity(0.1)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white70, size: 14),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      constraints: const BoxConstraints(),
-                      tooltip: "Voltar cronograma em 1 dia",
-                      onPressed: () {
-                        provider.shiftPlannerBackwardWithoutLog();
-                      },
-                    ),
-                    Container(width: 1, height: 16, color: Colors.white.withOpacity(0.1)),
-                    IconButton(
-                      icon: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white70, size: 14),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      constraints: const BoxConstraints(),
-                      tooltip: "Avançar cronograma em 1 dia",
-                      onPressed: () {
-                        provider.shiftPlannerForwardWithoutLog();
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // Dias da semana
-          ..._daysOfWeek.map((day) {
-            final items = state.planner[day] ?? [];
-            return Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              child: GlassCard(
-                padding: const EdgeInsets.all(16),
-                borderColor: Colors.white.withOpacity(0.06),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Cabeçalho do dia
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          _getDayNamePt(day),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            if (items.isNotEmpty)
-                              IconButton(
-                                icon: Icon(
-                                  _showAIByDay[day] == true ? Icons.auto_awesome : Icons.auto_awesome_outlined,
-                                  color: _showAIByDay[day] == true ? accentColor : Colors.amber,
-                                  size: 22,
-                                ),
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
-                                tooltip: "Dicas de Treino (IA)",
-                                onPressed: () => _toggleOrFetchAI(day, items, provider.state!.history, state),
-                              ),
-                            if (items.isNotEmpty) const SizedBox(width: 16),
-                            IconButton(
-                              icon: Icon(Icons.add_box_outlined, color: accentColor, size: 22),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                              onPressed: () {
-                                provider.addPlannerItem(day);
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-
-                    if (items.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        child: Text(
-                          "Nenhum treino agendado",
-                          style: TextStyle(
-                            color: Colors.white30,
-                            fontSize: 13,
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                      )
-                    else
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: items.length,
-                        itemBuilder: (context, idx) {
-                          final rawItem = items[idx];
-                          return _buildPlannerItemRow(context, provider, day, idx, rawItem, accentColor);
-                        },
-                      ),
-                      
-                    // AI Insights Card
-                    if (_showAIByDay[day] == true) ...[
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: accentColor.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: accentColor.withOpacity(0.3)),
-                        ),
-                        child: _isLoadingAIByDay[day] == true
-                            ? Row(
-                                children: [
-                                  SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: accentColor, strokeWidth: 2)),
-                                  const SizedBox(width: 12),
-                                  const Text("A IA está analisando seu histórico...", style: TextStyle(color: Colors.white70, fontSize: 12)),
-                                ],
-                              )
-                            : Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(Icons.auto_awesome, color: accentColor, size: 16),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        "Sugestões de Progressão (IA)",
-                                        style: TextStyle(
-                                          color: accentColor,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  if (_aiSuggestionsByDay[day] == null || _aiSuggestionsByDay[day]!.isEmpty)
-                                    const Text("Não foi possível gerar dicas baseadas no seu histórico atual.", style: TextStyle(color: Colors.white54, fontSize: 12))
-                                  else
-                                    ..._aiSuggestionsByDay[day]!.entries.map((e) => Padding(
-                                      padding: const EdgeInsets.only(bottom: 6.0),
-                                      child: RichText(
-                                        text: TextSpan(
-                                          children: [
-                                            TextSpan(text: "• ${e.key}: ", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 12)),
-                                            TextSpan(text: e.value, style: const TextStyle(color: Colors.white70, fontSize: 12)),
-                                          ],
-                                        ),
-                                      ),
-                                    )),
-                                ],
-                              ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            );
-          }),
+          // Seletor de Modo de Organização
+          _buildOrganizationModeSelector(context, provider, state, accentColor),
+          const SizedBox(height: 16),
+          
+          // Agenda
+          if (state.settings.organizationMode == OrganizationMode.fixedDays)
+            ..._buildFixedDaysAgenda(context, provider, state, accentColor)
+          else if (state.settings.organizationMode == OrganizationMode.continuousList)
+            ..._buildContinuousListAgenda(context, provider, state, accentColor)
+          else if (state.settings.organizationMode == OrganizationMode.weeklyGoals)
+            ..._buildWeeklyGoalsAgenda(context, provider, state, accentColor),
         ],
       ),
     );
@@ -1000,5 +829,483 @@ class _PlannerScreenState extends State<PlannerScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildOrganizationModeSelector(BuildContext context, TrackerProvider provider, PlannerState state, Color accentColor) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
+      ),
+      padding: const EdgeInsets.all(4),
+      child: Row(
+        children: [
+          _buildModeOption(
+            context: context,
+            title: "Dias Fixos",
+            icon: Icons.calendar_month,
+            mode: OrganizationMode.fixedDays,
+            currentMode: state.settings.organizationMode,
+            provider: provider,
+            accentColor: accentColor,
+          ),
+          _buildModeOption(
+            context: context,
+            title: "Contínuo",
+            icon: Icons.format_list_numbered,
+            mode: OrganizationMode.continuousList,
+            currentMode: state.settings.organizationMode,
+            provider: provider,
+            accentColor: accentColor,
+          ),
+          _buildModeOption(
+            context: context,
+            title: "Metas",
+            icon: Icons.checklist_rtl,
+            mode: OrganizationMode.weeklyGoals,
+            currentMode: state.settings.organizationMode,
+            provider: provider,
+            accentColor: accentColor,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModeOption({
+    required BuildContext context,
+    required String title,
+    required IconData icon,
+    required OrganizationMode mode,
+    required OrganizationMode currentMode,
+    required TrackerProvider provider,
+    required Color accentColor,
+  }) {
+    final isSelected = mode == currentMode;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          provider.setOrganizationMode(mode);
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? accentColor.withOpacity(0.15) : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: isSelected ? accentColor : Colors.white54, size: 20),
+              const SizedBox(height: 4),
+              Text(
+                title,
+                style: TextStyle(
+                  color: isSelected ? accentColor : Colors.white54,
+                  fontSize: 11,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildFixedDaysAgenda(BuildContext context, TrackerProvider provider, PlannerState state, Color accentColor) {
+    return [
+          // Seção Cronograma Semanal
+          Row(
+            children: [
+              const Icon(Icons.calendar_month, color: Colors.white70, size: 20),
+              const SizedBox(width: 8),
+              const Text(
+                "Cronograma Semanal",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.white.withOpacity(0.1)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white70, size: 14),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      constraints: const BoxConstraints(),
+                      tooltip: "Voltar cronograma em 1 dia",
+                      onPressed: () {
+                        provider.shiftPlannerBackwardWithoutLog();
+                      },
+                    ),
+                    Container(width: 1, height: 16, color: Colors.white.withOpacity(0.1)),
+                    IconButton(
+                      icon: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white70, size: 14),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      constraints: const BoxConstraints(),
+                      tooltip: "Avançar cronograma em 1 dia",
+                      onPressed: () {
+                        provider.shiftPlannerForwardWithoutLog();
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Dias da semana
+          ..._daysOfWeek.map((day) {
+            final items = state.planner[day] ?? [];
+            return Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              child: GlassCard(
+                padding: const EdgeInsets.all(16),
+                borderColor: Colors.white.withOpacity(0.06),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Cabeçalho do dia
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          _getDayNamePt(day),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            if (items.isNotEmpty)
+                              IconButton(
+                                icon: Icon(
+                                  _showAIByDay[day] == true ? Icons.auto_awesome : Icons.auto_awesome_outlined,
+                                  color: _showAIByDay[day] == true ? accentColor : Colors.amber,
+                                  size: 22,
+                                ),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                tooltip: "Dicas de Treino (IA)",
+                                onPressed: () => _toggleOrFetchAI(day, items, provider.state!.history, state),
+                              ),
+                            if (items.isNotEmpty) const SizedBox(width: 16),
+                            IconButton(
+                              icon: Icon(Icons.add_box_outlined, color: accentColor, size: 22),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              onPressed: () {
+                                provider.addPlannerItem(day);
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+
+                    if (items.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        child: Text(
+                          "Nenhum treino agendado",
+                          style: TextStyle(
+                            color: Colors.white30,
+                            fontSize: 13,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      )
+                    else
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: items.length,
+                        itemBuilder: (context, idx) {
+                          final rawItem = items[idx];
+                          return _buildPlannerItemRow(context, provider, day, idx, rawItem, accentColor);
+                        },
+                      ),
+                      
+                    // AI Insights Card
+                    if (_showAIByDay[day] == true) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: accentColor.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: accentColor.withOpacity(0.3)),
+                        ),
+                        child: _isLoadingAIByDay[day] == true
+                            ? Row(
+                                children: [
+                                  SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: accentColor, strokeWidth: 2)),
+                                  const SizedBox(width: 12),
+                                  const Text("A IA está analisando seu histórico...", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                                ],
+                              )
+                            : Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(Icons.auto_awesome, color: accentColor, size: 16),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        "Sugestões de Progressão (IA)",
+                                        style: TextStyle(
+                                          color: accentColor,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  if (_aiSuggestionsByDay[day] == null || _aiSuggestionsByDay[day]!.isEmpty)
+                                    const Text("Não foi possível gerar dicas baseadas no seu histórico atual.", style: TextStyle(color: Colors.white54, fontSize: 12))
+                                  else
+                                    ..._aiSuggestionsByDay[day]!.entries.map((e) => Padding(
+                                      padding: const EdgeInsets.only(bottom: 6.0),
+                                      child: RichText(
+                                        text: TextSpan(
+                                          children: [
+                                            TextSpan(text: "• ${e.key}: ", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 12)),
+                                            TextSpan(text: e.value, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                                          ],
+                                        ),
+                                      ),
+                                    )),
+                                ],
+                              ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            );
+          }),
+    ];
+  }
+
+  List<Widget> _buildContinuousListAgenda(BuildContext context, TrackerProvider provider, PlannerState state, Color accentColor) {
+    final items = state.planner['continuous'] ?? [];
+    final currentIndex = state.settings.continuousListCurrentIndex;
+
+    return [
+      Row(
+        children: [
+          const Icon(Icons.format_list_numbered, color: Colors.white70, size: 20),
+          const SizedBox(width: 8),
+          const Text(
+            "Lista Contínua",
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const Spacer(),
+          IconButton(
+            icon: Icon(Icons.add_box_outlined, color: accentColor, size: 22),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            onPressed: () {
+              provider.addPlannerItem('continuous');
+            },
+          ),
+        ],
+      ),
+      const SizedBox(height: 12),
+      if (items.isEmpty)
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 12),
+          child: Text(
+            "Nenhum treino na lista. Adicione treinos que se repetirão em sequência.",
+            style: TextStyle(color: Colors.white30, fontSize: 13, fontStyle: FontStyle.italic),
+          ),
+        )
+      else
+        ...items.asMap().entries.map((entry) {
+          final idx = entry.key;
+          final rawItem = entry.value;
+          
+          final isCurrent = items.isNotEmpty && (idx == (currentIndex % items.length));
+          
+          return Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                GlassCard(
+                  padding: const EdgeInsets.all(16),
+                  borderColor: isCurrent ? accentColor.withOpacity(0.5) : Colors.white.withOpacity(0.06),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            "Treino ${idx + 1}",
+                            style: TextStyle(
+                              color: isCurrent ? accentColor : Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          if (isCurrent)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: accentColor.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                "PRÓXIMO",
+                                style: TextStyle(
+                                  color: accentColor,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      _buildPlannerItemRow(context, provider, 'continuous', idx, rawItem, accentColor),
+                    ],
+                  ),
+                ),
+                if (isCurrent)
+                   Positioned(
+                    top: -4,
+                    right: -4,
+                    child: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: accentColor,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(color: accentColor.withOpacity(0.5), blurRadius: 4, spreadRadius: 2),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          );
+        }).toList(),
+    ];
+  }
+
+  List<Widget> _buildWeeklyGoalsAgenda(BuildContext context, TrackerProvider provider, PlannerState state, Color accentColor) {
+    final items = state.planner['weekly'] ?? [];
+    final completedNames = state.streak.completedThisWeekRoutines;
+
+    return [
+      Row(
+        children: [
+          const Icon(Icons.checklist_rtl, color: Colors.white70, size: 20),
+          const SizedBox(width: 8),
+          const Text(
+            "Metas Semanais",
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const Spacer(),
+          IconButton(
+            icon: Icon(Icons.add_box_outlined, color: accentColor, size: 22),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            onPressed: () {
+              provider.addPlannerItem('weekly');
+            },
+          ),
+        ],
+      ),
+      const SizedBox(height: 12),
+      if (items.isEmpty)
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 12),
+          child: Text(
+            "Nenhuma meta definida. Adicione os treinos que deseja concluir nesta semana.",
+            style: TextStyle(color: Colors.white30, fontSize: 13, fontStyle: FontStyle.italic),
+          ),
+        )
+      else
+        ...items.asMap().entries.map((entry) {
+          final idx = entry.key;
+          final rawItem = entry.value;
+          
+          bool isCompleted = false;
+          if (rawItem.startsWith('routine:')) {
+            final rId = rawItem.substring(8);
+            final r = state.routines.where((x) => x.id == rId).firstOrNull;
+            if (r != null && completedNames.contains(r.name)) {
+              isCompleted = true;
+            }
+          } else {
+             final r = state.routines.where((x) => x.id == rawItem).firstOrNull;
+             if (r != null && completedNames.contains(r.name)) {
+                isCompleted = true;
+             }
+          }
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            child: Opacity(
+              opacity: isCompleted ? 0.6 : 1.0,
+              child: GlassCard(
+                padding: const EdgeInsets.all(16),
+                borderColor: isCompleted ? Colors.greenAccent.withOpacity(0.3) : Colors.white.withOpacity(0.06),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Meta ${idx + 1}",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        if (isCompleted)
+                          const Icon(Icons.check_circle, color: Colors.greenAccent, size: 20)
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    _buildPlannerItemRow(context, provider, 'weekly', idx, rawItem, accentColor),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+    ];
   }
 }
