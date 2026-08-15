@@ -39,12 +39,49 @@ class WorkoutProvider extends ChangeNotifier {
       final now = DateTime.now().millisecondsSinceEpoch;
       final newElapsed = ((now - _activeWorkout!.startTime) / 1000).round();
       if (newElapsed != _activeWorkout!.elapsedSeconds) {
-        _activeWorkout = _activeWorkout!.copyWith(elapsedSeconds: newElapsed);
+        _activeWorkout =
+            _activeWorkout!.copyWith(elapsedSeconds: newElapsed);
       }
     }
     return _activeWorkout;
   }
 
+  List<String> get todayPlannedItems {
+    final mode = settings.organizationMode;
+
+    if (mode == OrganizationMode.continuousList) {
+      final list = planner['continuous'] ?? [];
+      if (list.isEmpty) return [];
+      final idx = settings.continuousListCurrentIndex % list.length;
+      return [list[idx]];
+    } else if (mode == OrganizationMode.weeklyGoals) {
+      final list = planner['weekly'] ?? [];
+      final completed = streak.completedThisWeekRoutines;
+      final remaining = list.where((id) {
+         final actualId = id.startsWith('routine:') ? id.substring(8) : id;
+         final routine = routines.firstWhere((r) => r.id == actualId, orElse: () => Routine(id: '', name: '', defaultRest: 0, exercises: []));
+         if (routine.id.isEmpty) return false;
+         return !completed.contains(routine.name);
+      }).toList();
+      if (remaining.isEmpty) return [];
+      return [remaining.first];
+    }
+
+    // Default: fixedDays
+    final weekday = DateTime.now().weekday;
+    String todayKey;
+    switch (weekday) {
+      case 1: todayKey = 'seg'; break;
+      case 2: todayKey = 'ter'; break;
+      case 3: todayKey = 'qua'; break;
+      case 4: todayKey = 'qui'; break;
+      case 5: todayKey = 'sex'; break;
+      case 6: todayKey = 'sab'; break;
+      case 7: todayKey = 'dom'; break;
+      default: todayKey = 'seg';
+    }
+    return planner[todayKey] ?? [];
+  }
   set activeWorkout(ActiveWorkoutState? value) {
     _activeWorkout = value;
   }

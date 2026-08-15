@@ -34,28 +34,7 @@ class WorkoutScreen extends StatefulWidget {
 }
 
 class _WorkoutScreenState extends State<WorkoutScreen> {
-  // Retorna a chave do dia atual compatível com o planner ('seg', 'ter', etc.)
-  String _getTodayKey() {
-    final weekday = DateTime.now().weekday;
-    switch (weekday) {
-      case 1:
-        return 'seg';
-      case 2:
-        return 'ter';
-      case 3:
-        return 'qua';
-      case 4:
-        return 'qui';
-      case 5:
-        return 'sex';
-      case 6:
-        return 'sab';
-      case 7:
-        return 'dom';
-      default:
-        return 'seg';
-    }
-  }
+
 
   String _getTodayLabel() {
     final weekday = DateTime.now().weekday;
@@ -122,9 +101,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   }
 
   Widget _buildIdleView(BuildContext context, WorkoutProvider provider) {
-    final todayKey = _getTodayKey();
     final todayLabel = _getTodayLabel();
-    final plannedRoutineIds = provider.planner[todayKey] ?? [];
+    final plannedRoutineIds = provider.todayPlannedItems;
     final accentColor = context.select<ProfileProvider, Color>(
       (p) => ThemeUtils.getColor(p.currentProfile.colorAccent),
     );
