@@ -128,8 +128,12 @@ class WorkoutManager: NSObject, ObservableObject {
         builder?.delegate = self
         
         let dataSource = HKLiveWorkoutDataSource(healthStore: healthStore, workoutConfiguration: configuration)
-        dataSource.enableCollection(for: HKQuantityType.quantityType(forIdentifier: .heartRate)!, predicate: nil)
-        dataSource.enableCollection(for: HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)!, predicate: nil)
+        if let hrType = HKQuantityType.quantityType(forIdentifier: .heartRate) {
+            dataSource.enableCollection(for: hrType, predicate: nil)
+        }
+        if let energyType = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned) {
+            dataSource.enableCollection(for: energyType, predicate: nil)
+        }
         builder?.dataSource = dataSource
         
         let startDate = Date()
