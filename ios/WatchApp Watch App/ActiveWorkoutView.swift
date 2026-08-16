@@ -638,7 +638,7 @@ struct ActiveWorkoutView: View {
             workoutProgressView(activeWorkout: activeWorkout)
                 .padding(.bottom, 2)
             
-            if exIndex < activeWorkout.exercises.count {
+            if exIndex >= 0 && exIndex < activeWorkout.exercises.count {
                 let exercise = activeWorkout.exercises[exIndex]
                 let isCardio = exercise.isCardio
                 
@@ -1028,13 +1028,13 @@ struct ActiveWorkoutView: View {
         let delta = Int(newValue - oldValue)
         guard delta != 0 else { return }
         
-        guard activeWorkout.currentExerciseIndex < activeWorkout.exercises.count else { return }
+        guard activeWorkout.currentExerciseIndex >= 0 && activeWorkout.currentExerciseIndex < activeWorkout.exercises.count else { return }
         let exercise = activeWorkout.exercises[activeWorkout.currentExerciseIndex]
         let isCardio = exercise.isCardio
         
         if isCardio {
             let activeSetIdx = getSelectedSetIndex(for: exercise, index: activeWorkout.currentExerciseIndex)
-            let pc = activeSetIdx < exercise.performedCardios.count ? exercise.performedCardios[activeSetIdx] : nil
+            let pc = activeSetIdx >= 0 && activeSetIdx < exercise.performedCardios.count ? exercise.performedCardios[activeSetIdx] : nil
             let currentDistance = pc?.distanceKm ?? 0.0
             let currentDuration = pc?.durationSeconds ?? 0
             
@@ -1286,7 +1286,7 @@ struct ActiveWorkoutView: View {
                 timeTimerElapsed += 1
                 if let activeWorkout = connectivityManager.activeWorkout {
                     let exIdx = activeWorkout.currentExerciseIndex
-                    if exIdx < activeWorkout.exercises.count {
+                    if exIdx >= 0 && exIdx < activeWorkout.exercises.count {
                         let exercise = activeWorkout.exercises[exIdx]
                         if timeTimerElapsed == exercise.reps {
                             #if canImport(WatchKit)
@@ -1315,27 +1315,28 @@ struct ActiveWorkoutView: View {
     }
 
     private func updateStopwatch() {
-        // Check if workout is long (>30 minutes) and adjust UI refresh rate
-        if elapsedSeconds > 1800 && !isLongWorkout {
-            isLongWorkout = true
-            uiRefreshInterval = 5.0 // Update UI every 5 seconds for long workouts
-        } else if elapsedSeconds <= 1800 && isLongWorkout {
-            isLongWorkout = false
-            uiRefreshInterval = 1.0 // Restore normal refresh rate
-        }
-        
-        // Only update UI if enough time has passed based on refresh interval
-        let shouldUpdateUI = elapsedSeconds % Int(uiRefreshInterval) == 0
-        
-        if shouldUpdateUI {
-            guard let activeWorkout = connectivityManager.activeWorkout else { return }
-            if activeWorkout.paused {
-                elapsedSeconds = activeWorkout.elapsedSeconds
-            } else {
-                let currentTimeMs = Int64(Date().timeIntervalSince1970 * 1000)
-                let diff = currentTimeMs - activeWorkout.startTime
-                elapsedSeconds = max(0, Int(diff / 1000))
+        if let activeWorkout = connectivityManager.activeWorkout, !activeWorkout.paused {
+            let currentTimeMs = Int64(Date().timeIntervalSince1970 * 1000)
+            let diff = currentTimeMs - activeWorkout.startTime
+            let seconds = Int(clamping: diff / 1000)
+            
+            // Auto-adjust refresh interval for long workouts to save battery
+            if seconds > 1800 && !isLongWorkout {
+                isLongWorkout = true
+                uiRefreshInterval = 5.0 // Update UI every 5 seconds for long workouts
+            } else if seconds <= 1800 && isLongWorkout {
+                isLongWorkout = false
+                uiRefreshInterval = 1.0 // Restore normal refresh rate
             }
+            
+            // Only update UI if enough time has passed based on refresh interval
+            let shouldUpdateUI = seconds % max(1, Int(uiRefreshInterval)) == 0
+            
+            if shouldUpdateUI {
+                elapsedSeconds = max(0, seconds)
+            }
+        } else if let activeWorkout = connectivityManager.activeWorkout {
+            elapsedSeconds = activeWorkout.elapsedSeconds
         }
     }
 }

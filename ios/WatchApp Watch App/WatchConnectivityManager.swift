@@ -637,7 +637,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         )
         exercises[exerciseIndex] = updatedEx
         
-        let elapsed = max(0, Int(Date().timeIntervalSince1970 - Double(active.startTime / 1000)))
+        let elapsed = max(0, Int(clamping: Int64(Date().timeIntervalSince1970) - (active.startTime / 1000)))
         
         activeWorkout = WatchActiveWorkoutState(
             name: active.name,
@@ -969,7 +969,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             }
         }
         
-        let elapsed = max(0, Int(Date().timeIntervalSince1970 - Double(active.startTime / 1000)))
+        let elapsed = max(0, Int(clamping: Int64(Date().timeIntervalSince1970) - (active.startTime / 1000)))
         
         activeWorkout = WatchActiveWorkoutState(
             name: active.name,
@@ -1045,7 +1045,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         )
         exercises[exerciseIndex] = updatedEx
         
-        let elapsed = max(0, Int(Date().timeIntervalSince1970 - Double(active.startTime / 1000)))
+        let elapsed = max(0, Int(clamping: Int64(Date().timeIntervalSince1970) - (active.startTime / 1000)))
         
         activeWorkout = WatchActiveWorkoutState(
             name: active.name,
@@ -1062,7 +1062,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     private func skipRestLocal() {
         guard var active = activeWorkout else { return }
         
-        let elapsed = max(0, Int(Date().timeIntervalSince1970 - Double(active.startTime / 1000)))
+        let elapsed = max(0, Int(clamping: Int64(Date().timeIntervalSince1970) - (active.startTime / 1000)))
         
         activeWorkout = WatchActiveWorkoutState(
             name: active.name,
@@ -1185,7 +1185,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     private func postponeWorkoutLocal() {
         guard var active = activeWorkout else { return }
         
-        let elapsed = max(0, Int(Date().timeIntervalSince1970 - Double(active.startTime / 1000)))
+        let elapsed = max(0, Int(clamping: Int64(Date().timeIntervalSince1970) - (active.startTime / 1000)))
         
         activeWorkout = WatchActiveWorkoutState(
             name: active.name,
@@ -1225,7 +1225,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         guard var active = activeWorkout else { return }
         
         let now = Int64(Date().timeIntervalSince1970 * 1000)
-        let elapsed = max(0, Int(Date().timeIntervalSince1970 - Double(active.startTime / 1000)))
+        let elapsed = max(0, Int(clamping: Int64(Date().timeIntervalSince1970) - (active.startTime / 1000)))
         
         let newPaused = !currentlyPaused
         let newStartTime = newPaused ? active.startTime : (now - Int64(elapsed * 1000))
@@ -1252,7 +1252,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         guard var active = activeWorkout else { return }
         guard index >= 0 && index < active.exercises.count else { return }
         
-        let elapsed = max(0, Int(Date().timeIntervalSince1970 - Double(active.startTime / 1000)))
+        let elapsed = max(0, Int(clamping: Int64(Date().timeIntervalSince1970) - (active.startTime / 1000)))
         
         activeWorkout = WatchActiveWorkoutState(
             name: active.name,

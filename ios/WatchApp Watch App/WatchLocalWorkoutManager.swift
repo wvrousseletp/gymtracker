@@ -214,7 +214,7 @@ class WatchLocalWorkoutManager {
     
     func completeLocalWorkout(activeWorkout: WatchActiveWorkoutState, rpe: Int = 8, notes: String = "Treino concluído em modo offline via Apple Watch") -> [String: Any] {
         let now = Date()
-        let duration = max(0, Int(now.timeIntervalSince1970 - Double(activeWorkout.startTime / 1000)))
+        let duration = max(0, Int(clamping: Int64(now.timeIntervalSince1970) - (activeWorkout.startTime / 1000)))
         
         var totalSets = 0
         var completedSets = 0

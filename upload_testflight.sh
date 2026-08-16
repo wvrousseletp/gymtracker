@@ -17,6 +17,10 @@
 set -e
 set -o pipefail
 
+export LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+export RUBYOPT="-E utf-8"
+
 # ── Configuração ──────────────────────────────────────────
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 WORKSPACE="$PROJECT_DIR/ios/Runner.xcworkspace"
@@ -47,7 +51,7 @@ echo ""
 XCODE_VERSION=$(xcrun xcodebuild -version | head -1)
 echo "✓ Xcode: $XCODE_VERSION"
 
-REQUIRED_MAJOR=15
+REQUIRED_MAJOR=14
 XCODE_MAJOR=$(echo "$XCODE_VERSION" | grep -oE '[0-9]+' | head -1)
 if [ "$XCODE_MAJOR" -lt "$REQUIRED_MAJOR" ]; then
     echo "✗ Erro: Xcode $REQUIRED_MAJOR+ é necessário. Instale via https://developer.apple.com/download/"
@@ -90,6 +94,8 @@ cat > "$EXPORT_OPTIONS" << EXPORTEOF
 <dict>
     <key>method</key>
     <string>app-store</string>
+    <key>destination</key>
+    <string>upload</string>
     <key>teamID</key>
     <string>PJ32UPL29J</string>
     <key>uploadBitcode</key>
@@ -97,14 +103,7 @@ cat > "$EXPORT_OPTIONS" << EXPORTEOF
     <key>uploadSymbols</key>
     <true/>
     <key>signingStyle</key>
-    <string>manual</string>
-    <key>provisioningProfiles</key>
-    <dict>
-        <key>com.vicente.losmooscles</key>
-        <string>match AppStore com.vicente.losmooscles</string>
-        <key>com.vicente.losmooscles.watchkitapp</key>
-        <string>match AppStore com.vicente.losmooscles.watchkitapp</string>
-    </dict>
+    <string>automatic</string>
 </dict>
 </plist>
 EXPORTEOF
