@@ -34,9 +34,5 @@
 	<array>
 		<string>workout-processing</string>
 	</array>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>workout-processing</string>
-	</array>
 </dict>
 </plist>
