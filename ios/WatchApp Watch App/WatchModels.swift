@@ -14,8 +14,8 @@ struct WatchRoutine: Codable, Identifiable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        id = try container.decode(String.self, forKey: .id)
-        name = try container.decode(String.self, forKey: .name)
+        id = (try? container.decode(String.self, forKey: .id)) ?? UUID().uuidString
+        name = (try? container.decode(String.self, forKey: .name)) ?? "Rotina"
         
         if let val = try? container.decode(Int.self, forKey: .defaultRest) {
             defaultRest = val
@@ -110,9 +110,9 @@ struct WatchLibraryExercise: Codable, Identifiable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        id = try container.decode(String.self, forKey: .id)
-        name = try container.decode(String.self, forKey: .name)
-        muscle = try container.decode(String.self, forKey: .muscle)
+        id = (try? container.decode(String.self, forKey: .id)) ?? UUID().uuidString
+        name = (try? container.decode(String.self, forKey: .name)) ?? "Exercício"
+        muscle = (try? container.decode(String.self, forKey: .muscle)) ?? "Geral"
         executionType = (try? container.decode(String.self, forKey: .executionType)) ?? "Livre"
         measurementType = (try? container.decode(String.self, forKey: .measurementType)) ?? "reps"
         isStationary = (try? container.decode(Bool.self, forKey: .isStationary)) ?? false
@@ -397,6 +397,10 @@ struct WatchActiveExercise: Codable, Identifiable {
         case instanceId, name, muscle, sets, reps, rest, weight, setsState, measurementType, executionType, performedCardios, failureReport, failureReps, isStationary
     }
 
+    private enum ExtraKeys: String, CodingKey {
+        case id
+    }
+
     init(name: String, muscle: String, sets: Int, reps: Int, rest: Int, weight: Double, setsState: [Bool], measurementType: String, executionType: String?, performedCardios: [WatchPerformedCardio?], failureReport: [Bool], failureReps: [Int?], isStationary: Bool = false, instanceId: String = UUID().uuidString) {
         self.instanceId = instanceId
         self.name = name
@@ -416,10 +420,11 @@ struct WatchActiveExercise: Codable, Identifiable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        instanceId = (try? container.decode(String.self, forKey: .instanceId)) ?? UUID().uuidString
-        name = try container.decode(String.self, forKey: .name)
-        muscle = try container.decode(String.self, forKey: .muscle)
-        setsState = try container.decode([Bool].self, forKey: .setsState)
+        let extraContainer = try? decoder.container(keyedBy: ExtraKeys.self)
+        instanceId = (try? container.decode(String.self, forKey: .instanceId)) ?? (try? extraContainer?.decode(String.self, forKey: .id)) ?? UUID().uuidString
+        name = (try? container.decode(String.self, forKey: .name)) ?? "Exercício"
+        muscle = (try? container.decode(String.self, forKey: .muscle)) ?? "Geral"
+        setsState = (try? container.decode([Bool].self, forKey: .setsState)) ?? []
         let isCardioName = name.lowercased().contains("corrida") || name.lowercased().contains("esteira") || name.lowercased().contains("bicicleta") || name.lowercased().contains("bike") || name.lowercased().contains("elíptico") || name.lowercased().contains("caminhada") || name.lowercased().contains("cardio") || muscle.lowercased().contains("cardio")
         measurementType = (try? container.decode(String.self, forKey: .measurementType)) ?? (isCardioName ? "time" : "reps")
         executionType = try? container.decodeIfPresent(String.self, forKey: .executionType)
@@ -430,7 +435,7 @@ struct WatchActiveExercise: Codable, Identifiable {
         } else if let val = try? container.decode(Double.self, forKey: .sets) {
             sets = Int(val)
         } else {
-            sets = setsState.count
+            sets = max(1, setsState.count)
         }
 
         if let val = try? container.decode(Int.self, forKey: .reps) {

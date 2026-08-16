@@ -76,9 +76,14 @@ class WatchService {
           break;
         }
 
-        final baseRoutine =
-            _provider!.state?.routines.firstWhere((r) => r.id == routineId);
-        if (baseRoutine != null) {
+        final cleanRoutineId = routineId.startsWith('routine:')
+            ? routineId.substring(8)
+            : routineId;
+        final baseRoutine = _provider!.state?.routines.firstWhere(
+          (r) => r.id == routineId || r.id == cleanRoutineId || 'routine:${r.id}' == routineId,
+          orElse: () => Routine(id: '', name: '', defaultRest: 0, exercises: []),
+        );
+        if (baseRoutine != null && baseRoutine.id.isNotEmpty) {
           Routine routineToStart = baseRoutine;
           if (customExercisesJson != null) {
             final List<RoutineExercise> customExList = [];
@@ -107,6 +112,8 @@ class WatchService {
               defaultRest: baseRoutine.defaultRest,
               exercises: customExList,
               isDynamicExercise: baseRoutine.isDynamicExercise,
+              executionType: baseRoutine.executionType,
+              circuitCycles: baseRoutine.circuitCycles,
             );
           }
 
@@ -247,9 +254,19 @@ class WatchService {
 
       case 'startSingleExercise':
         final String exerciseId = call.arguments as String;
-        final exercise =
-            _provider!.state?.library.firstWhere((e) => e.id == exerciseId);
-        if (exercise != null) {
+        final cleanExId = exerciseId.startsWith('exercise:')
+            ? exerciseId.substring(9)
+            : exerciseId;
+        final exercise = _provider!.state?.library.firstWhere(
+          (e) => e.id == exerciseId || e.id == cleanExId || 'exercise:${e.id}' == exerciseId,
+          orElse: () => LibraryExercise(
+            id: '',
+            name: '',
+            muscle: '',
+            measurementType: MeasurementType.reps,
+          ),
+        );
+        if (exercise != null && exercise.id.isNotEmpty) {
           _provider!.startSingleExercise(exercise);
           if (_provider!.state?.activeWorkout != null) {
             sendActiveWorkout(_provider!.state!.activeWorkout!);

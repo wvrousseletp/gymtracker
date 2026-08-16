@@ -596,7 +596,7 @@ struct WorkoutSelectionView: View {
     private var workoutTabContent: some View {
         if let activeWorkout = connectivityManager.activeWorkout, !activeWorkout.postponed {
             ActiveWorkoutView()
-        } else if workoutManager.workoutSessionState == .running || workoutManager.workoutSessionState == .paused || connectivityManager.isSyncing {
+        } else if connectivityManager.isSyncing && connectivityManager.routines.isEmpty && connectivityManager.library.isEmpty {
             syncingView
         } else if connectivityManager.routines.isEmpty && connectivityManager.library.isEmpty {
             emptySyncView

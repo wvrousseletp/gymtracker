@@ -47,7 +47,10 @@ class WatchDataCache {
     
     func setRoutines(_ routines: [WatchRoutine]) {
         memoryCache["routines"] = routines
-        scheduleWrite(key: "cached_routines", value: routines)
+        if let data = try? JSONEncoder().encode(routines),
+           let str = String(data: data, encoding: .utf8) {
+            scheduleWrite(key: "cached_routines", value: str)
+        }
     }
     
     func getLibrary() -> [WatchLibraryExercise] {
@@ -72,7 +75,10 @@ class WatchDataCache {
     
     func setLibrary(_ library: [WatchLibraryExercise]) {
         memoryCache["library"] = library
-        scheduleWrite(key: "cached_library", value: library)
+        if let data = try? JSONEncoder().encode(library),
+           let str = String(data: data, encoding: .utf8) {
+            scheduleWrite(key: "cached_library", value: str)
+        }
     }
     
     func getPlanner() -> [String: [String]] {
@@ -97,7 +103,10 @@ class WatchDataCache {
     
     func setPlanner(_ planner: [String: [String]]) {
         memoryCache["planner"] = planner
-        scheduleWrite(key: "cached_planner", value: planner)
+        if let data = try? JSONEncoder().encode(planner),
+           let str = String(data: data, encoding: .utf8) {
+            scheduleWrite(key: "cached_planner", value: str)
+        }
     }
     
     func getStreak() -> WatchStreak {
@@ -122,7 +131,10 @@ class WatchDataCache {
     
     func setStreak(_ streak: WatchStreak) {
         memoryCache["streak"] = streak
-        scheduleWrite(key: "cached_streak", value: streak)
+        if let data = try? JSONEncoder().encode(streak),
+           let str = String(data: data, encoding: .utf8) {
+            scheduleWrite(key: "cached_streak", value: str)
+        }
     }
     
     func getWaterIntakeCurrent() -> Int {

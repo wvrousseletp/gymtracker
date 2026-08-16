@@ -18,18 +18,20 @@ class HealthKitWorkoutManager {
     // MARK: - Authorization
     
     func requestAuthorization() {
+        guard HKHealthStore.isHealthDataAvailable() else { return }
+        
         let typesToShare: Set<HKSampleType> = [
             HKObjectType.workoutType()
         ]
         
-        let typesToRead: Set<HKObjectType> = [
-            HKObjectType.workoutType(),
-            HKQuantityType(.heartRate),
-            HKQuantityType(.activeEnergyBurned),
-            HKQuantityType(.basalEnergyBurned),
-            HKQuantityType(.stepCount),
-            HKQuantityType(.distanceWalkingRunning)
+        var typesToRead: Set<HKObjectType> = [
+            HKObjectType.workoutType()
         ]
+        if let hr = HKQuantityType.quantityType(forIdentifier: .heartRate) { typesToRead.insert(hr) }
+        if let cal = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned) { typesToRead.insert(cal) }
+        if let basal = HKQuantityType.quantityType(forIdentifier: .basalEnergyBurned) { typesToRead.insert(basal) }
+        if let steps = HKQuantityType.quantityType(forIdentifier: .stepCount) { typesToRead.insert(steps) }
+        if let dist = HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning) { typesToRead.insert(dist) }
         
         healthStore.requestAuthorization(toShare: typesToShare, read: typesToRead) { success, error in
             if let error = error {
