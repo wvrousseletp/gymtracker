@@ -189,45 +189,98 @@ class WorkoutProvider extends ChangeNotifier {
 
   // --- WORKOUT OPERATIONS ---
   void startWorkout(Routine routine, WorkoutRecovery recovery, bool isWarmup) {
-    final workoutExercises = routine.exercises.map((ex) {
-      final ref = library.firstWhere(
-        (l) => l.id == ex.exerciseId,
-        orElse: () => LibraryExercise(
-          id: ex.exerciseId,
-          name: 'Exercício',
-          muscle: 'Geral',
-          measurementType: MeasurementType.reps,
-        ),
-      );
+    List<ActiveExercise> workoutExercises = [];
 
-      // Determine if this is cardio based on measurementType or existing flags
-      final isCardio = (ex.isCardio ||
-          ref.measurementType == MeasurementType.cardio ||
-          ref.measurementType == MeasurementType.distance) &&
-          ref.measurementType != MeasurementType.time;
+    if (routine.executionType == RoutineExecutionType.circuit) {
+      final cycles = routine.circuitCycles > 0 ? routine.circuitCycles : 1;
+      for (int cycle = 0; cycle < cycles; cycle++) {
+        for (int i = 0; i < routine.exercises.length; i++) {
+          final ex = routine.exercises[i];
+          final ref = library.firstWhere(
+            (l) => l.id == ex.exerciseId,
+            orElse: () => LibraryExercise(
+              id: ex.exerciseId,
+              name: 'Exercício',
+              muscle: 'Geral',
+              measurementType: MeasurementType.reps,
+            ),
+          );
 
-      // For cardio exercises without sets, use 1 set for UI consistency
-      final effectiveSets = (isCardio && !ex.allowCardioSets) ? 1 : ex.sets;
+          final isCardio = (ex.isCardio ||
+                  ref.measurementType == MeasurementType.cardio ||
+                  ref.measurementType == MeasurementType.distance) &&
+              ref.measurementType != MeasurementType.time;
 
-      return ActiveExercise(
-        id: ex.id,
-        name: ref.name,
-        muscle: ref.muscle,
-        executionType: ref.executionType,
-        measurementType: ref.measurementType,
-        sets: effectiveSets,
-        reps: ex.reps,
-        rest: ex.rest,
-        weight: ex.weight,
-        weightsPerSet: ex.weightsPerSet,
-        repsPerSet: ex.repsPerSet,
-        setsState: List<bool>.filled(effectiveSets, false),
-        performedCardios: List<PerformedCardio?>.filled(effectiveSets, null),
-        failureReport: List<bool>.filled(effectiveSets, false),
-        isCardio: isCardio,
-        allowCardioSets: ex.allowCardioSets,
-      );
-    }).toList();
+          final effectiveSets = 1;
+
+          // Se por acaso havia configurações de peso/rep por set antes de virar ciclo,
+          // tentamos resgatar para a iteração (cycle) correspondente, senão usamos o padrão.
+          final cycleWeight = (ex.weightsPerSet != null && ex.weightsPerSet!.length > cycle)
+              ? ex.weightsPerSet![cycle]
+              : ex.weight;
+          final cycleReps = (ex.repsPerSet != null && ex.repsPerSet!.length > cycle)
+              ? ex.repsPerSet![cycle]
+              : ex.reps;
+
+          workoutExercises.add(ActiveExercise(
+            id: '${ex.id}_cycle_$cycle',
+            name: ref.name,
+            muscle: ref.muscle,
+            executionType: ref.executionType,
+            measurementType: ref.measurementType,
+            sets: effectiveSets,
+            reps: cycleReps,
+            rest: ex.rest,
+            weight: cycleWeight,
+            weightsPerSet: null, // Achado, então usa o global
+            repsPerSet: null,    // Achatado
+            setsState: List<bool>.filled(effectiveSets, false),
+            performedCardios: List<PerformedCardio?>.filled(effectiveSets, null),
+            failureReport: List<bool>.filled(effectiveSets, false),
+            isCardio: isCardio,
+            allowCardioSets: false,
+          ));
+        }
+      }
+    } else {
+      workoutExercises = routine.exercises.map((ex) {
+        final ref = library.firstWhere(
+          (l) => l.id == ex.exerciseId,
+          orElse: () => LibraryExercise(
+            id: ex.exerciseId,
+            name: 'Exercício',
+            muscle: 'Geral',
+            measurementType: MeasurementType.reps,
+          ),
+        );
+
+        final isCardio = (ex.isCardio ||
+                ref.measurementType == MeasurementType.cardio ||
+                ref.measurementType == MeasurementType.distance) &&
+            ref.measurementType != MeasurementType.time;
+
+        final effectiveSets = (isCardio && !ex.allowCardioSets) ? 1 : ex.sets;
+
+        return ActiveExercise(
+          id: ex.id,
+          name: ref.name,
+          muscle: ref.muscle,
+          executionType: ref.executionType,
+          measurementType: ref.measurementType,
+          sets: effectiveSets,
+          reps: ex.reps,
+          rest: ex.rest,
+          weight: ex.weight,
+          weightsPerSet: ex.weightsPerSet,
+          repsPerSet: ex.repsPerSet,
+          setsState: List<bool>.filled(effectiveSets, false),
+          performedCardios: List<PerformedCardio?>.filled(effectiveSets, null),
+          failureReport: List<bool>.filled(effectiveSets, false),
+          isCardio: isCardio,
+          allowCardioSets: ex.allowCardioSets,
+        );
+      }).toList();
+    }
 
     activeWorkout = ActiveWorkoutState(
       name: routine.name,
@@ -238,6 +291,8 @@ class WorkoutProvider extends ChangeNotifier {
       recovery: recovery,
       isWarmup: isWarmup,
       warmupDurationSeconds: 0,
+      executionType: routine.executionType,
+      circuitCycles: routine.circuitCycles,
     );
 
     _save();
@@ -1343,12 +1398,16 @@ class WorkoutProvider extends ChangeNotifier {
 
   // --- ROUTINE OPERATIONS ---
   void addRoutine(
-      String name, int defaultRest, List<RoutineExercise> exercises) {
+      String name, int defaultRest, List<RoutineExercise> exercises,
+      {RoutineExecutionType executionType = RoutineExecutionType.standard,
+      int circuitCycles = 3}) {
     final r = Routine(
       id: "routine-${DateTime.now().millisecondsSinceEpoch}",
       name: name,
       defaultRest: defaultRest,
       exercises: exercises,
+      executionType: executionType,
+      circuitCycles: circuitCycles,
     );
     routines = List<Routine>.from(routines)..add(r);
     _save();

@@ -155,6 +155,8 @@ class ActiveWorkoutState {
   final bool postponed;
   final int heartRate;
   final int activeCalories;
+  final RoutineExecutionType executionType;
+  final int circuitCycles;
 
   ActiveWorkoutState({
     required this.name,
@@ -170,6 +172,8 @@ class ActiveWorkoutState {
     this.postponed = false,
     this.heartRate = 0,
     this.activeCalories = 0,
+    this.executionType = RoutineExecutionType.standard,
+    this.circuitCycles = 1,
   });
 
   ActiveWorkoutState copyWith({
@@ -186,6 +190,8 @@ class ActiveWorkoutState {
     bool? postponed,
     int? heartRate,
     int? activeCalories,
+    RoutineExecutionType? executionType,
+    int? circuitCycles,
   }) {
     return ActiveWorkoutState(
       name: name ?? this.name,
@@ -201,6 +207,8 @@ class ActiveWorkoutState {
       postponed: postponed ?? this.postponed,
       heartRate: heartRate ?? this.heartRate,
       activeCalories: activeCalories ?? this.activeCalories,
+      executionType: executionType ?? this.executionType,
+      circuitCycles: circuitCycles ?? this.circuitCycles,
     );
   }
 
@@ -218,6 +226,8 @@ class ActiveWorkoutState {
     'postponed': postponed,
     'heartRate': heartRate,
     'activeCalories': activeCalories,
+    'executionType': routineExecutionTypeToString(executionType),
+    'circuitCycles': circuitCycles,
   };
 
   factory ActiveWorkoutState.fromJson(Map<String, dynamic> json) => ActiveWorkoutState(
@@ -238,6 +248,8 @@ class ActiveWorkoutState {
     postponed: json['postponed'] ?? false,
     heartRate: (json['heartRate'] as num?)?.toInt() ?? 0,
     activeCalories: (json['activeCalories'] as num?)?.toInt() ?? 0,
+    executionType: routineExecutionTypeFromString(json['executionType']),
+    circuitCycles: (json['circuitCycles'] as num?)?.toInt() ?? 1,
   );
 }
 

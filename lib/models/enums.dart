@@ -89,3 +89,27 @@ String organizationModeToString(OrganizationMode mode) {
       return 'fixedDays';
   }
 }
+
+enum RoutineExecutionType {
+  standard,
+  circuit,
+}
+
+RoutineExecutionType routineExecutionTypeFromString(String? val) {
+  switch (val) {
+    case 'circuit':
+      return RoutineExecutionType.circuit;
+    case 'standard':
+    default:
+      return RoutineExecutionType.standard;
+  }
+}
+
+String routineExecutionTypeToString(RoutineExecutionType type) {
+  switch (type) {
+    case RoutineExecutionType.circuit:
+      return 'circuit';
+    case RoutineExecutionType.standard:
+      return 'standard';
+  }
+}

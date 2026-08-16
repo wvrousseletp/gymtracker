@@ -549,6 +549,8 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
   final _scrollController = ScrollController();
 
   List<RoutineExercise> _exercises = [];
+  RoutineExecutionType _executionType = RoutineExecutionType.standard;
+  int _circuitCycles = 3;
 
   @override
   void initState() {
@@ -557,6 +559,8 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
       _nameController.text = widget.existing!.name;
       _restController.text = widget.existing!.defaultRest.toString();
       _exercises = List<RoutineExercise>.from(widget.existing!.exercises);
+      _executionType = widget.existing!.executionType;
+      _circuitCycles = widget.existing!.circuitCycles;
     }
   }
 
@@ -833,6 +837,107 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                             ],
                           ),
                         ),
+                        const SizedBox(height: 16),
+                        // Type Selection
+                        Row(
+                          children: [
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => setState(() => _executionType = RoutineExecutionType.standard),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: _executionType == RoutineExecutionType.standard ? accentColor.withOpacity(0.2) : Colors.white.withOpacity(0.05),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: _executionType == RoutineExecutionType.standard ? accentColor : Colors.transparent,
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      "Padrão",
+                                      style: TextStyle(
+                                        color: _executionType == RoutineExecutionType.standard ? accentColor : Colors.white54,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => setState(() => _executionType = RoutineExecutionType.circuit),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: _executionType == RoutineExecutionType.circuit ? accentColor.withOpacity(0.2) : Colors.white.withOpacity(0.05),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: _executionType == RoutineExecutionType.circuit ? accentColor : Colors.transparent,
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      "Ciclo",
+                                      style: TextStyle(
+                                        color: _executionType == RoutineExecutionType.circuit ? accentColor : Colors.white54,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (_executionType == RoutineExecutionType.circuit) ...[
+                          const SizedBox(height: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                "Quantidade de Ciclos",
+                                style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: -0.2),
+                              ),
+                              Row(
+                                children: [
+                                  IconButton(
+                                    onPressed: () {
+                                      if (_circuitCycles > 1) {
+                                        setState(() => _circuitCycles--);
+                                      }
+                                    },
+                                    icon: const Icon(Icons.remove_circle_outline, color: Colors.white54),
+                                  ),
+                                  Text(
+                                    _circuitCycles.toString(),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    onPressed: () {
+                                      setState(() => _circuitCycles++);
+                                    },
+                                    icon: const Icon(Icons.add_circle_outline, color: Colors.white54),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
                         const SizedBox(height: 16),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1148,7 +1253,7 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                                     ],
                                     Row(
                                       children: [
-                                        if (!isCardio || ex.allowCardioSets)
+                                        if ((!isCardio || ex.allowCardioSets) && _executionType != RoutineExecutionType.circuit)
                                           Expanded(
                                             child: _buildInputRow(
                                               label: isCardio
@@ -1162,7 +1267,7 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                                               },
                                             ),
                                           ),
-                                        if (!isCardio || ex.allowCardioSets)
+                                        if ((!isCardio || ex.allowCardioSets) && _executionType != RoutineExecutionType.circuit)
                                           const SizedBox(width: 8),
                                         Expanded(
                                           child: _buildInputRow(
@@ -1294,13 +1399,15 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                         final rest = int.parse(_restController.text.trim());
 
                         if (widget.existing == null) {
-                          widget.provider.addRoutine(name, rest, _exercises);
+                          widget.provider.addRoutine(name, rest, _exercises, executionType: _executionType, circuitCycles: _circuitCycles);
                         } else {
                           final updated = Routine(
                             id: widget.existing!.id,
                             name: name,
                             defaultRest: rest,
                             exercises: _exercises,
+                            executionType: _executionType,
+                            circuitCycles: _circuitCycles,
                           );
                           widget.provider.updateRoutine(updated);
                         }

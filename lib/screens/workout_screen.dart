@@ -1933,6 +1933,25 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                           ),
                           if (exercises.isNotEmpty) ...[
                             const SizedBox(width: 8),
+                            if (workout.executionType == RoutineExecutionType.circuit && workout.circuitCycles > 0) ...[
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.deepOrangeAccent.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.deepOrangeAccent.withOpacity(0.35)),
+                                ),
+                                child: Text(
+                                  "Ciclo ${(_currentExIdx ~/ (exercises.length / workout.circuitCycles)) + 1}/${workout.circuitCycles}",
+                                  style: const TextStyle(
+                                    color: Colors.deepOrangeAccent,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                            ],
                             Container(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 4),
@@ -1941,7 +1960,9 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
-                                "Ex. ${_currentExIdx + 1}/${exercises.length}",
+                                workout.executionType == RoutineExecutionType.circuit && workout.circuitCycles > 0
+                                    ? "Ex. ${(_currentExIdx % (exercises.length ~/ workout.circuitCycles)) + 1}/${exercises.length ~/ workout.circuitCycles}"
+                                    : "Ex. ${_currentExIdx + 1}/${exercises.length}",
                                 style: const TextStyle(
                                   color: Colors.white70,
                                   fontSize: 11,
