@@ -211,7 +211,7 @@ class WorkoutProvider extends ChangeNotifier {
                   ref.measurementType == MeasurementType.distance) &&
               ref.measurementType != MeasurementType.time;
 
-          final effectiveSets = 1;
+          const effectiveSets = 1;
 
           // Se por acaso havia configurações de peso/rep por set antes de virar ciclo,
           // tentamos resgatar para a iteração (cycle) correspondente, senão usamos o padrão.
