@@ -1337,6 +1337,28 @@ class WorkoutProvider extends ChangeNotifier {
     _save();
   }
 
+  void importFromFixedDay(String sourceDay, String targetKey) {
+    final sourceItems = List<String>.from(planner[sourceDay] ?? []);
+    final validItems = sourceItems.where((item) => item.isNotEmpty).toList();
+    if (validItems.isEmpty) return;
+
+    planner[targetKey] = List<String>.from(planner[targetKey] ?? [])..addAll(validItems);
+    _save();
+  }
+
+  void importAllFixedDays(String targetKey) {
+    final List<String> allItems = [];
+    final days = ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'];
+    for (final day in days) {
+      final items = List<String>.from(planner[day] ?? []);
+      allItems.addAll(items.where((item) => item.isNotEmpty));
+    }
+    if (allItems.isEmpty) return;
+
+    planner[targetKey] = List<String>.from(planner[targetKey] ?? [])..addAll(allItems);
+    _save();
+  }
+
   void deletePersonalRecord(String exerciseId) {
     prs.remove(exerciseId);
     _save();

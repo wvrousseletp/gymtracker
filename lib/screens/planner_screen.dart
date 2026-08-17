@@ -1123,6 +1123,16 @@ class _PlannerScreenState extends State<PlannerScreen> {
           ),
           const Spacer(),
           IconButton(
+            icon: const Icon(Icons.copy, color: Colors.white70, size: 20),
+            tooltip: "Importar de Dias Fixos",
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            onPressed: () {
+              _showImportDialog(context, provider, 'continuous');
+            },
+          ),
+          const SizedBox(width: 12),
+          IconButton(
             icon: Icon(Icons.add_box_outlined, color: accentColor, size: 22),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
@@ -1235,6 +1245,16 @@ class _PlannerScreenState extends State<PlannerScreen> {
           ),
           const Spacer(),
           IconButton(
+            icon: const Icon(Icons.copy, color: Colors.white70, size: 20),
+            tooltip: "Importar de Dias Fixos",
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            onPressed: () {
+              _showImportDialog(context, provider, 'weekly');
+            },
+          ),
+          const SizedBox(width: 12),
+          IconButton(
             icon: Icon(Icons.add_box_outlined, color: accentColor, size: 22),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
@@ -1306,5 +1326,143 @@ class _PlannerScreenState extends State<PlannerScreen> {
           );
         }),
     ];
+  }
+
+  void _showImportDialog(BuildContext context, TrackerProvider provider, String targetKey) {
+    final accentColor = ThemeUtils.getColor(provider.currentProfile.colorAccent);
+    final daysMap = {
+      'seg': 'Segunda-feira',
+      'ter': 'Terça-feira',
+      'qua': 'Quarta-feira',
+      'qui': 'Quinta-feira',
+      'sex': 'Sexta-feira',
+      'sab': 'Sábado',
+      'dom': 'Domingo',
+    };
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: GlassCard(
+          useBlur: true,
+          borderColor: Colors.white.withOpacity(0.08),
+          borderRadius: 24,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.copy, color: accentColor, size: 20),
+                  const SizedBox(width: 8),
+                  const Text(
+                    "Importar de Dias Fixos",
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                "Copie as rotinas e exercícios já planejados em dias fixos diretamente para o modelo atual.",
+                style: TextStyle(color: Colors.white54, fontSize: 12),
+              ),
+              const SizedBox(height: 16),
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      // Opção especial para importar TODOS os dias
+                      ListTile(
+                        leading: Icon(Icons.all_inclusive, color: accentColor, size: 20),
+                        title: const Text(
+                          "Importar Todos os Dias",
+                          style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: const Text(
+                          "Copia Seg, Ter, Qua, Qui, Sex, Sáb e Dom em sequência",
+                          style: TextStyle(color: Colors.white38, fontSize: 10),
+                        ),
+                        dense: true,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                        onTap: () {
+                          provider.importAllFixedDays(targetKey);
+                          Navigator.pop(dialogCtx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                "Compilado com sucesso para a ${targetKey == 'continuous' ? 'Lista Contínua' : 'Metas Semanais'}!",
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              backgroundColor: accentColor,
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        },
+                      ),
+                      const Divider(color: Colors.white12),
+                      ...daysMap.entries.map((entry) {
+                        final key = entry.key;
+                        final label = entry.value;
+                        final itemsCount = provider.state?.planner[key]?.where((item) => item.isNotEmpty).length ?? 0;
+
+                        return ListTile(
+                          title: Text(
+                            label,
+                            style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                          ),
+                          subtitle: Text(
+                            "$itemsCount item(ns) planejado(s)",
+                            style: TextStyle(
+                              color: itemsCount > 0 ? Colors.white54 : Colors.white24,
+                              fontSize: 10,
+                            ),
+                          ),
+                          trailing: itemsCount > 0
+                              ? const Icon(Icons.chevron_right, color: Colors.white30, size: 16)
+                              : null,
+                          dense: true,
+                          enabled: itemsCount > 0,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                          onTap: () {
+                            provider.importFromFixedDay(key, targetKey);
+                            Navigator.pop(dialogCtx);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  "Importado de $label com sucesso!",
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                backgroundColor: accentColor,
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          },
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(dialogCtx),
+                  child: const Text(
+                    "Fechar",
+                    style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

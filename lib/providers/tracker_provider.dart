@@ -643,6 +643,18 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     _workoutProvider!.removePlannerItem(day, index);
   }
 
+  void importFromFixedDay(String sourceDay, String targetKey) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.importFromFixedDay(sourceDay, targetKey);
+    notifyListeners();
+  }
+
+  void importAllFixedDays(String targetKey) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.importAllFixedDays(targetKey);
+    notifyListeners();
+  }
+
   void deletePersonalRecord(String exerciseId) {
     if (_workoutProvider == null) return;
     _workoutProvider!.deletePersonalRecord(exerciseId);
