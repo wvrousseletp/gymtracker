@@ -11,7 +11,6 @@ import 'diet_analytics_tab.dart';
 import '../widgets/analytics/kpi_cards.dart';
 import '../widgets/analytics/activity_rings.dart';
 import '../widgets/analytics/macros_donut_chart.dart';
-import '../widgets/analytics/exercise_progression_card.dart';
 import '../widgets/analytics/human_body_heatmap.dart';
 
 class AnalyticsTab extends StatefulWidget {
@@ -30,7 +29,6 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
   final List<String> _defaultOrder = [
     "kpi_cards",
     "activity_rings",
-    "exercise_progression",
     "volume_chart",
     "muscle_heatmap",
     "macros_donut",
@@ -234,11 +232,7 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
           history: filteredHistory, // passed only for today's check
           accentColor: widget.accentColor,
         );
-      case "exercise_progression":
-        return ExerciseProgressionCard(
-          history: filteredHistory,
-          accentColor: widget.accentColor,
-        );
+
       case "volume_chart":
         return _buildVolumeChart(filteredHistory);
       case "muscle_heatmap":
