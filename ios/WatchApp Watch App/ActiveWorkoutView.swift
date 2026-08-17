@@ -122,8 +122,11 @@ struct ActiveWorkoutView: View {
 
     private func getSelectedSetIndex(for exercise: WatchActiveExercise, index: Int) -> Int {
         let key = "\(exercise.name)_\(index)"
+        let count = exercise.setsState.count
+        guard count > 0 else { return 0 }
+        
         if let selected = selectedSetIndexMap[key] {
-            return min(selected, exercise.setsState.count - 1)
+            return max(0, min(selected, count - 1))
         }
         if let firstUncompleted = exercise.setsState.firstIndex(of: false) {
             return firstUncompleted
@@ -154,7 +157,7 @@ struct ActiveWorkoutView: View {
     // MARK: - Sub-Views for Page 1 (Current Exercise)
 
     private func cardioControls(exercise: WatchActiveExercise, exIndex: Int, selectedSetIdx: Int) -> some View {
-        let pc = selectedSetIdx < exercise.performedCardios.count ? exercise.performedCardios[selectedSetIdx] : nil
+        let pc = (selectedSetIdx >= 0 && selectedSetIdx < exercise.performedCardios.count) ? exercise.performedCardios[selectedSetIdx] : nil
         let distance = pc?.distanceKm ?? 0.0
         let durationSec = pc?.durationSeconds ?? 0
         let durationMin = durationSec / 60
@@ -300,8 +303,8 @@ struct ActiveWorkoutView: View {
     }
 
     private func strengthControls(exercise: WatchActiveExercise, exIndex: Int, selectedSetIdx: Int) -> some View {
-        let isFailure = selectedSetIdx < exercise.failureReport.count ? exercise.failureReport[selectedSetIdx] : false
-        let failureRep = selectedSetIdx < exercise.failureReps.count ? exercise.failureReps[selectedSetIdx] : nil
+        let isFailure = (selectedSetIdx >= 0 && selectedSetIdx < exercise.failureReport.count) ? exercise.failureReport[selectedSetIdx] : false
+        let failureRep = (selectedSetIdx >= 0 && selectedSetIdx < exercise.failureReps.count) ? exercise.failureReps[selectedSetIdx] : nil
 
         return VStack(spacing: 6) {
             HStack {
@@ -726,8 +729,8 @@ struct ActiveWorkoutView: View {
                             Button(action: {
                                 // Tap selects the set. If already selected, taps toggle/complete it!
                                 if isSelected {
-                                    let failureRep = activeSetIdx < exercise.failureReps.count ? exercise.failureReps[activeSetIdx] : nil
-                                    let pc = activeSetIdx < exercise.performedCardios.count ? exercise.performedCardios[activeSetIdx] : nil
+                                    let failureRep = (activeSetIdx >= 0 && activeSetIdx < exercise.failureReps.count) ? exercise.failureReps[activeSetIdx] : nil
+                                    let pc = (activeSetIdx >= 0 && activeSetIdx < exercise.performedCardios.count) ? exercise.performedCardios[activeSetIdx] : nil
                                     
                                     #if canImport(WatchKit)
                                     if !isCompleted {
@@ -803,10 +806,10 @@ struct ActiveWorkoutView: View {
                         
                         // Solid Concluir/Desfazer button shrunk down
                         Button(action: {
-                            let isCompleted = activeSetIdx < exercise.setsState.count ? exercise.setsState[activeSetIdx] : false
-                            let isFailure = activeSetIdx < exercise.failureReport.count ? exercise.failureReport[activeSetIdx] : false
-                            let failureRep = activeSetIdx < exercise.failureReps.count ? exercise.failureReps[activeSetIdx] : nil
-                            let pc = activeSetIdx < exercise.performedCardios.count ? exercise.performedCardios[activeSetIdx] : nil
+                            let isCompleted = (activeSetIdx >= 0 && activeSetIdx < exercise.setsState.count) ? exercise.setsState[activeSetIdx] : false
+                            let isFailure = (activeSetIdx >= 0 && activeSetIdx < exercise.failureReport.count) ? exercise.failureReport[activeSetIdx] : false
+                            let failureRep = (activeSetIdx >= 0 && activeSetIdx < exercise.failureReps.count) ? exercise.failureReps[activeSetIdx] : nil
+                            let pc = (activeSetIdx >= 0 && activeSetIdx < exercise.performedCardios.count) ? exercise.performedCardios[activeSetIdx] : nil
                             
                             #if canImport(WatchKit)
                             if !isCompleted {
@@ -839,7 +842,7 @@ struct ActiveWorkoutView: View {
                                 }
                             }
                         }) {
-                            let isCompleted = activeSetIdx < exercise.setsState.count ? exercise.setsState[activeSetIdx] : false
+                            let isCompleted = (activeSetIdx >= 0 && activeSetIdx < exercise.setsState.count) ? exercise.setsState[activeSetIdx] : false
                             HStack(spacing: 4) {
                                 Image(systemName: isCompleted ? "checkmark.circle.fill" : "play.circle.fill")
                                     .font(.system(size: 10, weight: .bold))
