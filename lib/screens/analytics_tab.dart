@@ -29,6 +29,7 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
   final List<String> _defaultOrder = [
     "kpi_cards",
     "activity_rings",
+    "cardio_stats",
     "volume_chart",
     "muscle_heatmap",
     "macros_donut",
@@ -232,6 +233,8 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
           history: filteredHistory, // passed only for today's check
           accentColor: widget.accentColor,
         );
+      case "cardio_stats":
+        return _buildCardioStatsCard(filteredHistory);
 
       case "volume_chart":
         return _buildVolumeChart(filteredHistory);
@@ -459,6 +462,134 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildCardioStatsCard(List<WorkoutLog> history) {
+    double totalDistance = 0;
+    int totalDurationSeconds = 0;
+    int cardioSessions = 0;
+
+    for (var log in history) {
+      bool hasCardioInLog = false;
+      for (var ex in log.exercises) {
+        final hasCardio = ex.muscle.toLowerCase().contains('cardio') || 
+            (ex.performedCardios != null && ex.performedCardios!.isNotEmpty);
+            
+        if (hasCardio && ex.performedCardios != null) {
+          for (var pc in ex.performedCardios!) {
+            if (pc != null) {
+              totalDistance += pc.distanceKm;
+              totalDurationSeconds += pc.durationSeconds;
+              hasCardioInLog = true;
+            }
+          }
+        }
+      }
+      if (hasCardioInLog) {
+        cardioSessions++;
+      }
+    }
+
+    if (cardioSessions == 0) {
+      return const SizedBox.shrink(); // Don't show if no cardio has been recorded yet
+    }
+
+    // Format pace (min/km)
+    String paceStr = "-";
+    if (totalDistance > 0) {
+      double totalMinutes = totalDurationSeconds / 60.0;
+      double paceDecimal = totalMinutes / totalDistance;
+      int paceMins = paceDecimal.toInt();
+      int paceSecs = ((paceDecimal - paceMins) * 60).round();
+      paceStr = "$paceMins:${paceSecs.toString().padLeft(2, '0')} /km";
+    }
+
+    // Format time
+    String durationStr = "-";
+    if (totalDurationSeconds > 0) {
+      if (totalDurationSeconds < 3600) {
+        durationStr = "${totalDurationSeconds ~/ 60}m";
+      } else {
+        final hours = totalDurationSeconds ~/ 3600;
+        final mins = (totalDurationSeconds % 3600) ~/ 60;
+        durationStr = "${hours}h ${mins}m";
+      }
+    }
+
+    final accentColor = widget.accentColor;
+
+    return GlassCard(
+      useBlur: true,
+      borderColor: Colors.white.withOpacity(0.08),
+      borderRadius: 24,
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.directions_run, color: accentColor, size: 22),
+              const SizedBox(width: 8),
+              const Text(
+                "Métricas de Cardio",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildSubMetric("Distância Total", "${totalDistance.toStringAsFixed(1)} km", Colors.greenAccent),
+              ),
+              Expanded(
+                child: _buildSubMetric("Tempo Total", durationStr, Colors.blueAccent),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildSubMetric("Ritmo Médio (Pace)", paceStr, Colors.orangeAccent),
+              ),
+              Expanded(
+                child: _buildSubMetric("Sessões de Cardio", "$cardioSessions", Colors.purpleAccent),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSubMetric(String label, String value, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white54,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            color: color,
+            fontSize: 18,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ],
     );
   }
 }
