@@ -1337,25 +1337,155 @@ class WorkoutProvider extends ChangeNotifier {
     _save();
   }
 
+  List<RoutineExercise> _parsePlannerItemsToRoutineExercises(List<String> rawItems) {
+    final List<RoutineExercise> exercisesList = [];
+    for (var rawItem in rawItems) {
+      if (rawItem.isEmpty) continue;
+      
+      if (rawItem.startsWith('routine:')) {
+        final rId = rawItem.substring(8);
+        final r = routines.where((x) => x.id == rId).firstOrNull;
+        if (r != null) {
+          for (var ex in r.exercises) {
+            exercisesList.add(RoutineExercise(
+              id: "ex-${DateTime.now().millisecondsSinceEpoch}-${ex.exerciseId}",
+              exerciseId: ex.exerciseId,
+              sets: ex.sets,
+              reps: ex.reps,
+              rest: ex.rest,
+              weight: ex.weight,
+              weightsPerSet: ex.weightsPerSet != null ? List<double>.from(ex.weightsPerSet!) : null,
+              repsPerSet: ex.repsPerSet != null ? List<int>.from(ex.repsPerSet!) : null,
+              isCardio: ex.isCardio,
+              allowCardioSets: ex.allowCardioSets,
+            ));
+          }
+        }
+      } else if (rawItem.startsWith('exercise:')) {
+        final parts = rawItem.split(':');
+        if (parts.length >= 2) {
+          final exId = parts[1];
+          final quantityValue = parts.length >= 3 ? int.tryParse(parts[2]) ?? 3 : 3;
+          final libEx = library.where((x) => x.id == exId).firstOrNull;
+          if (libEx != null) {
+            exercisesList.add(RoutineExercise(
+              id: "ex-${DateTime.now().millisecondsSinceEpoch}-${libEx.id}",
+              exerciseId: libEx.id,
+              sets: libEx.isCardio ? 1 : quantityValue,
+              reps: libEx.isCardio ? quantityValue * 60 : 10,
+              rest: 60,
+              weight: 0.0,
+              isCardio: libEx.isCardio,
+            ));
+          }
+        }
+      } else {
+        final r = routines.where((x) => x.id == rawItem).firstOrNull;
+        if (r != null) {
+          for (var ex in r.exercises) {
+            exercisesList.add(RoutineExercise(
+              id: "ex-${DateTime.now().millisecondsSinceEpoch}-${ex.exerciseId}",
+              exerciseId: ex.exerciseId,
+              sets: ex.sets,
+              reps: ex.reps,
+              rest: ex.rest,
+              weight: ex.weight,
+              weightsPerSet: ex.weightsPerSet != null ? List<double>.from(ex.weightsPerSet!) : null,
+              repsPerSet: ex.repsPerSet != null ? List<int>.from(ex.repsPerSet!) : null,
+              isCardio: ex.isCardio,
+              allowCardioSets: ex.allowCardioSets,
+            ));
+          }
+        }
+      }
+    }
+    return exercisesList;
+  }
+
   void importFromFixedDay(String sourceDay, String targetKey) {
     final sourceItems = List<String>.from(planner[sourceDay] ?? []);
     final validItems = sourceItems.where((item) => item.isNotEmpty).toList();
     if (validItems.isEmpty) return;
 
-    planner[targetKey] = List<String>.from(planner[targetKey] ?? [])..addAll(validItems);
+    final daysMap = {
+      'seg': 'Segunda-feira',
+      'ter': 'Terça-feira',
+      'qua': 'Quarta-feira',
+      'qui': 'Quinta-feira',
+      'sex': 'Sexta-feira',
+      'sab': 'Sábado',
+      'dom': 'Domingo',
+    };
+
+    final dayName = daysMap[sourceDay] ?? sourceDay;
+
+    if (validItems.length == 1 &&
+        (validItems.first.startsWith('routine:') ||
+            (!validItems.first.startsWith('exercise:') && routines.any((r) => r.id == validItems.first)))) {
+      planner[targetKey] = List<String>.from(planner[targetKey] ?? [])..add(validItems.first);
+    } else {
+      final exercises = _parsePlannerItemsToRoutineExercises(validItems);
+      if (exercises.isEmpty) return;
+
+      final newRoutine = Routine(
+        id: "routine-${DateTime.now().millisecondsSinceEpoch}-$sourceDay",
+        name: "Treino $dayName",
+        defaultRest: 60,
+        exercises: exercises,
+      );
+
+      routines = List<Routine>.from(routines)..add(newRoutine);
+      unawaited(_firebaseSync.syncRoutine(currentUserId, newRoutine));
+
+      planner[targetKey] = List<String>.from(planner[targetKey] ?? [])..add("routine:${newRoutine.id}");
+    }
     _save();
   }
 
   void importAllFixedDays(String targetKey) {
-    final List<String> allItems = [];
     final days = ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'];
-    for (final day in days) {
-      final items = List<String>.from(planner[day] ?? []);
-      allItems.addAll(items.where((item) => item.isNotEmpty));
-    }
-    if (allItems.isEmpty) return;
+    final daysMap = {
+      'seg': 'Segunda-feira',
+      'ter': 'Terça-feira',
+      'qua': 'Quarta-feira',
+      'qui': 'Quinta-feira',
+      'sex': 'Sexta-feira',
+      'sab': 'Sábado',
+      'dom': 'Domingo',
+    };
 
-    planner[targetKey] = List<String>.from(planner[targetKey] ?? [])..addAll(allItems);
+    final List<String> newPlannerEntries = [];
+
+    for (final day in days) {
+      final sourceItems = List<String>.from(planner[day] ?? []);
+      final validItems = sourceItems.where((item) => item.isNotEmpty).toList();
+      if (validItems.isEmpty) continue;
+
+      final dayName = daysMap[day] ?? day;
+
+      if (validItems.length == 1 &&
+          (validItems.first.startsWith('routine:') ||
+              (!validItems.first.startsWith('exercise:') && routines.any((r) => r.id == validItems.first)))) {
+        newPlannerEntries.add(validItems.first);
+      } else {
+        final exercises = _parsePlannerItemsToRoutineExercises(validItems);
+        if (exercises.isNotEmpty) {
+          final newRoutine = Routine(
+            id: "routine-${DateTime.now().millisecondsSinceEpoch}-$day",
+            name: "Treino $dayName",
+            defaultRest: 60,
+            exercises: exercises,
+          );
+          routines = List<Routine>.from(routines)..add(newRoutine);
+          unawaited(_firebaseSync.syncRoutine(currentUserId, newRoutine));
+          newPlannerEntries.add("routine:${newRoutine.id}");
+        }
+      }
+    }
+
+    if (newPlannerEntries.isEmpty) return;
+
+    planner[targetKey] = List<String>.from(planner[targetKey] ?? [])..addAll(newPlannerEntries);
     _save();
   }
 
