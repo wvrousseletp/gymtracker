@@ -99,6 +99,11 @@ class WatchHapticManager {
         play(.light)
     }
     
+    /// Play haptic when isometry count is finished (intense vibration)
+    func playIsometryFinished() {
+        play(.warning)
+    }
+    
     /// Play haptic when failure is registered
     func playFailureRegistered() {
         play(.failure)

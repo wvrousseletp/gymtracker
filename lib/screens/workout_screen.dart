@@ -3140,6 +3140,19 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
     );
   }
 
+  bool _shouldShowRpeForExercise(int exIdx) {
+    final active = widget.provider.state?.activeWorkout;
+    if (active == null) return false;
+
+    if (active.executionType == RoutineExecutionType.circuit && active.circuitCycles > 0) {
+      final exercisesPerCycle = active.exercises.length ~/ active.circuitCycles;
+      if (exercisesPerCycle == 0) return false;
+      return (exIdx + 1) % exercisesPerCycle == 0;
+    }
+
+    return true; // Always show for standard workouts
+  }
+
   void _scrollToNextSet(int exIdx, {bool fromUserSwipe = false}) {
     final active = widget.provider.state?.activeWorkout;
     if (active == null || exIdx < 0 || exIdx >= active.exercises.length) return;
@@ -3151,10 +3164,10 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
       if (fromUserSwipe) return;
       
       // If RPE has not been answered yet, show the RPE dialog instead of transitioning.
-      if (ex.rpe == null) {
+      if (_shouldShowRpeForExercise(exIdx) && ex.rpe == null) {
         _onSetCompleted(exIdx);
       } else {
-        // Transition immediately since RPE is already recorded
+        // Transition immediately since RPE is already recorded or not needed
         _scrollToNextExerciseAfterRpe(exIdx);
       }
     } else {
@@ -3189,7 +3202,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
     final ex = active.exercises[exIdx];
     final allCompleted = ex.setsState.every((isDone) => isDone);
 
-    if (allCompleted && ex.rpe == null) {
+    if (allCompleted && ex.rpe == null && _shouldShowRpeForExercise(exIdx)) {
       Future.delayed(const Duration(milliseconds: 300), () {
         if (mounted) {
           _showExerciseRpeDialog(context, exIdx, ex);
@@ -3250,6 +3263,14 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
     double rpeVal = 8.0;
     final accentColor =
         ThemeUtils.getColor(widget.provider.currentProfile.colorAccent);
+    final active = widget.provider.state?.activeWorkout;
+    final isCircuit = active?.executionType == RoutineExecutionType.circuit;
+    final exercisesPerCycle = isCircuit && active!.circuitCycles > 0
+        ? active.exercises.length ~/ active.circuitCycles
+        : 1;
+    final currentCycle = isCircuit && exercisesPerCycle > 0
+        ? (exIdx ~/ exercisesPerCycle) + 1
+        : 1;
 
     showDialog(
       context: context,
@@ -3268,9 +3289,9 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text(
-                      "RPE do Exercício 💪",
-                      style: TextStyle(
+                    Text(
+                      isCircuit ? "RPE do Ciclo $currentCycle 🔄" : "RPE do Exercício 💪",
+                      style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w800,
                           fontSize: 16),
@@ -3278,7 +3299,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      ex.name,
+                      isCircuit ? "Rodada completa de exercícios" : ex.name,
                       style: TextStyle(
                           color: accentColor,
                           fontWeight: FontWeight.bold,
@@ -3286,9 +3307,11 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 16),
-                    const Text(
-                      "Qual foi a intensidade do esforço para este exercício?",
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                    Text(
+                      isCircuit
+                          ? "Qual foi a intensidade do esforço para este ciclo?"
+                          : "Qual foi a intensidade do esforço para este exercício?",
+                      style: const TextStyle(color: Colors.white70, fontSize: 12),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 12),
@@ -3354,7 +3377,14 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                         const SizedBox(width: 8),
                         TextButton(
                           onPressed: () {
-                            widget.provider.updateExerciseRpe(exIdx, rpeVal.toInt());
+                            if (isCircuit && exercisesPerCycle > 0) {
+                              final cycleStart = (exIdx ~/ exercisesPerCycle) * exercisesPerCycle;
+                              for (int i = cycleStart; i <= exIdx; i++) {
+                                widget.provider.updateExerciseRpe(i, rpeVal.toInt());
+                              }
+                            } else {
+                              widget.provider.updateExerciseRpe(exIdx, rpeVal.toInt());
+                            }
                             Navigator.pop(dialogCtx);
                             _scrollToNextExerciseAfterRpe(exIdx);
                           },

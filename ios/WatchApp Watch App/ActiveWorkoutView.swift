@@ -1289,9 +1289,7 @@ struct ActiveWorkoutView: View {
                     if exIdx >= 0 && exIdx < activeWorkout.exercises.count {
                         let exercise = activeWorkout.exercises[exIdx]
                         if timeTimerElapsed == exercise.reps {
-                            #if canImport(WatchKit)
-                            WKInterfaceDevice.current().play(.success)
-                            #endif
+                            hapticManager.playIsometryFinished()
                         }
                     }
                 }
