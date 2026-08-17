@@ -212,23 +212,7 @@ class WatchService {
         break;
 
       case 'skipRest':
-        final active = _provider!.state?.activeWorkout;
-        if (active != null && active.restTimer != null) {
-          final timerState = active.restTimer!;
-          if (!timerState.isPrep) {
-            final settings = _provider!.state!.settings;
-            _provider!.startRestTimer(
-              settings.prepSeconds,
-              timerState.nextExerciseName,
-              timerState.nextSetNum,
-              true,
-            );
-          } else {
-            _provider!.clearRestTimer();
-          }
-        } else {
-          _provider!.clearRestTimer();
-        }
+        _provider!.clearRestTimer();
         // Envia estado atualizado após pular descanso
         Future.delayed(const Duration(milliseconds: 100), () {
           if (_provider!.state?.activeWorkout != null) {

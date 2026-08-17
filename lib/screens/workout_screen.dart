@@ -1276,8 +1276,6 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     final soundState = ValueNotifier<bool>(provider.state!.settings.sound);
     final vibrationState =
         ValueNotifier<bool>(provider.state!.settings.vibration);
-    final prepController = TextEditingController(
-        text: provider.state!.settings.prepSeconds.toString());
     final waterController = TextEditingController(
         text: (provider.state?.diet.waterGoalMl ?? 2000).toString());
     final accentColor =
@@ -1354,40 +1352,6 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                     onChanged: (newVal) => vibrationState.value = newVal,
                   ),
                 ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text("Tempo de Preparo",
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600)),
-                    Container(
-                      width: 60,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.04),
-                        borderRadius: BorderRadius.circular(8),
-                        border:
-                            Border.all(color: Colors.white.withOpacity(0.1)),
-                      ),
-                      child: TextField(
-                        controller: prepController,
-                        keyboardType: TextInputType.number,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold),
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
 
                 const SizedBox(height: 24),
 
@@ -1444,26 +1408,29 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                             color: Colors.white,
                             fontSize: 13,
                             fontWeight: FontWeight.w600)),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(dialogCtx);
-                        showNotificationSettingsDialog(context);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white.withOpacity(0.05),
-                        foregroundColor: accentColor,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          side: BorderSide(color: accentColor.withOpacity(0.3)),
+                    ButtonTheme(
+                      alignedDropdown: true,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(dialogCtx);
+                          showNotificationSettingsDialog(context);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white.withOpacity(0.05),
+                          foregroundColor: accentColor,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            side: BorderSide(color: accentColor.withOpacity(0.3)),
+                          ),
                         ),
+                        icon: const Icon(Icons.notifications_active_outlined,
+                            size: 16),
+                        label: const Text("Configurar",
+                            style: TextStyle(
+                                fontSize: 12, fontWeight: FontWeight.bold)),
                       ),
-                      icon: const Icon(Icons.notifications_active_outlined,
-                          size: 16),
-                      label: const Text("Configurar",
-                          style: TextStyle(
-                              fontSize: 12, fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),
@@ -1476,7 +1443,6 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                   children: [
                     TextButton(
                       onPressed: () {
-                        prepController.dispose();
                         waterController.dispose();
                         Navigator.pop(dialogCtx);
                       },
@@ -1488,14 +1454,13 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                     const SizedBox(width: 8),
                     TextButton(
                       onPressed: () {
-                        final prep =
-                            int.tryParse(prepController.text.trim()) ?? 5;
                         final waterGoal =
                             int.tryParse(waterController.text.trim()) ?? 2000;
                         provider.updateSettings(
-                            soundState.value, vibrationState.value, prep);
+                            soundState.value,
+                            vibrationState.value,
+                            provider.state!.settings.prepSeconds);
                         provider.updateWaterGoal(waterGoal);
-                        prepController.dispose();
                         waterController.dispose();
                         Navigator.pop(dialogCtx);
                       },
@@ -1844,17 +1809,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
       _timerActive = false;
     });
 
-    if (!_timerIsPrep && settings != null) {
-      // Transition from Rest to Prep automatically when rest finishes naturally
-      widget.provider.startRestTimer(
-        settings.prepSeconds,
-        _timerNextExName,
-        _timerNextSetNum,
-        true,
-      );
-    } else {
-      widget.provider.clearRestTimer();
-    }
+    widget.provider.clearRestTimer();
   }
 
   @override
@@ -2572,18 +2527,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                                         height: 52,
                                         child: ElevatedButton(
                                           onPressed: () {
-                                            if (_timerIsPrep) {
-                                              widget.provider.clearRestTimer();
-                                            } else {
-                                              final settings = widget
-                                                  .provider.state!.settings;
-                                              widget.provider.startRestTimer(
-                                                settings.prepSeconds,
-                                                _timerNextExName,
-                                                _timerNextSetNum,
-                                                true,
-                                              );
-                                            }
+                                            widget.provider.clearRestTimer();
                                           },
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor: Colors.white,
