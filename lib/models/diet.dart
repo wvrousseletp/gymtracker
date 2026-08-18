@@ -174,6 +174,7 @@ class DietState {
   final int waterIntakeMl;
   final FastingState fasting;
   final List<AbstinenceRecord> abstinence;
+  final List<Meal> savedMeals;
   final String lastDietDate;
 
   DietState({
@@ -186,6 +187,7 @@ class DietState {
     required this.waterIntakeMl,
     required this.fasting,
     required this.abstinence,
+    this.savedMeals = const [],
     String? lastDietDate,
   }) : lastDietDate = lastDietDate ?? _getTodayStr();
 
@@ -226,6 +228,9 @@ class DietState {
       abstinence: json['abstinence'] != null
           ? (json['abstinence'] as List).map((a) => AbstinenceRecord.fromJson(a)).toList()
           : [],
+      savedMeals: json['savedMeals'] != null
+          ? (json['savedMeals'] as List).map((m) => Meal.fromJson(m)).toList()
+          : [],
       lastDietDate: json['lastDietDate'] ?? todayStr,
     );
   }
@@ -240,6 +245,7 @@ class DietState {
     int? waterIntakeMl,
     FastingState? fasting,
     List<AbstinenceRecord>? abstinence,
+    List<Meal>? savedMeals,
     String? lastDietDate,
   }) {
     return DietState(
@@ -252,6 +258,7 @@ class DietState {
       waterIntakeMl: waterIntakeMl ?? this.waterIntakeMl,
       fasting: fasting ?? this.fasting,
       abstinence: abstinence ?? this.abstinence,
+      savedMeals: savedMeals ?? this.savedMeals,
       lastDietDate: lastDietDate ?? this.lastDietDate,
     );
   }

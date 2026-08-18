@@ -75,6 +75,7 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
       planner: _workoutProvider!.planner,
       history: _workoutProvider!.history,
       prs: _workoutProvider!.prs,
+      exerciseNotes: _workoutProvider!.exerciseNotes,
       medidas: _workoutProvider!.medidas,
       settings: _workoutProvider!.settings,
       activeWorkout: _workoutProvider!.activeWorkout,
@@ -300,6 +301,7 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     _workoutProvider!.planner = {};
     _workoutProvider!.history = [];
     _workoutProvider!.prs = {};
+    _workoutProvider!.exerciseNotes = {};
     _workoutProvider!.medidas = [];
     _workoutProvider!.activeWorkout = null;
     _workoutProvider!.historyLoaded = false;
@@ -353,6 +355,7 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     _workoutProvider!.planner = state.planner;
     _workoutProvider!.history = state.history;
     _workoutProvider!.prs = state.prs;
+    _workoutProvider!.exerciseNotes = state.exerciseNotes;
     _workoutProvider!.medidas = state.medidas;
     _workoutProvider!.settings = state.settings;
     _workoutProvider!.activeWorkout = state.activeWorkout;
@@ -536,6 +539,20 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     _workoutProvider!.updateExerciseWeightReps(exIndex, weight, reps);
   }
 
+  void updateExerciseNote(String exerciseId, String note) {
+    _workoutProvider?.updateExerciseNote(exerciseId, note);
+    _debouncedSaveState();
+  }
+
+
+  void updateExerciseSetType(int exIdx, int setIdx, String type) {
+    _workoutProvider?.updateExerciseSetType(exIdx, setIdx, type);
+  }
+
+  void updateExerciseRir(int exIdx, int setIdx, int? rir) {
+    _workoutProvider?.updateExerciseRir(exIdx, setIdx, rir);
+  }
+
   void updateExerciseSetWeightReps(
       int exIndex, int setIdx, double weight, int reps) {
     if (_workoutProvider == null) return;
@@ -661,17 +678,21 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void addLibraryExercise(String name, String muscle, String measurementType,
-      String? notes, String? executionType, {bool isStationary = false}) {
+      String? notes, String? executionType,
+      {bool isStationary = false}) {
     if (_workoutProvider == null) return;
     _workoutProvider!.addLibraryExercise(
-        name, muscle, measurementType, notes, executionType, isStationary: isStationary);
+        name, muscle, measurementType, notes, executionType,
+        isStationary: isStationary);
   }
 
   void updateLibraryExercise(String id, String name, String muscle,
-      String measurementType, String? notes, String? executionType, {bool isStationary = false}) {
+      String measurementType, String? notes, String? executionType,
+      {bool isStationary = false}) {
     if (_workoutProvider == null) return;
     _workoutProvider!.updateLibraryExercise(
-        id, name, muscle, measurementType, notes, executionType, isStationary: isStationary);
+        id, name, muscle, measurementType, notes, executionType,
+        isStationary: isStationary);
   }
 
   void deleteLibraryExercise(String id) {
@@ -827,6 +848,7 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
       },
       history: [],
       prs: {},
+      exerciseNotes: {},
       medidas: [],
       settings: SettingsState(sound: true, vibration: true, prepSeconds: 5),
       diet: DietState(
@@ -1052,5 +1074,22 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
       _healthAuthorized = true;
       await syncHealthMetrics();
     }
+  }
+  Map<String, int> getRecentMuscleSets() {
+    final Map<String, int> muscleSets = {};
+    final now = DateTime.now();
+    final sevenDaysAgo = now.subtract(const Duration(days: 7));
+    
+    for (final workout in (state?.history ?? [])) {
+      if (workout.date.isAfter(sevenDaysAgo)) {
+        for (final ex in workout.exercises) {
+          final count = ex.setsState.where((s) => s).length;
+          if (count > 0) {
+            muscleSets[ex.muscle] = ((muscleSets[ex.muscle] ?? 0) + count).toInt();
+          }
+        }
+      }
+    }
+    return muscleSets;
   }
 }

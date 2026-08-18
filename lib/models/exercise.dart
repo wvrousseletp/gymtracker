@@ -67,9 +67,12 @@ class RoutineExercise {
   final double weight;
   final List<double>? weightsPerSet;
   final List<int>? repsPerSet;
+  final List<String>? setTypes;
+  final List<int?>? rirPerSet;
   // Cardio-specific fields
   final bool isCardio; // Se true, usa distance/duration em vez de sets/reps
-  final bool allowCardioSets; // Se true, permite múltiplos sets (para HIIT)
+  final bool allowCardioSets;
+  final String? supersetId; // Se true, permite múltiplos sets (para HIIT)
 
   RoutineExercise({
     required this.id,
@@ -80,8 +83,11 @@ class RoutineExercise {
     required this.weight,
     this.weightsPerSet,
     this.repsPerSet,
+    this.setTypes,
+    this.rirPerSet,
     this.isCardio = false,
     this.allowCardioSets = false,
+    this.supersetId,
   });
 
   Map<String, dynamic> toJson() => {
@@ -95,6 +101,7 @@ class RoutineExercise {
     'repsPerSet': repsPerSet,
     'isCardio': isCardio,
     'allowCardioSets': allowCardioSets,
+    'supersetId': supersetId,
   };
 
   factory RoutineExercise.fromJson(Map<String, dynamic> json) {
@@ -113,6 +120,7 @@ class RoutineExercise {
           : null,
       isCardio: json['isCardio'] ?? false,
       allowCardioSets: json['allowCardioSets'] ?? false,
+    supersetId: json['supersetId'],
     );
   }
 }
@@ -155,9 +163,12 @@ class ActiveExercise {
   final List<int?> failureReps;
   final List<double>? weightsPerSet;
   final List<int>? repsPerSet;
+  final List<String>? setTypes;
+  final List<int?>? rirPerSet;
   // Cardio-specific fields
   final bool isCardio;
   final bool allowCardioSets;
+  final String? supersetId;
   final bool isStationary;
   // Single cardio session data (for non-set cardio)
   PerformedCardio? singleCardioSession;
@@ -179,8 +190,11 @@ class ActiveExercise {
     List<int?>? failureReps,
     this.weightsPerSet,
     this.repsPerSet,
+    this.setTypes,
+    this.rirPerSet,
     this.isCardio = false,
     this.allowCardioSets = false,
+    this.supersetId,
     this.isStationary = false,
     this.singleCardioSession,
     this.rpe,
@@ -204,6 +218,7 @@ class ActiveExercise {
     'failureReps': failureReps,
     'isCardio': isCardio,
     'allowCardioSets': allowCardioSets,
+    'supersetId': supersetId,
     'isStationary': isStationary,
     'singleCardioSession': singleCardioSession?.toJson(),
     'rpe': rpe,
@@ -238,6 +253,7 @@ class ActiveExercise {
       isCardio: (json['isCardio'] ?? false) &&
           measurementTypeFromString(json['measurementType'] ?? 'reps') != MeasurementType.time,
       allowCardioSets: json['allowCardioSets'] ?? false,
+    supersetId: json['supersetId'],
       isStationary: json['isStationary'] ?? false,
       singleCardioSession: json['singleCardioSession'] != null
           ? PerformedCardio.fromJson(json['singleCardioSession'])
@@ -262,8 +278,11 @@ class ActiveExercise {
     List<int?>? failureReps,
     List<double>? weightsPerSet,
     List<int>? repsPerSet,
+    List<String>? setTypes,
+    List<int?>? rirPerSet,
     bool? isCardio,
     bool? allowCardioSets,
+    String? supersetId,
     bool? isStationary,
     PerformedCardio? singleCardioSession,
     int? rpe,
@@ -284,8 +303,11 @@ class ActiveExercise {
       failureReps: failureReps ?? this.failureReps,
       weightsPerSet: weightsPerSet ?? this.weightsPerSet,
       repsPerSet: repsPerSet ?? this.repsPerSet,
+      setTypes: setTypes ?? this.setTypes,
+      rirPerSet: rirPerSet ?? this.rirPerSet,
       isCardio: isCardio ?? this.isCardio,
       allowCardioSets: allowCardioSets ?? this.allowCardioSets,
+      supersetId: supersetId ?? this.supersetId,
       isStationary: isStationary ?? this.isStationary,
       singleCardioSession: singleCardioSession ?? this.singleCardioSession,
       rpe: rpe ?? this.rpe,

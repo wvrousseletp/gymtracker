@@ -13,6 +13,8 @@ class LogExercise {
   final int rpe;
   final List<bool>? failureReport;
   final List<int?>? failureReps;
+  final List<String>? setTypes;
+  final List<int?>? rirPerSet;
   final String? executionType;
 
   LogExercise({
@@ -26,6 +28,8 @@ class LogExercise {
     required this.rpe,
     this.failureReport,
     this.failureReps,
+    this.setTypes,
+    this.rirPerSet,
     this.executionType,
   });
 

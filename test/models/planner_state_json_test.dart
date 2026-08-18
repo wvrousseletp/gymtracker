@@ -10,6 +10,7 @@ void main() {
       planner: const {'seg': ['routine:1']},
       history: const [],
       prs: const {},
+        exerciseNotes: const {},
       medidas: const [],
       settings: SettingsState(sound: true, vibration: true, prepSeconds: 5),
       diet: DietState(

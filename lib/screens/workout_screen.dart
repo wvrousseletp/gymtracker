@@ -16,11 +16,14 @@ import '../models/exercise.dart';
 import '../models/workout_log.dart';
 import '../models/planner_state.dart';
 import '../widgets/glass_card.dart';
+import '../widgets/muscle_heatmap.dart';
+
 import '../widgets/profile_avatar.dart';
 import '../utils/workout_starter.dart';
 import '../services/rest_timer_service.dart';
 import '../widgets/premium_strength_set_card.dart';
 import '../widgets/workout_share_card.dart';
+import '../widgets/plate_calculator_dialog.dart';
 import 'exercise_hub_screen.dart';
 
 import '../widgets/premium_cardio_view.dart';
@@ -34,8 +37,6 @@ class WorkoutScreen extends StatefulWidget {
 }
 
 class _WorkoutScreenState extends State<WorkoutScreen> {
-
-
   String _getTodayLabel() {
     final weekday = DateTime.now().weekday;
     switch (weekday) {
@@ -110,56 +111,61 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     final isRestDay = _isRestDayToday(provider.history);
 
     // Mapear IDs do planejador para as rotinas reais do usuário
-    final List<Routine> plannedRoutines = isRestDay ? [] : plannedRoutineIds
-        .map((item) {
-          if (item.isEmpty) return null;
-          if (item.startsWith('exercise:')) {
-            final parts = item.split(':');
-            if (parts.length >= 3) {
-              final exerciseId = parts[1];
-              final sets = int.tryParse(parts[2]) ?? 3;
-              final libEx =
-                  provider.library.where((l) => l.id == exerciseId).firstOrNull;
-              if (libEx != null) {
-                final isCardio = (libEx.measurementType == MeasurementType.cardio ||
-                        libEx.measurementType == MeasurementType.distance) &&
-                    libEx.measurementType != MeasurementType.time;
-                return Routine(
-                  id: "temp-$exerciseId-$sets",
-                  name: "${libEx.name} (Avulso)",
-                  defaultRest: 60,
-                  exercises: [
-                    RoutineExercise(
-                      id: "e-temp-${const Uuid().v4()}",
-                      exerciseId: exerciseId,
-                      sets: isCardio ? 1 : sets,
-                      reps: isCardio
-                          ? 0
-                          : (libEx.measurementType == MeasurementType.time
-                              ? 45
-                              : 10),
-                      rest: 60,
-                      weight: 0,
-                      isCardio: isCardio,
-                      allowCardioSets: false,
-                    )
-                  ],
-                );
+    final List<Routine> plannedRoutines = isRestDay
+        ? []
+        : plannedRoutineIds
+            .map((item) {
+              if (item.isEmpty) return null;
+              if (item.startsWith('exercise:')) {
+                final parts = item.split(':');
+                if (parts.length >= 3) {
+                  final exerciseId = parts[1];
+                  final sets = int.tryParse(parts[2]) ?? 3;
+                  final libEx = provider.library
+                      .where((l) => l.id == exerciseId)
+                      .firstOrNull;
+                  if (libEx != null) {
+                    final isCardio =
+                        (libEx.measurementType == MeasurementType.cardio ||
+                                libEx.measurementType ==
+                                    MeasurementType.distance) &&
+                            libEx.measurementType != MeasurementType.time;
+                    return Routine(
+                      id: "temp-$exerciseId-$sets",
+                      name: "${libEx.name} (Avulso)",
+                      defaultRest: 60,
+                      exercises: [
+                        RoutineExercise(
+                          id: "e-temp-${const Uuid().v4()}",
+                          exerciseId: exerciseId,
+                          sets: isCardio ? 1 : sets,
+                          reps: isCardio
+                              ? 0
+                              : (libEx.measurementType == MeasurementType.time
+                                  ? 45
+                                  : 10),
+                          rest: 60,
+                          weight: 0,
+                          isCardio: isCardio,
+                          allowCardioSets: false,
+                        )
+                      ],
+                    );
+                  }
+                }
+                return null;
+              } else {
+                String routineId = item;
+                if (item.startsWith('routine:')) {
+                  routineId = item.substring(8);
+                }
+                return provider.routines
+                    .where((r) => r.id == routineId)
+                    .firstOrNull;
               }
-            }
-            return null;
-          } else {
-            String routineId = item;
-            if (item.startsWith('routine:')) {
-              routineId = item.substring(8);
-            }
-            return provider.routines
-                .where((r) => r.id == routineId)
-                .firstOrNull;
-          }
-        })
-        .whereType<Routine>()
-        .toList();
+            })
+            .whereType<Routine>()
+            .toList();
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -289,6 +295,22 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             ),
             const SizedBox(height: 16),
 
+
+            const Text(
+              "Seu Mapa de Calor (Últimos 7 dias)",
+              style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            GlassCard(
+              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+              child: Center(
+                child: MuscleHeatmap(muscleSets: Provider.of<TrackerProvider>(context).getRecentMuscleSets()),
+              ),
+            ),
+            const SizedBox(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -302,34 +324,41 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 if (!isRestDay)
                   TextButton.icon(
                     onPressed: () {
-                    HapticFeedback.lightImpact();
-                    provider.shiftPlannerForward();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text('Descanso registrado. Treinos adiados.'),
-                        action: SnackBarAction(
-                          label: 'Desfazer',
-                          onPressed: () {
-                            provider.undoShiftPlannerForward();
-                          },
+                      HapticFeedback.lightImpact();
+                      provider.shiftPlannerForward();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text(
+                              'Descanso registrado. Treinos adiados.'),
+                          action: SnackBarAction(
+                            label: 'Desfazer',
+                            onPressed: () {
+                              provider.undoShiftPlannerForward();
+                            },
+                          ),
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10)),
+                          duration: const Duration(seconds: 4),
                         ),
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        duration: const Duration(seconds: 4),
-                      ),
-                    );
-                  },
-                  icon: Icon(Icons.nightlight_round, color: accentColor, size: 14),
-                  label: Text(
-                    "Descansar Hoje",
-                    style: TextStyle(color: accentColor, fontSize: 12, fontWeight: FontWeight.bold),
+                      );
+                    },
+                    icon: Icon(Icons.nightlight_round,
+                        color: accentColor, size: 14),
+                    label: Text(
+                      "Descansar Hoje",
+                      style: TextStyle(
+                          color: accentColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold),
+                    ),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
                   ),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                ),
               ],
             ),
             const SizedBox(height: 8),
@@ -696,7 +725,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close_rounded, color: Colors.white, size: 22),
+                      icon: const Icon(Icons.close_rounded,
+                          color: Colors.white, size: 22),
                       onPressed: () => Navigator.pop(context),
                       style: IconButton.styleFrom(
                         backgroundColor: Colors.white.withOpacity(0.08),
@@ -1052,7 +1082,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             for (final log in provider.history) {
               for (final ex in log.exercises) {
                 if (ex.completedSets > 0) {
-                  exerciseFrequency[ex.name] = (exerciseFrequency[ex.name] ?? 0) + 1;
+                  exerciseFrequency[ex.name] =
+                      (exerciseFrequency[ex.name] ?? 0) + 1;
                 }
               }
             }
@@ -1113,7 +1144,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                             ),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.close_rounded, color: Colors.white, size: 22),
+                            icon: const Icon(Icons.close_rounded,
+                                color: Colors.white, size: 22),
                             onPressed: () => Navigator.pop(context),
                             style: IconButton.styleFrom(
                               backgroundColor: Colors.white.withOpacity(0.08),
@@ -1422,7 +1454,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                               horizontal: 12, vertical: 8),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
-                            side: BorderSide(color: accentColor.withOpacity(0.3)),
+                            side:
+                                BorderSide(color: accentColor.withOpacity(0.3)),
                           ),
                         ),
                         icon: const Icon(Icons.notifications_active_outlined,
@@ -1600,6 +1633,24 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
 
   // Global keys for sets to allow accurate scrolling centering
   final Map<String, GlobalKey> _setCardKeys = {};
+
+  List<List<int>> get _exerciseGroups {
+    final exercises = widget.provider.state?.activeWorkout?.exercises ?? [];
+    List<List<int>> groups = [];
+    for (int i = 0; i < exercises.length; i++) {
+      final ex = exercises[i];
+      if (ex.supersetId != null &&
+          groups.isNotEmpty &&
+          groups.last.isNotEmpty &&
+          exercises[groups.last.first].supersetId == ex.supersetId) {
+        groups.last.add(i);
+      } else {
+        groups.add([i]);
+      }
+    }
+    return groups;
+  }
+
 
   GlobalKey _getOrCreateKey(int exIdx, int setIdx) {
     final keyStr = '${exIdx}_$setIdx';
@@ -1825,746 +1876,796 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
         ? widget.provider.todayBurnedCalories
         : workout.activeCalories;
 
-
     final keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
 
     return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
-      child: Scaffold(
-        backgroundColor: Colors.black,
-        body: Stack(
-        children: [
-          // Dynamic Glowing Background
-          Positioned.fill(
-            child: AnimatedContainer(
-              duration: const Duration(seconds: 2),
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: const Alignment(0, -0.8),
-                  radius: 1.5,
-                  colors: [
-                    accentColor.withOpacity(0.15),
-                    Colors.black,
-                  ],
-                ),
-              ),
-            ),
-          ),
-          // Tela Principal de Treino Ativo
-          Column(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Scaffold(
+          backgroundColor: Colors.black,
+          body: Stack(
             children: [
-              // Barra Superior Compacta Glass (~48px)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Esquerda: Nome do Treino + Chip do Exercício Atual
-                    Expanded(
-                      child: Row(
-                        children: [
-                          Flexible(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 5),
-                              decoration: BoxDecoration(
-                                color: accentColor.withOpacity(0.15),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                    color: accentColor.withOpacity(0.35)),
-                              ),
-                              child: Text(
-                                workout.name.toUpperCase(),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: accentColor,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 0.8,
-                                ),
-                              ),
-                            ),
-                          ),
-                          if (exercises.isNotEmpty) ...[
-                            const SizedBox(width: 8),
-                            if (workout.executionType == RoutineExecutionType.circuit && workout.circuitCycles > 0) ...[
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: Colors.deepOrangeAccent.withOpacity(0.15),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.deepOrangeAccent.withOpacity(0.35)),
-                                ),
-                                child: Text(
-                                  "Ciclo ${(_currentExIdx ~/ (exercises.length / workout.circuitCycles)) + 1}/${workout.circuitCycles}",
-                                  style: const TextStyle(
-                                    color: Colors.deepOrangeAccent,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                            ],
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.06),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                workout.executionType == RoutineExecutionType.circuit && workout.circuitCycles > 0
-                                    ? "Ex. ${(_currentExIdx % (exercises.length ~/ workout.circuitCycles)) + 1}/${exercises.length ~/ workout.circuitCycles}"
-                                    : "Ex. ${_currentExIdx + 1}/${exercises.length}",
-                                style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-
-                    // Centro/Direita: Cronômetro Compacto + Telemetria Inline + Menu
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Cronômetro digital em cápsula com telemetria
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.06),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                                color: Colors.white.withOpacity(0.1)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.timer_outlined,
-                                  color: accentColor, size: 14),
-                              const SizedBox(width: 5),
-                              ValueListenableBuilder<int>(
-                                valueListenable: _workoutDurationNotifier,
-                                builder: (context, elapsed, child) {
-                                  return Text(
-                                    _formatDuration(elapsed),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w900,
-                                      fontFeatures: [
-                                        FontFeature.tabularFigures()
-                                      ],
-                                    ),
-                                  );
-                                },
-                              ),
-                              if (hr > 0) ...[
-                                const SizedBox(width: 8),
-                                Text("❤️ $hr",
-                                    style: const TextStyle(
-                                        color: Colors.redAccent,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.bold)),
-                              ],
-                              if (cal > 0) ...[
-                                const SizedBox(width: 6),
-                                Text("🔥 $cal",
-                                    style: const TextStyle(
-                                        color: Colors.orangeAccent,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.bold)),
-                              ],
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(width: 4),
-
-                        // Menu de Opções Rápido (Adiar / Descartar)
-                        PopupMenuButton<String>(
-                          color: const Color(0xff2c2c2e),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16)),
-                          icon: const Icon(Icons.more_vert_rounded,
-                              color: Colors.white70, size: 20),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          onSelected: (value) {
-                            if (value == 'postpone') {
-                              widget.provider.postponeActiveWorkout();
-                            } else if (value == 'discard') {
-                              _confirmDiscardWorkout(context);
-                            }
-                          },
-                          itemBuilder: (context) => const [
-                            PopupMenuItem(
-                              value: 'postpone',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.snooze,
-                                      color: Colors.amberAccent, size: 20),
-                                  SizedBox(width: 12),
-                                  Text("Adiar Treino",
-                                      style: TextStyle(color: Colors.white)),
-                                ],
-                              ),
-                            ),
-                            PopupMenuItem(
-                              value: 'discard',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.close,
-                                      color: Colors.redAccent, size: 20),
-                                  SizedBox(width: 12),
-                                  Text("Descartar",
-                                      style:
-                                          TextStyle(color: Colors.redAccent)),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
+              // Dynamic Glowing Background
+              Positioned.fill(
+                child: AnimatedContainer(
+                  duration: const Duration(seconds: 2),
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      center: const Alignment(0, -0.8),
+                      radius: 1.5,
+                      colors: [
+                        accentColor.withOpacity(0.15),
+                        Colors.black,
                       ],
                     ),
-                  ],
+                  ),
                 ),
               ),
-
-              // Micro-barra de Progresso Segmentada dos Exercícios (3px de altura)
-              if (exercises.isNotEmpty)
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  child: Row(
-                    children: List.generate(exercises.length, (index) {
-                      final isCurrent = _currentExIdx == index;
-                      final isCompleted = index < _currentExIdx ||
-                          (exercises[index].setsState.isNotEmpty &&
-                              exercises[index]
-                                  .setsState
-                                  .every((done) => done));
-                      return Expanded(
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          margin: const EdgeInsets.symmetric(horizontal: 2),
-                          height: 3,
-                          decoration: BoxDecoration(
-                            color: isCurrent
-                                ? accentColor
-                                : isCompleted
-                                    ? accentColor.withOpacity(0.4)
-                                    : Colors.white.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                      );
-                    }),
-                  ),
-                ),
-
-              // Carrossel de Exercícios (PageView)
-              if (exercises.isNotEmpty)
-                Expanded(
-                  child: PageView.builder(
-                    controller: _pageController,
-                    physics: const BouncingScrollPhysics(),
-                    onPageChanged: (index) {
-                      setState(() {
-                        _currentExIdx = index;
-                        widget.provider.setCurrentExerciseIndex(_currentExIdx);
-                      });
-                      _scrollToNextSet(index, fromUserSwipe: true);
-                    },
-                    itemCount: exercises.length,
-                    itemBuilder: (context, index) {
-                      return SingleChildScrollView(
-                        keyboardDismissBehavior:
-                            ScrollViewKeyboardDismissBehavior.onDrag,
-                        controller: _scrollControllers[index],
-                        padding: const EdgeInsets.only(
-                            left: 8, right: 8, top: 4, bottom: 40),
-                        child: Column(
-                          children: [
-                            _buildExerciseCard(
-                                exercises[index], index, accentColor),
-
-                            // Botão Concluir Treino no último exercício
-                            if (index == exercises.length - 1)
-                              Padding(
-                                padding: const EdgeInsets.only(
-                                    top: 24.0, bottom: 80.0),
-                                child: ElevatedButton.icon(
-                                  onPressed: () {
-                                    _finishWorkoutDirectly(context);
-                                  },
-                                  icon: const Icon(Icons.check_circle_outline,
-                                      size: 22, color: Colors.black),
-                                  label: const Text(
-                                    "FINALIZAR TREINO",
-                                    style: TextStyle(
-                                        color: Colors.black,
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 15,
-                                        letterSpacing: 1),
-                                  ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: accentColor,
-                                    shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(20)),
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 24, vertical: 14),
-                                    elevation: 8,
-                                    shadowColor: accentColor.withOpacity(0.5),
-                                  ),
-                                ),
-                              )
-                            else
-                              const SizedBox(height: 80),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-            ],
-          ),
-
-          // FLOATING BOTTOM ACTION BAR (Ultra-sleek Glass Capsule)
-          if (!keyboardOpen)
-            Positioned(
-              left: 20,
-              right: 20,
-              bottom: 96,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xff1c1c1e).withOpacity(0.85),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                          color: Colors.white.withOpacity(0.12), width: 1),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.35),
-                          blurRadius: 16,
-                          offset: const Offset(0, 4),
-                        )
-                      ],
-                    ),
+              // Tela Principal de Treino Ativo
+              Column(
+                children: [
+                  // Barra Superior Compacta Glass (~48px)
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        // Botão Play/Pause Compacto
-                        GestureDetector(
-                          onTap: () {
-                            widget.provider.pauseWorkout(!workout.paused);
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: workout.paused
-                                  ? Colors.amberAccent.withOpacity(0.2)
-                                  : accentColor.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: workout.paused
-                                    ? Colors.amberAccent.withOpacity(0.5)
-                                    : accentColor.withOpacity(0.4),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  workout.paused
-                                      ? Icons.play_arrow_rounded
-                                      : Icons.pause_rounded,
-                                  color: workout.paused
-                                      ? Colors.amberAccent
-                                      : accentColor,
-                                  size: 18,
+                        // Esquerda: Nome do Treino + Chip do Exercício Atual
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Flexible(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 5),
+                                  decoration: BoxDecoration(
+                                    color: accentColor.withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                        color: accentColor.withOpacity(0.35)),
+                                  ),
+                                  child: Text(
+                                    workout.name.toUpperCase(),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: accentColor,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 0.8,
+                                    ),
+                                  ),
                                 ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  workout.paused ? "PAUSADO" : "PAUSAR",
-                                  style: TextStyle(
-                                    color: workout.paused
-                                        ? Colors.amberAccent
-                                        : accentColor,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 0.5,
+                              ),
+                              if (exercises.isNotEmpty) ...[
+                                const SizedBox(width: 8),
+                                if (workout.executionType ==
+                                        RoutineExecutionType.circuit &&
+                                    workout.circuitCycles > 0) ...[
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.deepOrangeAccent
+                                          .withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                          color: Colors.deepOrangeAccent
+                                              .withOpacity(0.35)),
+                                    ),
+                                    child: Text(
+                                      "Ciclo ${(_currentExIdx ~/ (exercises.length / workout.circuitCycles)) + 1}/${workout.circuitCycles}",
+                                      style: const TextStyle(
+                                        color: Colors.deepOrangeAccent,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                ],
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.06),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    workout.executionType ==
+                                                RoutineExecutionType.circuit &&
+                                            workout.circuitCycles > 0
+                                        ? "Ex. ${(_currentExIdx % (_exerciseGroups.length ~/ workout.circuitCycles)) + 1}/${_exerciseGroups.length ~/ workout.circuitCycles}"
+                                        : "Ex. ${_currentExIdx + 1}/${_exerciseGroups.length}",
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                                 ),
                               ],
-                            ),
+                            ],
                           ),
                         ),
 
-                        // Botão Finalizar Treino (Direita)
-                        GestureDetector(
-                          onTap: () {
-                            _finishWorkoutDirectly(context);
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: accentColor,
-                              borderRadius: BorderRadius.circular(16),
+                        // Centro/Direita: Cronômetro Compacto + Telemetria Inline + Menu
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Cronômetro digital em cápsula com telemetria
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.06),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                    color: Colors.white.withOpacity(0.1)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.timer_outlined,
+                                      color: accentColor, size: 14),
+                                  const SizedBox(width: 5),
+                                  ValueListenableBuilder<int>(
+                                    valueListenable: _workoutDurationNotifier,
+                                    builder: (context, elapsed, child) {
+                                      return Text(
+                                        _formatDuration(elapsed),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w900,
+                                          fontFeatures: [
+                                            FontFeature.tabularFigures()
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  if (hr > 0) ...[
+                                    const SizedBox(width: 8),
+                                    Text("❤️ $hr",
+                                        style: const TextStyle(
+                                            color: Colors.redAccent,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold)),
+                                  ],
+                                  if (cal > 0) ...[
+                                    const SizedBox(width: 6),
+                                    Text("🔥 $cal",
+                                        style: const TextStyle(
+                                            color: Colors.orangeAccent,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold)),
+                                  ],
+                                ],
+                              ),
                             ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.check_circle_outline_rounded,
-                                  color: Colors.black,
-                                  size: 16,
+
+                            const SizedBox(width: 4),
+
+                            // Menu de Opções Rápido (Adiar / Descartar)
+                            PopupMenuButton<String>(
+                              color: const Color(0xff2c2c2e),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16)),
+                              icon: const Icon(Icons.more_vert_rounded,
+                                  color: Colors.white70, size: 20),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              onSelected: (value) {
+                                if (value == 'postpone') {
+                                  widget.provider.postponeActiveWorkout();
+                                } else if (value == 'discard') {
+                                  _confirmDiscardWorkout(context);
+                                }
+                              },
+                              itemBuilder: (context) => const [
+                                PopupMenuItem(
+                                  value: 'postpone',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.snooze,
+                                          color: Colors.amberAccent, size: 20),
+                                      SizedBox(width: 12),
+                                      Text("Adiar Treino",
+                                          style:
+                                              TextStyle(color: Colors.white)),
+                                    ],
+                                  ),
                                 ),
-                                SizedBox(width: 6),
-                                Text(
-                                  "FINALIZAR",
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 0.8,
+                                PopupMenuItem(
+                                  value: 'discard',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.close,
+                                          color: Colors.redAccent, size: 20),
+                                      SizedBox(width: 12),
+                                      Text("Descartar",
+                                          style: TextStyle(
+                                              color: Colors.redAccent)),
+                                    ],
                                   ),
                                 ),
                               ],
                             ),
-                          ),
+                          ],
                         ),
                       ],
                     ),
                   ),
-                ),
-              ),
-            ),
 
-          // OVERLAY DE DESCANSO / PREPARO ATIVO (CircularProgressTimer) - REDESENHO PREMIUM TELA CHEIA
-          if (_timerActive)
-            Positioned.fill(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                child: Container(
-                  color: Colors.black.withOpacity(0.94),
-                  child: SafeArea(
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        return SingleChildScrollView(
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                                minHeight: constraints.maxHeight),
-                            child: Padding(
-                              padding: EdgeInsets.only(
-                                left: 24,
-                                right: 24,
-                                top: 24,
-                                bottom: 24 +
-                                    88 +
-                                    MediaQuery.of(context).padding.bottom,
+                  // Micro-barra de Progresso Segmentada dos Exercícios (3px de altura)
+                  if (exercises.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 4),
+                      child: Row(
+                        children: List.generate(exercises.length, (index) {
+                          final isCurrent = _currentExIdx == index;
+                          final isCompleted = index < _currentExIdx ||
+                              (exercises[index].setsState.isNotEmpty &&
+                                  exercises[index]
+                                      .setsState
+                                      .every((done) => done));
+                          return Expanded(
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              margin: const EdgeInsets.symmetric(horizontal: 2),
+                              height: 3,
+                              decoration: BoxDecoration(
+                                color: isCurrent
+                                    ? accentColor
+                                    : isCompleted
+                                        ? accentColor.withOpacity(0.4)
+                                        : Colors.white.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(2),
                               ),
-                              child: Column(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  // Cabeçalho da tela de descanso
-                                  Column(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 16, vertical: 6),
-                                        decoration: BoxDecoration(
-                                          color: _timerIsPrep
-                                              ? Colors.amber.withOpacity(0.12)
-                                              : accentColor.withOpacity(0.12),
-                                          borderRadius:
-                                              BorderRadius.circular(20),
-                                          border: Border.all(
-                                            color: _timerIsPrep
-                                                ? Colors.amber.withOpacity(0.25)
-                                                : accentColor.withOpacity(0.25),
-                                            width: 1.5,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          _timerIsPrep
-                                              ? "TEMPO DE PREPARO"
-                                              : "DESCANSO ATIVO",
-                                          style: TextStyle(
-                                            color: _timerIsPrep
-                                                ? Colors.amber
-                                                : accentColor,
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w900,
-                                            letterSpacing: 1.5,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
 
-                                  // Painel Central com Timer e controles de acréscimo
-                                  Column(
-                                    children: [
-                                      ValueListenableBuilder<int>(
-                                        valueListenable: RestTimerService
-                                            .instance.secondsRemaining,
-                                        builder: (context, remaining, child) {
-                                          return Stack(
-                                            alignment: Alignment.center,
-                                            children: [
-                                              // Anel de progresso grande e elegante
-                                              SizedBox(
-                                                width: 220,
-                                                height: 220,
-                                                child:
-                                                    CircularProgressIndicator(
-                                                  value: _countdownTotalSeconds >
-                                                          0
-                                                      ? (remaining /
-                                                          _countdownTotalSeconds)
-                                                      : 0,
-                                                  strokeWidth: 6,
-                                                  backgroundColor: Colors.white
-                                                      .withOpacity(0.04),
-                                                  valueColor:
-                                                      AlwaysStoppedAnimation<
-                                                              Color>(
-                                                          _timerIsPrep
-                                                              ? Colors.amber
-                                                              : accentColor),
-                                                ),
-                                              ),
-                                              Column(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Text(
-                                                    "$remaining",
-                                                    style: const TextStyle(
-                                                      color: Colors.white,
-                                                      fontSize: 72,
-                                                      fontWeight:
-                                                          FontWeight.w900,
-                                                      letterSpacing: -2.0,
-                                                    ),
-                                                  ),
-                                                  const Text(
-                                                    "segundos",
-                                                    style: TextStyle(
-                                                      color: Colors.white30,
-                                                      fontSize: 12,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ],
-                                          );
-                                        },
+                  // Carrossel de Exercícios (PageView)
+                  if (exercises.isNotEmpty)
+                    Expanded(
+                      child: PageView.builder(
+                        controller: _pageController,
+                        physics: const BouncingScrollPhysics(),
+                        onPageChanged: (index) {
+                          setState(() {
+                            _currentExIdx = index;
+                            widget.provider
+                                .setCurrentExerciseIndex(_currentExIdx);
+                          });
+                          _scrollToNextSet(index, fromUserSwipe: true);
+                        },
+                        itemCount: _exerciseGroups.length,
+                        itemBuilder: (context, groupIndex) {
+                          final group = _exerciseGroups[groupIndex];
+                          return SingleChildScrollView(
+                            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                            controller: _scrollControllers[groupIndex],
+                            padding: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 40),
+                            child: Column(
+                              children: [
+                                for (int i = 0; i < group.length; i++) ...[
+                                  _buildExerciseCard(exercises[group[i]], group[i], accentColor),
+                                  if (i < group.length - 1)
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                      child: Icon(Icons.link, color: accentColor.withOpacity(0.5), size: 28),
+                                    ),
+                                ],
+
+                                // Botão Concluir Treino no último grupo
+                                if (groupIndex == _exerciseGroups.length - 1)
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                        top: 24.0, bottom: 80.0),
+                                    child: ElevatedButton.icon(
+                                      onPressed: () {
+                                        _finishWorkoutDirectly(context);
+                                      },
+                                      icon: const Icon(
+                                          Icons.check_circle_outline,
+                                          size: 22,
+                                          color: Colors.black),
+                                      label: const Text(
+                                        "FINALIZAR TREINO",
+                                        style: TextStyle(
+                                            color: Colors.black,
+                                            fontWeight: FontWeight.w900,
+                                            fontSize: 15,
+                                            letterSpacing: 1),
                                       ),
-                                      const SizedBox(height: 32),
-                                      // Ajustes rápidos de tempo (+15s / -15s) - Mais destacados
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: accentColor,
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(20)),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 24, vertical: 14),
+                                        elevation: 8,
+                                        shadowColor:
+                                            accentColor.withOpacity(0.5),
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  const SizedBox(height: 80),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                ],
+              ),
+
+              // FLOATING BOTTOM ACTION BAR (Ultra-sleek Glass Capsule)
+              if (!keyboardOpen)
+                Positioned(
+                  left: 20,
+                  right: 20,
+                  bottom: 96,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xff1c1c1e).withOpacity(0.85),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                              color: Colors.white.withOpacity(0.12), width: 1),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.35),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
+                            )
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            // Botão Play/Pause Compacto
+                            GestureDetector(
+                              onTap: () {
+                                widget.provider.pauseWorkout(!workout.paused);
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: workout.paused
+                                      ? Colors.amberAccent.withOpacity(0.2)
+                                      : accentColor.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: workout.paused
+                                        ? Colors.amberAccent.withOpacity(0.5)
+                                        : accentColor.withOpacity(0.4),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      workout.paused
+                                          ? Icons.play_arrow_rounded
+                                          : Icons.pause_rounded,
+                                      color: workout.paused
+                                          ? Colors.amberAccent
+                                          : accentColor,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      workout.paused ? "PAUSADO" : "PAUSAR",
+                                      style: TextStyle(
+                                        color: workout.paused
+                                            ? Colors.amberAccent
+                                            : accentColor,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                            // Botão Finalizar Treino (Direita)
+                            GestureDetector(
+                              onTap: () {
+                                _finishWorkoutDirectly(context);
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: accentColor,
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.check_circle_outline_rounded,
+                                      color: Colors.black,
+                                      size: 16,
+                                    ),
+                                    SizedBox(width: 6),
+                                    Text(
+                                      "FINALIZAR",
+                                      style: TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 0.8,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+              // OVERLAY DE DESCANSO / PREPARO ATIVO (CircularProgressTimer) - REDESENHO PREMIUM TELA CHEIA
+              if (_timerActive)
+                Positioned.fill(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                    child: Container(
+                      color: Colors.black.withOpacity(0.94),
+                      child: SafeArea(
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            return SingleChildScrollView(
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                    minHeight: constraints.maxHeight),
+                                child: Padding(
+                                  padding: EdgeInsets.only(
+                                    left: 24,
+                                    right: 24,
+                                    top: 24,
+                                    bottom: 24 +
+                                        88 +
+                                        MediaQuery.of(context).padding.bottom,
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      // Cabeçalho da tela de descanso
+                                      Column(
                                         children: [
                                           Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 16, vertical: 6),
                                             decoration: BoxDecoration(
-                                              color: Colors.white
-                                                  .withOpacity(0.06),
-                                              borderRadius:
-                                                  BorderRadius.circular(16),
-                                              border: Border.all(
-                                                  color: Colors.white
+                                              color: _timerIsPrep
+                                                  ? Colors.amber
+                                                      .withOpacity(0.12)
+                                                  : accentColor
                                                       .withOpacity(0.12),
-                                                  width: 1.5),
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                              border: Border.all(
+                                                color: _timerIsPrep
+                                                    ? Colors.amber
+                                                        .withOpacity(0.25)
+                                                    : accentColor
+                                                        .withOpacity(0.25),
+                                                width: 1.5,
+                                              ),
                                             ),
-                                            child: IconButton(
-                                              onPressed: () {
-                                                final currentRemaining =
-                                                    RestTimerService.instance
-                                                        .secondsRemaining.value;
-                                                if (currentRemaining > 15) {
-                                                  widget.provider
-                                                      .startRestTimer(
-                                                    currentRemaining - 15,
-                                                    _timerNextExName,
-                                                    _timerNextSetNum,
-                                                    _timerIsPrep,
-                                                  );
-                                                }
-                                              },
-                                              icon: const Text("-15s",
-                                                  style: TextStyle(
-                                                      color: Colors.white,
-                                                      fontWeight: FontWeight.bold,
-                                                      fontSize: 16)),
-                                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                              constraints: const BoxConstraints(
-                                                  minWidth: 56, minHeight: 56),
+                                            child: Text(
+                                              _timerIsPrep
+                                                  ? "TEMPO DE PREPARO"
+                                                  : "DESCANSO ATIVO",
+                                              style: TextStyle(
+                                                color: _timerIsPrep
+                                                    ? Colors.amber
+                                                    : accentColor,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w900,
+                                                letterSpacing: 1.5,
+                                              ),
                                             ),
                                           ),
-                                          const SizedBox(width: 24),
-                                          Container(
-                                            decoration: BoxDecoration(
-                                              color:
-                                                  accentColor.withOpacity(0.12),
-                                              borderRadius:
-                                                  BorderRadius.circular(16),
-                                              border: Border.all(
+                                        ],
+                                      ),
+
+                                      // Painel Central com Timer e controles de acréscimo
+                                      Column(
+                                        children: [
+                                          ValueListenableBuilder<int>(
+                                            valueListenable: RestTimerService
+                                                .instance.secondsRemaining,
+                                            builder:
+                                                (context, remaining, child) {
+                                              return Stack(
+                                                alignment: Alignment.center,
+                                                children: [
+                                                  // Anel de progresso grande e elegante
+                                                  SizedBox(
+                                                    width: 220,
+                                                    height: 220,
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                      value: _countdownTotalSeconds >
+                                                              0
+                                                          ? (remaining /
+                                                              _countdownTotalSeconds)
+                                                          : 0,
+                                                      strokeWidth: 6,
+                                                      backgroundColor: Colors
+                                                          .white
+                                                          .withOpacity(0.04),
+                                                      valueColor:
+                                                          AlwaysStoppedAnimation<
+                                                                  Color>(
+                                                              _timerIsPrep
+                                                                  ? Colors.amber
+                                                                  : accentColor),
+                                                    ),
+                                                  ),
+                                                  Column(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      Text(
+                                                        "$remaining",
+                                                        style: const TextStyle(
+                                                          color: Colors.white,
+                                                          fontSize: 72,
+                                                          fontWeight:
+                                                              FontWeight.w900,
+                                                          letterSpacing: -2.0,
+                                                        ),
+                                                      ),
+                                                      const Text(
+                                                        "segundos",
+                                                        style: TextStyle(
+                                                          color: Colors.white30,
+                                                          fontSize: 12,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ],
+                                              );
+                                            },
+                                          ),
+                                          const SizedBox(height: 32),
+                                          // Ajustes rápidos de tempo (+15s / -15s) - Mais destacados
+                                          Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Container(
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white
+                                                      .withOpacity(0.06),
+                                                  borderRadius:
+                                                      BorderRadius.circular(16),
+                                                  border: Border.all(
+                                                      color: Colors.white
+                                                          .withOpacity(0.12),
+                                                      width: 1.5),
+                                                ),
+                                                child: IconButton(
+                                                  onPressed: () {
+                                                    final currentRemaining =
+                                                        RestTimerService
+                                                            .instance
+                                                            .secondsRemaining
+                                                            .value;
+                                                    if (currentRemaining > 15) {
+                                                      widget.provider
+                                                          .startRestTimer(
+                                                        currentRemaining - 15,
+                                                        _timerNextExName,
+                                                        _timerNextSetNum,
+                                                        _timerIsPrep,
+                                                      );
+                                                    }
+                                                  },
+                                                  icon: const Text("-15s",
+                                                      style: TextStyle(
+                                                          color: Colors.white,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: 16)),
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 16,
+                                                      vertical: 12),
+                                                  constraints:
+                                                      const BoxConstraints(
+                                                          minWidth: 56,
+                                                          minHeight: 56),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 24),
+                                              Container(
+                                                decoration: BoxDecoration(
                                                   color: accentColor
-                                                      .withOpacity(0.3),
-                                                  width: 1.0),
-                                            ),
-                                            child: IconButton(
-                                              onPressed: () {
-                                                final currentRemaining =
-                                                    RestTimerService.instance
-                                                        .secondsRemaining.value;
-                                                widget.provider.startRestTimer(
-                                                  currentRemaining + 15,
-                                                  _timerNextExName,
-                                                  _timerNextSetNum,
-                                                  _timerIsPrep,
-                                                );
-                                              },
-                                              icon: Text("+15s",
+                                                      .withOpacity(0.12),
+                                                  borderRadius:
+                                                      BorderRadius.circular(16),
+                                                  border: Border.all(
+                                                      color: accentColor
+                                                          .withOpacity(0.3),
+                                                      width: 1.0),
+                                                ),
+                                                child: IconButton(
+                                                  onPressed: () {
+                                                    final currentRemaining =
+                                                        RestTimerService
+                                                            .instance
+                                                            .secondsRemaining
+                                                            .value;
+                                                    widget.provider
+                                                        .startRestTimer(
+                                                      currentRemaining + 15,
+                                                      _timerNextExName,
+                                                      _timerNextSetNum,
+                                                      _timerIsPrep,
+                                                    );
+                                                  },
+                                                  icon: Text("+15s",
+                                                      style: TextStyle(
+                                                          color: accentColor,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: 16)),
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 16,
+                                                      vertical: 12),
+                                                  constraints:
+                                                      const BoxConstraints(
+                                                          minWidth: 56,
+                                                          minHeight: 56),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+
+                                      // Próximo Exercício e Botão de Pular no rodapé
+                                      Column(
+                                        children: [
+                                          GlassCard(
+                                            padding: const EdgeInsets.all(16),
+                                            borderColor:
+                                                Colors.white.withOpacity(0.06),
+                                            borderRadius: 16,
+                                            child: Column(
+                                              children: [
+                                                Text(
+                                                  _timerIsPrep
+                                                      ? "PREPARE-SE PARA A SÉRIE $_timerNextSetNum"
+                                                      : "PRÓXIMO EXERCÍCIO",
                                                   style: TextStyle(
-                                                      color: accentColor,
-                                                      fontWeight: FontWeight.bold,
-                                                      fontSize: 16)),
-                                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                              constraints: const BoxConstraints(
-                                                  minWidth: 56, minHeight: 56),
+                                                    color: _timerIsPrep
+                                                        ? Colors.amber
+                                                            .withOpacity(0.7)
+                                                        : accentColor
+                                                            .withOpacity(0.7),
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.w900,
+                                                    letterSpacing: 1.0,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 6),
+                                                Text(
+                                                  _timerNextExName,
+                                                  textAlign: TextAlign.center,
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 20,
+                                                    fontWeight: FontWeight.w800,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  "Série $_timerNextSetNum",
+                                                  style: const TextStyle(
+                                                    color: Colors.white38,
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                                if (_timerNextTargetReps !=
+                                                        null &&
+                                                    _timerNextTargetWeight !=
+                                                        null)
+                                                  Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                            top: 4),
+                                                    child: Text(
+                                                      "$_timerNextTargetReps reps • ${_timerNextTargetWeight == _timerNextTargetWeight!.toInt() ? _timerNextTargetWeight!.toInt() : _timerNextTargetWeight} kg",
+                                                      style: const TextStyle(
+                                                        color: Colors.white54,
+                                                        fontSize: 13,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
+                                                    ),
+                                                  ),
+                                              ],
+                                            ),
+                                          ),
+                                          const SizedBox(height: 20),
+                                          // Botão de Pular Premium
+                                          SizedBox(
+                                            width: double.infinity,
+                                            height: 52,
+                                            child: ElevatedButton(
+                                              onPressed: () {
+                                                widget.provider
+                                                    .clearRestTimer();
+                                              },
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.white,
+                                                foregroundColor: Colors.black,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(16),
+                                                ),
+                                                elevation: 0,
+                                              ),
+                                              child: Text(
+                                                _timerIsPrep
+                                                    ? "Iniciar Exercício Agora"
+                                                    : "Pular Descanso",
+                                                style: const TextStyle(
+                                                  fontSize: 15,
+                                                  fontWeight: FontWeight.w900,
+                                                ),
+                                              ),
                                             ),
                                           ),
                                         ],
                                       ),
                                     ],
                                   ),
-
-                                  // Próximo Exercício e Botão de Pular no rodapé
-                                  Column(
-                                    children: [
-                                      GlassCard(
-                                        padding: const EdgeInsets.all(16),
-                                        borderColor:
-                                            Colors.white.withOpacity(0.06),
-                                        borderRadius: 16,
-                                        child: Column(
-                                          children: [
-                                            Text(
-                                              _timerIsPrep
-                                                  ? "PREPARE-SE PARA A SÉRIE $_timerNextSetNum"
-                                                  : "PRÓXIMO EXERCÍCIO",
-                                              style: TextStyle(
-                                                color: _timerIsPrep
-                                                    ? Colors.amber
-                                                        .withOpacity(0.7)
-                                                    : accentColor
-                                                        .withOpacity(0.7),
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w900,
-                                                letterSpacing: 1.0,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 6),
-                                            Text(
-                                              _timerNextExName,
-                                              textAlign: TextAlign.center,
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 20,
-                                                fontWeight: FontWeight.w800,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              "Série $_timerNextSetNum",
-                                              style: const TextStyle(
-                                                color: Colors.white38,
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            if (_timerNextTargetReps != null && _timerNextTargetWeight != null)
-                                              Padding(
-                                                padding: const EdgeInsets.only(top: 4),
-                                                child: Text(
-                                                  "$_timerNextTargetReps reps • ${_timerNextTargetWeight == _timerNextTargetWeight!.toInt() ? _timerNextTargetWeight!.toInt() : _timerNextTargetWeight} kg",
-                                                  style: const TextStyle(
-                                                    color: Colors.white54,
-                                                    fontSize: 13,
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                                ),
-                                              ),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(height: 20),
-                                      // Botão de Pular Premium
-                                      SizedBox(
-                                        width: double.infinity,
-                                        height: 52,
-                                        child: ElevatedButton(
-                                          onPressed: () {
-                                            widget.provider.clearRestTimer();
-                                          },
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.white,
-                                            foregroundColor: Colors.black,
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(16),
-                                            ),
-                                            elevation: 0,
-                                          ),
-                                          child: Text(
-                                            _timerIsPrep
-                                                ? "Iniciar Exercício Agora"
-                                                : "Pular Descanso",
-                                            style: const TextStyle(
-                                              fontSize: 15,
-                                              fontWeight: FontWeight.w900,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                                ),
                               ),
-                            ),
-                          ),
-                        );
-                      },
+                            );
+                          },
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ),
-        ],
-      ),
-    ));
+            ],
+          ),
+        ));
   }
 
   Widget _buildExerciseCard(ActiveExercise ex, int exIdx, Color accentColor) {
@@ -2624,32 +2725,73 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    GestureDetector(
-                      onTap: () {
-                        final libEx = widget.provider.state?.library.where((l) => l.id == ex.id).firstOrNull ??
-                            LibraryExercise(
-                              id: ex.id,
-                              name: ex.name,
-                              muscle: ex.muscle,
-                              measurementType: ex.measurementType,
-                            );
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ExerciseHubScreen(exercise: libEx),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              final libEx = widget.provider.state?.library
+                                      .where((l) => l.id == ex.id)
+                                      .firstOrNull ??
+                                  LibraryExercise(
+                                    id: ex.id,
+                                    name: ex.name,
+                                    muscle: ex.muscle,
+                                    measurementType: ex.measurementType,
+                                  );
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      ExerciseHubScreen(exercise: libEx),
+                                ),
+                              );
+                            },
+                            child: Text(
+                              ex.name,
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: -0.2),
+                            ),
                           ),
-                        );
-                      },
-                      child: Text(
-                        ex.name,
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -0.2),
-                      ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.more_vert,
+                              color: Colors.white54, size: 20),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: () => _showExerciseOptionsBottomSheet(
+                              context, widget.provider, ex, accentColor),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 2),
+                    if (widget
+                            .provider.state?.exerciseNotes[ex.id]?.isNotEmpty ==
+                        true) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(Icons.edit_note, color: accentColor, size: 14),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              widget.provider.state!.exerciseNotes[ex.id]!,
+                              style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                  fontStyle: FontStyle.italic),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    const SizedBox(height: 6),
                     Row(
                       children: [
                         Container(
@@ -2716,7 +2858,6 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
               ],
             ],
           ),
-          
 
           const SizedBox(height: 16),
 
@@ -2799,7 +2940,8 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                     onEditTap: () => _showEditSetWeightRepsDialog(
                         context, exIdx, setIdx, ex),
                     onSaveValues: (w, r) {
-                      widget.provider.updateExerciseSetWeightReps(exIdx, setIdx, w, r);
+                      widget.provider
+                          .updateExerciseSetWeightReps(exIdx, setIdx, w, r);
                     },
                     onFailureTap: () {
                       widget.provider.completeSet(
@@ -2847,6 +2989,109 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
     );
   }
 
+  void _showExerciseOptionsBottomSheet(BuildContext context,
+      TrackerProvider provider, ActiveExercise ex, Color accentColor) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xff1c1c1e),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2)),
+              ),
+              ListTile(
+                leading: Icon(Icons.edit_note, color: accentColor),
+                title: const Text("Anotações do Exercício",
+                    style: TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.bold)),
+                subtitle: const Text("Salvo globalmente para este exercício",
+                    style: TextStyle(color: Colors.white54, fontSize: 12)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showExerciseNotesDialog(context, provider, ex);
+                },
+              ),
+              ListTile(
+                leading:
+                    const Icon(Icons.calculate_outlined, color: Colors.white),
+                title: const Text("Calculadora de Anilhas",
+                    style: TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.bold)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  showDialog(
+                    context: context,
+                    builder: (_) =>
+                        PlateCalculatorDialog(accentColor: accentColor),
+                  );
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showExerciseNotesDialog(
+      BuildContext context, TrackerProvider provider, ActiveExercise ex) {
+    final initialNote = provider.state?.exerciseNotes[ex.id] ?? "";
+    final controller = TextEditingController(text: initialNote);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xff1c1c1e),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: Colors.white.withOpacity(0.1))),
+        title: Text("Anotações: ${ex.name}",
+            style: const TextStyle(color: Colors.white, fontSize: 16)),
+        content: TextField(
+          controller: controller,
+          maxLines: 5,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: "Ex: Regulagem do banco no 3...",
+            hintStyle: const TextStyle(color: Colors.white30),
+            filled: true,
+            fillColor: Colors.white.withOpacity(0.05),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child:
+                const Text("Cancelar", style: TextStyle(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () {
+              provider.updateExerciseNote(ex.id, controller.text);
+              Navigator.pop(ctx);
+            },
+            child: const Text("Salvar",
+                style: TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
 
   void _showEditSetWeightRepsDialog(
       BuildContext context, int exIdx, int setIdx, ActiveExercise ex) {
@@ -3088,7 +3333,8 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
     final active = widget.provider.state?.activeWorkout;
     if (active == null) return false;
 
-    if (active.executionType == RoutineExecutionType.circuit && active.circuitCycles > 0) {
+    if (active.executionType == RoutineExecutionType.circuit &&
+        active.circuitCycles > 0) {
       final exercisesPerCycle = active.exercises.length ~/ active.circuitCycles;
       if (exercisesPerCycle == 0) return false;
       return (exIdx + 1) % exercisesPerCycle == 0;
@@ -3106,7 +3352,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
 
     if (allCompleted) {
       if (fromUserSwipe) return;
-      
+
       // If RPE has not been answered yet, show the RPE dialog instead of transitioning.
       if (_shouldShowRpeForExercise(exIdx) && ex.rpe == null) {
         _onSetCompleted(exIdx);
@@ -3203,7 +3449,8 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
     }
   }
 
-  void _showExerciseRpeDialog(BuildContext context, int exIdx, ActiveExercise ex) {
+  void _showExerciseRpeDialog(
+      BuildContext context, int exIdx, ActiveExercise ex) {
     double rpeVal = 8.0;
     final accentColor =
         ThemeUtils.getColor(widget.provider.currentProfile.colorAccent);
@@ -3234,7 +3481,9 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      isCircuit ? "RPE do Ciclo $currentCycle 🔄" : "RPE do Exercício 💪",
+                      isCircuit
+                          ? "RPE do Ciclo $currentCycle 🔄"
+                          : "RPE do Exercício 💪",
                       style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w800,
@@ -3255,7 +3504,8 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                       isCircuit
                           ? "Qual foi a intensidade do esforço para este ciclo?"
                           : "Qual foi a intensidade do esforço para este exercício?",
-                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 12),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 12),
@@ -3322,12 +3572,15 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                         TextButton(
                           onPressed: () {
                             if (isCircuit && exercisesPerCycle > 0) {
-                              final cycleStart = (exIdx ~/ exercisesPerCycle) * exercisesPerCycle;
+                              final cycleStart = (exIdx ~/ exercisesPerCycle) *
+                                  exercisesPerCycle;
                               for (int i = cycleStart; i <= exIdx; i++) {
-                                widget.provider.updateExerciseRpe(i, rpeVal.toInt());
+                                widget.provider
+                                    .updateExerciseRpe(i, rpeVal.toInt());
                               }
                             } else {
-                              widget.provider.updateExerciseRpe(exIdx, rpeVal.toInt());
+                              widget.provider
+                                  .updateExerciseRpe(exIdx, rpeVal.toInt());
                             }
                             Navigator.pop(dialogCtx);
                             _scrollToNextExerciseAfterRpe(exIdx);
@@ -3358,9 +3611,10 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
       8, // calculatedRpe is automatically resolved inside the provider
       "",
     );
-    
+
     // Show Share Dialog
-    final workoutProvider = Provider.of<WorkoutProvider>(context, listen: false);
+    final workoutProvider =
+        Provider.of<WorkoutProvider>(context, listen: false);
     final history = workoutProvider.history;
     if (history.isNotEmpty) {
       final savedLog = history.first; // newest is at index 0
@@ -3381,7 +3635,8 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
     return "${twoDigits(minutes)}:${twoDigits(seconds)}";
   }
 
-  void _showShareWorkoutDialog(BuildContext context, WorkoutLog log, Color accentColor) {
+  void _showShareWorkoutDialog(
+      BuildContext context, WorkoutLog log, Color accentColor) {
     final ScreenshotController screenshotController = ScreenshotController();
 
     showDialog(
@@ -3399,12 +3654,16 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
             ElevatedButton.icon(
               onPressed: () async {
                 try {
-                  final imageBytes = await screenshotController.capture(pixelRatio: 3.0);
+                  final imageBytes =
+                      await screenshotController.capture(pixelRatio: 3.0);
                   if (imageBytes != null) {
                     final directory = await getApplicationDocumentsDirectory();
-                    final imagePath = await File('${directory.path}/share_workout.png').create();
+                    final imagePath =
+                        await File('${directory.path}/share_workout.png')
+                            .create();
                     await imagePath.writeAsBytes(imageBytes);
-                    await Share.shareXFiles([XFile(imagePath.path)], text: 'Treino finalizado no Los Mooscles! 💪');
+                    await Share.shareXFiles([XFile(imagePath.path)],
+                        text: 'Treino finalizado no Los Mooscles! 💪');
                     if (context.mounted) Navigator.pop(ctx);
                   }
                 } catch (e) {
@@ -3414,17 +3673,21 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
               icon: const Icon(Icons.share, color: Colors.black),
               label: const Text(
                 "Compartilhar no Instagram / WhatsApp",
-                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+                style:
+                    TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: accentColor,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
             ),
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text("Fechar", style: TextStyle(color: Colors.white70)),
+              child:
+                  const Text("Fechar", style: TextStyle(color: Colors.white70)),
             )
           ],
         ),

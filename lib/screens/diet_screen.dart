@@ -556,7 +556,7 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
   final _manualCarbsCtrl = TextEditingController();
   final _manualFatCtrl = TextEditingController();
 
-  // Abas do dialog: 0 = Busca/IA, 1 = Favoritos, 2 = Combos
+  // Abas do dialog: 0 = Busca/IA, 1 = Favoritos, 2 = Refeições Salvas
   int _activeTab = 0;
 
   List<FavoriteFood> _favorites = [];
@@ -701,7 +701,7 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
     Navigator.pop(context);
   }
 
-  // --- MÉTODOS DE COMBO/PRESETS ---
+  // --- MÉTODOS DE REFEIÇÕES SALVAS/PRESETS ---
 
   void _onComboSearchChanged() async {
     final query = _comboSearchCtrl.text.trim();
@@ -713,7 +713,7 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
       final results = await _foodService.searchFoods(query);
       setState(() => _comboSearchResults = results);
     } catch (e) {
-      debugPrint("Erro ao buscar alimento para o combo: $e");
+      debugPrint("Erro ao buscar alimento para a refeição: $e");
     }
   }
 
@@ -858,7 +858,7 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
         children: [
           _tabHeaderItem(0, "Busca", Icons.search),
           _tabHeaderItem(1, "Favoritos", Icons.star),
-          _tabHeaderItem(2, "Combos", Icons.brunch_dining),
+          _tabHeaderItem(2, "Refeições Salvas", Icons.brunch_dining),
         ],
       ),
     );
@@ -1287,7 +1287,7 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                                   style: const TextStyle(
                                       color: Colors.white, fontSize: 13),
                                   decoration: _dialogInputDeco(
-                                      "Nome do combo (ex: Café da Manhã)"),
+                                      "Nome da refeição (ex: Café da Manhã)"),
                                   onChanged: (_) => setState(() {}),
                                 ),
                               ),
@@ -1376,7 +1376,7 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(10)),
                             ),
-                            child: const Text("Salvar Combo 🥤",
+                            child: const Text("Salvar Refeição 🍱",
                                 style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
@@ -1386,7 +1386,7 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text("Seus Combos",
+                              const Text("Suas Refeições Salvas",
                                   style: TextStyle(
                                       color: Colors.white70, fontSize: 12)),
                               TextButton.icon(
@@ -1409,7 +1409,7 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                               padding: EdgeInsets.symmetric(vertical: 24),
                               child: Center(
                                 child: Text(
-                                  "Nenhum combo salvo ainda.",
+                                  "Nenhuma refeição salva ainda.",
                                   style: TextStyle(
                                       color: Colors.white38, fontSize: 12),
                                 ),

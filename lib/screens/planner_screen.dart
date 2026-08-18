@@ -17,19 +17,28 @@ class PlannerScreen extends StatefulWidget {
 }
 
 class _PlannerScreenState extends State<PlannerScreen> {
-  final List<String> _daysOfWeek = ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'];
+  final List<String> _daysOfWeek = [
+    'seg',
+    'ter',
+    'qua',
+    'qui',
+    'sex',
+    'sab',
+    'dom'
+  ];
 
   // AI Insights State
   final Map<String, Map<String, String>> _aiSuggestionsByDay = {};
   final Map<String, bool> _isLoadingAIByDay = {};
   final Map<String, bool> _showAIByDay = {};
 
-  Future<void> _toggleOrFetchAI(String day, List<String> items, List<WorkoutLog> history, PlannerState state) async {
+  Future<void> _toggleOrFetchAI(String day, List<String> items,
+      List<WorkoutLog> history, PlannerState state) async {
     if (_showAIByDay[day] == true) {
       setState(() => _showAIByDay[day] = false);
       return;
     }
-    
+
     setState(() {
       _showAIByDay[day] = true;
     });
@@ -50,21 +59,24 @@ class _PlannerScreenState extends State<PlannerScreen> {
         final r = state.routines.where((x) => x.id == rId).firstOrNull;
         if (r != null) {
           for (var e in r.exercises) {
-            final libEx = state.library.where((x) => x.id == e.exerciseId).firstOrNull;
+            final libEx =
+                state.library.where((x) => x.id == e.exerciseId).firstOrNull;
             if (libEx != null) plannedExercises.add(libEx.name);
           }
         }
       } else if (rawItem.startsWith('exercise:')) {
         final parts = rawItem.split(':');
         if (parts.length >= 2) {
-          final libEx = state.library.where((x) => x.id == parts[1]).firstOrNull;
+          final libEx =
+              state.library.where((x) => x.id == parts[1]).firstOrNull;
           if (libEx != null) plannedExercises.add(libEx.name);
         }
       } else if (rawItem.isNotEmpty) {
         final r = state.routines.where((x) => x.id == rawItem).firstOrNull;
         if (r != null) {
           for (var e in r.exercises) {
-            final libEx = state.library.where((x) => x.id == e.exerciseId).firstOrNull;
+            final libEx =
+                state.library.where((x) => x.id == e.exerciseId).firstOrNull;
             if (libEx != null) plannedExercises.add(libEx.name);
           }
         }
@@ -87,14 +99,22 @@ class _PlannerScreenState extends State<PlannerScreen> {
 
   String _getDayNamePt(String day) {
     switch (day) {
-      case 'seg': return 'Segunda-feira';
-      case 'ter': return 'Terça-feira';
-      case 'qua': return 'Quarta-feira';
-      case 'qui': return 'Quinta-feira';
-      case 'sex': return 'Sexta-feira';
-      case 'sab': return 'Sábado';
-      case 'dom': return 'Domingo';
-      default: return '';
+      case 'seg':
+        return 'Segunda-feira';
+      case 'ter':
+        return 'Terça-feira';
+      case 'qua':
+        return 'Quarta-feira';
+      case 'qui':
+        return 'Quinta-feira';
+      case 'sex':
+        return 'Sexta-feira';
+      case 'sab':
+        return 'Sábado';
+      case 'dom':
+        return 'Domingo';
+      default:
+        return '';
     }
   }
 
@@ -105,7 +125,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
     Color accentColor,
   ) {
     final streak = state.streak;
-    
+
     // Formatar data do último treino
     String lastWorkoutStr = "Nenhum";
     if (streak.lastWorkoutDate.isNotEmpty) {
@@ -132,7 +152,8 @@ class _PlannerScreenState extends State<PlannerScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.local_fire_department_rounded, color: Colors.orangeAccent, size: 24),
+              const Icon(Icons.local_fire_department_rounded,
+                  color: Colors.orangeAccent, size: 24),
               const SizedBox(width: 8),
               const Text(
                 "Consistência Semanal",
@@ -152,7 +173,8 @@ class _PlannerScreenState extends State<PlannerScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.star, color: Colors.orangeAccent, size: 14),
+                    const Icon(Icons.star,
+                        color: Colors.orangeAccent, size: 14),
                     const SizedBox(width: 4),
                     Text(
                       "${streak.consecutiveWeeks} ${streak.consecutiveWeeks == 1 ? 'semana' : 'semanas'}",
@@ -174,11 +196,17 @@ class _PlannerScreenState extends State<PlannerScreen> {
             children: [
               const Text(
                 "Frequência Semanal:",
-                style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600),
+                style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600),
               ),
               Text(
                 "${streak.currentWeekCount} ${streak.currentWeekCount == 1 ? 'dia' : 'dias'}",
-                style: const TextStyle(color: Colors.greenAccent, fontSize: 13, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    color: Colors.greenAccent,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -190,7 +218,8 @@ class _PlannerScreenState extends State<PlannerScreen> {
               final filled = streak.weekdaysTrained.isNotEmpty
                   ? streak.weekdaysTrained.contains(dayIndex + 1)
                   : dayIndex < streak.currentWeekCount;
-              final dayInitial = _daysOfWeek[dayIndex].substring(0, 1).toUpperCase();
+              final dayInitial =
+                  _daysOfWeek[dayIndex].substring(0, 1).toUpperCase();
               return Container(
                 width: 34,
                 height: 34,
@@ -224,7 +253,9 @@ class _PlannerScreenState extends State<PlannerScreen> {
                         ]
                       : [],
                   border: Border.all(
-                    color: filled ? Colors.greenAccent.withOpacity(0.8) : Colors.white.withOpacity(0.08),
+                    color: filled
+                        ? Colors.greenAccent.withOpacity(0.8)
+                        : Colors.white.withOpacity(0.08),
                     width: 1.5,
                   ),
                 ),
@@ -250,7 +281,10 @@ class _PlannerScreenState extends State<PlannerScreen> {
               ),
               Text(
                 lastWorkoutStr,
-                style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -268,23 +302,27 @@ class _PlannerScreenState extends State<PlannerScreen> {
     // Calcular volume planejado por grupo muscular
     final Map<String, int> strengthMap = {};
     final Map<String, int> cardioMap = {};
-    
+
     for (final day in state.planner.keys) {
       final items = state.planner[day] ?? [];
       for (final rawItem in items) {
         if (rawItem.startsWith('routine:')) {
           final routineId = rawItem.substring(8);
-          final routine = state.routines.where((r) => r.id == routineId).firstOrNull;
+          final routine =
+              state.routines.where((r) => r.id == routineId).firstOrNull;
           if (routine != null) {
             for (final re in routine.exercises) {
-              final libEx = state.library.where((e) => e.id == re.exerciseId).firstOrNull;
+              final libEx =
+                  state.library.where((e) => e.id == re.exerciseId).firstOrNull;
               if (libEx != null) {
                 final muscle = libEx.muscle;
                 final isCardio = muscle.toLowerCase().contains('cardio');
                 if (isCardio) {
-                  cardioMap[muscle] = (cardioMap[muscle] ?? 0) + re.sets.toInt();
+                  cardioMap[muscle] =
+                      (cardioMap[muscle] ?? 0) + re.sets.toInt();
                 } else {
-                  strengthMap[muscle] = (strengthMap[muscle] ?? 0) + re.sets.toInt();
+                  strengthMap[muscle] =
+                      (strengthMap[muscle] ?? 0) + re.sets.toInt();
                 }
               }
             }
@@ -306,17 +344,21 @@ class _PlannerScreenState extends State<PlannerScreen> {
             }
           }
         } else if (rawItem.isNotEmpty) {
-          final routine = state.routines.where((r) => r.id == rawItem).firstOrNull;
+          final routine =
+              state.routines.where((r) => r.id == rawItem).firstOrNull;
           if (routine != null) {
             for (final re in routine.exercises) {
-              final libEx = state.library.where((e) => e.id == re.exerciseId).firstOrNull;
+              final libEx =
+                  state.library.where((e) => e.id == re.exerciseId).firstOrNull;
               if (libEx != null) {
                 final muscle = libEx.muscle;
                 final isCardio = muscle.toLowerCase().contains('cardio');
                 if (isCardio) {
-                  cardioMap[muscle] = (cardioMap[muscle] ?? 0) + re.sets.toInt();
+                  cardioMap[muscle] =
+                      (cardioMap[muscle] ?? 0) + re.sets.toInt();
                 } else {
-                  strengthMap[muscle] = (strengthMap[muscle] ?? 0) + re.sets.toInt();
+                  strengthMap[muscle] =
+                      (strengthMap[muscle] ?? 0) + re.sets.toInt();
                 }
               }
             }
@@ -343,7 +385,8 @@ class _PlannerScreenState extends State<PlannerScreen> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.fitness_center_rounded, color: accentColor, size: 22),
+                  Icon(Icons.fitness_center_rounded,
+                      color: accentColor, size: 22),
                   const SizedBox(width: 8),
                   const Text(
                     "Volume de Treino Planejado",
@@ -362,16 +405,22 @@ class _PlannerScreenState extends State<PlannerScreen> {
                   child: Center(
                     child: Text(
                       "Nenhum treino de musculação planejado.",
-                      style: TextStyle(color: Colors.white38, fontStyle: FontStyle.italic, fontSize: 13),
+                      style: TextStyle(
+                          color: Colors.white38,
+                          fontStyle: FontStyle.italic,
+                          fontSize: 13),
                     ),
                   ),
                 )
               else
                 Column(
                   children: sortedStrength.map((entry) {
-                    final maxVolume = sortedStrength.isNotEmpty ? sortedStrength.first.value : 1;
-                    final fraction = maxVolume > 0 ? entry.value / maxVolume : 0.0;
-                    
+                    final maxVolume = sortedStrength.isNotEmpty
+                        ? sortedStrength.first.value
+                        : 1;
+                    final fraction =
+                        maxVolume > 0 ? entry.value / maxVolume : 0.0;
+
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 6),
                       child: Column(
@@ -443,7 +492,8 @@ class _PlannerScreenState extends State<PlannerScreen> {
               children: [
                 const Row(
                   children: [
-                    Icon(Icons.directions_run_rounded, color: Colors.amber, size: 22),
+                    Icon(Icons.directions_run_rounded,
+                        color: Colors.amber, size: 22),
                     SizedBox(width: 8),
                     Text(
                       "Volume de Cardio Planejado",
@@ -458,9 +508,11 @@ class _PlannerScreenState extends State<PlannerScreen> {
                 const SizedBox(height: 12),
                 Column(
                   children: sortedCardio.map((entry) {
-                    final maxVolume = sortedCardio.isNotEmpty ? sortedCardio.first.value : 1;
-                    final fraction = maxVolume > 0 ? entry.value / maxVolume : 0.0;
-                    
+                    final maxVolume =
+                        sortedCardio.isNotEmpty ? sortedCardio.first.value : 1;
+                    final fraction =
+                        maxVolume > 0 ? entry.value / maxVolume : 0.0;
+
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 6),
                       child: Column(
@@ -527,20 +579,23 @@ class _PlannerScreenState extends State<PlannerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final state = context.select<TrackerProvider, PlannerState?>((p) => p.state);
+    final state =
+        context.select<TrackerProvider, PlannerState?>((p) => p.state);
     final accentColor = context.select<TrackerProvider, Color>(
       (p) => ThemeUtils.getColor(p.currentProfile.colorAccent),
     );
     final provider = Provider.of<TrackerProvider>(context, listen: true);
 
     if (state == null) {
-      return const Center(child: CircularProgressIndicator(color: Colors.white));
+      return const Center(
+          child: CircularProgressIndicator(color: Colors.white));
     }
 
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: ListView(
-        padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 100),
+        padding:
+            const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 100),
         children: [
           // 1. Consistência Semanal
           _buildWeeklyStreakHeader(context, provider, state, accentColor),
@@ -553,13 +608,15 @@ class _PlannerScreenState extends State<PlannerScreen> {
           // Seletor de Modo de Organização
           _buildOrganizationModeSelector(context, provider, state, accentColor),
           const SizedBox(height: 16),
-          
+
           // Agenda
           if (state.settings.organizationMode == OrganizationMode.fixedDays)
             ..._buildFixedDaysAgenda(context, provider, state, accentColor)
-          else if (state.settings.organizationMode == OrganizationMode.continuousList)
+          else if (state.settings.organizationMode ==
+              OrganizationMode.continuousList)
             ..._buildContinuousListAgenda(context, provider, state, accentColor)
-          else if (state.settings.organizationMode == OrganizationMode.weeklyGoals)
+          else if (state.settings.organizationMode ==
+              OrganizationMode.weeklyGoals)
             ..._buildWeeklyGoalsAgenda(context, provider, state, accentColor),
         ],
       ),
@@ -574,13 +631,14 @@ class _PlannerScreenState extends State<PlannerScreen> {
     String rawItem,
     Color accentColor,
   ) {
-    final state = context.select<TrackerProvider, PlannerState>((p) => p.state!);
+    final state =
+        context.select<TrackerProvider, PlannerState>((p) => p.state!);
     final library = state.library;
     final routines = state.routines;
 
     // Decodificar valor selecionado e quantidade
     String selectedValue = ""; // "routine:preset-a" ou "exercise:lib-14"
-    int quantityValue = 3;     // séries ou minutos
+    int quantityValue = 3; // séries ou minutos
 
     if (rawItem.startsWith('routine:')) {
       selectedValue = rawItem;
@@ -609,7 +667,8 @@ class _PlannerScreenState extends State<PlannerScreen> {
     // Ordenar biblioteca de exercícios (corrigindo bug de desorganização)
     final sortedLibrary = List<LibraryExercise>.from(library)
       ..sort((a, b) {
-        final muscleComp = a.muscle.toLowerCase().compareTo(b.muscle.toLowerCase());
+        final muscleComp =
+            a.muscle.toLowerCase().compareTo(b.muscle.toLowerCase());
         if (muscleComp != 0) return muscleComp;
         return a.name.toLowerCase().compareTo(b.name.toLowerCase());
       });
@@ -631,8 +690,10 @@ class _PlannerScreenState extends State<PlannerScreen> {
                 child: DropdownButton<String>(
                   value: (() {
                     if (selectedValue.isEmpty) return null;
-                    final bool hasRoutine = routines.any((r) => "routine:${r.id}" == selectedValue);
-                    final bool hasExercise = library.any((ex) => "exercise:${ex.id}" == selectedValue);
+                    final bool hasRoutine =
+                        routines.any((r) => "routine:${r.id}" == selectedValue);
+                    final bool hasExercise = library
+                        .any((ex) => "exercise:${ex.id}" == selectedValue);
                     if (hasRoutine || hasExercise) return selectedValue;
                     return null;
                   })(),
@@ -641,19 +702,24 @@ class _PlannerScreenState extends State<PlannerScreen> {
                     style: TextStyle(color: Colors.white30, fontSize: 13),
                   ),
                   dropdownColor: const Color(0xff1c1c1e),
-                  icon: const Icon(Icons.arrow_drop_down, color: Colors.white54, size: 18),
+                  icon: const Icon(Icons.arrow_drop_down,
+                      color: Colors.white54, size: 18),
                   style: const TextStyle(color: Colors.white, fontSize: 13),
                   isExpanded: true,
                   onChanged: (val) {
                     if (val == null) return;
                     if (val.startsWith('exercise:')) {
                       final exId = val.substring(9);
-                      final libEx = library.where((e) => e.id == exId).firstOrNull;
-                      final checkCardio = libEx != null && libEx.muscle.toLowerCase().contains('cardio');
+                      final libEx =
+                          library.where((e) => e.id == exId).firstOrNull;
+                      final checkCardio = libEx != null &&
+                          libEx.muscle.toLowerCase().contains('cardio');
                       if (checkCardio) {
-                        provider.updatePlannerItem(day, idx, "$val:30"); // Default 30 min
+                        provider.updatePlannerItem(
+                            day, idx, "$val:30"); // Default 30 min
                       } else {
-                        provider.updatePlannerItem(day, idx, "$val:3");  // Default 3 sets
+                        provider.updatePlannerItem(
+                            day, idx, "$val:3"); // Default 3 sets
                       }
                     } else {
                       provider.updatePlannerItem(day, idx, val);
@@ -666,32 +732,38 @@ class _PlannerScreenState extends State<PlannerScreen> {
                       value: "title:routines",
                       child: Text(
                         "--- Blocos de Treino (Rotinas) ---",
-                        style: TextStyle(color: Colors.white30, fontWeight: FontWeight.bold, fontSize: 12),
+                        style: TextStyle(
+                            color: Colors.white30,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12),
                       ),
                     ),
                     ...routines.map((r) => DropdownMenuItem<String>(
-                      value: "routine:${r.id}",
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 8.0),
-                        child: Text(r.name),
-                      ),
-                    )),
+                          value: "routine:${r.id}",
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 8.0),
+                            child: Text(r.name),
+                          ),
+                        )),
                     // Categoria Exercícios Avulsos
                     const DropdownMenuItem<String>(
                       enabled: false,
                       value: "title:exercises",
                       child: Text(
                         "--- Exercícios Avulsos ---",
-                        style: TextStyle(color: Colors.white30, fontWeight: FontWeight.bold, fontSize: 12),
+                        style: TextStyle(
+                            color: Colors.white30,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12),
                       ),
                     ),
                     ...sortedLibrary.map((ex) => DropdownMenuItem<String>(
-                      value: "exercise:${ex.id}",
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 8.0),
-                        child: Text("${ex.name} (${ex.muscle})"),
-                      ),
-                    )),
+                          value: "exercise:${ex.id}",
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 8.0),
+                            child: Text("${ex.name} (${ex.muscle})"),
+                          ),
+                        )),
                   ],
                 ),
               ),
@@ -741,7 +813,10 @@ class _PlannerScreenState extends State<PlannerScreen> {
                 initialValue: quantityValue.toString(),
                 keyboardType: TextInputType.number,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold),
                 decoration: const InputDecoration(
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.zero,
@@ -750,10 +825,11 @@ class _PlannerScreenState extends State<PlannerScreen> {
                 onChanged: (val) {
                   int quantity = int.tryParse(val) ?? (isCardio ? 30 : 3);
                   if (quantity < 1) quantity = 1;
-                  
+
                   final parts = rawItem.split(':');
                   if (parts.length >= 2) {
-                    provider.updatePlannerItem(day, idx, "${parts[0]}:${parts[1]}:$quantity");
+                    provider.updatePlannerItem(
+                        day, idx, "${parts[0]}:${parts[1]}:$quantity");
                   }
                 },
               ),
@@ -761,7 +837,10 @@ class _PlannerScreenState extends State<PlannerScreen> {
             const SizedBox(width: 4),
             Text(
               isCardio ? 'min' : 'sér',
-              style: const TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                  color: Colors.white54,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold),
             ),
             const SizedBox(width: 8),
           ],
@@ -782,7 +861,8 @@ class _PlannerScreenState extends State<PlannerScreen> {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: Colors.white.withOpacity(0.08)),
                 ),
-                child: const Text('▲', style: TextStyle(color: Colors.white70, fontSize: 10)),
+                child: const Text('▲',
+                    style: TextStyle(color: Colors.white70, fontSize: 10)),
               ),
             ),
           ),
@@ -804,7 +884,8 @@ class _PlannerScreenState extends State<PlannerScreen> {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: Colors.white.withOpacity(0.08)),
                 ),
-                child: const Text('▼', style: TextStyle(color: Colors.white70, fontSize: 10)),
+                child: const Text('▼',
+                    style: TextStyle(color: Colors.white70, fontSize: 10)),
               ),
             ),
           ),
@@ -822,7 +903,8 @@ class _PlannerScreenState extends State<PlannerScreen> {
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
               ),
-              child: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 16),
+              child: const Icon(Icons.delete_outline,
+                  color: Colors.redAccent, size: 16),
             ),
           ),
         ],
@@ -830,7 +912,8 @@ class _PlannerScreenState extends State<PlannerScreen> {
     );
   }
 
-  Widget _buildOrganizationModeSelector(BuildContext context, TrackerProvider provider, PlannerState state, Color accentColor) {
+  Widget _buildOrganizationModeSelector(BuildContext context,
+      TrackerProvider provider, PlannerState state, Color accentColor) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.05),
@@ -890,13 +973,15 @@ class _PlannerScreenState extends State<PlannerScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
-            color: isSelected ? accentColor.withOpacity(0.15) : Colors.transparent,
+            color:
+                isSelected ? accentColor.withOpacity(0.15) : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, color: isSelected ? accentColor : Colors.white54, size: 20),
+              Icon(icon,
+                  color: isSelected ? accentColor : Colors.white54, size: 20),
               const SizedBox(height: 4),
               Text(
                 title,
@@ -916,202 +1001,240 @@ class _PlannerScreenState extends State<PlannerScreen> {
     );
   }
 
-  List<Widget> _buildFixedDaysAgenda(BuildContext context, TrackerProvider provider, PlannerState state, Color accentColor) {
+  List<Widget> _buildFixedDaysAgenda(BuildContext context,
+      TrackerProvider provider, PlannerState state, Color accentColor) {
     return [
-          // Seção Cronograma Semanal
-          Row(
-            children: [
-              const Icon(Icons.calendar_month, color: Colors.white70, size: 20),
-              const SizedBox(width: 8),
-              const Text(
-                "Cronograma Semanal",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const Spacer(),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.white.withOpacity(0.1)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white70, size: 14),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      constraints: const BoxConstraints(),
-                      tooltip: "Voltar cronograma em 1 dia",
-                      onPressed: () {
-                        provider.shiftPlannerBackwardWithoutLog();
-                      },
-                    ),
-                    Container(width: 1, height: 16, color: Colors.white.withOpacity(0.1)),
-                    IconButton(
-                      icon: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white70, size: 14),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      constraints: const BoxConstraints(),
-                      tooltip: "Avançar cronograma em 1 dia",
-                      onPressed: () {
-                        provider.shiftPlannerForwardWithoutLog();
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ],
+      // Seção Cronograma Semanal
+      Row(
+        children: [
+          const Icon(Icons.calendar_month, color: Colors.white70, size: 20),
+          const SizedBox(width: 8),
+          const Text(
+            "Cronograma Semanal",
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+            ),
           ),
-          const SizedBox(height: 12),
+          const Spacer(),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.white.withOpacity(0.1)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_rounded,
+                      color: Colors.white70, size: 14),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  constraints: const BoxConstraints(),
+                  tooltip: "Voltar cronograma em 1 dia",
+                  onPressed: () {
+                    provider.shiftPlannerBackwardWithoutLog();
+                  },
+                ),
+                Container(
+                    width: 1, height: 16, color: Colors.white.withOpacity(0.1)),
+                IconButton(
+                  icon: const Icon(Icons.arrow_forward_ios_rounded,
+                      color: Colors.white70, size: 14),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  constraints: const BoxConstraints(),
+                  tooltip: "Avançar cronograma em 1 dia",
+                  onPressed: () {
+                    provider.shiftPlannerForwardWithoutLog();
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 12),
 
-          // Dias da semana
-          ..._daysOfWeek.map((day) {
-            final items = state.planner[day] ?? [];
-            return Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              child: GlassCard(
-                padding: const EdgeInsets.all(16),
-                borderColor: Colors.white.withOpacity(0.06),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+      // Dias da semana
+      ..._daysOfWeek.map((day) {
+        final items = state.planner[day] ?? [];
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          child: GlassCard(
+            padding: const EdgeInsets.all(16),
+            borderColor: Colors.white.withOpacity(0.06),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Cabeçalho do dia
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Cabeçalho do dia
+                    Text(
+                      _getDayNamePt(day),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          _getDayNamePt(day),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            if (items.isNotEmpty)
-                              IconButton(
-                                icon: Icon(
-                                  _showAIByDay[day] == true ? Icons.auto_awesome : Icons.auto_awesome_outlined,
-                                  color: _showAIByDay[day] == true ? accentColor : Colors.amber,
-                                  size: 22,
-                                ),
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
-                                tooltip: "Dicas de Treino (IA)",
-                                onPressed: () => _toggleOrFetchAI(day, items, provider.state!.history, state),
-                              ),
-                            if (items.isNotEmpty) const SizedBox(width: 16),
-                            IconButton(
-                              icon: Icon(Icons.add_box_outlined, color: accentColor, size: 22),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                              onPressed: () {
-                                provider.addPlannerItem(day);
-                              },
+                        if (items.isNotEmpty)
+                          IconButton(
+                            icon: Icon(
+                              _showAIByDay[day] == true
+                                  ? Icons.auto_awesome
+                                  : Icons.auto_awesome_outlined,
+                              color: _showAIByDay[day] == true
+                                  ? accentColor
+                                  : Colors.amber,
+                              size: 22,
                             ),
-                          ],
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            tooltip: "Dicas de Treino (IA)",
+                            onPressed: () => _toggleOrFetchAI(
+                                day, items, provider.state!.history, state),
+                          ),
+                        if (items.isNotEmpty) const SizedBox(width: 16),
+                        IconButton(
+                          icon: Icon(Icons.add_box_outlined,
+                              color: accentColor, size: 22),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: () {
+                            provider.addPlannerItem(day);
+                          },
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                  ],
+                ),
+                const SizedBox(height: 8),
 
-                    if (items.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        child: Text(
-                          "Nenhum treino agendado",
-                          style: TextStyle(
-                            color: Colors.white30,
-                            fontSize: 13,
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                      )
-                    else
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: items.length,
-                        itemBuilder: (context, idx) {
-                          final rawItem = items[idx];
-                          return _buildPlannerItemRow(context, provider, day, idx, rawItem, accentColor);
-                        },
+                if (items.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Text(
+                      "Nenhum treino agendado",
+                      style: TextStyle(
+                        color: Colors.white30,
+                        fontSize: 13,
+                        fontStyle: FontStyle.italic,
                       ),
-                      
-                    // AI Insights Card
-                    if (_showAIByDay[day] == true) ...[
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: accentColor.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: accentColor.withOpacity(0.3)),
-                        ),
-                        child: _isLoadingAIByDay[day] == true
-                            ? Row(
+                    ),
+                  )
+                else
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: items.length,
+                    itemBuilder: (context, idx) {
+                      final rawItem = items[idx];
+                      return _buildPlannerItemRow(
+                          context, provider, day, idx, rawItem, accentColor);
+                    },
+                  ),
+
+                // AI Insights Card
+                if (_showAIByDay[day] == true) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: accentColor.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: accentColor.withOpacity(0.3)),
+                    ),
+                    child: _isLoadingAIByDay[day] == true
+                        ? Row(
+                            children: [
+                              SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                      color: accentColor, strokeWidth: 2)),
+                              const SizedBox(width: 12),
+                              const Text(
+                                  "A IA está analisando seu histórico...",
+                                  style: TextStyle(
+                                      color: Colors.white70, fontSize: 12)),
+                            ],
+                          )
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
                                 children: [
-                                  SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: accentColor, strokeWidth: 2)),
-                                  const SizedBox(width: 12),
-                                  const Text("A IA está analisando seu histórico...", style: TextStyle(color: Colors.white70, fontSize: 12)),
-                                ],
-                              )
-                            : Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(Icons.auto_awesome, color: accentColor, size: 16),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        "Sugestões de Progressão (IA)",
-                                        style: TextStyle(
-                                          color: accentColor,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ],
+                                  Icon(Icons.auto_awesome,
+                                      color: accentColor, size: 16),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    "Sugestões de Progressão (IA)",
+                                    style: TextStyle(
+                                      color: accentColor,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
                                   ),
-                                  const SizedBox(height: 8),
-                                  if (_aiSuggestionsByDay[day] == null || _aiSuggestionsByDay[day]!.isEmpty)
-                                    const Text("Não foi possível gerar dicas baseadas no seu histórico atual.", style: TextStyle(color: Colors.white54, fontSize: 12))
-                                  else
-                                    ..._aiSuggestionsByDay[day]!.entries.map((e) => Padding(
-                                      padding: const EdgeInsets.only(bottom: 6.0),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              if (_aiSuggestionsByDay[day] == null ||
+                                  _aiSuggestionsByDay[day]!.isEmpty)
+                                const Text(
+                                    "Não foi possível gerar dicas baseadas no seu histórico atual.",
+                                    style: TextStyle(
+                                        color: Colors.white54, fontSize: 12))
+                              else
+                                ..._aiSuggestionsByDay[day]!.entries.map((e) =>
+                                    Padding(
+                                      padding:
+                                          const EdgeInsets.only(bottom: 6.0),
                                       child: RichText(
                                         text: TextSpan(
                                           children: [
-                                            TextSpan(text: "• ${e.key}: ", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 12)),
-                                            TextSpan(text: e.value, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                                            TextSpan(
+                                                text: "• ${e.key}: ",
+                                                style: const TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.white,
+                                                    fontSize: 12)),
+                                            TextSpan(
+                                                text: e.value,
+                                                style: const TextStyle(
+                                                    color: Colors.white70,
+                                                    fontSize: 12)),
                                           ],
                                         ),
                                       ),
                                     )),
-                                ],
-                              ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            );
-          }),
+                            ],
+                          ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      }),
     ];
   }
 
-  List<Widget> _buildContinuousListAgenda(BuildContext context, TrackerProvider provider, PlannerState state, Color accentColor) {
+  List<Widget> _buildContinuousListAgenda(BuildContext context,
+      TrackerProvider provider, PlannerState state, Color accentColor) {
     final items = state.planner['continuous'] ?? [];
     final currentIndex = state.settings.continuousListCurrentIndex;
 
     return [
       Row(
         children: [
-          const Icon(Icons.format_list_numbered, color: Colors.white70, size: 20),
+          const Icon(Icons.format_list_numbered,
+              color: Colors.white70, size: 20),
           const SizedBox(width: 8),
           const Text(
             "Lista Contínua",
@@ -1148,16 +1271,20 @@ class _PlannerScreenState extends State<PlannerScreen> {
           padding: EdgeInsets.symmetric(vertical: 12),
           child: Text(
             "Nenhum treino na lista. Adicione treinos que se repetirão em sequência.",
-            style: TextStyle(color: Colors.white30, fontSize: 13, fontStyle: FontStyle.italic),
+            style: TextStyle(
+                color: Colors.white30,
+                fontSize: 13,
+                fontStyle: FontStyle.italic),
           ),
         )
       else
         ...items.asMap().entries.map((entry) {
           final idx = entry.key;
           final rawItem = entry.value;
-          
-          final isCurrent = items.isNotEmpty && (idx == (currentIndex % items.length));
-          
+
+          final isCurrent =
+              items.isNotEmpty && (idx == (currentIndex % items.length));
+
           return Container(
             margin: const EdgeInsets.only(bottom: 16),
             child: Stack(
@@ -1165,7 +1292,9 @@ class _PlannerScreenState extends State<PlannerScreen> {
               children: [
                 GlassCard(
                   padding: const EdgeInsets.all(16),
-                  borderColor: isCurrent ? accentColor.withOpacity(0.5) : Colors.white.withOpacity(0.06),
+                  borderColor: isCurrent
+                      ? accentColor.withOpacity(0.5)
+                      : Colors.white.withOpacity(0.06),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -1182,7 +1311,8 @@ class _PlannerScreenState extends State<PlannerScreen> {
                           ),
                           if (isCurrent)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
                                 color: accentColor.withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(4),
@@ -1199,12 +1329,13 @@ class _PlannerScreenState extends State<PlannerScreen> {
                         ],
                       ),
                       const SizedBox(height: 8),
-                      _buildPlannerItemRow(context, provider, 'continuous', idx, rawItem, accentColor),
+                      _buildPlannerItemRow(context, provider, 'continuous', idx,
+                          rawItem, accentColor),
                     ],
                   ),
                 ),
                 if (isCurrent)
-                   Positioned(
+                  Positioned(
                     top: -4,
                     right: -4,
                     child: Container(
@@ -1214,7 +1345,10 @@ class _PlannerScreenState extends State<PlannerScreen> {
                         color: accentColor,
                         shape: BoxShape.circle,
                         boxShadow: [
-                          BoxShadow(color: accentColor.withOpacity(0.5), blurRadius: 4, spreadRadius: 2),
+                          BoxShadow(
+                              color: accentColor.withOpacity(0.5),
+                              blurRadius: 4,
+                              spreadRadius: 2),
                         ],
                       ),
                     ),
@@ -1226,7 +1360,8 @@ class _PlannerScreenState extends State<PlannerScreen> {
     ];
   }
 
-  List<Widget> _buildWeeklyGoalsAgenda(BuildContext context, TrackerProvider provider, PlannerState state, Color accentColor) {
+  List<Widget> _buildWeeklyGoalsAgenda(BuildContext context,
+      TrackerProvider provider, PlannerState state, Color accentColor) {
     final items = state.planner['weekly'] ?? [];
     final completedNames = state.streak.completedThisWeekRoutines;
 
@@ -1270,14 +1405,17 @@ class _PlannerScreenState extends State<PlannerScreen> {
           padding: EdgeInsets.symmetric(vertical: 12),
           child: Text(
             "Nenhuma meta definida. Adicione os treinos que deseja concluir nesta semana.",
-            style: TextStyle(color: Colors.white30, fontSize: 13, fontStyle: FontStyle.italic),
+            style: TextStyle(
+                color: Colors.white30,
+                fontSize: 13,
+                fontStyle: FontStyle.italic),
           ),
         )
       else
         ...items.asMap().entries.map((entry) {
           final idx = entry.key;
           final rawItem = entry.value;
-          
+
           bool isCompleted = false;
           if (rawItem.startsWith('routine:')) {
             final rId = rawItem.substring(8);
@@ -1286,10 +1424,10 @@ class _PlannerScreenState extends State<PlannerScreen> {
               isCompleted = true;
             }
           } else {
-             final r = state.routines.where((x) => x.id == rawItem).firstOrNull;
-             if (r != null && completedNames.contains(r.name)) {
-                isCompleted = true;
-             }
+            final r = state.routines.where((x) => x.id == rawItem).firstOrNull;
+            if (r != null && completedNames.contains(r.name)) {
+              isCompleted = true;
+            }
           }
 
           return Container(
@@ -1298,7 +1436,9 @@ class _PlannerScreenState extends State<PlannerScreen> {
               opacity: isCompleted ? 0.6 : 1.0,
               child: GlassCard(
                 padding: const EdgeInsets.all(16),
-                borderColor: isCompleted ? Colors.greenAccent.withOpacity(0.3) : Colors.white.withOpacity(0.06),
+                borderColor: isCompleted
+                    ? Colors.greenAccent.withOpacity(0.3)
+                    : Colors.white.withOpacity(0.06),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1314,11 +1454,13 @@ class _PlannerScreenState extends State<PlannerScreen> {
                           ),
                         ),
                         if (isCompleted)
-                          const Icon(Icons.check_circle, color: Colors.greenAccent, size: 20)
+                          const Icon(Icons.check_circle,
+                              color: Colors.greenAccent, size: 20)
                       ],
                     ),
                     const SizedBox(height: 8),
-                    _buildPlannerItemRow(context, provider, 'weekly', idx, rawItem, accentColor),
+                    _buildPlannerItemRow(
+                        context, provider, 'weekly', idx, rawItem, accentColor),
                   ],
                 ),
               ),
@@ -1328,8 +1470,10 @@ class _PlannerScreenState extends State<PlannerScreen> {
     ];
   }
 
-  void _showImportDialog(BuildContext context, TrackerProvider provider, String targetKey) {
-    final accentColor = ThemeUtils.getColor(provider.currentProfile.colorAccent);
+  void _showImportDialog(
+      BuildContext context, TrackerProvider provider, String targetKey) {
+    final accentColor =
+        ThemeUtils.getColor(provider.currentProfile.colorAccent);
     final daysMap = {
       'seg': 'Segunda-feira',
       'ter': 'Terça-feira',
@@ -1378,17 +1522,22 @@ class _PlannerScreenState extends State<PlannerScreen> {
                     children: [
                       // Opção especial para importar TODOS os dias
                       ListTile(
-                        leading: Icon(Icons.all_inclusive, color: accentColor, size: 20),
+                        leading: Icon(Icons.all_inclusive,
+                            color: accentColor, size: 20),
                         title: const Text(
                           "Importar Todos os Dias",
-                          style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold),
                         ),
                         subtitle: const Text(
                           "Copia Seg, Ter, Qua, Qui, Sex, Sáb e Dom em sequência",
                           style: TextStyle(color: Colors.white38, fontSize: 10),
                         ),
                         dense: true,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                        contentPadding:
+                            const EdgeInsets.symmetric(horizontal: 8),
                         onTap: () {
                           provider.importAllFixedDays(targetKey);
                           Navigator.pop(dialogCtx);
@@ -1396,7 +1545,8 @@ class _PlannerScreenState extends State<PlannerScreen> {
                             SnackBar(
                               content: Text(
                                 "Compilado com sucesso para a ${targetKey == 'continuous' ? 'Lista Contínua' : 'Metas Semanais'}!",
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold),
                               ),
                               backgroundColor: accentColor,
                               duration: const Duration(seconds: 2),
@@ -1408,26 +1558,36 @@ class _PlannerScreenState extends State<PlannerScreen> {
                       ...daysMap.entries.map((entry) {
                         final key = entry.key;
                         final label = entry.value;
-                        final itemsCount = provider.state?.planner[key]?.where((item) => item.isNotEmpty).length ?? 0;
+                        final itemsCount = provider.state?.planner[key]
+                                ?.where((item) => item.isNotEmpty)
+                                .length ??
+                            0;
 
                         return ListTile(
                           title: Text(
                             label,
-                            style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600),
                           ),
                           subtitle: Text(
                             "$itemsCount item(ns) planejado(s)",
                             style: TextStyle(
-                              color: itemsCount > 0 ? Colors.white54 : Colors.white24,
+                              color: itemsCount > 0
+                                  ? Colors.white54
+                                  : Colors.white24,
                               fontSize: 10,
                             ),
                           ),
                           trailing: itemsCount > 0
-                              ? const Icon(Icons.chevron_right, color: Colors.white30, size: 16)
+                              ? const Icon(Icons.chevron_right,
+                                  color: Colors.white30, size: 16)
                               : null,
                           dense: true,
                           enabled: itemsCount > 0,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                          contentPadding:
+                              const EdgeInsets.symmetric(horizontal: 8),
                           onTap: () {
                             provider.importFromFixedDay(key, targetKey);
                             Navigator.pop(dialogCtx);
@@ -1435,7 +1595,8 @@ class _PlannerScreenState extends State<PlannerScreen> {
                               SnackBar(
                                 content: Text(
                                   "Importado de $label com sucesso!",
-                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold),
                                 ),
                                 backgroundColor: accentColor,
                                 duration: const Duration(seconds: 2),
@@ -1455,7 +1616,8 @@ class _PlannerScreenState extends State<PlannerScreen> {
                   onPressed: () => Navigator.pop(dialogCtx),
                   child: const Text(
                     "Fechar",
-                    style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        color: Colors.white54, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),

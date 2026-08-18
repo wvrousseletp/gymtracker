@@ -259,6 +259,7 @@ class PlannerState {
   final Map<String, List<String>> planner; // Dia -> lista de strings de ID/Prefixo
   final List<WorkoutLog> history;
   final Map<String, PersonalRecord> prs; // exerciseId -> record
+  final Map<String, String> exerciseNotes; // exerciseId -> notes
   final List<BodyMeasurement> medidas;
   final SettingsState settings;
   final ActiveWorkoutState? activeWorkout;
@@ -275,6 +276,7 @@ class PlannerState {
     required this.planner,
     required this.history,
     required this.prs,
+    required this.exerciseNotes,
     required this.medidas,
     required this.settings,
     this.activeWorkout,
@@ -301,6 +303,7 @@ class PlannerState {
     Map<String, List<String>>? planner,
     List<WorkoutLog>? history,
     Map<String, PersonalRecord>? prs,
+    Map<String, String>? exerciseNotes,
     List<BodyMeasurement>? medidas,
     SettingsState? settings,
     ActiveWorkoutState? activeWorkout,
@@ -318,6 +321,7 @@ class PlannerState {
       planner: planner ?? this.planner,
       history: history ?? this.history,
       prs: prs ?? this.prs,
+      exerciseNotes: exerciseNotes ?? this.exerciseNotes,
       medidas: medidas ?? this.medidas,
       settings: settings ?? this.settings,
       activeWorkout: clearActiveWorkout ? null : (activeWorkout ?? this.activeWorkout),
@@ -366,6 +370,13 @@ class PlannerState {
     if (json['dietHistory'] != null) {
       (json['dietHistory'] as Map).forEach((k, v) {
         dietHistoryMap[k.toString()] = DietHistoryDay.fromJson(Map<String, dynamic>.from(v));
+      });
+    }
+
+    Map<String, String> exerciseNotesMap = {};
+    if (json['exerciseNotes'] != null) {
+      (json['exerciseNotes'] as Map).forEach((k, v) {
+        exerciseNotesMap[k.toString()] = v.toString();
       });
     }
 
@@ -422,6 +433,7 @@ class PlannerState {
       unlockedBadgeIds: json['unlockedBadgeIds'] != null
           ? List<String>.from(json['unlockedBadgeIds'])
           : [],
+      exerciseNotes: exerciseNotesMap,
     );
   }
 }

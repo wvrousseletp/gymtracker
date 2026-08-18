@@ -10,6 +10,7 @@ PlannerState _emptyState({ActiveWorkoutState? activeWorkout}) {
     planner: const {},
     history: const [],
     prs: const {},
+        exerciseNotes: const {},
     medidas: const [],
     settings: SettingsState(sound: true, vibration: true, prepSeconds: 5),
     diet: DietState(

@@ -15,6 +15,8 @@ class PremiumStrengthSetCard extends StatefulWidget {
   final VoidCallback onDoneTap;
   final VoidCallback onFailureTap;
   final void Function(double weight, int reps)? onSaveValues;
+  final void Function(String type)? onTypeChanged;
+  final void Function(int? rir)? onRirChanged;
 
   const PremiumStrengthSetCard({
     super.key,
@@ -28,6 +30,8 @@ class PremiumStrengthSetCard extends StatefulWidget {
     required this.onDoneTap,
     required this.onFailureTap,
     this.onSaveValues,
+    this.onTypeChanged,
+    this.onRirChanged,
   });
 
   @override
@@ -62,9 +66,22 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
         });
         _saveLocalTime();
         if (_elapsed == targetReps) {
-          HapticFeedback.heavyImpact();
+          _timer?.cancel();
+          setState(() {
+            _isRunning = false;
+          });
+          _playIsometryAlarm();
+          widget.onDoneTap();
         }
       });
+    }
+  }
+
+  void _playIsometryAlarm() async {
+    for (int i = 0; i < 4; i++) {
+      HapticFeedback.heavyImpact();
+      SystemSound.play(SystemSoundType.alert);
+      await Future.delayed(const Duration(milliseconds: 600));
     }
   }
 
@@ -79,7 +96,8 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
 
   void _saveLocalTime() {
     if (widget.onSaveValues != null) {
-      final weight = (widget.ex.weightsPerSet != null && widget.setIndex < widget.ex.weightsPerSet!.length)
+      final weight = (widget.ex.weightsPerSet != null &&
+              widget.setIndex < widget.ex.weightsPerSet!.length)
           ? widget.ex.weightsPerSet![widget.setIndex]
           : widget.ex.weight;
       widget.onSaveValues!(weight, _elapsed > 0 ? _elapsed : widget.ex.reps);
@@ -94,13 +112,41 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
 
   @override
   Widget build(BuildContext context) {
-    final reps = (widget.ex.repsPerSet != null && widget.setIndex < widget.ex.repsPerSet!.length)
+    final currentType = (widget.ex.setTypes != null && widget.setIndex < widget.ex.setTypes!.length) ? widget.ex.setTypes![widget.setIndex] : 'N';
+    final currentRir = (widget.ex.rirPerSet != null && widget.setIndex < widget.ex.rirPerSet!.length) ? widget.ex.rirPerSet![widget.setIndex] : null;
+
+    Color getTypeColor(String type) {
+      switch (type) {
+        case 'W': return Colors.orangeAccent;
+        case 'D': return Colors.purpleAccent;
+        case 'A': return Colors.redAccent;
+        default: return Colors.white54;
+      }
+    }
+    String getTypeLabel(String type) {
+      switch (type) {
+        case 'W': return "Warm-up";
+        case 'D': return "Drop-set";
+        case 'A': return "AMRAP";
+        default: return "Normal";
+      }
+    }
+    void cycleType() {
+      if (widget.onTypeChanged == null) return;
+      if (currentType == 'N') widget.onTypeChanged!('W');
+      else if (currentType == 'W') widget.onTypeChanged!('D');
+      else if (currentType == 'D') widget.onTypeChanged!('A');
+      else widget.onTypeChanged!('N');
+    }
+
+    final reps = (widget.ex.repsPerSet != null &&
+            widget.setIndex < widget.ex.repsPerSet!.length)
         ? widget.ex.repsPerSet![widget.setIndex]
         : widget.ex.reps;
-    final weight =
-        (widget.ex.weightsPerSet != null && widget.setIndex < widget.ex.weightsPerSet!.length)
-            ? widget.ex.weightsPerSet![widget.setIndex]
-            : widget.ex.weight;
+    final weight = (widget.ex.weightsPerSet != null &&
+            widget.setIndex < widget.ex.weightsPerSet!.length)
+        ? widget.ex.weightsPerSet![widget.setIndex]
+        : widget.ex.weight;
     final isTime = widget.ex.measurementType == MeasurementType.time;
     final weightStr = weight > 0
         ? "${weight.toStringAsFixed(1).replaceAll('.0', '')} kg"
@@ -128,8 +174,9 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
             ),
             boxShadow: [
               BoxShadow(
-                color: (widget.isFailure ? Colors.redAccent : widget.accentColor)
-                    .withOpacity(0.20),
+                color:
+                    (widget.isFailure ? Colors.redAccent : widget.accentColor)
+                        .withOpacity(0.20),
                 blurRadius: 20,
                 spreadRadius: 2,
               )
@@ -164,20 +211,24 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Text(
-                            "SÉRIE ATUAL",
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 10,
-                              letterSpacing: 0.8,
+                        GestureDetector(
+                          onTap: cycleType,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: currentType == 'N' ? Colors.white.withOpacity(0.1) : getTypeColor(currentType).withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: currentType == 'N' ? Colors.transparent : getTypeColor(currentType).withOpacity(0.5)),
+                            ),
+                            child: Text(
+                              currentType == 'N' ? "SÉRIE ATUAL" : getTypeLabel(currentType).toUpperCase(),
+                              style: TextStyle(
+                                color: currentType == 'N' ? Colors.white70 : getTypeColor(currentType),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 10,
+                                letterSpacing: 0.8,
+                              ),
                             ),
                           ),
                         ),
@@ -237,16 +288,28 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
                           unit: isTime ? "segundos" : "repetições",
                           isActive: true,
                         ),
+                        if (!isTime || weight > 0) ...[
+                          Container(
+                            width: 1,
+                            height: 48,
+                            color: Colors.white.withOpacity(0.12),
+                          ),
+                          _buildBigValue(
+                            value: weight > 0
+                                ? weight.toStringAsFixed(1).replaceAll('.0', '')
+                                : "-",
+                            unit: "quilogramas (kg)",
+                            isActive: true,
+                          ),
+                        ],
                         Container(
                           width: 1,
                           height: 48,
                           color: Colors.white.withOpacity(0.12),
                         ),
                         _buildBigValue(
-                          value: weight > 0
-                              ? weight.toStringAsFixed(1).replaceAll('.0', '')
-                              : "-",
-                          unit: "quilogramas (kg)",
+                          value: currentRir?.toString() ?? "-",
+                          unit: "RIR",
                           isActive: true,
                         ),
                         Icon(
@@ -263,7 +326,8 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
                 if (isTime) ...[
                   const SizedBox(height: 14),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.02),
                       borderRadius: BorderRadius.circular(18),
@@ -282,12 +346,15 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
                                 strokeWidth: 3.5,
                                 backgroundColor: Colors.white.withOpacity(0.05),
                                 valueColor: AlwaysStoppedAnimation(
-                                  _elapsed >= targetSeconds ? Colors.greenAccent : widget.accentColor,
+                                  _elapsed >= targetSeconds
+                                      ? Colors.greenAccent
+                                      : widget.accentColor,
                                 ),
                               ),
                             ),
                             Text(
-                              _formatTime(_elapsed > 0 ? _elapsed : targetSeconds),
+                              _formatTime(
+                                  _elapsed > 0 ? _elapsed : targetSeconds),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 11,
@@ -305,7 +372,9 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
                               Text(
                                 _isRunning ? "CRONÔMETRO ATIVO" : "ISOMETRIA",
                                 style: TextStyle(
-                                  color: _isRunning ? widget.accentColor : Colors.white60,
+                                  color: _isRunning
+                                      ? widget.accentColor
+                                      : Colors.white60,
                                   fontSize: 9,
                                   fontWeight: FontWeight.bold,
                                   letterSpacing: 1.0,
@@ -329,7 +398,8 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
                             if (_elapsed > 0) ...[
                               IconButton(
                                 onPressed: _resetTimer,
-                                icon: const Icon(Icons.refresh_rounded, color: Colors.white60, size: 20),
+                                icon: const Icon(Icons.refresh_rounded,
+                                    color: Colors.white60, size: 20),
                                 tooltip: "Reiniciar",
                                 constraints: const BoxConstraints(),
                                 padding: const EdgeInsets.all(8),
@@ -339,8 +409,12 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
                             IconButton(
                               onPressed: () => _toggleTimer(targetSeconds),
                               icon: Icon(
-                                _isRunning ? Icons.pause_circle_filled_rounded : Icons.play_circle_filled_rounded,
-                                color: _isRunning ? Colors.orangeAccent : widget.accentColor,
+                                _isRunning
+                                    ? Icons.pause_circle_filled_rounded
+                                    : Icons.play_circle_filled_rounded,
+                                color: _isRunning
+                                    ? Colors.orangeAccent
+                                    : widget.accentColor,
                                 size: 36,
                               ),
                               constraints: const BoxConstraints(),
@@ -366,14 +440,18 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
                         icon: Icon(
                           Icons.whatshot,
                           size: 18,
-                          color: widget.isFailure ? Colors.white : Colors.redAccent,
+                          color: widget.isFailure
+                              ? Colors.white
+                              : Colors.redAccent,
                         ),
                         label: Text(
                           "FALHA",
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 13,
-                            color: widget.isFailure ? Colors.white : Colors.redAccent,
+                            color: widget.isFailure
+                                ? Colors.white
+                                : Colors.redAccent,
                           ),
                         ),
                         style: OutlinedButton.styleFrom(
@@ -457,10 +535,14 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
         child: Row(
           children: [
             // Checkmark Icon
-            Icon(
+            currentType == 'N' ? Icon(
               widget.isFailure ? Icons.whatshot : Icons.check_circle_rounded,
               color: widget.isFailure ? Colors.redAccent : Colors.greenAccent,
               size: 20,
+            ) : Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(color: getTypeColor(currentType).withOpacity(0.2), borderRadius: BorderRadius.circular(4)),
+              child: Text(currentType, style: TextStyle(color: getTypeColor(currentType), fontWeight: FontWeight.bold, fontSize: 12)),
             ),
             const SizedBox(width: 10),
             // Set name
@@ -485,7 +567,7 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      "$repsStr • $weightStr",
+                      ((!isTime || weight > 0) ? "$repsStr • $weightStr" : repsStr) + (currentRir != null ? " • RIR $currentRir" : ""),
                       style: const TextStyle(
                         color: Colors.white70,
                         fontWeight: FontWeight.bold,
@@ -557,7 +639,7 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
         child: Row(
           children: [
             // Hollow bullet
-            Container(
+            currentType == 'N' ? Container(
               width: 16,
               height: 16,
               decoration: BoxDecoration(
@@ -566,6 +648,13 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
                   color: Colors.white24,
                   width: 1.5,
                 ),
+              ),
+            ) : GestureDetector(
+              onTap: cycleType,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(color: getTypeColor(currentType).withOpacity(0.2), borderRadius: BorderRadius.circular(4)),
+                child: Text(currentType, style: TextStyle(color: getTypeColor(currentType), fontWeight: FontWeight.bold, fontSize: 10)),
               ),
             ),
             const SizedBox(width: 10),
@@ -582,7 +671,9 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
             // Planned stats
             Expanded(
               child: Text(
-                "$repsStr • $weightStr (planejado)",
+                (!isTime || weight > 0)
+                    ? "$repsStr • $weightStr (planejado)"
+                    : "$repsStr (planejado)",
                 style: const TextStyle(
                   color: Colors.white30,
                   fontSize: 12,

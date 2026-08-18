@@ -543,6 +543,25 @@ class RoutineFormSheet extends StatefulWidget {
 }
 
 class _RoutineFormSheetState extends State<RoutineFormSheet> {
+
+RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
+  return RoutineExercise(
+    id: ex.id,
+    exerciseId: ex.exerciseId,
+    sets: ex.sets,
+    reps: ex.reps,
+    rest: ex.rest,
+    weight: ex.weight,
+    weightsPerSet: ex.weightsPerSet != null ? List.from(ex.weightsPerSet!) : null,
+    repsPerSet: ex.repsPerSet != null ? List.from(ex.repsPerSet!) : null,
+    setTypes: ex.setTypes != null ? List.from(ex.setTypes!) : null,
+    rirPerSet: ex.rirPerSet != null ? List.from(ex.rirPerSet!) : null,
+    isCardio: ex.isCardio,
+    allowCardioSets: ex.allowCardioSets,
+    supersetId: newSupersetId,
+  );
+}
+
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _restController = TextEditingController(text: "60");
@@ -1004,7 +1023,7 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                                       MeasurementType.cardio ||
                                   ref.measurementType ==
                                       MeasurementType.distance;
-                              return Container(
+                              final cardWidget = Container(
                                 key: ValueKey(ex.id),
                                 margin: const EdgeInsets.only(bottom: 12),
                                 padding: const EdgeInsets.all(16),
@@ -1314,6 +1333,43 @@ class _RoutineFormSheetState extends State<RoutineFormSheet> {
                                     ),
                                   ],
                                 ),
+                              );
+
+                              Widget linkButton = const SizedBox.shrink();
+                              if (idx < _exercises.length - 1) {
+                                final isLinked = ex.supersetId != null && ex.supersetId == _exercises[idx + 1].supersetId;
+                                linkButton = GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      if (isLinked) {
+                                        _exercises[idx] = _cloneEx(_exercises[idx], null);
+                                        _exercises[idx + 1] = _cloneEx(_exercises[idx + 1], null);
+                                      } else {
+                                        final newId = ex.supersetId ?? "super-${DateTime.now().millisecondsSinceEpoch}";
+                                        _exercises[idx] = _cloneEx(_exercises[idx], newId);
+                                        _exercises[idx + 1] = _cloneEx(_exercises[idx + 1], newId);
+                                      }
+                                    });
+                                  },
+                                  child: Container(
+                                    margin: const EdgeInsets.only(bottom: 12),
+                                    padding: const EdgeInsets.symmetric(vertical: 4),
+                                    child: Center(
+                                      child: Icon(
+                                        isLinked ? Icons.link : Icons.link_off,
+                                        color: isLinked ? accentColor : Colors.white24,
+                                        size: 24,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }
+
+                              return Column(
+                                children: [
+                                  cardWidget,
+                                  linkButton,
+                                ],
                               );
                             }).toList(),
                           ),
