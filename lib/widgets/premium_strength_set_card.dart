@@ -132,11 +132,18 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
       }
     }
     void cycleType() {
-      if (widget.onTypeChanged == null) return;
-      if (currentType == 'N') widget.onTypeChanged!('W');
-      else if (currentType == 'W') widget.onTypeChanged!('D');
-      else if (currentType == 'D') widget.onTypeChanged!('A');
-      else widget.onTypeChanged!('N');
+      if (widget.onTypeChanged == null) {
+        return;
+      }
+      if (currentType == 'N') {
+        widget.onTypeChanged!('W');
+      } else if (currentType == 'W') {
+        widget.onTypeChanged!('D');
+      } else if (currentType == 'D') {
+        widget.onTypeChanged!('A');
+      } else {
+        widget.onTypeChanged!('N');
+      }
     }
 
     final reps = (widget.ex.repsPerSet != null &&

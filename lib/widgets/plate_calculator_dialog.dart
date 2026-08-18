@@ -189,7 +189,7 @@ class _PlateCalculatorDialogState extends State<PlateCalculatorDialog> {
                             ),
                           ),
                         );
-                      }).toList(),
+                      }),
                       // Fim da barra (ponta)
                       Container(
                         width: 60,

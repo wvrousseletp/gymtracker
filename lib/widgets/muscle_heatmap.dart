@@ -4,13 +4,13 @@ import 'dart:math';
 class MuscleHeatmap extends StatelessWidget {
   final Map<String, int> muscleSets; // Map from muscle name to number of sets
   
-  const MuscleHeatmap({Key? key, required this.muscleSets}) : super(key: key);
+  const MuscleHeatmap({super.key, required this.muscleSets});
 
   @override
   Widget build(BuildContext context) {
     // We will normalize the sets to a value between 0.0 and 1.0
     // Let's say 15 sets in the last 7 days is 1.0 (max red)
-    final maxSets = 15.0;
+    const maxSets = 15.0;
 
     Color getColor(String muscleGroup) {
       // Aggregate muscles into groups
@@ -77,7 +77,7 @@ class _HeatmapPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..style = PaintingStyle.fill;
     final centerX = size.width / 2;
-    final topY = 20.0;
+    const topY = 20.0;
     
     // Head (grey)
     paint.color = Colors.white24;
