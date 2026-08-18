@@ -37,19 +37,26 @@ class MuscleHeatmap extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        return CustomPaint(
-          size: Size(constraints.maxWidth, 260),
-          painter: _HeatmapPainter(
-            chestColor: getColor('chest'),
-            backColor: getColor('back'),
-            shouldersColor: getColor('shoulders'),
-            bicepsColor: getColor('biceps'),
-            tricepsColor: getColor('triceps'),
-            absColor: getColor('abs'),
-            legsColor: getColor('legs'),
+        final double width = (constraints.maxWidth.isFinite && constraints.maxWidth > 0)
+            ? constraints.maxWidth
+            : 300.0;
+        return SizedBox(
+          width: width,
+          height: 260,
+          child: CustomPaint(
+            size: Size(width, 260),
+            painter: _HeatmapPainter(
+              chestColor: getColor('chest'),
+              backColor: getColor('back'),
+              shouldersColor: getColor('shoulders'),
+              bicepsColor: getColor('biceps'),
+              tricepsColor: getColor('triceps'),
+              absColor: getColor('abs'),
+              legsColor: getColor('legs'),
+            ),
           ),
         );
-      }
+      },
     );
   }
 }
