@@ -77,6 +77,42 @@
           ]
         }
       }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:973584151756:android:d69c9cf923e4697a1afe69",
+        "android_client_info": {
+          "package_name": "com.losmooscles"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "973584151756-qt6vt741t0comj6ri79nsgt8t4l2poc1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDOWysE65QBvz9lScGoHaz3wP5eqAWCwUY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "973584151756-qt6vt741t0comj6ri79nsgt8t4l2poc1.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "973584151756-1dutt4u0djfff6mvsjsnsr0cprl6o9qk.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.vicente.losmooscles"
+              }
+            }
+          ]
+        }
+      }
     }
   ],
   "configuration_version": "1"
