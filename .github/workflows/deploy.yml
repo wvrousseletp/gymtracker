@@ -53,11 +53,11 @@ jobs:
           MATCH_PAT: ${{ secrets.MATCH_PAT }}
           ASC_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
-          APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+          ASC_KEY_CONTENT_RAW: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
         run: |
           flutter build ios --release --no-codesign
           
-          export ASC_KEY_CONTENT_B64=$(echo "$APP_STORE_CONNECT_API_KEY" | base64)
+          export ASC_KEY_CONTENT_B64=$(echo "$ASC_KEY_CONTENT_RAW" | base64)
           
           cd ios
           bundle exec fastlane release
