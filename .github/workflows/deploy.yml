@@ -57,12 +57,27 @@ jobs:
           AUTH_KEY_PATH="$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
           echo "$ASC_KEY_CONTENT" > "$AUTH_KEY_PATH"
           
-          flutter build ipa --release \
-            --export-options-plist ExportOptions.plist \
-            --allow-provisioning-updates \
-            --authentication-key-id "$ASC_KEY_ID" \
-            --authentication-key-issuer-id "$ASC_ISSUER_ID" \
-            --authentication-key-path "$AUTH_KEY_PATH"
+          xcodebuild -workspace ios/Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination "generic/platform=iOS" \
+            -archivePath build/ios/archive/Runner.xcarchive \
+            -allowProvisioningUpdates \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            -authenticationKeyPath "$AUTH_KEY_PATH" \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            archive
+
+          xcodebuild -exportArchive \
+            -archivePath build/ios/archive/Runner.xcarchive \
+            -exportPath build/ios/ipa \
+            -exportOptionsPlist ExportOptions.plist \
+            -allowProvisioningUpdates \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            -authenticationKeyPath "$AUTH_KEY_PATH"
 
           IPA_PATH=$(find build/ios/ipa -name "*.ipa" | head -n 1)
           echo "IPA_PATH=$IPA_PATH" >> $GITHUB_ENV
