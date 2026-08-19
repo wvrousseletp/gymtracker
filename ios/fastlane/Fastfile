@@ -2,127 +2,39 @@ default_platform(:ios)
 
 platform :ios do
   before_all do
-    # Fetch from custom environment variables if present
     if ENV["ASC_KEY_ID"] && !ENV["ASC_KEY_ID"].empty?
       app_store_connect_api_key(
         key_id: ENV["ASC_KEY_ID"],
         issuer_id: ENV["ASC_ISSUER_ID"],
-        key_content: ENV["ASC_KEY_CONTENT"],
-        is_key_content_base64: false,
+        key_content: ENV["ASC_KEY_CONTENT_B64"],
+        is_key_content_base64: true,
         in_house: false
       )
     end
   end
 
-
-  desc "Fetch certificates and provisioning profiles using match"
-  lane :match_appstore do
+  desc "Release new version to TestFlight"
+  lane :release do
     setup_ci
     match(
       type: "appstore",
-      readonly: false,
-      skip_certificate_matching: true
+      readonly: true
     )
-
-
-
-
-    update_project_provisioning(
-      xcodeproj: "Runner.xcodeproj",
-      profile: ENV["sigh_com.vicente.losmooscles_appstore_profile-path"],
-      target_filter: "^Runner$",
-      build_configuration: "Release"
+    gym(
+      scheme: "Runner",
+      clean: true,
+      export_method: "app-store",
+      export_options: {
+        provisioningProfiles: {
+          "com.vicente.losmooscles" => "match AppStore com.vicente.losmooscles",
+          "com.vicente.losmooscles.watchkitapp" => "match AppStore com.vicente.losmooscles.watchkitapp",
+          "com.vicente.losmooscles.WorkoutWidgetExtension" => "match AppStore com.vicente.losmooscles.WorkoutWidgetExtension",
+          "com.vicente.losmooscles.watchkitapp.WatchWidgetExtension" => "match AppStore com.vicente.losmooscles.watchkitapp.WatchWidgetExtension"
+        }
+      }
     )
-    update_project_provisioning(
-      xcodeproj: "Runner.xcodeproj",
-      profile: ENV["sigh_com.vicente.losmooscles.watchkitapp_appstore_profile-path"],
-      target_filter: "^WatchApp Watch App$",
-      build_configuration: "Release"
-    )
-    update_project_provisioning(
-      xcodeproj: "Runner.xcodeproj",
-      profile: ENV["sigh_com.vicente.losmooscles.WorkoutWidgetExtension_appstore_profile-path"],
-      target_filter: "^WorkoutWidgetExtension$",
-      build_configuration: "Release"
-    )
-    update_project_provisioning(
-      xcodeproj: "Runner.xcodeproj",
-      profile: ENV["sigh_com.vicente.losmooscles.watchkitapp.WatchWidgetExtension_appstore_profile-path"],
-      target_filter: "^WatchWidgetExtension$",
-      build_configuration: "Release"
-    )
-    
-    # Update project.pbxproj literal specifiers
-    pbxproj_path = File.expand_path("../Runner.xcodeproj/project.pbxproj", File.dirname(__FILE__))
-    UI.message("Target pbxproj path: #{pbxproj_path}")
-    if File.exist?(pbxproj_path)
-      UI.message("pbxproj file exists. Reading...")
-      content = File.read(pbxproj_path, mode: "rb")
-      
-      %w[
-        sigh_com.vicente.losmooscles.watchkitapp.WatchWidgetExtension_appstore_profile-name
-        sigh_com.vicente.losmooscles.WorkoutWidgetExtension_appstore_profile-name
-        sigh_com.vicente.losmooscles.watchkitapp_appstore_profile-name
-        sigh_com.vicente.losmooscles_appstore_profile-name
-      ].each do |key|
-        val = ENV[key]
-        UI.message("ENV[#{key}] = #{val.inspect}")
-      end
-
-      if ENV['sigh_com.vicente.losmooscles_appstore_profile-name']
-        content.gsub!("\"match AppStore com.vicente.losmooscles.watchkitapp.WatchWidgetExtension\"", "\"#{ENV['sigh_com.vicente.losmooscles.watchkitapp.WatchWidgetExtension_appstore_profile-name']}\"")
-        content.gsub!("\"match AppStore com.vicente.losmooscles.WorkoutWidgetExtension\"", "\"#{ENV['sigh_com.vicente.losmooscles.WorkoutWidgetExtension_appstore_profile-name']}\"")
-        content.gsub!("\"match AppStore com.vicente.losmooscles.watchkitapp\"", "\"#{ENV['sigh_com.vicente.losmooscles.watchkitapp_appstore_profile-name']}\"")
-        content.gsub!("\"match AppStore com.vicente.losmooscles\"", "\"#{ENV['sigh_com.vicente.losmooscles_appstore_profile-name']}\"")
-        File.write(pbxproj_path, content, mode: "wb")
-        UI.message("Successfully updated project.pbxproj with new profile specifiers!")
-      else
-        UI.important("Skipping pbxproj update because sigh environment variables are missing!")
-      end
-    else
-      UI.error("pbxproj file does NOT exist at path: #{pbxproj_path}")
-    end
-
-    # Update ExportOptions.plist
-    plist_path = File.expand_path("../ExportOptions.plist", File.dirname(__FILE__))
-    UI.message("Target ExportOptions.plist path: #{plist_path}")
-    if File.exist?(plist_path)
-      UI.message("ExportOptions.plist exists. Reading...")
-      content = File.read(plist_path, mode: "rb")
-      if ENV['sigh_com.vicente.losmooscles_appstore_profile-name']
-        content.gsub!("<string>match AppStore com.vicente.losmooscles.watchkitapp.WatchWidgetExtension</string>", "<string>#{ENV['sigh_com.vicente.losmooscles.watchkitapp.WatchWidgetExtension_appstore_profile-name']}</string>")
-        content.gsub!("<string>match AppStore com.vicente.losmooscles.WorkoutWidgetExtension</string>", "<string>#{ENV['sigh_com.vicente.losmooscles.WorkoutWidgetExtension_appstore_profile-name']}</string>")
-        content.gsub!("<string>match AppStore com.vicente.losmooscles.watchkitapp</string>", "<string>#{ENV['sigh_com.vicente.losmooscles.watchkitapp_appstore_profile-name']}</string>")
-        content.gsub!("<string>match AppStore com.vicente.losmooscles</string>", "<string>#{ENV['sigh_com.vicente.losmooscles_appstore_profile-name']}</string>")
-        File.write(plist_path, content, mode: "wb")
-        UI.message("Successfully updated ExportOptions.plist with new profile names!")
-      else
-        UI.important("Skipping ExportOptions.plist update because sigh environment variables are missing!")
-      end
-    else
-      UI.error("ExportOptions.plist does NOT exist at path: #{plist_path}")
-    end
-  end
-
-  desc "Generate new certificates and profiles"
-  lane :generate_certs do
-    match(
-      type: "appstore",
-      readonly: false,
-      force: true
-    )
-  end
-
-  desc "Nuke and generate new certificates and profiles"
-  lane :nuke_and_generate do
-    match_nuke(
-      type: "appstore",
-      skip_confirmation: true
-    )
-    match(
-      type: "appstore",
-      readonly: false,
-      force: true
+    pilot(
+      skip_waiting_for_build_processing: true
     )
   end
 end
