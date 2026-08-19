@@ -47,47 +47,15 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      - name: Build IPA with App Store Connect API Key
+      - name: Build & Deploy via Fastlane Match
         env:
-          ASC_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-          ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
-          ASC_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_PAT: ${{ secrets.MATCH_PAT }}
+          MATCH_GIT_URL: "https://x-access-token:${{ secrets.MATCH_PAT }}@github.com/wvrousseletp/gymtracker-certs.git"
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
         run: |
-          mkdir -p ~/.appstoreconnect/private_keys
-          AUTH_KEY_PATH="$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
-          echo "$ASC_KEY_CONTENT" > "$AUTH_KEY_PATH"
-          
-          xcodebuild -workspace ios/Runner.xcworkspace \
-            -scheme Runner \
-            -configuration Release \
-            -sdk iphoneos \
-            -destination "generic/platform=iOS" \
-            -archivePath build/ios/archive/Runner.xcarchive \
-            -allowProvisioningUpdates \
-            -authenticationKeyID "$ASC_KEY_ID" \
-            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
-            -authenticationKeyPath "$AUTH_KEY_PATH" \
-            DEVELOPMENT_TEAM="PJ32UPL29J" \
-            archive
-
-          xcodebuild -exportArchive \
-            -archivePath build/ios/archive/Runner.xcarchive \
-            -exportPath build/ios/ipa \
-            -exportOptionsPlist ExportOptions.plist \
-            -allowProvisioningUpdates \
-            -authenticationKeyID "$ASC_KEY_ID" \
-            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
-            -authenticationKeyPath "$AUTH_KEY_PATH"
-
-          IPA_PATH=$(find build/ios/ipa -name "*.ipa" | head -n 1)
-          echo "IPA_PATH=$IPA_PATH" >> $GITHUB_ENV
-          echo "Encontrado IPA em: $IPA_PATH"
-
-      - name: Upload to App Store Connect (TestFlight)
-        uses: apple-actions/upload-testflight-build@v5
-        with:
-          app-path: ${{ env.IPA_PATH }}
-          issuer-id: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-          api-key-id: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
-          api-private-key: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
-          wait-for-processing: false
+          cd ios
+          bundle exec fastlane match_appstore
+          bundle exec fastlane release
