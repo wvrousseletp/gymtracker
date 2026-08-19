@@ -51,7 +51,6 @@ jobs:
         env:
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
           MATCH_PAT: ${{ secrets.MATCH_PAT }}
-          MATCH_GIT_URL: "https://x-access-token:${{ secrets.MATCH_PAT }}@github.com/wvrousseletp/gymtracker-certs.git"
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
