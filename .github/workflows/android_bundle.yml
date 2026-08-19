@@ -61,7 +61,8 @@ jobs:
           done
 
           if [ -z "$FOUND_PASS" ]; then
-            echo "Could not unlock Downloads keystore with candidate passwords. Re-generating fresh keystore with expected SHA1 or candidate."
+            echo "Could not unlock Downloads keystore. Re-generating fresh permanent keystore."
+            rm -f android/app/upload-keystore.jks
             keytool -genkey -v -keystore android/app/upload-keystore.jks -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 -alias upload -dname "CN=LosMooscles, OU=Mobile, O=LosMooscles, L=SaoPaulo, ST=SP, C=BR" -storepass LosMoosclesKey2026! -keypass LosMoosclesKey2026! -noprompt
             FOUND_PASS="LosMoosclesKey2026!"
             FOUND_ALIAS="upload"
