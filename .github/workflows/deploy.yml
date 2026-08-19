@@ -54,43 +54,19 @@ jobs:
           ASC_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
         run: |
           mkdir -p ~/.appstoreconnect/private_keys
-          echo "$ASC_KEY_CONTENT" > ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
-          
-          # Build Flutter iOS bundle assets
-          flutter build ios --release --no-codesign
-          
           AUTH_KEY_PATH="$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+          echo "$ASC_KEY_CONTENT" > "$AUTH_KEY_PATH"
           
-          # Archive using xcodebuild with automatic provisioning updates & App Store Connect API Key flags
-          xcodebuild -workspace ios/Runner.xcworkspace \
-            -scheme Runner \
-            -configuration Release \
-            -destination 'generic/platform=iOS' \
-            -archivePath build/ios/archive/Runner.xcarchive \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$AUTH_KEY_PATH" \
-            -authenticationKeyID "$ASC_KEY_ID" \
-            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
-                        archive
-            
-          # Export IPA
-          xcodebuild -exportArchive \
-            -archivePath build/ios/archive/Runner.xcarchive \
-            -exportOptionsPlist ExportOptions.plist \
-            -exportPath build/ios/ipa \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$AUTH_KEY_PATH" \
-            -authenticationKeyID "$ASC_KEY_ID" \
-            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+          flutter build ipa --release \
+            --export-options-plist ExportOptions.plist \
+            --allow-provisioning-updates \
+            --authentication-key-id "$ASC_KEY_ID" \
+            --authentication-key-issuer-id "$ASC_ISSUER_ID" \
+            --authentication-key-path "$AUTH_KEY_PATH"
 
-
-          echo "=== CONTEÚDO DO DIRETÓRIO build/ ==="
-          find build -maxdepth 5 -type f || true
-          IPA_PATH=$(find build -name "*.ipa" | head -n 1)
+          IPA_PATH=$(find build/ios/ipa -name "*.ipa" | head -n 1)
           echo "IPA_PATH=$IPA_PATH" >> $GITHUB_ENV
           echo "Encontrado IPA em: $IPA_PATH"
-
-
 
       - name: Upload to App Store Connect (TestFlight)
         uses: apple-actions/upload-testflight-build@v5
@@ -100,4 +76,3 @@ jobs:
           api-key-id: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           api-private-key: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
           wait-for-processing: false
-
