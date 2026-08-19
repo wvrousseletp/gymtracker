@@ -39,7 +39,7 @@ jobs:
           FOUND_PASS=""
           FOUND_ALIAS=""
           
-          for PASS in "LosMoosclesKey2026!" "android" "123456" "password" "upload" "losmooscles"; do
+          for PASS in "5654" "LosMoosclesKey2026!" "android" "123456" "password" "upload" "losmooscles"; do
             echo "Testing password: $PASS"
             OUT=$(keytool -list -v -keystore android/app/upload-keystore.jks -storepass "$PASS" 2>&1 || true)
             if echo "$OUT" | grep -q "Alias name:"; then
