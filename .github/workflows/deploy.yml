@@ -47,7 +47,7 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      - name: Build & Deploy via Fastlane Match
+      - name: Build & Deploy via Fastlane Release
         env:
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
           MATCH_PAT: ${{ secrets.MATCH_PAT }}
@@ -56,5 +56,4 @@ jobs:
           APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
         run: |
           cd ios
-          bundle exec fastlane match_appstore
           bundle exec fastlane release
