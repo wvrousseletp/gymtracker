@@ -1,0 +1,34 @@
+name: Export PEM Certificate
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  export-pem:
+    name: Export PEM Certificate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Export PEM from 5654 Keystore
+        run: |
+          mkdir -p android/app
+          echo "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" | base64 -d > android/app/upload-keystore.jks
+          
+          keytool -export -rfc -alias upload -file upload_certificate.pem -keystore android/app/upload-keystore.jks -storepass 5654 || keytool -export -rfc -alias key0 -file upload_certificate.pem -keystore android/app/upload-keystore.jks -storepass 5654
+
+      - name: Upload Certificate PEM Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: upload_certificate.pem
+          path: upload_certificate.pem
