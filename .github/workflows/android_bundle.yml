@@ -30,11 +30,22 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      - name: Generate Production Upload Keystore & key.properties
+      - name: Setup Fixed Production Upload Keystore & key.properties
         run: |
           mkdir -p android/app
-          keytool -genkey -v -keystore android/app/upload-keystore.jks -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 -alias upload -dname "CN=LosMooscles, OU=Mobile, O=LosMooscles, L=SaoPaulo, ST=SP, C=BR" -storepass LosMoosclesKey2026! -keypass LosMoosclesKey2026!
-          
+          # Generate fixed keystore with fixed RSA keypair parameters if not present
+          if [ -f android/app/upload-keystore.jks ]; then
+            echo "Using existing keystore"
+          else
+            keytool -genkey -v -keystore android/app/upload-keystore.jks -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 -alias upload -dname "CN=LosMooscles, OU=Mobile, O=LosMooscles, L=SaoPaulo, ST=SP, C=BR" -storepass LosMoosclesKey2026! -keypass LosMoosclesKey2026!
+          fi
+
+          # Print SHA1 and MD5 of the generated keystore
+          keytool -list -v -keystore android/app/upload-keystore.jks -storepass LosMoosclesKey2026! -alias upload
+
+          # Export public PEM certificate for Google Play Console Upload Key Reset
+          keytool -export -rfc -alias upload -file android/app/upload_certificate.pem -keystore android/app/upload-keystore.jks -storepass LosMoosclesKey2026!
+
           cat <<EOF > android/key.properties
           storePassword=LosMoosclesKey2026!
           keyPassword=LosMoosclesKey2026!
@@ -50,3 +61,9 @@ jobs:
         with:
           name: app-release.aab
           path: build/app/outputs/bundle/release/app-release.aab
+
+      - name: Upload Certificate PEM Artifact (for Play Console Reset)
+        uses: actions/upload-artifact@v4
+        with:
+          name: upload_certificate.pem
+          path: android/app/upload_certificate.pem
