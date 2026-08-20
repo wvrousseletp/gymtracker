@@ -20,6 +20,10 @@ platform :ios do
       type: "appstore",
       readonly: true
     )
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "Runner.xcodeproj"
+    )
     gym(
       scheme: "Runner",
       clean: true,
