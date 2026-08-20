@@ -17,17 +17,9 @@ platform :ios do
   lane :release do
     setup_ci
 
-    UI.important("Nuking expired App Store certificate and profiles...")
-    match_nuke(
-      type: "appstore",
-      skip_confirmation: true,
-      readonly: false
-    )
-
-    UI.important("Generating fresh App Store certificate and profiles...")
     match(
       type: "appstore",
-      readonly: false
+      readonly: true
     )
 
     mapping = lane_context[SharedValues::MATCH_PROVISIONING_PROFILE_MAPPING]
