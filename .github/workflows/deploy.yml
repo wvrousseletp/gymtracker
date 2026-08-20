@@ -47,7 +47,7 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      - name: Build IPA with Automatic Provisioning Updates
+      - name: Build IPA with Fastlane Match AppStore Distribution
         env:
           ASC_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
@@ -57,38 +57,32 @@ jobs:
         run: |
           mkdir -p ~/.appstoreconnect/private_keys
           echo "$ASC_KEY_CONTENT" > ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
-          AUTH_KEY_PATH="$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
           
           # Build Flutter iOS bundle assets
           flutter build ios --release --no-codesign
 
-          # Fetch match profiles first if available
+          # Fetch match profiles and certificates
           cd ios
           export ASC_KEY_CONTENT_B64=$(echo "$ASC_KEY_CONTENT" | base64)
-          bundle exec fastlane match appstore --readonly || true
+          bundle exec fastlane match appstore --readonly
           cd ..
-          
-          # Archive using xcodebuild with allowProvisioningUpdates and API Key authentication
+
+          # Archive using xcodebuild with Manual Apple Distribution Signing
           xcodebuild -workspace ios/Runner.xcworkspace \
             -scheme Runner \
             -configuration Release \
             -destination 'generic/platform=iOS' \
             -archivePath build/ios/archive/Runner.xcarchive \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$AUTH_KEY_PATH" \
-            -authenticationKeyID "$ASC_KEY_ID" \
-            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            DEVELOPMENT_TEAM="PJ32UPL29J" \
             archive
             
           # Export IPA
           xcodebuild -exportArchive \
             -archivePath build/ios/archive/Runner.xcarchive \
             -exportOptionsPlist ios/ExportOptions.plist \
-            -exportPath build/ios/ipa \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$AUTH_KEY_PATH" \
-            -authenticationKeyID "$ASC_KEY_ID" \
-            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+            -exportPath build/ios/ipa
 
           echo "=== CONTEÚDO DO DIRETÓRIO build/ ==="
           find build -maxdepth 5 -type f || true
