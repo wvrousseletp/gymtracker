@@ -47,54 +47,17 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      - name: Build IPA with Fastlane Match AppStore Distribution
+      - name: Build Flutter iOS & Fastlane Release
         env:
-          ASC_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-          ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
-          ASC_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
           MATCH_PAT: ${{ secrets.MATCH_PAT }}
+          ASC_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          ASC_KEY_CONTENT_RAW: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
         run: |
-          mkdir -p ~/.appstoreconnect/private_keys
-          echo "$ASC_KEY_CONTENT" > ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
-          
-          # Build Flutter iOS bundle assets
           flutter build ios --release --no-codesign
-
-          # Fetch match profiles and certificates
+          
+          export ASC_KEY_CONTENT_B64=$(echo "$ASC_KEY_CONTENT_RAW" | base64)
+          
           cd ios
-          export ASC_KEY_CONTENT_B64=$(echo "$ASC_KEY_CONTENT" | base64)
-          bundle exec fastlane match appstore --readonly
-          cd ..
-
-          # Archive using xcodebuild with Manual Apple Distribution Signing
-          xcodebuild -workspace ios/Runner.xcworkspace \
-            -scheme Runner \
-            -configuration Release \
-            -destination 'generic/platform=iOS' \
-            -archivePath build/ios/archive/Runner.xcarchive \
-            CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
-            DEVELOPMENT_TEAM="PJ32UPL29J" \
-            archive
-            
-          # Export IPA
-          xcodebuild -exportArchive \
-            -archivePath build/ios/archive/Runner.xcarchive \
-            -exportOptionsPlist ios/ExportOptions.plist \
-            -exportPath build/ios/ipa
-
-          echo "=== CONTEÚDO DO DIRETÓRIO build/ ==="
-          find build -maxdepth 5 -type f || true
-          IPA_PATH=$(find build -name "*.ipa" | head -n 1)
-          echo "IPA_PATH=$IPA_PATH" >> $GITHUB_ENV
-          echo "Encontrado IPA em: $IPA_PATH"
-
-      - name: Upload to App Store Connect (TestFlight)
-        uses: apple-actions/upload-testflight-build@v5
-        with:
-          app-path: ${{ env.IPA_PATH }}
-          issuer-id: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-          api-key-id: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
-          api-private-key: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
-          wait-for-processing: false
+          bundle exec fastlane release
