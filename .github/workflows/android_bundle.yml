@@ -1,14 +1,26 @@
-name: Build Android App Bundle (.aab)
+name: Build & Deploy Android (.aab)
 
 on:
   push:
     branches: [ main ]
   workflow_dispatch:
+    inputs:
+      track:
+        description: "Google Play Track (internal, alpha, beta, production)"
+        required: true
+        default: "internal"
+        type: choice
+        options:
+          - internal
+          - alpha
+          - beta
+          - production
 
 jobs:
-  build-android:
-    name: Build Android Release Bundle (.aab)
+  build-and-deploy:
+    name: Build & Deploy Android Release Bundle (.aab)
     runs-on: ubuntu-latest
+    timeout-minutes: 60
 
     steps:
       - name: Checkout Repository
@@ -62,3 +74,15 @@ jobs:
         with:
           name: upload_certificate.pem
           path: android/app/upload_certificate.pem
+
+      - name: Deploy to Google Play Console
+        if: env.HAVE_PLAY_KEY == 'true'
+        env:
+          HAVE_PLAY_KEY: ${{ secrets.PLAY_STORE_JSON_KEY != '' }}
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_JSON_KEY }}
+          packageName: com.losmooscles
+          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          track: ${{ inputs.track || 'internal' }}
+          status: completed
