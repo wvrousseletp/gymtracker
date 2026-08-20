@@ -20,10 +20,18 @@ platform :ios do
       type: "appstore",
       readonly: true
     )
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "Runner.xcodeproj"
+    )
     gym(
       scheme: "Runner",
       clean: true,
-      export_method: "app-store"
+      export_method: "app-store",
+      xcargs: "CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=PJ32UPL29J",
+      export_options: {
+        provisioningProfiles: lane_context[SharedValues::MATCH_PROVISIONING_PROFILE_MAPPING]
+      }
     )
     pilot(
       skip_waiting_for_build_processing: true
