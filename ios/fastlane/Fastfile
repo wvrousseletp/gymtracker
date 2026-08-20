@@ -33,6 +33,44 @@ platform :ios do
       )
     end
 
+    mapping = lane_context[SharedValues::MATCH_PROVISIONING_PROFILE_MAPPING]
+
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "Runner.xcodeproj",
+      team_id: "PJ32UPL29J",
+      code_sign_identity: "Apple Distribution",
+      targets: ["Runner"],
+      profile_name: mapping["com.vicente.losmooscles"]
+    )
+
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "Runner.xcodeproj",
+      team_id: "PJ32UPL29J",
+      code_sign_identity: "Apple Distribution",
+      targets: ["WatchApp Watch App"],
+      profile_name: mapping["com.vicente.losmooscles.watchkitapp"]
+    )
+
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "Runner.xcodeproj",
+      team_id: "PJ32UPL29J",
+      code_sign_identity: "Apple Distribution",
+      targets: ["WatchWidgetExtension"],
+      profile_name: mapping["com.vicente.losmooscles.watchkitapp.WatchWidgetExtension"]
+    )
+
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "Runner.xcodeproj",
+      team_id: "PJ32UPL29J",
+      code_sign_identity: "Apple Distribution",
+      targets: ["WorkoutWidgetExtension"],
+      profile_name: mapping["com.vicente.losmooscles.WorkoutWidgetExtension"]
+    )
+
     gym(
       scheme: "Runner",
       clean: true,
