@@ -42,16 +42,12 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      - name: Setup Fixed Production Upload Keystore
+      - name: Setup Permanent Production Upload Keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
           mkdir -p android/app
-          rm -f android/app/upload-keystore.jks
-
-          # Generate fixed permanent upload keystore
-          keytool -genkey -v -keystore android/app/upload-keystore.jks -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 -alias upload -dname "CN=LosMooscles, OU=Mobile, O=LosMooscles, L=SaoPaulo, ST=SP, C=BR" -storepass LosMoosclesKey2026! -keypass LosMoosclesKey2026! -noprompt
-
-          # Export public PEM certificate for Google Play Support Upload Key Reset
-          keytool -export -rfc -alias upload -file android/app/upload_certificate.pem -keystore android/app/upload-keystore.jks -storepass LosMoosclesKey2026!
+          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
 
           cat <<EOF > android/key.properties
           storePassword=LosMoosclesKey2026!
@@ -68,12 +64,6 @@ jobs:
         with:
           name: app-release.aab
           path: build/app/outputs/bundle/release/app-release.aab
-
-      - name: Upload Certificate PEM Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: upload_certificate.pem
-          path: android/app/upload_certificate.pem
 
       - name: Deploy to Google Play Console
         if: env.HAVE_PLAY_KEY == 'true'
