@@ -18,7 +18,7 @@ platform :ios do
     setup_ci
     match(
       type: "appstore",
-      readonly: true
+      readonly: false
     )
     update_code_signing_settings(
       use_automatic_signing: false,
