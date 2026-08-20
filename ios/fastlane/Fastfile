@@ -20,7 +20,8 @@ platform :ios do
     UI.important("Nuking expired App Store certificate and profiles...")
     match_nuke(
       type: "appstore",
-      skip_confirmation: true
+      skip_confirmation: true,
+      readonly: false
     )
 
     UI.important("Generating fresh App Store certificate and profiles...")
