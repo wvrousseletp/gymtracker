@@ -16,11 +16,23 @@ platform :ios do
   desc "Release new version to TestFlight"
   lane :release do
     setup_ci
-    match(
-      type: "appstore",
-      readonly: false,
-      force: true
-    )
+    begin
+      match(
+        type: "appstore",
+        readonly: true
+      )
+    rescue => e
+      UI.important("Match stored certificate invalid or revoked. Running match_nuke to recreate...")
+      match_nuke(
+        type: "appstore",
+        skip_confirmation: true
+      )
+      match(
+        type: "appstore",
+        readonly: false
+      )
+    end
+
     gym(
       scheme: "Runner",
       clean: true,
