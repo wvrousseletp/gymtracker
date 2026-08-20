@@ -18,24 +18,12 @@ platform :ios do
     setup_ci
     match(
       type: "appstore",
-      readonly: false
-    )
-    update_code_signing_settings(
-      use_automatic_signing: false,
-      path: "Runner.xcodeproj"
+      readonly: true
     )
     gym(
       scheme: "Runner",
       clean: true,
-      export_method: "app-store",
-      export_options: {
-        provisioningProfiles: {
-          "com.vicente.losmooscles" => "match AppStore com.vicente.losmooscles",
-          "com.vicente.losmooscles.watchkitapp" => "match AppStore com.vicente.losmooscles.watchkitapp",
-          "com.vicente.losmooscles.WorkoutWidgetExtension" => "match AppStore com.vicente.losmooscles.WorkoutWidgetExtension",
-          "com.vicente.losmooscles.watchkitapp.WatchWidgetExtension" => "match AppStore com.vicente.losmooscles.watchkitapp.WatchWidgetExtension"
-        }
-      }
+      export_method: "app-store"
     )
     pilot(
       skip_waiting_for_build_processing: true
