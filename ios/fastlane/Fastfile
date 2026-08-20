@@ -16,22 +16,18 @@ platform :ios do
   desc "Release new version to TestFlight"
   lane :release do
     setup_ci
-    begin
-      match(
-        type: "appstore",
-        readonly: true
-      )
-    rescue => e
-      UI.important("Match stored certificate invalid or revoked. Running match_nuke to recreate...")
-      match_nuke(
-        type: "appstore",
-        skip_confirmation: true
-      )
-      match(
-        type: "appstore",
-        readonly: false
-      )
-    end
+
+    UI.important("Nuking expired App Store certificate and profiles...")
+    match_nuke(
+      type: "appstore",
+      skip_confirmation: true
+    )
+
+    UI.important("Generating fresh App Store certificate and profiles...")
+    match(
+      type: "appstore",
+      readonly: false
+    )
 
     mapping = lane_context[SharedValues::MATCH_PROVISIONING_PROFILE_MAPPING]
 
