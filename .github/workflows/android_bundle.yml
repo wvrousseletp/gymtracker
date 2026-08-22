@@ -56,6 +56,9 @@ jobs:
           storeFile=upload-keystore.jks
           EOF
 
+          echo "=== VERIFICANDO ASSINATURA DO KEYSTORE CARREGADO ==="
+          keytool -list -v -keystore android/app/upload-keystore.jks -storepass LosMoosclesKey2026! || true
+
       - name: Build App Bundle (.aab)
         run: flutter build appbundle --release
 
