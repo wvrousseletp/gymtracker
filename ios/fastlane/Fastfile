@@ -13,13 +13,35 @@ platform :ios do
     end
   end
 
+  desc "Nuke and generate fresh App Store certificates"
+  lane :nuke_and_generate do
+    setup_ci
+
+    match(
+      type: "appstore",
+      readonly: false,
+      app_identifier: [
+        "com.vicente.losmooscles",
+        "com.vicente.losmooscles.watchkitapp",
+        "com.vicente.losmooscles.watchkitapp.WatchWidgetExtension",
+        "com.vicente.losmooscles.WorkoutWidgetExtension"
+      ]
+    )
+  end
+
   desc "Release new version to TestFlight"
   lane :release do
     setup_ci
 
     match(
       type: "appstore",
-      readonly: true
+      readonly: false,
+      app_identifier: [
+        "com.vicente.losmooscles",
+        "com.vicente.losmooscles.watchkitapp",
+        "com.vicente.losmooscles.watchkitapp.WatchWidgetExtension",
+        "com.vicente.losmooscles.WorkoutWidgetExtension"
+      ]
     )
 
     mapping = lane_context[SharedValues::MATCH_PROVISIONING_PROFILE_MAPPING]
