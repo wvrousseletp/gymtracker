@@ -13,23 +13,6 @@ platform :ios do
     end
   end
 
-  desc "Nuke and generate fresh App Store certificates"
-  lane :nuke_and_generate do
-    setup_ci
-    ENV["FASTLANE_MATCH_READONLY"] = "false"
-
-    match(
-      type: "appstore",
-      readonly: false,
-      app_identifier: [
-        "com.vicente.losmooscles",
-        "com.vicente.losmooscles.watchkitapp",
-        "com.vicente.losmooscles.watchkitapp.WatchWidgetExtension",
-        "com.vicente.losmooscles.WorkoutWidgetExtension"
-      ]
-    )
-  end
-
   desc "Release new version to TestFlight"
   lane :release do
     setup_ci
@@ -38,6 +21,7 @@ platform :ios do
     match(
       type: "appstore",
       readonly: false,
+      renew_expired_certs: true,
       app_identifier: [
         "com.vicente.losmooscles",
         "com.vicente.losmooscles.watchkitapp",
