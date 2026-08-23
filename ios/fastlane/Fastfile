@@ -22,6 +22,8 @@ platform :ios do
       type: "appstore",
       readonly: false,
       force: true,
+      force_for_new_certificates: true,
+      skip_confirmation: true,
       app_identifier: [
         "com.vicente.losmooscles",
         "com.vicente.losmooscles.watchkitapp",
