@@ -1075,27 +1075,7 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
       await syncHealthMetrics();
     }
   }
-  Map<String, int> getRecentMuscleSets() {
-    final Map<String, int> muscleSets = {};
-    try {
-      final now = DateTime.now();
-      final sevenDaysAgo = now.subtract(const Duration(days: 7));
-      final history = state?.history ?? [];
-      
-      for (final workout in history) {
-        final workoutDate = DateTime.tryParse(workout.date);
-        if (workoutDate != null && workoutDate.isAfter(sevenDaysAgo)) {
-          for (final ex in workout.exercises) {
-            final count = ex.completedSets;
-            if (count > 0 && ex.muscle.isNotEmpty) {
-              muscleSets[ex.muscle] = (muscleSets[ex.muscle] ?? 0) + count;
-            }
-          }
-        }
-      }
-    } catch (e) {
-      debugPrint("Error calculating recent muscle sets: $e");
-    }
-    return muscleSets;
+  Map<String, int> getRecentMuscleSets([int days = 7]) {
+    return _workoutProvider?.getRecentMuscleSets(days) ?? {};
   }
 }

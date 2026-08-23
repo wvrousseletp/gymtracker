@@ -37,6 +37,202 @@ class WorkoutScreen extends StatefulWidget {
 }
 
 class _WorkoutScreenState extends State<WorkoutScreen> {
+  int _heatmapDays = 7;
+  String _quickRoutineFilter = 'Todos';
+
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour >= 5 && hour < 12) {
+      return "BOM DIA";
+    } else if (hour >= 12 && hour < 18) {
+      return "BOA TARDE";
+    } else {
+      return "BOA NOITE";
+    }
+  }
+
+  String _getDaysAgoText(String? dateStr) {
+    if (dateStr == null || dateStr.isEmpty) return "";
+    try {
+      final date = DateTime.parse(dateStr).toLocal();
+      final now = DateTime.now();
+      final diffDays = now.difference(DateTime(date.year, date.month, date.day)).inDays;
+      if (diffDays == 0) return "Hoje";
+      if (diffDays == 1) return "Ontem";
+      return "Há ${diffDays}d";
+    } catch (_) {
+      return "";
+    }
+  }
+
+  Widget _buildHeatmapChip(int days, String label, Color accentColor) {
+    final isSelected = _heatmapDays == days;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _heatmapDays = days;
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: isSelected ? accentColor.withOpacity(0.2) : Colors.white.withOpacity(0.04),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected ? accentColor.withOpacity(0.6) : Colors.white.withOpacity(0.08),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? accentColor : Colors.white54,
+            fontSize: 10,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickRoutineFilterChip(String label, Color accentColor) {
+    final isSelected = _quickRoutineFilter == label;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _quickRoutineFilter = label;
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: isSelected ? accentColor.withOpacity(0.2) : Colors.white.withOpacity(0.04),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected ? accentColor.withOpacity(0.6) : Colors.white.withOpacity(0.08),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? accentColor : Colors.white60,
+            fontSize: 11,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showRestDayModal(BuildContext context, WorkoutProvider provider, Color accentColor) {
+    String selectedReason = 'Recuperação Muscular';
+    final reasons = [
+      'Recuperação Muscular',
+      'Falta de Tempo',
+      'Lesão ou Dor',
+      'Viagem ou Lazer',
+    ];
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (context, setDialogState) => Dialog(
+          backgroundColor: Colors.transparent,
+          child: GlassCard(
+            padding: const EdgeInsets.all(20),
+            borderRadius: 24,
+            borderColor: accentColor.withOpacity(0.3),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.nightlight_round, color: accentColor, size: 22),
+                    const SizedBox(width: 8),
+                    const Text(
+                      "Registrar Dia de Descanso",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  "Selecione o motivo do descanso de hoje para manter seu histórico organizado:",
+                  style: TextStyle(color: Colors.white60, fontSize: 12),
+                ),
+                const SizedBox(height: 14),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: reasons.map((reason) {
+                    final isSelected = selectedReason == reason;
+                    return ChoiceChip(
+                      label: Text(reason),
+                      selected: isSelected,
+                      onSelected: (val) {
+                        if (val) setDialogState(() => selectedReason = reason);
+                      },
+                      selectedColor: accentColor.withOpacity(0.25),
+                      backgroundColor: Colors.white.withOpacity(0.06),
+                      labelStyle: TextStyle(
+                        color: isSelected ? accentColor : Colors.white70,
+                        fontSize: 11,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogCtx),
+                      child: const Text("Cancelar", style: TextStyle(color: Colors.white54)),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(dialogCtx);
+                        HapticFeedback.lightImpact();
+                        provider.shiftPlannerForward();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Descanso registrado ($selectedReason). Treinos adiados.'),
+                            action: SnackBarAction(
+                              label: 'Desfazer',
+                              onPressed: () {
+                                provider.undoShiftPlannerForward();
+                              },
+                            ),
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            duration: const Duration(seconds: 4),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: accentColor,
+                        foregroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: const Text("Confirmar", style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
   String _getTodayLabel() {
     final weekday = DateTime.now().weekday;
     switch (weekday) {
@@ -258,21 +454,22 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               );
             }),
 
-            // Cabeçalho de treinos de hoje
+            // Cabeçalho Enriquecido com Saudação e Streak
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      "HOJE É",
+                    Text(
+                      "${_getGreeting()}, ${(provider.currentProfile?.name ?? 'ATLETA').toUpperCase()} 👋",
                       style: TextStyle(
-                          color: Colors.white54,
+                          color: accentColor,
                           fontSize: 10,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w900,
                           letterSpacing: 1.0),
                     ),
+                    const SizedBox(height: 2),
                     Text(
                       todayLabel.toUpperCase(),
                       style: const TextStyle(
@@ -282,32 +479,76 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                     ),
                   ],
                 ),
-                // Botão de Ajustes Rápidos
-                IconButton(
-                  icon: const Icon(Icons.settings_outlined,
-                      color: Colors.white70),
-                  onPressed: () {
-                    _showSettingsDialog(context,
-                        Provider.of<TrackerProvider>(context, listen: false));
-                  },
+                Row(
+                  children: [
+                    // Badge de Ofensiva / Streak
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: accentColor.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: accentColor.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text("🔥", style: TextStyle(fontSize: 12)),
+                          const SizedBox(width: 4),
+                          Text(
+                            "${provider.streak.consecutiveWeeks} sem",
+                            style: TextStyle(
+                              color: accentColor,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    IconButton(
+                      icon: const Icon(Icons.settings_outlined,
+                          color: Colors.white70),
+                      onPressed: () {
+                        _showSettingsDialog(context,
+                            Provider.of<TrackerProvider>(context, listen: false));
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),
             const SizedBox(height: 16),
 
 
-            const Text(
-              "Seu Mapa de Calor (Últimos 7 dias)",
-              style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  "Mapa de Calor Muscular",
+                  style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700),
+                ),
+                Row(
+                  children: [
+                    _buildHeatmapChip(7, "7d", accentColor),
+                    const SizedBox(width: 4),
+                    _buildHeatmapChip(14, "14d", accentColor),
+                    const SizedBox(width: 4),
+                    _buildHeatmapChip(0, "Semana", accentColor),
+                  ],
+                ),
+              ],
             ),
             const SizedBox(height: 8),
             GlassCard(
-              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
               child: Center(
-                child: MuscleHeatmap(muscleSets: Provider.of<TrackerProvider>(context).getRecentMuscleSets()),
+                child: MuscleHeatmap(
+                  muscleSets: provider.getRecentMuscleSets(_heatmapDays),
+                ),
               ),
             ),
             const SizedBox(height: 24),
@@ -325,23 +566,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                   TextButton.icon(
                     onPressed: () {
                       HapticFeedback.lightImpact();
-                      provider.shiftPlannerForward();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Text(
-                              'Descanso registrado. Treinos adiados.'),
-                          action: SnackBarAction(
-                            label: 'Desfazer',
-                            onPressed: () {
-                              provider.undoShiftPlannerForward();
-                            },
-                          ),
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10)),
-                          duration: const Duration(seconds: 4),
-                        ),
-                      );
+                      _showRestDayModal(context, provider, accentColor);
                     },
                     icon: Icon(Icons.nightlight_round,
                         color: accentColor, size: 14),
@@ -465,11 +690,43 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                     ],
                                   ),
                                   const SizedBox(height: 6),
-                                  Text(
-                                    "${routine.exercises.length} exercício(s) • $totalSets séries no total",
-                                    style: const TextStyle(
-                                        color: Colors.white54, fontSize: 12),
-                                  ),
+                                  Builder(builder: (context) {
+                                    final estMin = provider.estimateRoutineDurationMinutes(routine);
+                                    final tags = provider.getRoutineMuscleTags(routine);
+                                    final last = provider.getLastRoutineExecution(routine.name);
+                                    final daysAgo = _getDaysAgoText(last?.date);
+                                    return Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          "${routine.exercises.length} ex • $totalSets séries • ~$estMin min" +
+                                              (daysAgo.isNotEmpty ? " • $daysAgo" : ""),
+                                          style: const TextStyle(color: Colors.white54, fontSize: 11),
+                                        ),
+                                        if (tags.isNotEmpty) ...[
+                                          const SizedBox(height: 6),
+                                          Wrap(
+                                            spacing: 4,
+                                            runSpacing: 4,
+                                            children: tags.map((tag) => Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: accentColor.withOpacity(0.12),
+                                                borderRadius: BorderRadius.circular(4),
+                                              ),
+                                              child: Text(
+                                                tag,
+                                                style: TextStyle(
+                                                    color: accentColor,
+                                                    fontSize: 9,
+                                                    fontWeight: FontWeight.bold),
+                                              ),
+                                            )).toList(),
+                                          ),
+                                        ],
+                                      ],
+                                    );
+                                  }),
                                 ],
                               ),
                             ),
@@ -531,7 +788,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
             const SizedBox(height: 24),
 
-            // Iniciar Treino Avulso/Rápido
+            // Iniciar Treino Avulso/Rápido com Filtros
             const Text(
               "Treino Rápido (Qualquer Rotina)",
               style: TextStyle(
@@ -540,6 +797,21 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                   fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildQuickRoutineFilterChip('Todos', accentColor),
+                  const SizedBox(width: 6),
+                  _buildQuickRoutineFilterChip('Superiores', accentColor),
+                  const SizedBox(width: 6),
+                  _buildQuickRoutineFilterChip('Inferiores', accentColor),
+                  const SizedBox(width: 6),
+                  _buildQuickRoutineFilterChip('Cardio', accentColor),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
 
             if (provider.routines.isEmpty)
               const GlassCard(
@@ -555,18 +827,57 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 ),
               )
             else
-              GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 2.2,
-                children: provider.routines.map((routine) {
-                  return GestureDetector(
-                    onTap: () {
-                      if (provider.activeWorkout != null) {
-                        _promptPostponeOrCreateWorkout(context, provider, () {
+              Builder(builder: (context) {
+                final filtered = provider.routines.where((r) {
+                  if (_quickRoutineFilter == 'Todos') return true;
+                  final tags = provider.getRoutineMuscleTags(r).map((t) => t.toLowerCase()).toList();
+                  if (_quickRoutineFilter == 'Superiores') {
+                    return tags.any((t) => t.contains('peito') || t.contains('costas') || t.contains('ombro') || t.contains('bíceps') || t.contains('tríceps'));
+                  } else if (_quickRoutineFilter == 'Inferiores') {
+                    return tags.any((t) => t.contains('perna') || t.contains('quad') || t.contains('panturrilha') || t.contains('glút'));
+                  } else if (_quickRoutineFilter == 'Cardio') {
+                    return r.exercises.any((e) => e.isCardio);
+                  }
+                  return true;
+                }).toList();
+
+                if (filtered.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Text(
+                      "Nenhuma rotina nesta categoria.",
+                      style: TextStyle(color: Colors.white38, fontSize: 12, fontStyle: FontStyle.italic),
+                    ),
+                  );
+                }
+
+                return GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 2.0,
+                  children: filtered.map((routine) {
+                    final estMin = provider.estimateRoutineDurationMinutes(routine);
+                    final lastLog = provider.getLastRoutineExecution(routine.name);
+                    final daysAgoText = _getDaysAgoText(lastLog?.date);
+                    return GestureDetector(
+                      onTap: () {
+                        if (provider.activeWorkout != null) {
+                          _promptPostponeOrCreateWorkout(context, provider, () {
+                            WorkoutStarter.startWithCountdown(
+                              context,
+                              provider,
+                              routine,
+                              WorkoutRecovery(
+                                  sleepOk: SleepQuality.okay,
+                                  pain: [],
+                                  warmUpDone: false),
+                              false,
+                            );
+                          });
+                        } else {
                           WorkoutStarter.startWithCountdown(
                             context,
                             provider,
@@ -577,48 +888,50 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                 warmUpDone: false),
                             false,
                           );
-                        });
-                      } else {
-                        WorkoutStarter.startWithCountdown(
-                          context,
-                          provider,
-                          routine,
-                          WorkoutRecovery(
-                              sleepOk: SleepQuality.okay,
-                              pain: [],
-                              warmUpDone: false),
-                          false,
-                        );
-                      }
-                    },
-                    child: GlassCard(
-                      padding: const EdgeInsets.all(10),
-                      borderColor: Colors.white.withOpacity(0.04),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            routine.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            "${routine.exercises.length} ex • rest ${routine.defaultRest}s",
-                            style: const TextStyle(
-                                color: Colors.white38, fontSize: 10),
-                          ),
-                        ],
+                        }
+                      },
+                      child: GlassCard(
+                        padding: const EdgeInsets.all(10),
+                        borderColor: Colors.white.withOpacity(0.04),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              routine.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 2),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  "${routine.exercises.length} ex • ~$estMin min",
+                                  style: const TextStyle(
+                                      color: Colors.white38, fontSize: 10),
+                                ),
+                                if (daysAgoText.isNotEmpty)
+                                  Text(
+                                    daysAgoText,
+                                    style: TextStyle(
+                                        color: accentColor.withOpacity(0.8),
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  );
-                }).toList(),
-              ),
+                    );
+                  }).toList(),
+                );
+              }),
             const SizedBox(height: 24),
 
             // Iniciar Exercício Avulso

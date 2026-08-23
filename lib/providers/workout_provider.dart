@@ -1519,57 +1519,14 @@ class WorkoutProvider extends ChangeNotifier {
     final sourceItems = List<String>.from(planner[sourceDay] ?? []);
     final validItems = sourceItems.where((item) => item.isNotEmpty).toList();
     if (validItems.isEmpty) return;
-
-    final daysMap = {
-      'seg': 'Segunda-feira',
-      'ter': 'Terça-feira',
-      'qua': 'Quarta-feira',
-      'qui': 'Quinta-feira',
-      'sex': 'Sexta-feira',
-      'sab': 'Sábado',
-      'dom': 'Domingo',
-    };
-
-    final dayName = daysMap[sourceDay] ?? sourceDay;
-
-    if (validItems.length == 1 &&
-        (validItems.first.startsWith('routine:') ||
-            (!validItems.first.startsWith('exercise:') &&
-                routines.any((r) => r.id == validItems.first)))) {
-      planner[targetKey] = List<String>.from(planner[targetKey] ?? [])
-        ..add(validItems.first);
-    } else {
-      final exercises = _parsePlannerItemsToRoutineExercises(validItems);
-      if (exercises.isEmpty) return;
-
-      final newRoutine = Routine(
-        id: "routine-${DateTime.now().millisecondsSinceEpoch}-$sourceDay",
-        name: "Treino $dayName",
-        defaultRest: 60,
-        exercises: exercises,
-      );
-
-      routines = List<Routine>.from(routines)..add(newRoutine);
-      unawaited(_firebaseSync.syncRoutine(currentUserId, newRoutine));
-
-      planner[targetKey] = List<String>.from(planner[targetKey] ?? [])
-        ..add("routine:${newRoutine.id}");
-    }
+    
+    // Simplificado para copiar apenas os modelos originais, sem criar novas rotinas (conforme pedido)
+    planner[targetKey] = List<String>.from(planner[targetKey] ?? [])..addAll(validItems);
     _save();
   }
 
   void importAllFixedDays(String targetKey) {
     final days = ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'];
-    final daysMap = {
-      'seg': 'Segunda-feira',
-      'ter': 'Terça-feira',
-      'qua': 'Quarta-feira',
-      'qui': 'Quinta-feira',
-      'sex': 'Sexta-feira',
-      'sab': 'Sábado',
-      'dom': 'Domingo',
-    };
-
     final List<String> newPlannerEntries = [];
 
     for (final day in days) {
@@ -1577,27 +1534,8 @@ class WorkoutProvider extends ChangeNotifier {
       final validItems = sourceItems.where((item) => item.isNotEmpty).toList();
       if (validItems.isEmpty) continue;
 
-      final dayName = daysMap[day] ?? day;
-
-      if (validItems.length == 1 &&
-          (validItems.first.startsWith('routine:') ||
-              (!validItems.first.startsWith('exercise:') &&
-                  routines.any((r) => r.id == validItems.first)))) {
-        newPlannerEntries.add(validItems.first);
-      } else {
-        final exercises = _parsePlannerItemsToRoutineExercises(validItems);
-        if (exercises.isNotEmpty) {
-          final newRoutine = Routine(
-            id: "routine-${DateTime.now().millisecondsSinceEpoch}-$day",
-            name: "Treino $dayName",
-            defaultRest: 60,
-            exercises: exercises,
-          );
-          routines = List<Routine>.from(routines)..add(newRoutine);
-          unawaited(_firebaseSync.syncRoutine(currentUserId, newRoutine));
-          newPlannerEntries.add("routine:${newRoutine.id}");
-        }
-      }
+      // Adiciona os modelos originais daquele dia
+      newPlannerEntries.addAll(validItems);
     }
 
     if (newPlannerEntries.isEmpty) return;
@@ -1982,5 +1920,68 @@ class WorkoutProvider extends ChangeNotifier {
       }
     }
     return null;
+  }
+
+  Map<String, int> getRecentMuscleSets([int days = 7]) {
+    final Map<String, int> muscleSets = {};
+    try {
+      final now = DateTime.now();
+      DateTime startDate;
+      if (days == 0) {
+        startDate = now.subtract(Duration(days: now.weekday - 1));
+        startDate = DateTime(startDate.year, startDate.month, startDate.day);
+      } else {
+        startDate = now.subtract(Duration(days: days));
+      }
+      
+      for (final workout in history) {
+        final workoutDate = DateTime.tryParse(workout.date);
+        if (workoutDate != null && workoutDate.isAfter(startDate)) {
+          for (final ex in workout.exercises) {
+            final count = ex.completedSets;
+            if (count > 0 && ex.muscle.isNotEmpty) {
+              muscleSets[ex.muscle] = (muscleSets[ex.muscle] ?? 0) + count;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint("Error calculating recent muscle sets: $e");
+    }
+    return muscleSets;
+  }
+
+  WorkoutLog? getLastRoutineExecution(String routineName) {
+    for (final log in history.reversed) {
+      if (log.name.trim().toLowerCase() == routineName.trim().toLowerCase()) {
+        return log;
+      }
+    }
+    return null;
+  }
+
+  int estimateRoutineDurationMinutes(Routine routine) {
+    int totalRestSeconds = 0;
+    int totalSets = 0;
+
+    for (final ex in routine.exercises) {
+      totalSets += ex.sets;
+      totalRestSeconds += ex.sets * (ex.rest > 0 ? ex.rest : routine.defaultRest);
+    }
+
+    int totalSeconds = (totalSets * 45) + totalRestSeconds;
+    int minutes = (totalSeconds / 60).round();
+    return minutes > 0 ? minutes : 15;
+  }
+
+  List<String> getRoutineMuscleTags(Routine routine) {
+    final Set<String> muscles = {};
+    for (final ex in routine.exercises) {
+      final match = library.where((l) => l.id == ex.exerciseId).firstOrNull;
+      if (match != null && match.muscle.isNotEmpty) {
+        muscles.add(match.muscle);
+      }
+    }
+    return muscles.toList();
   }
 }
