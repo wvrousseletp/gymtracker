@@ -16,6 +16,7 @@ platform :ios do
   desc "Nuke and generate fresh App Store certificates"
   lane :nuke_and_generate do
     setup_ci
+    ENV["FASTLANE_MATCH_READONLY"] = "false"
 
     match(
       type: "appstore",
@@ -32,6 +33,7 @@ platform :ios do
   desc "Release new version to TestFlight"
   lane :release do
     setup_ci
+    ENV["FASTLANE_MATCH_READONLY"] = "false"
 
     match(
       type: "appstore",
