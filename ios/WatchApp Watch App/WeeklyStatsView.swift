@@ -22,7 +22,7 @@ struct WeeklyStatsView: View {
     }
     
     private var trend: String {
-        let lastTwo = weeklyData.suffix(2)
+        let lastTwo = Array(weeklyData.suffix(2))
         if lastTwo.count >= 2 {
             if lastTwo[1] > lastTwo[0] {
                 return "↑"
@@ -34,7 +34,7 @@ struct WeeklyStatsView: View {
     }
     
     private var trendColor: Color {
-        let lastTwo = weeklyData.suffix(2)
+        let lastTwo = Array(weeklyData.suffix(2))
         if lastTwo.count >= 2 {
             if lastTwo[1] > lastTwo[0] {
                 return .green
