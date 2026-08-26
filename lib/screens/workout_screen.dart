@@ -694,8 +694,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          "${routine.exercises.length} ex • $totalSets séries • ~$estMin min" +
-                                              (daysAgo.isNotEmpty ? " • $daysAgo" : ""),
+                                          "${routine.exercises.length} ex • $totalSets séries • ~$estMin min${daysAgo.isNotEmpty ? ' • $daysAgo' : ''}",
                                           style: const TextStyle(color: Colors.white54, fontSize: 11),
                                         ),
                                         if (tags.isNotEmpty) ...[
