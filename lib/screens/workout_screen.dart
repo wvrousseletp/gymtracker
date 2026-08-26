@@ -32,7 +32,6 @@ class WorkoutScreen extends StatefulWidget {
 }
 
 class _WorkoutScreenState extends State<WorkoutScreen> {
-  int _heatmapDays = 7;
   String _quickRoutineFilter = 'Todos';
 
   String _getGreeting() {
@@ -58,36 +57,6 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     } catch (_) {
       return "";
     }
-  }
-
-  Widget _buildHeatmapChip(int days, String label, Color accentColor) {
-    final isSelected = _heatmapDays == days;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _heatmapDays = days;
-        });
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(
-          color: isSelected ? accentColor.withOpacity(0.2) : Colors.white.withOpacity(0.04),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isSelected ? accentColor.withOpacity(0.6) : Colors.white.withOpacity(0.08),
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? accentColor : Colors.white54,
-            fontSize: 10,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-          ),
-        ),
-      ),
-    );
   }
 
   Widget _buildQuickRoutineFilterChip(String label, Color accentColor) {
@@ -514,39 +483,6 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               ],
             ),
             const SizedBox(height: 16),
-
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  "Mapa de Calor Muscular",
-                  style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700),
-                ),
-                Row(
-                  children: [
-                    _buildHeatmapChip(7, "7d", accentColor),
-                    const SizedBox(width: 4),
-                    _buildHeatmapChip(14, "14d", accentColor),
-                    const SizedBox(width: 4),
-                    _buildHeatmapChip(0, "Semana", accentColor),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            GlassCard(
-              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-              child: Center(
-                child: MuscleHeatmap(
-                  muscleSets: provider.getRecentMuscleSets(_heatmapDays),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [

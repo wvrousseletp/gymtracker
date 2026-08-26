@@ -416,38 +416,45 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
                     Color chipColor = widget.accentColor.withOpacity(0.1 + (0.9 * intensity));
                     if (count == 0) chipColor = Colors.white.withOpacity(0.05);
 
-                    return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: chipColor,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: count > 0 ? widget.accentColor.withOpacity(0.3) : Colors.transparent,
-                        )
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            m,
-                            style: TextStyle(
-                              color: count > 0 ? Colors.white : Colors.white54,
-                              fontWeight: count > 0 ? FontWeight.bold : FontWeight.normal,
-                              fontSize: 12,
-                            ),
-                          ),
-                          if (count > 0) ...[
-                            const SizedBox(width: 6),
+                    return GestureDetector(
+                      onTap: () {
+                        if (count > 0) {
+                          _showMuscleDetails(context, m, history);
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: chipColor,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: count > 0 ? widget.accentColor.withOpacity(0.3) : Colors.transparent,
+                          )
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
                             Text(
-                              "$count",
+                              m,
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.8),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 10,
+                                color: count > 0 ? Colors.white : Colors.white54,
+                                fontWeight: count > 0 ? FontWeight.bold : FontWeight.normal,
+                                fontSize: 12,
                               ),
-                            )
-                          ]
-                        ],
+                            ),
+                            if (count > 0) ...[
+                              const SizedBox(width: 6),
+                              Text(
+                                "$count",
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.8),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 10,
+                                ),
+                              )
+                            ]
+                          ],
+                        ),
                       ),
                     );
                   }).toList(),
@@ -462,6 +469,92 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showMuscleDetails(BuildContext context, String muscle, List<WorkoutLog> history) {
+    // Collect all exercises for this muscle
+    List<Map<String, dynamic>> muscleExercises = [];
+    for (var log in history) {
+      for (var ex in log.exercises) {
+        if (ex.muscle == muscle) {
+          muscleExercises.add({
+            'date': log.date,
+            'exerciseName': ex.name,
+            'sets': ex.sets,
+            'reps': ex.reps,
+            'weight': ex.weight,
+          });
+        }
+      }
+    }
+
+    // Sort by date descending
+    muscleExercises.sort((a, b) {
+      final dtA = DateTime.tryParse(a['date']) ?? DateTime(0);
+      final dtB = DateTime.tryParse(b['date']) ?? DateTime(0);
+      return dtB.compareTo(dtA);
+    });
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1C1C1E),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "Exercícios para $muscle",
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: muscleExercises.isEmpty
+                    ? const Center(child: Text("Nenhum exercício encontrado.", style: TextStyle(color: Colors.white54)))
+                    : ListView.builder(
+                        itemCount: muscleExercises.length,
+                        itemBuilder: (context, index) {
+                          final data = muscleExercises[index];
+                          final dateStr = data['date'];
+                          String dateFormatted = "";
+                          if (dateStr != null) {
+                            final dt = DateTime.tryParse(dateStr);
+                            if (dt != null) {
+                              dateFormatted = "${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}";
+                            }
+                          }
+                          return ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(data['exerciseName'], style: const TextStyle(color: Colors.white)),
+                            subtitle: Text(
+                              dateFormatted,
+                              style: TextStyle(color: Colors.white.withOpacity(0.5)),
+                            ),
+                            trailing: Text(
+                              "${data['sets']}x${data['reps']} • ${data['weight']}kg",
+                              style: TextStyle(
+                                color: widget.accentColor,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
