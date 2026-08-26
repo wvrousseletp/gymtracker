@@ -1,0 +1,56 @@
+{
+  "source": "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/WeeklyStatsView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "🔥 Você está em chamas! Mantenha o ritmo!"
+      },
+      {
+        "comment": "",
+        "key": "💪 Boa! Continue na sequência esta semana."
+      },
+      {
+        "comment": "",
+        "key": "Comece esta semana e inicie sua sequência!"
+      },
+      {
+        "comment": "",
+        "key": "CONSISTÊNCIA"
+      },
+      {
+        "comment": "",
+        "key": "Semanal"
+      },
+      {
+        "comment": "",
+        "key": "%lld"
+      },
+      {
+        "comment": "",
+        "key": "semana"
+      },
+      {
+        "comment": "",
+        "key": "semanas"
+      },
+      {
+        "comment": "",
+        "key": "Esta semana"
+      },
+      {
+        "comment": "",
+        "key": "%lld dia%@"
+      },
+      {
+        "comment": "",
+        "key": "Trend semanal"
+      },
+      {
+        "comment": "",
+        "key": "Último treino"
+      }
+    ]
+  },
+  "version": 1
+}

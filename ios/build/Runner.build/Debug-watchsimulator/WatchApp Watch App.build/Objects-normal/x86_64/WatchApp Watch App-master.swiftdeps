@@ -1,15 +1,43 @@
 version: "Apple Swift version 5.7.2 (swiftlang-5.7.2.135.5 clang-1400.0.29.51)"
-options: "3d209436e28dda525224528db655a4317559afb5a87fa34835b9ff2fa41b1273"
-build_start_time: [1781863829, 161820888]
-build_end_time: [1781864003, 974133968]
+options: "10de885ee4501ee7326b939b84b235c878fa88f07ba7bf35e96e12c9eefb340c"
+build_start_time: [1787780833, 190016984]
+build_end_time: [1787780838, 842772960]
 inputs:
   ? "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/ActiveWorkoutView.swift"
-  : [1781814053, 786708831]
+  : [1786962800, 356890201]
+  ? "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/FinishWorkoutSheet.swift"
+  : [1782432015, 493668556]
+  ? "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/HealthKitWorkoutManager.swift"
+  : [1786874961, 483251571]
   ? "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/RestTimerView.swift"
-  : [1781777689, 874655723]
+  : [1786579733, 127232551]
   ? "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/WatchAppApp.swift"
-  : [1781650953, 971478462]
+  : [1786698630, 472938537]
+  ? "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/WatchBackgroundSyncManager.swift"
+  : [1786380527, 822189092]
+  ? "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/WatchBatterySaverManager.swift"
+  : [1786192135, 997452974]
+  ? "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/WatchCloudBackupManager.swift"
+  : [1786192120, 394418716]
   ? "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/WatchConnectivityManager.swift"
-  : [1781814061, 742402076]
+  : [1786892378, 176306724]
+  ? "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/WatchDataCache.swift"
+  : [1786874979, 278378963]
+  ? "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/WatchHapticManager.swift"
+  : [1786961499, 605983734]
+  ? "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/WatchLocalWorkoutManager.swift"
+  : [1786892384, 695925712]
+  ? "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/WatchLogger.swift"
+  : [1782431935, 762891769]
+  ? "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/WatchModels.swift"
+  : [1786875171, 469945430]
+  ? "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/WatchPlannerHelper.swift"
+  : [1786553579, 785363197]
+  ? "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/WeeklyStatsView.swift"
+  : [1787780822, 966655731]
+  ? "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/WorkoutManager.swift"
+  : [1786883154, 431372642]
   ? "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/WorkoutSelectionView.swift"
-  : [1781777662, 310854673]
+  : [1786875088, 256232738]
+  ? "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/WorkoutSetupView.swift"
+  : [1786579740, 341610908]

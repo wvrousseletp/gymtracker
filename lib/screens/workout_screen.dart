@@ -12,7 +12,6 @@ import '../models/exercise.dart';
 import '../models/workout_log.dart';
 import '../models/planner_state.dart';
 import '../widgets/glass_card.dart';
-import '../widgets/muscle_heatmap.dart';
 
 import '../widgets/profile_avatar.dart';
 import '../utils/workout_starter.dart';

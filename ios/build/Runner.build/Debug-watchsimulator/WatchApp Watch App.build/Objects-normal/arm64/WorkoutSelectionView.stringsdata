@@ -4,15 +4,47 @@
     "Localizable": [
       {
         "comment": "",
-        "key": "Los Mooscles"
+        "key": "%@, treino concluído"
       },
       {
         "comment": "",
-        "key": "Treino em Andamento"
+        "key": "%@, %@"
       },
       {
         "comment": "",
-        "key": "Retomar Treino"
+        "key": "Toque para ver detalhes"
+      },
+      {
+        "comment": "",
+        "key": "Toque para iniciar treino"
+      },
+      {
+        "comment": "",
+        "key": "%@, exercício concluído"
+      },
+      {
+        "comment": "",
+        "key": "Toque para iniciar exercício"
+      },
+      {
+        "comment": "",
+        "key": "%@, %lld exercícios"
+      },
+      {
+        "comment": "",
+        "key": "Toque para configurar e iniciar treino"
+      },
+      {
+        "comment": "",
+        "key": "Treino concluído hoje"
+      },
+      {
+        "comment": "",
+        "key": "%lld exercícios"
+      },
+      {
+        "comment": "",
+        "key": "Sincronizando..."
       },
       {
         "comment": "",
@@ -20,19 +52,99 @@
       },
       {
         "comment": "",
-        "key": "Abra o app no iPhone para enviar os treinos."
+        "key": "Abra o app no iPhone para sincronizar."
       },
       {
         "comment": "",
-        "key": "Escolha um Treino"
+        "key": "Buscar treinos..."
       },
       {
         "comment": "",
-        "key": "Exercícios Avulsos"
+        "key": "Favoritos"
       },
       {
         "comment": "",
-        "key": "%lld exercícios"
+        "key": "Todos"
+      },
+      {
+        "comment": "",
+        "key": "Modo Offline Ativo"
+      },
+      {
+        "comment": "",
+        "key": "TREINO ADIADO"
+      },
+      {
+        "comment": "",
+        "key": "Retomar Treino"
+      },
+      {
+        "comment": "",
+        "key": "TREINOS DE HOJE"
+      },
+      {
+        "comment": "",
+        "key": "TODOS OS TREINOS"
+      },
+      {
+        "comment": "",
+        "key": "Nenhum treino encontrado"
+      },
+      {
+        "comment": "",
+        "key": "EXERCÍCIOS AVULSOS"
+      },
+      {
+        "comment": "",
+        "key": "Nenhum exercício encontrado"
+      },
+      {
+        "comment": "",
+        "key": ""
+      },
+      {
+        "comment": "",
+        "key": "Água"
+      },
+      {
+        "comment": "",
+        "key": "%lld"
+      },
+      {
+        "comment": "",
+        "key": "de %lldml"
+      },
+      {
+        "comment": "",
+        "key": "+%lld"
+      },
+      {
+        "comment": "",
+        "key": "ml"
+      },
+      {
+        "comment": "",
+        "key": "Remover..."
+      },
+      {
+        "comment": "",
+        "key": "Remover Água"
+      },
+      {
+        "comment": "",
+        "key": "Quantidade"
+      },
+      {
+        "comment": "",
+        "key": "%lld ml"
+      },
+      {
+        "comment": "",
+        "key": "Cancelar"
+      },
+      {
+        "comment": "",
+        "key": "Remover"
       }
     ]
   },

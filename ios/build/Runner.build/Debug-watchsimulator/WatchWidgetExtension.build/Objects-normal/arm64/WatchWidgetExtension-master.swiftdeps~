@@ -1,0 +1,9 @@
+version: "Apple Swift version 5.7.2 (swiftlang-5.7.2.135.5 clang-1400.0.29.51)"
+options: "df8b8c8aa4f57f90bfb5156ac0cd52920d70223284a2e380877cacececfda004"
+build_start_time: [1787780208, 202533006]
+build_end_time: [1787780208, 287400007]
+inputs:
+  ? "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/WatchComplications.swift"
+  : !private [1785834413, 944209575]
+  ? "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/WatchModels.swift"
+  : !private [1786875171, 469945430]

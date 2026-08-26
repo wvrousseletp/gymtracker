@@ -1,0 +1,44 @@
+{
+  "source": "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/WorkoutSetupView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "%lld séries"
+      },
+      {
+        "comment": "",
+        "key": "•"
+      },
+      {
+        "comment": "",
+        "key": "%lld reps"
+      },
+      {
+        "comment": "",
+        "key": "Séries"
+      },
+      {
+        "comment": "",
+        "key": "%lld"
+      },
+      {
+        "comment": "",
+        "key": "Reps"
+      },
+      {
+        "comment": "",
+        "key": "Carga"
+      },
+      {
+        "comment": "",
+        "key": "Configurar Treino"
+      },
+      {
+        "comment": "",
+        "key": "Iniciar Treino"
+      }
+    ]
+  },
+  "version": 1
+}

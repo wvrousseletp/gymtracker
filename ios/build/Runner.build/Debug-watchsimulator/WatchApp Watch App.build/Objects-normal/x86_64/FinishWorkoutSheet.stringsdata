@@ -1,0 +1,28 @@
+{
+  "source": "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/FinishWorkoutSheet.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Finalizar Treino"
+      },
+      {
+        "comment": "",
+        "key": "Como foi o esforço?"
+      },
+      {
+        "comment": "",
+        "key": "Cancelar"
+      },
+      {
+        "comment": "",
+        "key": "RPE %lld"
+      },
+      {
+        "comment": "",
+        "key": "Confirmar"
+      }
+    ]
+  },
+  "version": 1
+}

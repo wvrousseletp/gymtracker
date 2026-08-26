@@ -1,0 +1,25 @@
+"/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/WatchLogger.swift":
+  object: "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/build/Runner.build/Debug-watchsimulator/WatchApp Watch App.build/Objects-normal/arm64/WatchLogger.o"
+  swift-dependencies: "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/build/Runner.build/Debug-watchsimulator/WatchApp Watch App.build/Objects-normal/arm64/WatchLogger.swiftdeps"
+  diagnostics: "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/build/Runner.build/Debug-watchsimulator/WatchApp Watch App.build/Objects-normal/arm64/WatchLogger.dia"
+  dependencies: "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/build/Runner.build/Debug-watchsimulator/WatchApp Watch App.build/Objects-normal/arm64/WatchLogger.d"
+"/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/WatchPlannerHelper.swift":
+  diagnostics: "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/build/Runner.build/Debug-watchsimulator/WatchApp Watch App.build/Objects-normal/arm64/WatchPlannerHelper.dia"
+  object: "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/build/Runner.build/Debug-watchsimulator/WatchApp Watch App.build/Objects-normal/arm64/WatchPlannerHelper.o"
+  dependencies: "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/build/Runner.build/Debug-watchsimulator/WatchApp Watch App.build/Objects-normal/arm64/WatchPlannerHelper.d"
+  swift-dependencies: "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/build/Runner.build/Debug-watchsimulator/WatchApp Watch App.build/Objects-normal/arm64/WatchPlannerHelper.swiftdeps"
+"/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/WatchAppApp.swift":
+  swift-dependencies: "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/build/Runner.build/Debug-watchsimulator/WatchApp Watch App.build/Objects-normal/arm64/WatchAppApp.swiftdeps"
+  diagnostics: "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/build/Runner.build/Debug-watchsimulator/WatchApp Watch App.build/Objects-normal/arm64/WatchAppApp.dia"
+  object: "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/build/Runner.build/Debug-watchsimulator/WatchApp Watch App.build/Objects-normal/arm64/WatchAppApp.o"
+  dependencies: "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/build/Runner.build/Debug-watchsimulator/WatchApp Watch App.build/Objects-normal/arm64/WatchAppApp.d"
+"/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/WatchConnectivityManager.swift":
+  diagnostics: "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/build/Runner.build/Debug-watchsimulator/WatchApp Watch App.build/Objects-normal/arm64/WatchConnectivityManager.dia"
+  object: "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/build/Runner.build/Debug-watchsimulator/WatchApp Watch App.build/Objects-normal/arm64/WatchConnectivityManager.o"
+  dependencies: "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/build/Runner.build/Debug-watchsimulator/WatchApp Watch App.build/Objects-normal/arm64/WatchConnectivityManager.d"
+  swift-dependencies: "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/build/Runner.build/Debug-watchsimulator/WatchApp Watch App.build/Objects-normal/arm64/WatchConnectivityManager.swiftdeps"
+"/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/WatchModels.swift":
+  diagnostics: "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/build/Runner.build/Debug-watchsimulator/WatchApp Watch App.build/Objects-normal/arm64/WatchModels.dia"
+  object: "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/build/Runner.build/Debug-watchsimulator/WatchApp Watch App.build/Objects-normal/arm64/WatchModels.o"
+  swift-dependencies: "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/build/Runner.build/Debug-watchsimulator/WatchApp Watch App.build/Objects-normal/arm64/WatchModels.swiftdeps"
+  dependencies: "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/build/Runner.build/Debug-watchsimulator/WatchApp Watch App.build/Objects-normal/arm64/WatchModels.d"

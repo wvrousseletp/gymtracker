@@ -4,31 +4,167 @@
     "Localizable": [
       {
         "comment": "",
-        "key": "Treino"
+        "key": "NOVO RECORDE!"
       },
       {
         "comment": "",
-        "key": "PAUSADO"
+        "key": "+%lld mais"
       },
       {
         "comment": "",
-        "key": "Carga: %.1f kg"
+        "key": "DISTÂNCIA"
       },
       {
         "comment": "",
-        "key": "Reps: %lld"
+        "key": "Diminuir distância"
       },
       {
         "comment": "",
-        "key": "S%lld"
+        "key": "Diminui 0.1 km"
       },
       {
         "comment": "",
-        "key": "Finalizar Treino"
+        "key": "Aumentar distância"
       },
       {
         "comment": "",
-        "key": "Cancelar Treino"
+        "key": "Aumenta 0.1 km"
+      },
+      {
+        "comment": "",
+        "key": "DURAÇÃO"
+      },
+      {
+        "comment": "",
+        "key": "%lld min"
+      },
+      {
+        "comment": "",
+        "key": "Diminuir duração"
+      },
+      {
+        "comment": "",
+        "key": "Diminui 1 minuto"
+      },
+      {
+        "comment": "",
+        "key": "Aumentar duração"
+      },
+      {
+        "comment": "",
+        "key": "Aumenta 1 minuto"
+      },
+      {
+        "comment": "",
+        "key": "Falha registrada"
+      },
+      {
+        "comment": "",
+        "key": "Registrar falha"
+      },
+      {
+        "comment": "",
+        "key": "Toque para remover falha"
+      },
+      {
+        "comment": "",
+        "key": "Toque para registrar falha nesta série"
+      },
+      {
+        "comment": "",
+        "key": "%llds"
+      },
+      {
+        "comment": "",
+        "key": "%lld reps"
+      },
+      {
+        "comment": "",
+        "key": "FALHA REGISTRADA"
+      },
+      {
+        "comment": "",
+        "key": "REGISTRAR FALHA"
+      },
+      {
+        "comment": "",
+        "key": "REPETIÇÃO DA FALHA"
+      },
+      {
+        "comment": "",
+        "key": "%lld"
+      },
+      {
+        "comment": "",
+        "key": "Modo economia de bateria ativado"
+      },
+      {
+        "comment": "",
+        "key": ""
+      },
+      {
+        "comment": "",
+        "key": "%lld%%"
+      },
+      {
+        "comment": "",
+        "key": "Progresso do treino: exercício %lld de %lld, %lld de %lld séries concluídas"
+      },
+      {
+        "comment": "",
+        "key": "%lld/%lld"
+      },
+      {
+        "comment": "",
+        "key": "Nenhum exercício ativo"
+      },
+      {
+        "comment": "",
+        "key": "•"
+      },
+      {
+        "comment": "",
+        "key": "CONCLUÍDO"
+      },
+      {
+        "comment": "",
+        "key": "CONCLUIR SÉRIE"
+      },
+      {
+        "comment": "",
+        "key": "TEMPO TOTAL"
+      },
+      {
+        "comment": "",
+        "key": "--"
+      },
+      {
+        "comment": "",
+        "key": "BATIMENTOS"
+      },
+      {
+        "comment": "",
+        "key": "CALORIAS"
+      },
+      {
+        "comment": "",
+        "key": "Retomar"
+      },
+      {
+        "comment": "",
+        "key": "Pausar"
+      },
+      {
+        "comment": "",
+        "key": "Adiar"
+      },
+      {
+        "comment": "",
+        "key": "Finalizar"
+      },
+      {
+        "comment": "",
+        "key": "Cancelar"
       },
       {
         "comment": "",

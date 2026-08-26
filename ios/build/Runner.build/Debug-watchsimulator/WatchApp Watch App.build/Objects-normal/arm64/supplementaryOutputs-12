@@ -1,0 +1,20 @@
+"/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/WatchDataCache.swift":
+  object: "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/build/Runner.build/Debug-watchsimulator/WatchApp Watch App.build/Objects-normal/arm64/WatchDataCache.o"
+  dependencies: "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/build/Runner.build/Debug-watchsimulator/WatchApp Watch App.build/Objects-normal/arm64/WatchDataCache.d"
+  swift-dependencies: "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/build/Runner.build/Debug-watchsimulator/WatchApp Watch App.build/Objects-normal/arm64/WatchDataCache.swiftdeps"
+  diagnostics: "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/build/Runner.build/Debug-watchsimulator/WatchApp Watch App.build/Objects-normal/arm64/WatchDataCache.dia"
+"/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/WatchBatterySaverManager.swift":
+  dependencies: "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/build/Runner.build/Debug-watchsimulator/WatchApp Watch App.build/Objects-normal/arm64/WatchBatterySaverManager.d"
+  diagnostics: "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/build/Runner.build/Debug-watchsimulator/WatchApp Watch App.build/Objects-normal/arm64/WatchBatterySaverManager.dia"
+  swift-dependencies: "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/build/Runner.build/Debug-watchsimulator/WatchApp Watch App.build/Objects-normal/arm64/WatchBatterySaverManager.swiftdeps"
+  object: "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/build/Runner.build/Debug-watchsimulator/WatchApp Watch App.build/Objects-normal/arm64/WatchBatterySaverManager.o"
+"/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/RestTimerView.swift":
+  swift-dependencies: "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/build/Runner.build/Debug-watchsimulator/WatchApp Watch App.build/Objects-normal/arm64/RestTimerView.swiftdeps"
+  dependencies: "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/build/Runner.build/Debug-watchsimulator/WatchApp Watch App.build/Objects-normal/arm64/RestTimerView.d"
+  object: "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/build/Runner.build/Debug-watchsimulator/WatchApp Watch App.build/Objects-normal/arm64/RestTimerView.o"
+  diagnostics: "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/build/Runner.build/Debug-watchsimulator/WatchApp Watch App.build/Objects-normal/arm64/RestTimerView.dia"
+"/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/WatchApp Watch App/WatchLocalWorkoutManager.swift":
+  swift-dependencies: "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/build/Runner.build/Debug-watchsimulator/WatchApp Watch App.build/Objects-normal/arm64/WatchLocalWorkoutManager.swiftdeps"
+  object: "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/build/Runner.build/Debug-watchsimulator/WatchApp Watch App.build/Objects-normal/arm64/WatchLocalWorkoutManager.o"
+  dependencies: "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/build/Runner.build/Debug-watchsimulator/WatchApp Watch App.build/Objects-normal/arm64/WatchLocalWorkoutManager.d"
+  diagnostics: "/Users/wellersonvicenterousseletporfirio/.gemini/antigravity/scratch/gym_tracker_flutter/ios/build/Runner.build/Debug-watchsimulator/WatchApp Watch App.build/Objects-normal/arm64/WatchLocalWorkoutManager.dia"

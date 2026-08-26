@@ -4,11 +4,11 @@
     "Localizable": [
       {
         "comment": "",
-        "key": "%@ (S%lld)"
+        "key": "%lld"
       },
       {
         "comment": "",
-        "key": "PREPARO"
+        "key": "PREPARE-SE"
       },
       {
         "comment": "",
@@ -16,23 +16,19 @@
       },
       {
         "comment": "",
-        "key": "Prepare-se para:"
+        "key": "Série %lld"
       },
       {
         "comment": "",
-        "key": "Próximo:"
+        "key": "%lld reps • %@ kg"
       },
       {
         "comment": "",
-        "key": "%llds"
+        "key": "Iniciar Agora"
       },
       {
         "comment": "",
-        "key": "Pular Preparo"
-      },
-      {
-        "comment": "",
-        "key": "Pular Descanso"
+        "key": "Pular"
       }
     ]
   },

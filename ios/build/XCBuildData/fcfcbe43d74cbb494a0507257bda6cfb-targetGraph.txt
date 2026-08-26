@@ -1,0 +1,4 @@
+Target dependency graph (2 targets)
+WatchWidgetExtension in Runner, no dependencies
+WatchApp Watch App in Runner, depends on:
+WatchWidgetExtension in Runner (explicit)
