@@ -79,9 +79,13 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
 
   void _playIsometryAlarm() async {
     for (int i = 0; i < 4; i++) {
-      HapticFeedback.heavyImpact();
+      HapticFeedback.vibrate();
+      await Future.delayed(const Duration(milliseconds: 150));
+      HapticFeedback.vibrate();
+      await Future.delayed(const Duration(milliseconds: 150));
+      HapticFeedback.vibrate();
       SystemSound.play(SystemSoundType.alert);
-      await Future.delayed(const Duration(milliseconds: 600));
+      await Future.delayed(const Duration(milliseconds: 700));
     }
   }
 

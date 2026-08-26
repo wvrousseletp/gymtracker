@@ -442,7 +442,18 @@ class WorkoutProvider extends ChangeNotifier {
     final bool isTransitionToDone = !wasDone && isDone;
     final bool isStateChanged = wasDone != isDone;
 
-    if (isTransitionToDone) {
+    bool shouldRest = ex.rest > 0;
+    if (shouldRest && active.executionType == RoutineExecutionType.circuit && active.circuitCycles > 0) {
+      final exercisesPerCycle = exercises.length ~/ active.circuitCycles;
+      if (exercisesPerCycle > 0) {
+        final isCycleEnd = (exIndex + 1) % exercisesPerCycle == 0;
+        if (!isCycleEnd) {
+          shouldRest = false;
+        }
+      }
+    }
+
+    if (isTransitionToDone && shouldRest) {
       if (setIndex < ex.sets - 1) {
         final endTime =
             DateTime.now().millisecondsSinceEpoch + (ex.rest * 1000);
@@ -472,8 +483,11 @@ class WorkoutProvider extends ChangeNotifier {
       } else {
         computedRestTimer = null;
       }
-    } else if (!isDone) {
+    } else {
       computedRestTimer = null;
+      if (isTransitionToDone && setIndex >= ex.sets - 1 && exIndex < exercises.length - 1) {
+         computedExIndex = exIndex + 1;
+      }
     }
 
     activeWorkout = active.copyWith(
@@ -874,6 +888,13 @@ class WorkoutProvider extends ChangeNotifier {
     RestTimerService.instance.clear();
     activeWorkout = null;
     _save();
+  }
+  void reorderActiveExercises(List<ActiveExercise> reorderedList) {
+    if (activeWorkout != null) {
+      activeWorkout = activeWorkout!.copyWith(exercises: reorderedList);
+      _save();
+      notifyListeners();
+    }
   }
 
   void postponeActiveWorkout() {
@@ -1342,6 +1363,8 @@ class WorkoutProvider extends ChangeNotifier {
         final logDate = parseUtcDate(log.date);
         if (!logDate.isBefore(thisWeekStart)) {
           weekdaysTrainedSet.add(logDate.weekday);
+        } else {
+          break; // Optimization: history is ordered newest to oldest
         }
       } catch (_) {}
     }
@@ -1382,6 +1405,8 @@ class WorkoutProvider extends ChangeNotifier {
           if (log.name.isNotEmpty) {
             completedThisWeekRoutinesSet.add(log.name);
           }
+        } else {
+           break; // Optimization: history is ordered newest to oldest
         }
 
         // Today routines
@@ -1442,78 +1467,6 @@ class WorkoutProvider extends ChangeNotifier {
     _save();
   }
 
-  List<RoutineExercise> _parsePlannerItemsToRoutineExercises(
-      List<String> rawItems) {
-    final List<RoutineExercise> exercisesList = [];
-    for (var rawItem in rawItems) {
-      if (rawItem.isEmpty) continue;
-
-      if (rawItem.startsWith('routine:')) {
-        final rId = rawItem.substring(8);
-        final r = routines.where((x) => x.id == rId).firstOrNull;
-        if (r != null) {
-          for (var ex in r.exercises) {
-            exercisesList.add(RoutineExercise(
-              id: "ex-${DateTime.now().millisecondsSinceEpoch}-${ex.exerciseId}",
-              exerciseId: ex.exerciseId,
-              sets: ex.sets,
-              reps: ex.reps,
-              rest: ex.rest,
-              weight: ex.weight,
-              weightsPerSet: ex.weightsPerSet != null
-                  ? List<double>.from(ex.weightsPerSet!)
-                  : null,
-              repsPerSet:
-                  ex.repsPerSet != null ? List<int>.from(ex.repsPerSet!) : null,
-              isCardio: ex.isCardio,
-              allowCardioSets: ex.allowCardioSets,
-            ));
-          }
-        }
-      } else if (rawItem.startsWith('exercise:')) {
-        final parts = rawItem.split(':');
-        if (parts.length >= 2) {
-          final exId = parts[1];
-          final quantityValue =
-              parts.length >= 3 ? int.tryParse(parts[2]) ?? 3 : 3;
-          final libEx = library.where((x) => x.id == exId).firstOrNull;
-          if (libEx != null) {
-            exercisesList.add(RoutineExercise(
-              id: "ex-${DateTime.now().millisecondsSinceEpoch}-${libEx.id}",
-              exerciseId: libEx.id,
-              sets: libEx.isCardio ? 1 : quantityValue,
-              reps: libEx.isCardio ? quantityValue * 60 : 10,
-              rest: 60,
-              weight: 0.0,
-              isCardio: libEx.isCardio,
-            ));
-          }
-        }
-      } else {
-        final r = routines.where((x) => x.id == rawItem).firstOrNull;
-        if (r != null) {
-          for (var ex in r.exercises) {
-            exercisesList.add(RoutineExercise(
-              id: "ex-${DateTime.now().millisecondsSinceEpoch}-${ex.exerciseId}",
-              exerciseId: ex.exerciseId,
-              sets: ex.sets,
-              reps: ex.reps,
-              rest: ex.rest,
-              weight: ex.weight,
-              weightsPerSet: ex.weightsPerSet != null
-                  ? List<double>.from(ex.weightsPerSet!)
-                  : null,
-              repsPerSet:
-                  ex.repsPerSet != null ? List<int>.from(ex.repsPerSet!) : null,
-              isCardio: ex.isCardio,
-              allowCardioSets: ex.allowCardioSets,
-            ));
-          }
-        }
-      }
-    }
-    return exercisesList;
-  }
 
   void importFromFixedDay(String sourceDay, String targetKey) {
     final sourceItems = List<String>.from(planner[sourceDay] ?? []);
@@ -1826,7 +1779,7 @@ class WorkoutProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void shiftPlannerForward() {
+  void shiftPlannerForward([String? reason]) {
     final List<String> days = ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'];
     final Map<String, List<String>> newPlanner = {};
 
@@ -1843,14 +1796,14 @@ class WorkoutProvider extends ChangeNotifier {
 
     final restLog = WorkoutLog(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-      name: 'Dia de Descanso',
+      name: reason != null ? 'Descanso: $reason' : 'Dia de Descanso',
       date: DateTime.now().toIso8601String(),
       duration: 0,
       completedSets: 0,
       totalSets: 0,
       totalWeight: 0,
       rpe: 0,
-      notes: 'Descanso registrado manualmente.',
+      notes: reason != null ? 'Motivo: $reason' : 'Descanso registrado manualmente.',
       exercises: [],
     );
     _lastRestLogId = restLog.id;
@@ -1932,11 +1885,16 @@ class WorkoutProvider extends ChangeNotifier {
         startDate = DateTime(startDate.year, startDate.month, startDate.day);
       } else {
         startDate = now.subtract(Duration(days: days));
+        startDate = DateTime(startDate.year, startDate.month, startDate.day);
       }
       
       for (final workout in history) {
         final workoutDate = DateTime.tryParse(workout.date);
-        if (workoutDate != null && workoutDate.isAfter(startDate)) {
+        if (workoutDate != null) {
+          if (workoutDate.isBefore(startDate)) {
+            // History is ordered newest to oldest, so we can stop searching.
+            break;
+          }
           for (final ex in workout.exercises) {
             final count = ex.completedSets;
             if (count > 0 && ex.muscle.isNotEmpty) {
@@ -1952,7 +1910,7 @@ class WorkoutProvider extends ChangeNotifier {
   }
 
   WorkoutLog? getLastRoutineExecution(String routineName) {
-    for (final log in history.reversed) {
+    for (final log in history) {
       if (log.name.trim().toLowerCase() == routineName.trim().toLowerCase()) {
         return log;
       }

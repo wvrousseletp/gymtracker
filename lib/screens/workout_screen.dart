@@ -1,13 +1,9 @@
 import 'dart:async';
 import 'dart:ui';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
-import 'package:screenshot/screenshot.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:path_provider/path_provider.dart';
 import '../providers/tracker_provider.dart';
 import '../providers/workout_provider.dart';
 import '../providers/profile_provider.dart';
@@ -22,7 +18,6 @@ import '../widgets/profile_avatar.dart';
 import '../utils/workout_starter.dart';
 import '../services/rest_timer_service.dart';
 import '../widgets/premium_strength_set_card.dart';
-import '../widgets/workout_share_card.dart';
 import '../widgets/plate_calculator_dialog.dart';
 import 'exercise_hub_screen.dart';
 
@@ -2374,9 +2369,24 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                                   widget.provider.postponeActiveWorkout();
                                 } else if (value == 'discard') {
                                   _confirmDiscardWorkout(context);
+                                } else if (value == 'reorder') {
+                                  _showReorderExercisesSheet(context);
                                 }
                               },
                               itemBuilder: (context) => const [
+                                PopupMenuItem(
+                                  value: 'reorder',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.swap_vert,
+                                          color: Colors.blueAccent, size: 20),
+                                      SizedBox(width: 12),
+                                      Text("Reordenar",
+                                          style:
+                                              TextStyle(color: Colors.white)),
+                                    ],
+                                  ),
+                                ),
                                 PopupMenuItem(
                                   value: 'postpone',
                                   child: Row(
@@ -3501,6 +3511,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
           ),
           TextButton(
             onPressed: () {
+              HapticFeedback.lightImpact();
               final newWeight = double.tryParse(weightController.text.trim()) ??
                   currentWeight;
               final newReps =
@@ -3508,6 +3519,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
               widget.provider.updateExerciseSetWeightReps(
                   exIdx, setIdx, newWeight, newReps);
               Navigator.pop(dialogCtx);
+
             },
             child: const Text("Salvar",
                 style: TextStyle(
@@ -3582,7 +3594,78 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
   }
 
   // A sincronização de timers de descanso e do índice de exercício ativo
-  // agora é tratada de forma centralizada pelo provedor e seu ouvinte.
+  void _showReorderExercisesSheet(BuildContext context) {
+    final workoutProvider = Provider.of<WorkoutProvider>(context, listen: false);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xff1c1c1e),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetCtx) {
+        return StatefulBuilder(
+          builder: (ctx, setStateSheet) {
+            final workout = workoutProvider.activeWorkout;
+            if (workout == null) return const SizedBox.shrink();
+            final exercises = List<ActiveExercise>.from(workout.exercises);
+
+            return Column(
+              children: [
+                const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text(
+                    "Reordenar Exercícios",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: ReorderableListView.builder(
+                    itemCount: exercises.length,
+                    onReorder: (oldIndex, newIndex) {
+                      setStateSheet(() {
+                        if (newIndex > oldIndex) {
+                          newIndex -= 1;
+                        }
+                        final item = exercises.removeAt(oldIndex);
+                        exercises.insert(newIndex, item);
+                      });
+                      workoutProvider.reorderActiveExercises(exercises);
+                    },
+                    itemBuilder: (ctx, idx) {
+                      final ex = exercises[idx];
+                      return ListTile(
+                        key: ValueKey(ex.id),
+                        leading: const Icon(Icons.drag_handle, color: Colors.white54),
+                        title: Text(ex.name, style: const TextStyle(color: Colors.white)),
+                        subtitle: Text("${ex.sets} séries", style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                      );
+                    },
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: ThemeUtils.getColor(widget.provider.currentProfile.colorAccent),
+                      minimumSize: const Size.fromHeight(48),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: () => Navigator.pop(sheetCtx),
+                    child: const Text("Pronto", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
 
   void _confirmDiscardWorkout(BuildContext context) {
     showDialog(
@@ -3916,8 +3999,6 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
   }
 
   void _finishWorkoutDirectly(BuildContext context) {
-    final accentColor =
-        ThemeUtils.getColor(widget.provider.currentProfile.colorAccent);
 
     widget.provider.finishWorkout(
       _workoutDurationNotifier.value,
@@ -3925,14 +4006,6 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
       "",
     );
 
-    // Show Share Dialog
-    final workoutProvider =
-        Provider.of<WorkoutProvider>(context, listen: false);
-    final history = workoutProvider.history;
-    if (history.isNotEmpty) {
-      final savedLog = history.first; // newest is at index 0
-      _showShareWorkoutDialog(context, savedLog, accentColor);
-    }
   }
 
   String _formatDuration(int totalSeconds) {
@@ -3948,63 +4021,5 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
     return "${twoDigits(minutes)}:${twoDigits(seconds)}";
   }
 
-  void _showShareWorkoutDialog(
-      BuildContext context, WorkoutLog log, Color accentColor) {
-    final ScreenshotController screenshotController = ScreenshotController();
 
-    showDialog(
-      context: context,
-      builder: (ctx) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Screenshot(
-              controller: screenshotController,
-              child: WorkoutShareCard(workout: log, accentColor: accentColor),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () async {
-                try {
-                  final imageBytes =
-                      await screenshotController.capture(pixelRatio: 3.0);
-                  if (imageBytes != null) {
-                    final directory = await getApplicationDocumentsDirectory();
-                    final imagePath =
-                        await File('${directory.path}/share_workout.png')
-                            .create();
-                    await imagePath.writeAsBytes(imageBytes);
-                    await Share.shareXFiles([XFile(imagePath.path)],
-                        text: 'Treino finalizado no Los Mooscles! 💪');
-                    if (context.mounted) Navigator.pop(ctx);
-                  }
-                } catch (e) {
-                  debugPrint("Error sharing: \$e");
-                }
-              },
-              icon: const Icon(Icons.share, color: Colors.black),
-              label: const Text(
-                "Compartilhar no Instagram / WhatsApp",
-                style:
-                    TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: accentColor,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child:
-                  const Text("Fechar", style: TextStyle(color: Colors.white70)),
-            )
-          ],
-        ),
-      ),
-    );
-  }
 }
