@@ -1500,7 +1500,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
                           ],
                         ),
                       );
-                    }).toList(),
+                    }),
                   const SizedBox(height: 12),
                   SizedBox(
                     width: double.infinity,
@@ -1520,7 +1520,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
               ),
             ),
           );
-        }).toList(),
+        }),
     ];
   }
 
