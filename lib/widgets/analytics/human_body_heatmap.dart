@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'anatomy_paths.dart';
 
 class HumanBodyHeatmap extends StatelessWidget {
   final Map<String, double> muscleIntensity;
@@ -14,133 +15,108 @@ class HumanBodyHeatmap extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: SizedBox(
-        width: 150,
-        height: 300,
-        child: CustomPaint(
-          painter: _HumanBodyPainter(
-            muscleIntensity: muscleIntensity,
-            accentColor: accentColor,
-          ),
+        height: 250,
+        width: 180,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // FRONT
+            Expanded(
+              child: AspectRatio(
+                aspectRatio: 660.1 / 1146.4,
+                child: CustomPaint(
+                  painter: _BodyPainter(
+                    muscleIntensity: muscleIntensity,
+                    accentColor: accentColor,
+                    paths: AnatomyPaths.front,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            // BACK
+            Expanded(
+              child: AspectRatio(
+                aspectRatio: 660.1 / 1146.4,
+                child: CustomPaint(
+                  painter: _BodyPainter(
+                    muscleIntensity: muscleIntensity,
+                    accentColor: accentColor,
+                    paths: AnatomyPaths.back,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _HumanBodyPainter extends CustomPainter {
+class _BodyPainter extends CustomPainter {
   final Map<String, double> muscleIntensity;
   final Color accentColor;
+  final List<MusclePathData> paths;
 
-  _HumanBodyPainter({
+  _BodyPainter({
     required this.muscleIntensity,
     required this.accentColor,
+    required this.paths,
   });
 
-  Color _getColorForMuscle(String muscleName) {
-    // Map muscles to logical groups if necessary
+  Color _getColorForMuscle(String slug) {
     double intensity = 0.0;
     for (var entry in muscleIntensity.entries) {
-      if (entry.key.toLowerCase().contains(muscleName.toLowerCase())) {
-        intensity = entry.value;
-        break;
-      }
+      final appMuscle = entry.key.toLowerCase();
+      if (slug == 'chest' && appMuscle.contains('peito')) { intensity += entry.value; }
+      else if (slug == 'abs' && appMuscle.contains('abdômen')) { intensity += entry.value; }
+      else if (slug == 'biceps' && appMuscle.contains('bícep')) { intensity += entry.value; }
+      else if (slug == 'triceps' && appMuscle.contains('trícep')) { intensity += entry.value; }
+      else if (slug == 'forearm' && appMuscle.contains('ante')) { intensity += entry.value; }
+      else if (slug == 'front-deltoids' && appMuscle.contains('ombro')) { intensity += entry.value; }
+      else if (slug == 'back-deltoids' && appMuscle.contains('ombro')) { intensity += entry.value; }
+      else if (slug == 'trapezius' && appMuscle.contains('trapézio')) { intensity += entry.value; }
+      else if (slug == 'lats' && appMuscle.contains('costa')) { intensity += entry.value; }
+      else if (slug == 'lower-back' && appMuscle.contains('lombar')) { intensity += entry.value; }
+      else if (slug == 'quadriceps' && appMuscle.contains('quadrí')) { intensity += entry.value; }
+      else if (slug == 'hamstring' && appMuscle.contains('post')) { intensity += entry.value; }
+      else if (slug == 'calves' && appMuscle.contains('panturrilha')) { intensity += entry.value; }
+      else if (slug == 'gluteal' && appMuscle.contains('glút')) { intensity += entry.value; }
+      else if (slug == 'obliques' && appMuscle.contains('oblíq')) { intensity += entry.value; }
     }
     
-    if (intensity <= 0) return Colors.white12;
-    // interpolate between accentColor and deep red/orange based on intensity
-    return Color.lerp(Colors.white24, accentColor, intensity)!;
+    if (intensity <= 0) return const Color(0xff2c2c2e); // dark grey base
+    return Color.lerp(const Color(0xff2c2c2e), accentColor, intensity.clamp(0.0, 1.0))!;
   }
 
   @override
   void paint(Canvas canvas, Size size) {
-    final Paint paint = Paint()
-      ..style = PaintingStyle.fill
-      ..strokeWidth = 2;
-      
+    final double scaleX = size.width / 660.1;
+    final double scaleY = size.height / 1146.4;
+    
+    canvas.save();
+    canvas.scale(scaleX, scaleY);
+
+    final Paint fillPaint = Paint()..style = PaintingStyle.fill;
     final Paint strokePaint = Paint()
       ..style = PaintingStyle.stroke
-      ..color = Colors.white24
-      ..strokeWidth = 1.5;
+      ..color = const Color(0xff121212)
+      ..strokeWidth = 2.0;
 
-    // Helper to draw a body part
-    void drawPart(Path path, String muscleName) {
-      paint.color = _getColorForMuscle(muscleName);
-      canvas.drawPath(path, paint);
-      canvas.drawPath(path, strokePaint);
+    for (var muscle in paths) {
+      fillPaint.color = _getColorForMuscle(muscle.slug);
+      for (var path in muscle.paths) {
+        canvas.drawPath(path, fillPaint);
+        canvas.drawPath(path, strokePaint);
+      }
     }
-
-    final double w = size.width;
-    final double h = size.height;
-
-    // Head
-    final headPath = Path()
-      ..addOval(Rect.fromCenter(center: Offset(w/2, h*0.1), width: w*0.25, height: h*0.15));
-    drawPart(headPath, "Head");
-
-    // Torso (Peito, Abdômen, Costas)
-    final chestPath = Path()
-      ..moveTo(w*0.35, h*0.2)
-      ..lineTo(w*0.65, h*0.2)
-      ..lineTo(w*0.65, h*0.35)
-      ..lineTo(w*0.35, h*0.35)
-      ..close();
-    drawPart(chestPath, "Peito");
-
-    final absPath = Path()
-      ..moveTo(w*0.35, h*0.35)
-      ..lineTo(w*0.65, h*0.35)
-      ..lineTo(w*0.6, h*0.5)
-      ..lineTo(w*0.4, h*0.5)
-      ..close();
-    drawPart(absPath, "Abdômen");
-
-    // Shoulders (Ombros)
-    final leftShoulder = Path()
-      ..addOval(Rect.fromCenter(center: Offset(w*0.3, h*0.22), width: w*0.15, height: h*0.08));
-    drawPart(leftShoulder, "Ombros");
     
-    final rightShoulder = Path()
-      ..addOval(Rect.fromCenter(center: Offset(w*0.7, h*0.22), width: w*0.15, height: h*0.08));
-    drawPart(rightShoulder, "Ombros");
-
-    // Arms (Bíceps, Tríceps)
-    final leftArm = Path()
-      ..moveTo(w*0.25, h*0.26)
-      ..lineTo(w*0.35, h*0.26)
-      ..lineTo(w*0.3, h*0.45)
-      ..lineTo(w*0.2, h*0.45)
-      ..close();
-    drawPart(leftArm, "Bíceps");
-
-    final rightArm = Path()
-      ..moveTo(w*0.65, h*0.26)
-      ..lineTo(w*0.75, h*0.26)
-      ..lineTo(w*0.8, h*0.45)
-      ..lineTo(w*0.7, h*0.45)
-      ..close();
-    drawPart(rightArm, "Bíceps");
-
-    // Legs (Pernas)
-    final leftLeg = Path()
-      ..moveTo(w*0.4, h*0.5)
-      ..lineTo(w*0.5, h*0.5)
-      ..lineTo(w*0.45, h*0.8)
-      ..lineTo(w*0.35, h*0.8)
-      ..close();
-    drawPart(leftLeg, "Pernas");
-
-    final rightLeg = Path()
-      ..moveTo(w*0.5, h*0.5)
-      ..lineTo(w*0.6, h*0.5)
-      ..lineTo(w*0.65, h*0.8)
-      ..lineTo(w*0.55, h*0.8)
-      ..close();
-    drawPart(rightLeg, "Pernas");
+    canvas.restore();
   }
 
   @override
-  bool shouldRepaint(covariant _HumanBodyPainter oldDelegate) {
-    return oldDelegate.muscleIntensity != muscleIntensity ||
-           oldDelegate.accentColor != accentColor;
+  bool shouldRepaint(covariant _BodyPainter oldDelegate) {
+    return true;
   }
 }
