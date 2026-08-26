@@ -4,8 +4,7 @@ import 'package:gym_tracker_flutter/models/diet.dart';
 import 'package:gym_tracker_flutter/models/workout_log.dart';
 
 PlannerState _emptyState({ActiveWorkoutState? activeWorkout}) {
-  return PlannerState(
-    library: const [],
+  return PlannerState( continuousBlocks: [], library: const [],
     routines: const [],
     planner: const {},
     history: const [],

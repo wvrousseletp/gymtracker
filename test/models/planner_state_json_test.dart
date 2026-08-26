@@ -4,8 +4,7 @@ import 'package:gym_tracker_flutter/models/diet.dart';
 
 void main() {
   test('PlannerState serializes and deserializes streak', () {
-    final state = PlannerState(
-      library: const [],
+    final state = PlannerState( continuousBlocks: [], library: const [],
       routines: const [],
       planner: const {'seg': ['routine:1']},
       history: const [],

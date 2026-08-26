@@ -25,6 +25,7 @@ class WorkoutProvider extends ChangeNotifier {
   List<LibraryExercise> library = [];
   List<Routine> routines = [];
   Map<String, List<String>> planner = {};
+  List<WorkoutBlock> continuousBlocks = [];
   Map<String, List<String>>? _previousPlanner;
   String? _lastRestLogId;
   List<WorkoutLog> history = [];
@@ -46,11 +47,149 @@ class WorkoutProvider extends ChangeNotifier {
     return _activeWorkout;
   }
 
+  
+  List<String> get flatContinuousList {
+    return continuousBlocks.map((b) => b.routineIds).expand((x) => x).toList();
+  }
+
+  void addContinuousBlock({String? name}) {
+    final newId = DateTime.now().millisecondsSinceEpoch.toString(); // simpler than Uuid without import
+    final newName = name ?? 'Bloco ${continuousBlocks.length + 1}';
+    final newBlock = WorkoutBlock(id: newId, name: newName, routineIds: []);
+    continuousBlocks = List<WorkoutBlock>.from(continuousBlocks)..add(newBlock);
+    _save();
+  }
+
+  void renameContinuousBlock(String blockId, String newName) {
+    continuousBlocks = continuousBlocks.map((b) {
+      if (b.id == blockId) return b.copyWith(name: newName);
+      return b;
+    }).toList();
+    _save();
+  }
+
+  void removeContinuousBlock(String blockId) {
+    continuousBlocks = List<WorkoutBlock>.from(continuousBlocks)..removeWhere((b) => b.id == blockId);
+    
+    // adjust index
+    final flattened = continuousBlocks.map((b) => b.routineIds).expand((x) => x).toList();
+    int newIndex = settings.continuousListCurrentIndex;
+    if (flattened.isNotEmpty) {
+      newIndex = newIndex % flattened.length;
+    } else {
+      newIndex = 0;
+    }
+    settings = settings.copyWith(continuousListCurrentIndex: newIndex);
+    _save();
+  }
+
+  void reorderContinuousBlocks(int oldIndex, int newIndex) {
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+    final updatedBlocks = List<WorkoutBlock>.from(continuousBlocks);
+    final item = updatedBlocks.removeAt(oldIndex);
+    updatedBlocks.insert(newIndex, item);
+    continuousBlocks = updatedBlocks;
+    _save();
+  }
+
+  void addRoutineToContinuousBlock(String blockId, String routineId) {
+    continuousBlocks = continuousBlocks.map((b) {
+      if (b.id == blockId) {
+        return b.copyWith(routineIds: List.from(b.routineIds)..add(routineId));
+      }
+      return b;
+    }).toList();
+    _save();
+  }
+
+  void updateRoutineInContinuousBlock(String blockId, int index, String newValue) {
+    continuousBlocks = continuousBlocks.map((b) {
+      if (b.id == blockId) {
+        final newRoutines = List<String>.from(b.routineIds);
+        if (index >= 0 && index < newRoutines.length) {
+          newRoutines[index] = newValue;
+        }
+        return b.copyWith(routineIds: newRoutines);
+      }
+      return b;
+    }).toList();
+    _save();
+  }
+
+  void removeRoutineFromContinuousBlock(String blockId, int index) {
+    continuousBlocks = continuousBlocks.map((b) {
+      if (b.id == blockId) {
+        final newRoutines = List<String>.from(b.routineIds);
+        if (index >= 0 && index < newRoutines.length) {
+          newRoutines.removeAt(index);
+        }
+        return b.copyWith(routineIds: newRoutines);
+      }
+      return b;
+    }).toList();
+    
+    // adjust index
+    final flattened = continuousBlocks.map((b) => b.routineIds).expand((x) => x).toList();
+    int newIndex = settings.continuousListCurrentIndex;
+    if (flattened.isNotEmpty) {
+      newIndex = newIndex % flattened.length;
+    } else {
+      newIndex = 0;
+    }
+    settings = settings.copyWith(continuousListCurrentIndex: newIndex);
+    _save();
+  }
+
+  void reorderRoutinesInContinuousBlock(String blockId, int oldIndex, int newIndex) {
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+    continuousBlocks = continuousBlocks.map((b) {
+      if (b.id == blockId) {
+        final newRoutines = List<String>.from(b.routineIds);
+        final item = newRoutines.removeAt(oldIndex);
+        newRoutines.insert(newIndex, item);
+        return b.copyWith(routineIds: newRoutines);
+      }
+      return b;
+    }).toList();
+    _save();
+  }
+
+  void copyDayToContinuousBlock(String fromDay) {
+    final sourceList = planner[fromDay] ?? [];
+    final validItems = sourceList.where((item) => item.isNotEmpty).toList();
+    if (validItems.isEmpty) return;
+    
+    final dayNameMap = {
+      'seg': 'Segunda',
+      'ter': 'Terça',
+      'qua': 'Quarta',
+      'qui': 'Quinta',
+      'sex': 'Sexta',
+      'sab': 'Sábado',
+      'dom': 'Domingo'
+    };
+    final suffix = dayNameMap[fromDay] ?? fromDay;
+    
+    final newId = DateTime.now().millisecondsSinceEpoch.toString();
+    final newBlock = WorkoutBlock(
+      id: newId, 
+      name: 'Treinos de $suffix', 
+      routineIds: List.from(validItems)
+    );
+    
+    continuousBlocks = List<WorkoutBlock>.from(continuousBlocks)..add(newBlock);
+    _save();
+  }
+
   List<String> get todayPlannedItems {
     final mode = settings.organizationMode;
 
     if (mode == OrganizationMode.continuousList) {
-      final list = planner['continuous'] ?? [];
+      final list = flatContinuousList;
       if (list.isEmpty) return [];
       final idx = settings.continuousListCurrentIndex % list.length;
       return [list[idx]];
@@ -1059,7 +1198,7 @@ class WorkoutProvider extends ChangeNotifier {
 
     // Advance continuous list if needed
     if (settings.organizationMode == OrganizationMode.continuousList) {
-      final continuousList = planner['continuous'] ?? [];
+      final continuousList = flatContinuousList;
       if (continuousList.isNotEmpty) {
         setContinuousListIndex(
             (settings.continuousListCurrentIndex + 1) % continuousList.length);
@@ -1469,17 +1608,28 @@ class WorkoutProvider extends ChangeNotifier {
 
 
   void importFromFixedDay(String sourceDay, String targetKey) {
+    if (targetKey == 'continuous') {
+      copyDayToContinuousBlock(sourceDay);
+      return;
+    }
     final sourceItems = List<String>.from(planner[sourceDay] ?? []);
     final validItems = sourceItems.where((item) => item.isNotEmpty).toList();
     if (validItems.isEmpty) return;
     
-    // Simplificado para copiar apenas os modelos originais, sem criar novas rotinas (conforme pedido)
     planner[targetKey] = List<String>.from(planner[targetKey] ?? [])..addAll(validItems);
     _save();
   }
 
   void importAllFixedDays(String targetKey) {
     final days = ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'];
+    
+    if (targetKey == 'continuous') {
+      for (final day in days) {
+        copyDayToContinuousBlock(day);
+      }
+      return;
+    }
+
     final List<String> newPlannerEntries = [];
 
     for (final day in days) {

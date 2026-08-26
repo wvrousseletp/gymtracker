@@ -56,6 +56,22 @@ class SettingsState {
     this.continuousListCurrentIndex = 0,
   });
 
+  SettingsState copyWith({
+    bool? sound,
+    bool? vibration,
+    int? prepSeconds,
+    OrganizationMode? organizationMode,
+    int? continuousListCurrentIndex,
+  }) {
+    return SettingsState(
+      sound: sound ?? this.sound,
+      vibration: vibration ?? this.vibration,
+      prepSeconds: prepSeconds ?? this.prepSeconds,
+      organizationMode: organizationMode ?? this.organizationMode,
+      continuousListCurrentIndex: continuousListCurrentIndex ?? this.continuousListCurrentIndex,
+    );
+  }
+
   Map<String, dynamic> toJson() => {
     'sound': sound,
     'vibration': vibration,
@@ -253,10 +269,50 @@ class ActiveWorkoutState {
   );
 }
 
+
+class WorkoutBlock {
+  final String id;
+  final String name;
+  final List<String> routineIds;
+
+  WorkoutBlock({
+    required this.id,
+    required this.name,
+    required this.routineIds,
+  });
+
+  WorkoutBlock copyWith({
+    String? id,
+    String? name,
+    List<String>? routineIds,
+  }) {
+    return WorkoutBlock(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      routineIds: routineIds ?? this.routineIds,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'routineIds': routineIds,
+  };
+
+  factory WorkoutBlock.fromJson(Map<String, dynamic> json) {
+    return WorkoutBlock(
+      id: json['id'] ?? '',
+      name: json['name'] ?? '',
+      routineIds: List<String>.from(json['routineIds'] ?? []),
+    );
+  }
+}
+
 class PlannerState {
   final List<LibraryExercise> library;
   final List<Routine> routines;
-  final Map<String, List<String>> planner; // Dia -> lista de strings de ID/Prefixo
+  final Map<String, List<String>> planner;
+  final List<WorkoutBlock> continuousBlocks; // Dia -> lista de strings de ID/Prefixo
   final List<WorkoutLog> history;
   final Map<String, PersonalRecord> prs; // exerciseId -> record
   final Map<String, String> exerciseNotes; // exerciseId -> notes
@@ -274,6 +330,7 @@ class PlannerState {
     required this.library,
     required this.routines,
     required this.planner,
+    required this.continuousBlocks,
     required this.history,
     required this.prs,
     required this.exerciseNotes,
@@ -301,6 +358,7 @@ class PlannerState {
     List<LibraryExercise>? library,
     List<Routine>? routines,
     Map<String, List<String>>? planner,
+    List<WorkoutBlock>? continuousBlocks,
     List<WorkoutLog>? history,
     Map<String, PersonalRecord>? prs,
     Map<String, String>? exerciseNotes,
@@ -319,6 +377,7 @@ class PlannerState {
       library: library ?? this.library,
       routines: routines ?? this.routines,
       planner: planner ?? this.planner,
+      continuousBlocks: continuousBlocks ?? this.continuousBlocks,
       history: history ?? this.history,
       prs: prs ?? this.prs,
       exerciseNotes: exerciseNotes ?? this.exerciseNotes,
@@ -338,6 +397,7 @@ class PlannerState {
     'library': library.map((e) => e.toJson()).toList(),
     'routines': routines.map((r) => r.toJson()).toList(),
     'planner': planner,
+    'continuousBlocks': continuousBlocks.map((b) => b.toJson()).toList(),
     'history': history.map((h) => h.toJson()).toList(),
     'prs': prs.map((k, v) => MapEntry(k, v.toJson())),
     'medidas': medidas.map((m) => m.toJson()).toList(),
@@ -352,6 +412,16 @@ class PlannerState {
   };
 
   factory PlannerState.fromJson(Map<String, dynamic> json) {
+    List<WorkoutBlock> parsedBlocks = [];
+    if (json['continuousBlocks'] != null) {
+      parsedBlocks = (json['continuousBlocks'] as List).map((b) => WorkoutBlock.fromJson(b)).toList();
+    } else if (json['planner'] != null && json['planner']['continuous'] != null) {
+      // Migrate old continuous list
+      List<String> oldList = List<String>.from(json['planner']['continuous']);
+      if (oldList.isNotEmpty) {
+        parsedBlocks.add(WorkoutBlock(id: 'bloco-geral-migrado', name: 'Geral', routineIds: oldList));
+      }
+    }
     Map<String, List<String>> plannerMap = {};
     if (json['planner'] != null) {
       (json['planner'] as Map).forEach((k, v) {
@@ -391,6 +461,7 @@ class PlannerState {
           ? (json['routines'] as List).map((r) => Routine.fromJson(r)).toList()
           : [],
       planner: plannerMap,
+      continuousBlocks: parsedBlocks,
       history: json['history'] != null
           ? (json['history'] as List).map((h) => WorkoutLog.fromJson(h)).toList()
           : [],

@@ -73,6 +73,7 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
       library: _workoutProvider!.library,
       routines: _workoutProvider!.routines,
       planner: _workoutProvider!.planner,
+      continuousBlocks: _workoutProvider!.continuousBlocks,
       history: _workoutProvider!.history,
       prs: _workoutProvider!.prs,
       exerciseNotes: _workoutProvider!.exerciseNotes,
@@ -640,6 +641,41 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     _workoutProvider!.shiftPlannerBackwardWithoutLog();
   }
 
+  
+  List<String> get flatContinuousList => _workoutProvider?.flatContinuousList ?? [];
+
+  void addContinuousBlock({String? name}) {
+    _workoutProvider?.addContinuousBlock(name: name);
+  }
+
+  void renameContinuousBlock(String blockId, String newName) {
+    _workoutProvider?.renameContinuousBlock(blockId, newName);
+  }
+
+  void removeContinuousBlock(String blockId) {
+    _workoutProvider?.removeContinuousBlock(blockId);
+  }
+
+  void reorderContinuousBlocks(int oldIndex, int newIndex) {
+    _workoutProvider?.reorderContinuousBlocks(oldIndex, newIndex);
+  }
+
+  void addRoutineToContinuousBlock(String blockId, String routineId) {
+    _workoutProvider?.addRoutineToContinuousBlock(blockId, routineId);
+  }
+
+  void updateRoutineInContinuousBlock(String blockId, int index, String newValue) {
+    _workoutProvider?.updateRoutineInContinuousBlock(blockId, index, newValue);
+  }
+
+  void removeRoutineFromContinuousBlock(String blockId, int index) {
+    _workoutProvider?.removeRoutineFromContinuousBlock(blockId, index);
+  }
+
+  void reorderRoutinesInContinuousBlock(String blockId, int oldIndex, int newIndex) {
+    _workoutProvider?.reorderRoutinesInContinuousBlock(blockId, oldIndex, newIndex);
+  }
+
   void addPlannerItem(String day) {
     if (_workoutProvider == null) return;
     _workoutProvider!.addPlannerItem(day);
@@ -846,6 +882,7 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
         "sab": [],
         "dom": []
       },
+      continuousBlocks: [],
       history: [],
       prs: {},
       exerciseNotes: {},
