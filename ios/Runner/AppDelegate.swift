@@ -228,7 +228,17 @@ func _force_load_swiftCompatibilityDynamicReplacements() {}
     }
   }
 
+  private var lastLaunchTime: Date = Date.distantPast
+
   private func launchWatchAppWithRetry(attempt: Int, maxAttempts: Int) {
+    if attempt == 0 {
+      if Date().timeIntervalSince(lastLaunchTime) < 5.0 {
+        print("[AppDelegate] Skipping duplicate watch app launch request")
+        return
+      }
+      lastLaunchTime = Date()
+    }
+    
     print("[AppDelegate] Attempting to launch watch app - Attempt \(attempt + 1)/\(maxAttempts)")
     
     guard HKHealthStore.isHealthDataAvailable() else {

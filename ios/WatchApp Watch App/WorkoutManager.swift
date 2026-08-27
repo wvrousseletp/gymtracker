@@ -101,8 +101,14 @@ class WorkoutManager: NSObject, ObservableObject {
     func startWorkout(exercises: [WatchActiveExercise]? = nil, configuration providedConfiguration: HKWorkoutConfiguration? = nil) {
         guard HKHealthStore.isHealthDataAvailable() else { return }
         // Ensure no existing session is active
-        if session != nil {
-            return
+        if let existingSession = session {
+            if providedConfiguration != nil {
+                existingSession.end()
+                session = nil
+                builder = nil
+            } else {
+                return
+            }
         }
         
         let configuration: HKWorkoutConfiguration
