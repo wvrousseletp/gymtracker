@@ -73,6 +73,8 @@ struct ActiveWorkoutView: View {
     @State private var syncIndicatorOpacity: Double = 0.0
     @State private var fontSizeScale: Double = 1.0
     @State private var cinemaModeEnabled: Bool = false
+    @State private var crownFeedbackScale: CGFloat = 1.0
+    @State private var crownFeedbackColor: Color = .white
     
     enum CrownFocusedField: Hashable {
         case weight
@@ -86,6 +88,7 @@ struct ActiveWorkoutView: View {
     @Environment(\.isLuminanceReduced) var isLuminanceReduced
     
     @State private var showingCancelAlert = false
+    @State private var showSummary: Bool = false
     @State private var showingFinishSheet = false
     @State private var elapsedSeconds: Int = 0
     @State private var selectedSetIndexMap: [String: Int] = [:] // exerciseId -> selectedSetIndex
@@ -209,7 +212,9 @@ struct ActiveWorkoutView: View {
                         
                         Text(String(format: "%.1f km", distance))
                             .font(.system(size: 11, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
+                            .foregroundColor(selectedCardioField == "distance" ? crownFeedbackColor : .white)
+                            .scaleEffect(selectedCardioField == "distance" ? crownFeedbackScale : 1.0)
+                            .animation(.spring(response: 0.2, dampingFraction: 0.5), value: crownFeedbackScale)
                             .frame(minWidth: 48, alignment: .center)
                         
                         Button(action: {
@@ -267,7 +272,9 @@ struct ActiveWorkoutView: View {
                         
                         Text("\(durationMin) min")
                             .font(.system(size: 11, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
+                            .foregroundColor(selectedCardioField == "duration" ? crownFeedbackColor : .white)
+                            .scaleEffect(selectedCardioField == "duration" ? crownFeedbackScale : 1.0)
+                            .animation(.spring(response: 0.2, dampingFraction: 0.5), value: crownFeedbackScale)
                             .frame(minWidth: 48, alignment: .center)
                         
                         Button(action: {
@@ -317,7 +324,9 @@ struct ActiveWorkoutView: View {
                         .foregroundColor(.orange)
                     Text(String(format: "%.1f kg", exercise.weight))
                         .font(.system(size: 12, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
+                        .foregroundColor(crownFeedbackColor)
+                        .scaleEffect(crownFeedbackScale)
+                        .animation(.spring(response: 0.2, dampingFraction: 0.5), value: crownFeedbackScale)
                 }
                 .padding(.vertical, 6)
                 .padding(.horizontal, 10)
@@ -633,9 +642,11 @@ struct ActiveWorkoutView: View {
         
         return VStack(spacing: 0) {
             // Battery Indicator
-            batteryIndicatorView()
-                .padding(.horizontal, 4)
-                .padding(.top, 2)
+            if !isLuminanceReduced {
+                batteryIndicatorView()
+                    .padding(.horizontal, 4)
+                    .padding(.top, 2)
+            }
             
             // Workout Progress
             workoutProgressView(activeWorkout: activeWorkout)
@@ -655,8 +666,8 @@ struct ActiveWorkoutView: View {
                                 .font(.system(size: 11, weight: .bold))
                                 .foregroundColor(.orange)
                         }
-                        .disabled(exIndex == 0)
-                        .opacity(exIndex == 0 ? 0.2 : 1.0)
+                        .disabled(exIndex == 0 || isLuminanceReduced)
+                        .opacity(isLuminanceReduced ? 0.0 : (exIndex == 0 ? 0.2 : 1.0))
                         .buttonStyle(PlainButtonStyle())
                         .frame(width: 24, height: 24)
                         
@@ -694,8 +705,8 @@ struct ActiveWorkoutView: View {
                                 .font(.system(size: 11, weight: .bold))
                                 .foregroundColor(.orange)
                         }
-                        .disabled(exIndex + 1 >= activeWorkout.exercises.count)
-                        .opacity(exIndex + 1 >= activeWorkout.exercises.count ? 0.2 : 1.0)
+                        .disabled(exIndex + 1 >= activeWorkout.exercises.count || isLuminanceReduced)
+                        .opacity(isLuminanceReduced ? 0.0 : (exIndex + 1 >= activeWorkout.exercises.count ? 0.2 : 1.0))
                         .buttonStyle(PlainButtonStyle())
                         .frame(width: 24, height: 24)
                     }
@@ -769,7 +780,7 @@ struct ActiveWorkoutView: View {
                                         let willCompleteWorkout = checkAllSetsCompleted(activeWorkout: activeWorkout, overridingSet: (exIdx: exIndex, setIdx: setIndex, isDone: true))
                                         if willCompleteWorkout {
                                             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                                                connectivityManager.completeWorkout(rpe: 8, notes: "Treino concluído via Apple Watch")
+                                                showSummary = true
                                             }
                                         }
                                     }
@@ -804,59 +815,61 @@ struct ActiveWorkoutView: View {
                             strengthControls(exercise: exercise, exIndex: exIndex, selectedSetIdx: activeSetIdx)
                         }
                         
-                        // Solid Concluir/Desfazer button shrunk down
-                        Button(action: {
-                            let isCompleted = (activeSetIdx >= 0 && activeSetIdx < exercise.setsState.count) ? exercise.setsState[activeSetIdx] : false
-                            let isFailure = (activeSetIdx >= 0 && activeSetIdx < exercise.failureReport.count) ? exercise.failureReport[activeSetIdx] : false
-                            let failureRep = (activeSetIdx >= 0 && activeSetIdx < exercise.failureReps.count) ? exercise.failureReps[activeSetIdx] : nil
-                            let pc = (activeSetIdx >= 0 && activeSetIdx < exercise.performedCardios.count) ? exercise.performedCardios[activeSetIdx] : nil
-                            
-                            #if canImport(WatchKit)
-                            if !isCompleted {
-                                if isFailure {
-                                    hapticManager.playFailureRegistered()
+                        if !isLuminanceReduced {
+                            // Solid Concluir/Desfazer button shrunk down
+                            Button(action: {
+                                let isCompleted = (activeSetIdx >= 0 && activeSetIdx < exercise.setsState.count) ? exercise.setsState[activeSetIdx] : false
+                                let isFailure = (activeSetIdx >= 0 && activeSetIdx < exercise.failureReport.count) ? exercise.failureReport[activeSetIdx] : false
+                                let failureRep = (activeSetIdx >= 0 && activeSetIdx < exercise.failureReps.count) ? exercise.failureReps[activeSetIdx] : nil
+                                let pc = (activeSetIdx >= 0 && activeSetIdx < exercise.performedCardios.count) ? exercise.performedCardios[activeSetIdx] : nil
+                                
+                                #if canImport(WatchKit)
+                                if !isCompleted {
+                                    if isFailure {
+                                        hapticManager.playFailureRegistered()
+                                    } else {
+                                        hapticManager.playSetCompleted()
+                                    }
                                 } else {
-                                    hapticManager.playSetCompleted()
+                                    hapticManager.playSetUncompleted()
                                 }
-                            } else {
-                                hapticManager.playSetUncompleted()
-                            }
-                            #endif
+                                #endif
 
-                            connectivityManager.toggleSet(
-                                        exerciseIndex: exIndex,
-                                        setIndex: activeSetIdx,
-                                        isDone: !isCompleted,
-                                        isFailure: isFailure,
-                                        failureRep: failureRep,
-                                        distance: pc?.distanceKm,
-                                        duration: pc?.durationSeconds
-                                    )
-                                    
-                            if !isCompleted {
-                                let willCompleteWorkout = checkAllSetsCompleted(activeWorkout: activeWorkout, overridingSet: (exIdx: exIndex, setIdx: activeSetIdx, isDone: true))
-                                if willCompleteWorkout {
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                                        connectivityManager.completeWorkout(rpe: 8, notes: "Treino concluído via Apple Watch")
+                                connectivityManager.toggleSet(
+                                            exerciseIndex: exIndex,
+                                            setIndex: activeSetIdx,
+                                            isDone: !isCompleted,
+                                            isFailure: isFailure,
+                                            failureRep: failureRep,
+                                            distance: pc?.distanceKm,
+                                            duration: pc?.durationSeconds
+                                        )
+                                        
+                                if !isCompleted {
+                                    let willCompleteWorkout = checkAllSetsCompleted(activeWorkout: activeWorkout, overridingSet: (exIdx: exIndex, setIdx: activeSetIdx, isDone: true))
+                                    if willCompleteWorkout {
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                                            showSummary = true
+                                        }
                                     }
                                 }
+                            }) {
+                                let isCompleted = (activeSetIdx >= 0 && activeSetIdx < exercise.setsState.count) ? exercise.setsState[activeSetIdx] : false
+                                HStack(spacing: 4) {
+                                    Image(systemName: isCompleted ? "checkmark.circle.fill" : "play.circle.fill")
+                                        .font(.system(size: 10, weight: .bold))
+                                        .foregroundColor(isCompleted ? .white : .black)
+                                    Text(isCompleted ? "CONCLUÍDO" : "CONCLUIR SÉRIE")
+                                        .font(.system(size: 9, weight: .black))
+                                        .foregroundColor(isCompleted ? .white : .black)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 6)
+                                .background(isCompleted ? Color.gray.opacity(0.3) : Color.green)
+                                .cornerRadius(8)
                             }
-                        }) {
-                            let isCompleted = (activeSetIdx >= 0 && activeSetIdx < exercise.setsState.count) ? exercise.setsState[activeSetIdx] : false
-                            HStack(spacing: 4) {
-                                Image(systemName: isCompleted ? "checkmark.circle.fill" : "play.circle.fill")
-                                    .font(.system(size: 10, weight: .bold))
-                                    .foregroundColor(isCompleted ? .white : .black)
-                                Text(isCompleted ? "CONCLUÍDO" : "CONCLUIR SÉRIE")
-                                    .font(.system(size: 9, weight: .black))
-                                    .foregroundColor(isCompleted ? .white : .black)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 6)
-                            .background(isCompleted ? Color.gray.opacity(0.3) : Color.green)
-                            .cornerRadius(8)
+                            .buttonStyle(PlainButtonStyle())
                         }
-                        .buttonStyle(PlainButtonStyle())
                     }
                 }
                 .padding(.horizontal, 4)
@@ -972,7 +985,7 @@ struct ActiveWorkoutView: View {
                 .buttonStyle(PlainButtonStyle())
 
                 Button(action: {
-                    connectivityManager.completeWorkout(rpe: 8, notes: "Treino concluído via Apple Watch")
+                    showSummary = true
                 }) {
                     HStack(spacing: 4) {
                         Image(systemName: "checkmark.seal.fill")
@@ -1058,6 +1071,17 @@ struct ActiveWorkoutView: View {
         #if canImport(WatchKit)
         hapticManager.playCrownRotation()
         #endif
+        
+        withAnimation(.spring(response: 0.2, dampingFraction: 0.5)) {
+            crownFeedbackScale = 1.15
+            crownFeedbackColor = .green
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            withAnimation(.easeOut(duration: 0.2)) {
+                crownFeedbackScale = 1.0
+                crownFeedbackColor = .white
+            }
+        }
     }
     
     private func handleCrownLongPress(activeWorkout: WatchActiveWorkoutState) {
@@ -1112,31 +1136,32 @@ struct ActiveWorkoutView: View {
         
         VStack(spacing: 2) {
             Text("\(setIndex + 1)")
-                .font(.system(size: 9, weight: .bold))
+                .font(.system(size: 11, weight: .bold))
                 .foregroundColor(isSelected ? .black : .white)
             
             if isFailure && !isCardio {
                 Image(systemName: "xmark.octagon.fill")
-                    .font(.system(size: 8))
+                    .font(.system(size: 10))
                     .foregroundColor(.red)
             } else if isCompleted {
                 Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 8, weight: .bold))
+                    .font(.system(size: 10, weight: .bold)) // increased from 8
                     .foregroundColor(isSelected ? .black : checkmarkColor)
             } else {
                 Image(systemName: "circle")
-                    .font(.system(size: 8))
+                    .font(.system(size: 10)) // increased from 8
                     .foregroundColor(isSelected ? .black.opacity(0.4) : .white.opacity(0.3))
             }
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 4)
+        .padding(.vertical, 8) // increased from 4
         .background(bgColor)
-        .cornerRadius(6)
+        .cornerRadius(8) // increased from 6
         .overlay(
-            RoundedRectangle(cornerRadius: 6)
+            RoundedRectangle(cornerRadius: 8)
                 .stroke(strokeColor, lineWidth: isFailure && isPulsing ? 2 : 1)
         )
+        .contentShape(Rectangle()) // Makes the whole area tappable
         .accessibilityLabel(accessibilityLabelForSet(setIndex: setIndex, isCompleted: isCompleted, isFailure: isFailure, isSelected: isSelected))
     }
 
@@ -1182,7 +1207,9 @@ struct ActiveWorkoutView: View {
     private func activeWorkoutMainView(activeWorkout: WatchActiveWorkoutState) -> some View {
         TabView {
             currentExercisePageView(activeWorkout: activeWorkout)
-            workoutControlsPageView(activeWorkout: activeWorkout)
+            if !isLuminanceReduced {
+                workoutControlsPageView(activeWorkout: activeWorkout)
+            }
         }
         .tabViewStyle(.page(indexDisplayMode: .never))
         .focusable()
@@ -1199,7 +1226,9 @@ struct ActiveWorkoutView: View {
 
     var body: some View {
         Group {
-            if let activeWorkout = connectivityManager.activeWorkout {
+            if showSummary, let activeWorkout = connectivityManager.activeWorkout {
+                WorkoutSummaryView(activeWorkout: activeWorkout)
+            } else if let activeWorkout = connectivityManager.activeWorkout {
                 if let restTimer = activeWorkout.restTimer {
                     RestTimerView(restTimer: restTimer)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -1339,5 +1368,126 @@ struct ActiveWorkoutView: View {
         } else if let activeWorkout = connectivityManager.activeWorkout {
             elapsedSeconds = activeWorkout.elapsedSeconds
         }
+    }
+}
+import SwiftUI
+
+struct WorkoutSummaryView: View {
+    let activeWorkout: WatchActiveWorkoutState
+    @StateObject var connectivityManager = WatchConnectivityManager.shared
+    
+    // Calcula o peso total (tonelagem)
+    private var totalVolume: Double {
+        var vol: Double = 0
+        for exercise in activeWorkout.exercises {
+            if !exercise.isCardio {
+                let completedSets = exercise.setsState.filter { $0 }.count
+                vol += exercise.weight * Double(exercise.reps) * Double(completedSets)
+            }
+        }
+        return vol
+    }
+    
+    // Calcula as calorias estimadas (bem básico)
+    private var estimatedCalories: Int {
+        let durationMinutes = Double(activeWorkout.elapsedSeconds) / 60.0
+        return Int(durationMinutes * 6.5) // ~6.5 kcal por minuto
+    }
+    
+    private func formatDuration(_ seconds: Int) -> String {
+        let h = seconds / 3600
+        let m = (seconds % 3600) / 60
+        if h > 0 {
+            return "\(h)h \(m)m"
+        } else {
+            return "\(m) min"
+        }
+    }
+    
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 12) {
+                // Header
+                VStack(spacing: 4) {
+                    Image(systemName: "trophy.fill")
+                        .font(.system(size: 32))
+                        .foregroundColor(.yellow)
+                        .padding(.top, 12)
+                    
+                    Text("TREINO CONCLUÍDO!")
+                        .font(.system(size: 14, weight: .black, design: .rounded))
+                        .foregroundColor(.white)
+                    
+                    Text(activeWorkout.name)
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundColor(.gray)
+                }
+                .padding(.bottom, 8)
+                
+                // Stats Grid
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                    StatCard(title: "Tempo", value: formatDuration(activeWorkout.elapsedSeconds), icon: "timer", color: .blue)
+                    StatCard(title: "Calorias", value: "\(estimatedCalories) kcal", icon: "flame.fill", color: .orange)
+                    StatCard(title: "Volume", value: String(format: "%.0f kg", totalVolume), icon: "scalemass.fill", color: .purple)
+                    
+                    let completedExercises = activeWorkout.exercises.filter { ex in !ex.setsState.contains(false) }.count
+                    StatCard(title: "Exercícios", value: "\(completedExercises)/\(activeWorkout.exercises.count)", icon: "figure.strengthtraining.traditional", color: .green)
+                }
+                
+                // Botão Finalizar
+                Button(action: {
+                    #if canImport(WatchKit)
+                    WKInterfaceDevice.current().play(.success)
+                    #endif
+                    connectivityManager.completeWorkout(rpe: 8, notes: "Concluído no Watch")
+                }) {
+                    Text("Finalizar Treino")
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                        .background(Color.green)
+                        .cornerRadius(22)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .padding(.vertical, 8)
+            }
+            .padding(.horizontal, 4)
+        }
+        .onAppear {
+            #if canImport(WatchKit)
+            WatchHapticManager.shared.playWorkoutFinish()
+            #endif
+        }
+    }
+}
+
+struct StatCard: View {
+    let title: String
+    let value: String
+    let icon: String
+    let color: Color
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 10))
+                    .foregroundColor(color)
+                Text(title)
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                    .foregroundColor(.gray)
+                    .lineLimit(1)
+            }
+            Text(value)
+                .font(.system(size: 14, weight: .bold, design: .rounded))
+                .foregroundColor(.white)
+                .minimumScaleFactor(0.8)
+                .lineLimit(1)
+        }
+        .padding(8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.1))
+        .cornerRadius(10)
     }
 }
