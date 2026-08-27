@@ -605,27 +605,69 @@ class WorkoutProvider extends ChangeNotifier {
           nextTargetWeight: ex.weightsPerSet?[setIndex + 1] ?? ex.weight,
           isPrep: false,
         );
-      } else if (exIndex < exercises.length - 1) {
-        final nextEx = exercises[exIndex + 1];
-        final endTime =
-            DateTime.now().millisecondsSinceEpoch + (ex.rest * 1000);
-        computedRestTimer = WatchRestTimer(
-          endTime: endTime,
-          totalSeconds: ex.rest,
-          nextExerciseName: nextEx.name,
-          nextSetNum: 1,
-          nextTargetReps: nextEx.repsPerSet?[0] ?? nextEx.reps,
-          nextTargetWeight: nextEx.weightsPerSet?[0] ?? nextEx.weight,
-          isPrep: false,
-        );
-        computedExIndex = exIndex + 1;
       } else {
-        computedRestTimer = null;
+        // Find next uncompleted exercise (wrapping around if needed)
+        int nextExIndex = -1;
+        for (int i = exIndex + 1; i < exercises.length; i++) {
+          if (exercises[i].setsState.contains(false)) {
+            nextExIndex = i;
+            break;
+          }
+        }
+        if (nextExIndex == -1) {
+          for (int i = 0; i < exIndex; i++) {
+            if (exercises[i].setsState.contains(false)) {
+              nextExIndex = i;
+              break;
+            }
+          }
+        }
+        
+        if (nextExIndex != -1) {
+          final nextEx = exercises[nextExIndex];
+          int nextSetIndex = nextEx.setsState.indexWhere((done) => !done);
+          if (nextSetIndex == -1) nextSetIndex = 0;
+          
+          final endTime =
+              DateTime.now().millisecondsSinceEpoch + (ex.rest * 1000);
+          computedRestTimer = WatchRestTimer(
+            endTime: endTime,
+            totalSeconds: ex.rest,
+            nextExerciseName: nextEx.name,
+            nextSetNum: nextSetIndex + 1,
+            nextTargetReps: nextEx.repsPerSet?[nextSetIndex] ?? nextEx.reps,
+            nextTargetWeight: nextEx.weightsPerSet?[nextSetIndex] ?? nextEx.weight,
+            isPrep: false,
+          );
+          computedExIndex = nextExIndex;
+        } else {
+          computedRestTimer = null;
+        }
       }
     } else {
       computedRestTimer = null;
-      if (isTransitionToDone && setIndex >= ex.sets - 1 && exIndex < exercises.length - 1) {
-         computedExIndex = exIndex + 1;
+      if (isTransitionToDone && setIndex >= ex.sets - 1) {
+        int nextExIndex = -1;
+        for (int i = exIndex + 1; i < exercises.length; i++) {
+          if (exercises[i].setsState.contains(false)) {
+            nextExIndex = i;
+            break;
+          }
+        }
+        if (nextExIndex == -1) {
+          for (int i = 0; i < exIndex; i++) {
+            if (exercises[i].setsState.contains(false)) {
+              nextExIndex = i;
+              break;
+            }
+          }
+        }
+        
+        if (nextExIndex != -1) {
+           computedExIndex = nextExIndex;
+        } else if (exIndex < exercises.length - 1) {
+           computedExIndex = exIndex + 1;
+        }
       }
     }
 
