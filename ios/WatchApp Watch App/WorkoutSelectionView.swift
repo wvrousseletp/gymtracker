@@ -294,30 +294,6 @@ struct WorkoutSelectionView: View {
     @ViewBuilder
     private var searchAndFilterBar: some View {
         VStack(spacing: 4) {
-            // Search bar
-            HStack(spacing: 6) {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 10))
-                    .foregroundColor(.gray)
-                TextField("Buscar treinos...", text: $searchText)
-                    .font(.system(size: 10))
-                    .foregroundColor(.white)
-                    .autocorrectionDisabled()
-                if !searchText.isEmpty {
-                    Button(action: {
-                        searchText = ""
-                    }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 10))
-                            .foregroundColor(.gray)
-                    }
-                }
-            }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 6)
-            .background(Color.white.opacity(0.08))
-            .cornerRadius(8)
-            
             // Filter buttons
             HStack(spacing: 4) {
                 // Favorites toggle
