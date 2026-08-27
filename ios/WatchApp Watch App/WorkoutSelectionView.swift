@@ -596,6 +596,20 @@ struct WorkoutSelectionView: View {
     private var workoutTabContent: some View {
         if let activeWorkout = connectivityManager.activeWorkout, !activeWorkout.postponed {
             ActiveWorkoutView()
+        } else if workoutManager.workoutSessionState == .running || workoutManager.workoutSessionState == .paused || workoutManager.isLaunchedByiOS {
+            VStack(spacing: 12) {
+                Image(systemName: "figure.strengthtraining.traditional")
+                    .font(.system(size: 30))
+                    .foregroundColor(.green)
+                Text("Iniciando Treino...")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(.white)
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: .green))
+                    .scaleEffect(0.8)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.black.edgesIgnoringSafeArea(.all))
         } else if connectivityManager.isSyncing && connectivityManager.routines.isEmpty && connectivityManager.library.isEmpty {
             syncingView
         } else if connectivityManager.routines.isEmpty && connectivityManager.library.isEmpty {

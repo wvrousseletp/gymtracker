@@ -202,6 +202,7 @@ class WorkoutManager: NSObject, ObservableObject {
             self.bloodOxygen = 0
             self.altitude = 0
             self.workoutSessionState = .notStarted
+            self.isLaunchedByiOS = false
         }
     }
 }
