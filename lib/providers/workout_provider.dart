@@ -346,16 +346,13 @@ class WorkoutProvider extends ChangeNotifier {
   }
 
   // --- WORKOUT OPERATIONS ---
-  void startWorkout(Routine routine, WorkoutRecovery recovery, bool isWarmup) {
   void _applyHistoryToExercises(List<ActiveExercise> exercises) {
     if (history.isEmpty) return;
     for (int i = 0; i < exercises.length; i++) {
       final ex = exercises[i];
-      // Find the most recent log that contains this exercise
       for (final log in history) {
         final previousEx = log.exercises.where((le) => le.name == ex.name).firstOrNull;
         if (previousEx != null) {
-          // Found it! Pre-fill weight and reps
           if (previousEx.weight > 0 && ex.weight == 0) {
             exercises[i] = ex.copyWith(
               weight: previousEx.weight,
@@ -364,11 +361,13 @@ class WorkoutProvider extends ChangeNotifier {
           } else if (ex.weight == 0 && previousEx.reps > 0) {
             exercises[i] = ex.copyWith(reps: previousEx.reps);
           }
-          break; // Stop looking after finding the most recent one
+          break;
         }
       }
     }
   }
+
+  void startWorkout(Routine routine, WorkoutRecovery recovery, bool isWarmup) {
     List<ActiveExercise> workoutExercises = [];
 
     if (routine.executionType == RoutineExecutionType.circuit) {
@@ -466,6 +465,7 @@ class WorkoutProvider extends ChangeNotifier {
     }
 
     _applyHistoryToExercises(workoutExercises);
+
     activeWorkout = ActiveWorkoutState(
       name: routine.name,
       startTime: DateTime.now().millisecondsSinceEpoch,
@@ -516,60 +516,6 @@ class WorkoutProvider extends ChangeNotifier {
   }
 
   void completeSet(int exIndex, int setIndex, bool isDone,
-  void replaceActiveExercise(String oldExerciseId, LibraryExercise newLibExercise) {
-    if (activeWorkout == null) return;
-    
-    final exercises = List<ActiveExercise>.from(activeWorkout!.exercises);
-    final index = exercises.indexWhere((e) => e.id == oldExerciseId);
-    if (index == -1) return;
-
-    final oldEx = exercises[index];
-    final isCardio = (newLibExercise.measurementType == MeasurementType.cardio ||
-            newLibExercise.measurementType == MeasurementType.distance) &&
-        newLibExercise.measurementType != MeasurementType.time;
-
-    final newEx = ActiveExercise(
-      id: oldEx.id, // Keep the same ID to preserve routine structure if needed, or generate new. We generate a new one to be safe.
-      name: newLibExercise.name,
-      muscle: newLibExercise.muscle,
-      executionType: newLibExercise.executionType,
-      measurementType: newLibExercise.measurementType,
-      sets: isCardio ? 1 : 3,
-      reps: isCardio ? 0 : 10,
-      rest: oldEx.rest,
-      weight: 0.0,
-      setsState: List<bool>.filled(isCardio ? 1 : 3, false),
-      performedCardios: List<PerformedCardio?>.filled(isCardio ? 1 : 3, null),
-      failureReport: List<bool>.filled(isCardio ? 1 : 3, false),
-      isCardio: isCardio,
-      allowCardioSets: false,
-    );
-
-    exercises[index] = newEx;
-    
-    // Auto-fill the newly replaced exercise
-    _applyHistoryToExercises([exercises[index]]);
-
-    activeWorkout = ActiveWorkoutState(
-      name: activeWorkout!.name,
-      startTime: activeWorkout!.startTime,
-      exercises: exercises,
-      currentExerciseIndex: activeWorkout!.currentExerciseIndex,
-      elapsedSeconds: activeWorkout!.elapsedSeconds,
-      paused: activeWorkout!.paused,
-      restTimer: activeWorkout!.restTimer,
-      warmupDurationSeconds: activeWorkout!.warmupDurationSeconds,
-      heartRate: activeWorkout!.heartRate,
-      activeCalories: activeWorkout!.activeCalories,
-      postponed: activeWorkout!.postponed,
-      recovery: activeWorkout!.recovery,
-      isWarmup: activeWorkout!.isWarmup,
-      executionType: activeWorkout!.executionType,
-      circuitCycles: activeWorkout!.circuitCycles,
-    );
-    _save();
-    WatchService.instance.sendActiveWorkout(activeWorkout!, force: true);
-  }
       {double? distance,
       int? duration,
       bool isFailure = false,
@@ -771,6 +717,61 @@ class WorkoutProvider extends ChangeNotifier {
         RestTimerService.instance.clear();
       }
     }
+  }
+
+  void replaceActiveExercise(String oldExerciseId, LibraryExercise newLibExercise) {
+    if (activeWorkout == null) return;
+    
+    final exercises = List<ActiveExercise>.from(activeWorkout!.exercises);
+    final index = exercises.indexWhere((e) => e.id == oldExerciseId);
+    if (index == -1) return;
+
+    final oldEx = exercises[index];
+    final isCardio = (newLibExercise.measurementType == MeasurementType.cardio ||
+            newLibExercise.measurementType == MeasurementType.distance) &&
+        newLibExercise.measurementType != MeasurementType.time;
+
+    final newEx = ActiveExercise(
+      id: oldEx.id,
+      name: newLibExercise.name,
+      muscle: newLibExercise.muscle,
+      executionType: newLibExercise.executionType,
+      measurementType: newLibExercise.measurementType,
+      sets: isCardio ? 1 : 3,
+      reps: isCardio ? 0 : 10,
+      rest: oldEx.rest,
+      weight: 0.0,
+      setsState: List<bool>.filled(isCardio ? 1 : 3, false),
+      performedCardios: List<PerformedCardio?>.filled(isCardio ? 1 : 3, null),
+      failureReport: List<bool>.filled(isCardio ? 1 : 3, false),
+      isCardio: isCardio,
+      allowCardioSets: false,
+    );
+
+    exercises[index] = newEx;
+    
+    // Auto-fill the newly replaced exercise
+    _applyHistoryToExercises([exercises[index]]);
+
+    activeWorkout = ActiveWorkoutState(
+      name: activeWorkout!.name,
+      startTime: activeWorkout!.startTime,
+      exercises: exercises,
+      currentExerciseIndex: activeWorkout!.currentExerciseIndex,
+      elapsedSeconds: activeWorkout!.elapsedSeconds,
+      paused: activeWorkout!.paused,
+      restTimer: activeWorkout!.restTimer,
+      warmupDurationSeconds: activeWorkout!.warmupDurationSeconds,
+      heartRate: activeWorkout!.heartRate,
+      activeCalories: activeWorkout!.activeCalories,
+      postponed: activeWorkout!.postponed,
+      recovery: activeWorkout!.recovery,
+      isWarmup: activeWorkout!.isWarmup,
+      executionType: activeWorkout!.executionType,
+      circuitCycles: activeWorkout!.circuitCycles,
+    );
+    _save();
+    WatchService.instance.sendActiveWorkout(activeWorkout!, force: true);
   }
 
   void startRestTimer(
@@ -1251,7 +1252,6 @@ class WorkoutProvider extends ChangeNotifier {
 
   void finishWorkout(int duration, int rpeValue, String notes) {
     if (activeWorkout == null) return;
-    HapticFeedback.heavyImpact();
     RestTimerService.instance.clear();
 
     final active = activeWorkout!;
