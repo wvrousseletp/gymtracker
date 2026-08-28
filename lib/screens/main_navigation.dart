@@ -310,24 +310,40 @@ class _MainNavigationState extends State<MainNavigation> {
             } catch (_) {}
           }
           
-          if (totalWorkouts > 0) {
-            // Show report dialog
-            if (mounted) {
-              showDialog(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  backgroundColor: const Color(0xFF1E1E1E),
-                  title: const Row(
-                    children: [
-                      Icon(Icons.emoji_events, color: Colors.amber, size: 28),
-                      SizedBox(width: 8),
-                      Text("Resumo da Semana", style: TextStyle(color: Colors.white)),
-                    ],
-                  ),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text("Ótimo trabalho semana passada!", style: const TextStyle(color: Colors.white70, fontSize: 16)),
+          // Textos Dinâmicos baseados no Weekly Goal
+          final int goal = provider.streak.weeklyGoal > 0 ? provider.streak.weeklyGoal : 1;
+          String title = "Resumo da Semana";
+          String message = "Bom trabalho! Continue mantendo o ritmo nessa nova semana.";
+          
+          if (totalWorkouts >= goal) {
+            title = "Semana Impecável 🏆";
+            message = "Meta atingida com sucesso! Você ganhou +1 Congelamento de Ofensiva ❄️";
+          } else if (totalWorkouts == goal - 1) {
+            title = "Quase lá! 💪";
+            message = "Faltou só 1 treino para a meta! Bora esmagar nessa semana!";
+          } else if (totalWorkouts == 0) {
+            title = "Descanso Estratégico 🔋";
+            message = "Semana de deload? Sua ofensiva foi salva por um Freeze ❄️";
+          }
+
+          // Show report dialog
+          if (mounted) {
+            showDialog(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                backgroundColor: const Color(0xFF1E1E1E),
+                title: Row(
+                  children: [
+                    const Icon(Icons.emoji_events, color: Colors.amber, size: 28),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(title, style: const TextStyle(color: Colors.white, fontSize: 18))),
+                  ],
+                ),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(message, style: const TextStyle(color: Colors.white70, fontSize: 16)),
+                    if (totalWorkouts > 0) ...[
                       const SizedBox(height: 24),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -337,17 +353,17 @@ class _MainNavigationState extends State<MainNavigation> {
                           if (totalTonnage > 0) _buildReportStat(Icons.monitor_weight, "${(totalTonnage / 1000).toStringAsFixed(1)}t", "Volume"),
                         ],
                       ),
-                    ],
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: const Text("Bora para a próxima!", style: TextStyle(color: Colors.greenAccent)),
-                    ),
+                    ]
                   ],
                 ),
-              );
-            }
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text("Bora para a próxima!", style: TextStyle(color: Colors.greenAccent)),
+                  ),
+                ],
+              ),
+            );
           }
         }
         await prefs.setString('lastWeeklyReportDate', todayStr);

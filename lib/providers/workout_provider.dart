@@ -1563,6 +1563,23 @@ class WorkoutProvider extends ChangeNotifier {
   }
 
   // --- STREAK TRACKING ---
+  void updateWeeklyConsistencySettings(int goal, List<int> restDays) {
+    streak = WorkoutStreak(
+      currentWeekCount: streak.currentWeekCount,
+      consecutiveWeeks: streak.consecutiveWeeks,
+      lastWorkoutDate: streak.lastWorkoutDate,
+      weekdaysTrained: streak.weekdaysTrained,
+      completedTodayRoutines: streak.completedTodayRoutines,
+      completedThisWeekRoutines: streak.completedThisWeekRoutines,
+      weeklyGoal: goal,
+      plannedRestDays: restDays,
+      availableFreezes: streak.availableFreezes,
+      weekdaysData: streak.weekdaysData,
+    );
+    _updateStreak(); // Recalculate streak/freezes based on new goal
+    _save();
+    notifyListeners();
+  }
   void _updateStreak() {
     final now = DateTime.now();
 
@@ -1587,15 +1604,33 @@ class WorkoutProvider extends ChangeNotifier {
           final weekday = logDate.weekday;
           weekdaysTrainedSet.add(weekday);
           
-          // Only save the first (newest) log for each weekday for the summary
+          final isLogCardio = log.name.toLowerCase().contains('cardio') || log.totalWeight == 0;
+
           if (!weekdaysData.containsKey(weekday)) {
             weekdaysData[weekday] = {
               'name': log.name,
               'duration': log.duration,
               'tonnage': log.totalWeight,
               'activeCalories': log.activeCalories ?? 0,
-              'isCardio': log.name.toLowerCase().contains('cardio') || log.totalWeight == 0,
+              'isCardio': isLogCardio,
+              'isMixed': false,
+              'workoutCount': 1,
             };
+          } else {
+            // Treino Duplo! Aggregate the values
+            final currentData = weekdaysData[weekday]!;
+            currentData['duration'] = (currentData['duration'] ?? 0) + log.duration;
+            currentData['tonnage'] = (currentData['tonnage'] ?? 0.0) + log.totalWeight;
+            currentData['activeCalories'] = (currentData['activeCalories'] ?? 0) + (log.activeCalories ?? 0);
+            currentData['workoutCount'] = (currentData['workoutCount'] ?? 1) + 1;
+            
+            // Check if it's mixed (Cardio + Strength)
+            if (currentData['isCardio'] != isLogCardio) {
+              currentData['isMixed'] = true;
+            }
+            
+            // Change name to Treino Duplo
+            currentData['name'] = "Treino Duplo";
           }
         } else {
           break; // Optimization: history is ordered newest to oldest

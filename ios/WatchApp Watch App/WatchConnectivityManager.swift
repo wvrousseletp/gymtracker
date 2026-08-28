@@ -672,6 +672,39 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             sendToiPhone(["action": "skipRest"])
         }
     }
+    
+    func adjustRestTimer(by seconds: Int) {
+        if isLocalWorkout {
+            // Implement local adjustment if needed later
+        } else {
+            // Optimistic update
+            if var active = activeWorkout, let timer = active.restTimer {
+                let newEndTime = timer.endTime + Int64(seconds * 1000)
+                let newTotalSeconds = max(1, timer.totalSeconds + seconds)
+                let newTimer = WatchRestTimer(
+                    endTime: newEndTime,
+                    totalSeconds: newTotalSeconds,
+                    nextExerciseName: timer.nextExerciseName,
+                    nextSetNum: timer.nextSetNum,
+                    nextTargetReps: timer.nextTargetReps,
+                    nextTargetWeight: timer.nextTargetWeight,
+                    isPrep: timer.isPrep
+                )
+                
+                activeWorkout = WatchActiveWorkoutState(
+                    name: active.name,
+                    startTime: active.startTime,
+                    exercises: active.exercises,
+                    currentExerciseIndex: active.currentExerciseIndex,
+                    elapsedSeconds: active.elapsedSeconds,
+                    paused: active.paused,
+                    restTimer: newTimer,
+                    postponed: active.postponed
+                )
+            }
+            sendToiPhone(["action": "adjustRestTimer", "seconds": seconds])
+        }
+    }
 
     func completeWorkout(rpe: Int, notes: String) {
         if isLocalWorkout {

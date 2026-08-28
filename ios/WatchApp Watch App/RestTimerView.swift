@@ -83,60 +83,99 @@ struct RestTimerView: View {
 
                 // Contagem regressiva GIGANTE (premium)
                 Text("\(timeRemaining)")
-                    .font(.system(size: 64, weight: .heavy, design: .rounded))
+                    .font(.system(size: isLuminanceReduced ? 80 : 64, weight: .heavy, design: .rounded))
                     .foregroundColor(isLuminanceReduced ? .gray : .white)
                     .tracking(-2.0) // Aproximar os números (estilo iOS)
                     .minimumScaleFactor(0.7)
                     .lineLimit(1)
                     .shadow(color: .black.opacity(0.5), radius: 2, x: 0, y: 2)
 
-                // Próximo Exercício (Glass style sutil)
-                VStack(spacing: 2) {
-                    Text(restTimer.nextExerciseName)
-                        .font(.system(size: 13, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
-                    
-                    Text("Série \(restTimer.nextSetNum)")
-                        .font(.system(size: 10, weight: .semibold, design: .rounded))
-                        .foregroundColor(.gray)
+                if !isLuminanceReduced {
+                    // Próximo Exercício (Glass style sutil)
+                    VStack(spacing: 2) {
+                        Text(restTimer.nextExerciseName)
+                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                        
+                        Text("Série \(restTimer.nextSetNum)")
+                            .font(.system(size: 10, weight: .semibold, design: .rounded))
+                            .foregroundColor(.gray)
 
-                    if let reps = restTimer.nextTargetReps, let weight = restTimer.nextTargetWeight {
-                        let weightStr = weight.truncatingRemainder(dividingBy: 1) == 0 ? String(format: "%.0f", weight) : String(weight)
-                        Text("\(reps) reps • \(weightStr) kg")
-                            .font(.system(size: 11, weight: .medium, design: .rounded))
-                            .foregroundColor(.white.opacity(0.7))
-                            .padding(.top, 2)
+                        if let reps = restTimer.nextTargetReps, let weight = restTimer.nextTargetWeight {
+                            let weightStr = weight.truncatingRemainder(dividingBy: 1) == 0 ? String(format: "%.0f", weight) : String(weight)
+                            Text("\(reps) reps • \(weightStr) kg")
+                                .font(.system(size: 11, weight: .medium, design: .rounded))
+                                .foregroundColor(.white.opacity(0.7))
+                                .padding(.top, 2)
+                        }
                     }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(Color.white.opacity(0.08))
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.white.opacity(0.15), lineWidth: 0.5)
+                    )
+                    .padding(.bottom, 6)
+                    
+                    // Quick adjust buttons
+                    HStack(spacing: 8) {
+                        Button(action: {
+                            connectivityManager.adjustRestTimer(by: -15)
+                            #if canImport(WatchKit)
+                            WKInterfaceDevice.current().play(.click)
+                            #endif
+                        }) {
+                            Text("-15s")
+                                .font(.system(size: 12, weight: .bold, design: .rounded))
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 32)
+                                .background(Color.white.opacity(0.15))
+                                .cornerRadius(16)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        
+                        Button(action: {
+                            connectivityManager.adjustRestTimer(by: 30)
+                            #if canImport(WatchKit)
+                            WKInterfaceDevice.current().play(.click)
+                            #endif
+                        }) {
+                            Text("+30s")
+                                .font(.system(size: 12, weight: .bold, design: .rounded))
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 32)
+                                .background(Color.white.opacity(0.15))
+                                .cornerRadius(16)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 6)
+                    
+                    // Botão de Pular grande e chamativo
+                    Button(action: {
+                        connectivityManager.skipRest()
+                    }) {
+                        Text(restTimer.isPrep ? "Iniciar Agora" : "Pular")
+                            .font(.system(size: 14, weight: .black, design: .rounded))
+                            .foregroundColor(.black)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 38)
+                            .background(Color.white)
+                            .cornerRadius(19)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 4)
+                } else {
+                    Spacer()
                 }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(Color.white.opacity(0.08))
-                .cornerRadius(12)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.white.opacity(0.15), lineWidth: 0.5)
-                )
-                .padding(.bottom, 8)
-                
-                Spacer(minLength: 4)
-
-                // Botão de Pular grande e chamativo
-                Button(action: {
-                    connectivityManager.skipRest()
-                }) {
-                    Text(restTimer.isPrep ? "Iniciar Agora" : "Pular")
-                        .font(.system(size: 14, weight: .black, design: .rounded))
-                        .foregroundColor(.black)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 38)
-                        .background(isLuminanceReduced ? Color.gray : Color.white)
-                        .cornerRadius(19)
-                }
-                .buttonStyle(PlainButtonStyle())
-                .padding(.horizontal, 12)
-                .padding(.bottom, 8)
             }
         }
         .onAppear {

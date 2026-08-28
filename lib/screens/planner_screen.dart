@@ -203,34 +203,51 @@ class _PlannerScreenState extends State<PlannerScreen> {
           ),
           const SizedBox(height: 12),
           // Indicador de treinos na semana com Barra de Progresso
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                "Meta Semanal:",
-                style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600),
+          GestureDetector(
+            onTap: () => _showGoalSettings(context, provider, streak),
+            child: Container(
+              color: Colors.transparent, // expand tap area
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Row(
+                        children: [
+                          Text(
+                            "Meta Semanal:",
+                            style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600),
+                          ),
+                          SizedBox(width: 6),
+                          Icon(Icons.edit, color: Colors.white38, size: 14),
+                        ],
+                      ),
+                      Text(
+                        "$currentCount / $goal dias",
+                        style: TextStyle(
+                            color: goalMet ? Colors.amber : Colors.greenAccent,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      backgroundColor: Colors.white.withOpacity(0.05),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                          goalMet ? Colors.amber : Colors.greenAccent),
+                      minHeight: 6,
+                    ),
+                  ),
+                ],
               ),
-              Text(
-                "$currentCount / $goal dias",
-                style: TextStyle(
-                    color: goalMet ? Colors.amber : Colors.greenAccent,
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: progress,
-              backgroundColor: Colors.white.withOpacity(0.05),
-              valueColor: AlwaysStoppedAnimation<Color>(
-                  goalMet ? Colors.amber : Colors.greenAccent),
-              minHeight: 6,
             ),
           ),
           const SizedBox(height: 16),
@@ -246,10 +263,14 @@ class _PlannerScreenState extends State<PlannerScreen> {
               
               final dayData = streak.weekdaysData[weekday];
               final isCardio = dayData != null && (dayData['isCardio'] == true);
+              final isMixed = dayData != null && (dayData['isMixed'] == true);
               
               Color primaryColor = Colors.greenAccent;
               Color secondaryColor = Colors.green;
-              if (isCardio) {
+              if (isMixed) {
+                primaryColor = Colors.purpleAccent;
+                secondaryColor = Colors.deepPurple;
+              } else if (isCardio) {
                 primaryColor = Colors.lightBlueAccent;
                 secondaryColor = Colors.blue;
               }
@@ -325,12 +346,24 @@ class _PlannerScreenState extends State<PlannerScreen> {
   void _showWorkoutSummary(BuildContext context, int weekday, Map<String, dynamic> data) {
     final name = data['name'] ?? 'Treino';
     final isCardio = data['isCardio'] == true;
+    final isMixed = data['isMixed'] == true;
     final tonnage = data['tonnage'] ?? 0.0;
     final duration = data['duration'] ?? 0;
     final cals = data['activeCalories'] ?? 0;
+    final workoutCount = data['workoutCount'] ?? 1;
     
     final mins = duration ~/ 60;
     final String dayName = _daysOfWeek[weekday - 1];
+    
+    IconData iconType = Icons.fitness_center;
+    Color iconColor = Colors.greenAccent;
+    if (isMixed) {
+      iconType = Icons.all_inclusive;
+      iconColor = Colors.purpleAccent;
+    } else if (isCardio) {
+      iconType = Icons.directions_run;
+      iconColor = Colors.lightBlueAccent;
+    }
 
     showModalBottomSheet(
       context: context,
@@ -348,15 +381,14 @@ class _PlannerScreenState extends State<PlannerScreen> {
             children: [
               Row(
                 children: [
-                  Icon(isCardio ? Icons.directions_run : Icons.fitness_center, 
-                       color: isCardio ? Colors.lightBlueAccent : Colors.greenAccent),
+                  Icon(iconType, color: iconColor),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          name,
+                          workoutCount > 1 ? "Treino Duplo ($workoutCount)" : name,
                           style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                         Text(
@@ -395,6 +427,107 @@ class _PlannerScreenState extends State<PlannerScreen> {
       ],
     );
   }
+
+  void _showGoalSettings(BuildContext context, TrackerProvider provider, WorkoutStreak streak) {
+    int currentGoal = streak.weeklyGoal;
+    List<int> currentRestDays = List.from(streak.plannedRestDays);
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return Container(
+              padding: const EdgeInsets.all(24),
+              decoration: const BoxDecoration(
+                color: Color(0xFF1E1E1E),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Configurar Consistência", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 24),
+                  const Text("Meta Semanal (dias)", style: TextStyle(color: Colors.white70, fontSize: 14)),
+                  Slider(
+                    value: currentGoal.toDouble(),
+                    min: 1,
+                    max: 7,
+                    divisions: 6,
+                    activeColor: Colors.amber,
+                    label: currentGoal.toString(),
+                    onChanged: (val) {
+                      setModalState(() => currentGoal = val.toInt());
+                    },
+                  ),
+                  Center(
+                    child: Text("$currentGoal dias por semana", style: const TextStyle(color: Colors.amber, fontSize: 16, fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(height: 32),
+                  const Text("Dias de Descanso (Rest Days)", style: TextStyle(color: Colors.white70, fontSize: 14)),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: List.generate(7, (index) {
+                      final weekday = index + 1;
+                      final isRest = currentRestDays.contains(weekday);
+                      return GestureDetector(
+                        onTap: () {
+                          setModalState(() {
+                            if (isRest) {
+                              currentRestDays.remove(weekday);
+                            } else {
+                              currentRestDays.add(weekday);
+                            }
+                          });
+                        },
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: isRest ? Colors.white.withOpacity(0.15) : Colors.transparent,
+                            border: Border.all(color: isRest ? Colors.white54 : Colors.white12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            _daysOfWeek[index].substring(0, 1).toUpperCase(),
+                            style: TextStyle(color: isRest ? Colors.white : Colors.white54, fontWeight: isRest ? FontWeight.bold : FontWeight.normal),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.amber,
+                        foregroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: () {
+                        provider.workoutProvider?.updateWeeklyConsistencySettings(currentGoal, currentRestDays);
+                        Navigator.pop(ctx);
+                      },
+                      child: const Text("Salvar Preferências", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            );
+          }
+        );
+      }
+    );
+  }
+
 
   Widget _buildPlannedVolumeHeader(
     BuildContext context,
