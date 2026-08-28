@@ -751,6 +751,41 @@ class WorkoutProvider extends ChangeNotifier {
     RestTimerService.instance.clear();
   }
 
+  void adjustRestTimer(int seconds) {
+    if (activeWorkout == null) return;
+    final active = activeWorkout!;
+    if (active.restTimer == null) return;
+
+    final timer = active.restTimer!;
+    final newEndTime = timer.endTime + (seconds * 1000);
+    final newTotalSeconds = (timer.totalSeconds + seconds) > 0 ? (timer.totalSeconds + seconds) : 1;
+
+    final newTimer = WatchRestTimer(
+      endTime: newEndTime,
+      totalSeconds: newTotalSeconds,
+      nextExerciseName: timer.nextExerciseName,
+      nextSetNum: timer.nextSetNum,
+      nextTargetReps: timer.nextTargetReps,
+      nextTargetWeight: timer.nextTargetWeight,
+      isPrep: timer.isPrep,
+    );
+
+    activeWorkout = active.copyWith(
+      restTimer: newTimer,
+    );
+
+    _save();
+    RestTimerService.instance.start(
+      endTimeMs: newTimer.endTime,
+      seconds: newTimer.totalSeconds,
+      prep: newTimer.isPrep,
+      exName: newTimer.nextExerciseName,
+      setNum: newTimer.nextSetNum,
+      targetReps: newTimer.nextTargetReps,
+      targetWeight: newTimer.nextTargetWeight,
+    );
+  }
+
   void updateExerciseWeightReps(int exIndex, double weight, int reps) {
     if (activeWorkout == null) return;
     final active = activeWorkout!;
@@ -1537,13 +1572,31 @@ class WorkoutProvider extends ChangeNotifier {
     }
 
     final thisWeekStart = startOfWeek(now);
+    
+    // Maintain current preferences
+    final int currentWeeklyGoal = streak.weeklyGoal;
+    final List<int> currentPlannedRestDays = streak.plannedRestDays;
 
     final Set<int> weekdaysTrainedSet = {};
+    final Map<int, Map<String, dynamic>> weekdaysData = {};
+    
     for (final log in history) {
       try {
         final logDate = parseUtcDate(log.date);
         if (!logDate.isBefore(thisWeekStart)) {
-          weekdaysTrainedSet.add(logDate.weekday);
+          final weekday = logDate.weekday;
+          weekdaysTrainedSet.add(weekday);
+          
+          // Only save the first (newest) log for each weekday for the summary
+          if (!weekdaysData.containsKey(weekday)) {
+            weekdaysData[weekday] = {
+              'name': log.name,
+              'duration': log.duration,
+              'tonnage': log.totalWeight,
+              'activeCalories': log.activeCalories ?? 0,
+              'isCardio': log.name.toLowerCase().contains('cardio') || log.totalWeight == 0,
+            };
+          }
         } else {
           break; // Optimization: history is ordered newest to oldest
         }
@@ -1552,26 +1605,52 @@ class WorkoutProvider extends ChangeNotifier {
     final List<int> weekdaysTrained = weekdaysTrainedSet.toList()..sort();
     int currentWeekCount = weekdaysTrained.length;
 
+    // Calculando Streak e Freezes retroativamente
     int consecutiveWeeks = 0;
-    final Set<String> weeksWithWorkout = {};
-    for (final log in history) {
-      try {
-        final logDate = parseUtcDate(log.date);
-        final ws = startOfWeek(logDate);
-        final weekKey = '${ws.year}-${ws.month}-${ws.day}';
-        weeksWithWorkout.add(weekKey);
-      } catch (_) {}
-    }
+    int availableFreezes = 1;
 
-    DateTime checkWeek = thisWeekStart;
-    while (true) {
-      final key = '${checkWeek.year}-${checkWeek.month}-${checkWeek.day}';
-      if (weeksWithWorkout.contains(key)) {
-        consecutiveWeeks++;
-        checkWeek = checkWeek.subtract(const Duration(days: 7));
-      } else {
-        break;
-      }
+    if (history.isNotEmpty) {
+      try {
+        DateTime oldestWeek = startOfWeek(parseUtcDate(history.last.date));
+        
+        Map<String, int> weekCounts = {};
+        for (final log in history) {
+          final logDate = parseUtcDate(log.date);
+          final ws = startOfWeek(logDate);
+          final weekKey = '${ws.year}-${ws.month}-${ws.day}';
+          weekCounts[weekKey] = (weekCounts[weekKey] ?? 0) + 1;
+        }
+
+        DateTime current = oldestWeek;
+        while (!current.isAfter(thisWeekStart)) {
+          final key = '${current.year}-${current.month}-${current.day}';
+          final count = weekCounts[key] ?? 0;
+          
+          // Don't penalize the CURRENT week if it's 0 so far, because the week isn't over yet!
+          bool isCurrentWeek = current.year == thisWeekStart.year && current.month == thisWeekStart.month && current.day == thisWeekStart.day;
+
+          if (count >= currentWeeklyGoal) {
+            // Perfect week! Only award if it's a past week, or if they already hit it this week.
+            availableFreezes++;
+            consecutiveWeeks++;
+          } else if (count > 0) {
+            consecutiveWeeks++;
+          } else {
+            // 0 workouts
+            if (isCurrentWeek) {
+               // week is not over, so we don't break the streak yet, but it's 0 so far.
+            } else {
+              if (availableFreezes > 0) {
+                availableFreezes--;
+                consecutiveWeeks++;
+              } else {
+                consecutiveWeeks = 0; // Streak broken
+              }
+            }
+          }
+          current = current.add(const Duration(days: 7));
+        }
+      } catch (_) {}
     }
 
     final Set<String> completedTodayRoutinesSet = {};
@@ -1587,7 +1666,7 @@ class WorkoutProvider extends ChangeNotifier {
             completedThisWeekRoutinesSet.add(log.name);
           }
         } else {
-           break; // Optimization: history is ordered newest to oldest
+           break; // Optimization
         }
 
         // Today routines
@@ -1613,6 +1692,10 @@ class WorkoutProvider extends ChangeNotifier {
       weekdaysTrained: weekdaysTrained,
       completedTodayRoutines: completedTodayRoutines,
       completedThisWeekRoutines: completedThisWeekRoutines,
+      weeklyGoal: currentWeeklyGoal,
+      plannedRestDays: currentPlannedRestDays,
+      availableFreezes: availableFreezes,
+      weekdaysData: weekdaysData,
     );
 
     WatchService.instance.sendStreak(streak);

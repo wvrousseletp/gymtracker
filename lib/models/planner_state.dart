@@ -12,6 +12,10 @@ class WorkoutStreak {
   final List<int> weekdaysTrained; // Dias da semana treinados (1 = Segunda, 7 = Domingo)
   final List<String> completedTodayRoutines; // Rotinas concluídas hoje
   final List<String> completedThisWeekRoutines; // IDs das rotinas concluídas nesta semana (usado para Metas Semanais)
+  final int weeklyGoal; // Meta de dias na semana
+  final List<int> plannedRestDays; // Dias planejados de descanso (1=Segunda, 7=Domingo)
+  final int availableFreezes; // Congelamentos de ofensiva disponíveis
+  final Map<int, Map<String, dynamic>> weekdaysData; // Dados resumidos dos treinos por dia {weekday: {name, isCardio, tonnage, duration, calories}}
 
   WorkoutStreak({
     required this.currentWeekCount,
@@ -20,6 +24,10 @@ class WorkoutStreak {
     this.weekdaysTrained = const [],
     this.completedTodayRoutines = const [],
     this.completedThisWeekRoutines = const [],
+    this.weeklyGoal = 4,
+    this.plannedRestDays = const [],
+    this.availableFreezes = 1,
+    this.weekdaysData = const {},
   });
 
   Map<String, dynamic> toJson() => {
@@ -29,16 +37,36 @@ class WorkoutStreak {
     'weekdaysTrained': weekdaysTrained,
     'completedTodayRoutines': completedTodayRoutines,
     'completedThisWeekRoutines': completedThisWeekRoutines,
+    'weeklyGoal': weeklyGoal,
+    'plannedRestDays': plannedRestDays,
+    'availableFreezes': availableFreezes,
+    'weekdaysData': weekdaysData,
   };
 
-  factory WorkoutStreak.fromJson(Map<String, dynamic> json) => WorkoutStreak(
-    currentWeekCount: (json['currentWeekCount'] as num?)?.toInt() ?? 0,
-    consecutiveWeeks: (json['consecutiveWeeks'] as num?)?.toInt() ?? 0,
-    lastWorkoutDate: json['lastWorkoutDate'] ?? '',
-    weekdaysTrained: (json['weekdaysTrained'] as List?)?.map((e) => (e as num).toInt()).toList() ?? const [],
-    completedTodayRoutines: (json['completedTodayRoutines'] as List?)?.map((e) => e.toString()).toList() ?? const [],
-    completedThisWeekRoutines: (json['completedThisWeekRoutines'] as List?)?.map((e) => e.toString()).toList() ?? const [],
-  );
+  factory WorkoutStreak.fromJson(Map<String, dynamic> json) {
+    Map<int, Map<String, dynamic>> parsedWeekdaysData = {};
+    if (json['weekdaysData'] != null) {
+      final Map<String, dynamic> data = json['weekdaysData'];
+      data.forEach((key, value) {
+        if (int.tryParse(key) != null) {
+          parsedWeekdaysData[int.parse(key)] = Map<String, dynamic>.from(value);
+        }
+      });
+    }
+
+    return WorkoutStreak(
+      currentWeekCount: (json['currentWeekCount'] as num?)?.toInt() ?? 0,
+      consecutiveWeeks: (json['consecutiveWeeks'] as num?)?.toInt() ?? 0,
+      lastWorkoutDate: json['lastWorkoutDate'] ?? '',
+      weekdaysTrained: (json['weekdaysTrained'] as List?)?.map((e) => (e as num).toInt()).toList() ?? const [],
+      completedTodayRoutines: (json['completedTodayRoutines'] as List?)?.map((e) => e.toString()).toList() ?? const [],
+      completedThisWeekRoutines: (json['completedThisWeekRoutines'] as List?)?.map((e) => e.toString()).toList() ?? const [],
+      weeklyGoal: (json['weeklyGoal'] as num?)?.toInt() ?? 4,
+      plannedRestDays: (json['plannedRestDays'] as List?)?.map((e) => (e as num).toInt()).toList() ?? const [],
+      availableFreezes: (json['availableFreezes'] as num?)?.toInt() ?? 1,
+      weekdaysData: parsedWeekdaysData,
+    );
+  }
 }
 
 class SettingsState {

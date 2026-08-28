@@ -41,6 +41,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkWhatsNew();
+      _checkWeeklyReport();
     });
   }
 
@@ -274,6 +275,96 @@ class _MainNavigationState extends State<MainNavigation> {
     );
   }
 
+
+  void _checkWeeklyReport() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lastReportStr = prefs.getString('lastWeeklyReportDate');
+    
+    final now = DateTime.now();
+    
+    // We want to show the report on Monday (weekday == 1)
+    if (now.weekday == 1) {
+      final todayStr = '${now.year}-${now.month}-${now.day}';
+      
+      if (lastReportStr != todayStr) {
+        // Prepare the report for the previous week
+        final provider = context.read<TrackerProvider>().workoutProvider;
+        if (provider != null) {
+          final history = provider.history;
+          
+          DateTime startOfLastWeek = DateTime(now.year, now.month, now.day - 7);
+          DateTime endOfLastWeek = DateTime(now.year, now.month, now.day - 1, 23, 59, 59);
+          
+          int totalWorkouts = 0;
+          double totalTonnage = 0.0;
+          int totalDuration = 0;
+          
+          for (final log in history) {
+            try {
+              final logDate = DateTime.parse(log.date).toLocal();
+              if (logDate.isAfter(startOfLastWeek) && logDate.isBefore(endOfLastWeek)) {
+                totalWorkouts++;
+                totalTonnage += log.totalWeight;
+                totalDuration += log.duration;
+              }
+            } catch (_) {}
+          }
+          
+          if (totalWorkouts > 0) {
+            // Show report dialog
+            if (mounted) {
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  backgroundColor: const Color(0xFF1E1E1E),
+                  title: const Row(
+                    children: [
+                      Icon(Icons.emoji_events, color: Colors.amber, size: 28),
+                      SizedBox(width: 8),
+                      Text("Resumo da Semana", style: TextStyle(color: Colors.white)),
+                    ],
+                  ),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text("Ótimo trabalho semana passada!", style: const TextStyle(color: Colors.white70, fontSize: 16)),
+                      const SizedBox(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _buildReportStat(Icons.fitness_center, "$totalWorkouts", "Treinos"),
+                          _buildReportStat(Icons.timer, "${totalDuration ~/ 60}m", "Tempo"),
+                          if (totalTonnage > 0) _buildReportStat(Icons.monitor_weight, "${(totalTonnage / 1000).toStringAsFixed(1)}t", "Volume"),
+                        ],
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text("Bora para a próxima!", style: TextStyle(color: Colors.greenAccent)),
+                    ),
+                  ],
+                ),
+              );
+            }
+          }
+        }
+        await prefs.setString('lastWeeklyReportDate', todayStr);
+      }
+    }
+  }
+
+  Widget _buildReportStat(IconData icon, String value, String label) {
+    return Column(
+      children: [
+        Icon(icon, color: Colors.white70, size: 28),
+        const SizedBox(height: 8),
+        Text(value, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+        Text(label, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+      ],
+    );
+  }
   void _checkWhatsNew() async {
     final prefs = await SharedPreferences.getInstance();
     const currentBuild = 255;

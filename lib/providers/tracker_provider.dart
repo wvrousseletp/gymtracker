@@ -31,6 +31,7 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   ProfileProvider? _profileProvider;
   WorkoutProvider? _workoutProvider;
+  WorkoutProvider? get workoutProvider => _workoutProvider;
   DietProvider? _dietProvider;
 
   bool _isLoading = true;

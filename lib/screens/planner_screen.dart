@@ -118,57 +118,69 @@ class _PlannerScreenState extends State<PlannerScreen> {
     }
   }
 
-  Widget _buildWeeklyStreakHeader(
-    BuildContext context,
-    TrackerProvider provider,
-    PlannerState state,
-    Color accentColor,
-  ) {
+  Widget _buildWeeklyStreakHeader(BuildContext context, TrackerProvider provider,
+      PlannerState state, Color accentColor) {
     final streak = state.streak;
-
-    // Formatar data do último treino
-    String lastWorkoutStr = "Nenhum";
-    if (streak.lastWorkoutDate.isNotEmpty) {
-      try {
-        final dt = DateTime.parse(streak.lastWorkoutDate).toLocal();
-        final diff = DateTime.now().difference(dt);
-        if (diff.inDays == 0) {
-          lastWorkoutStr = "Hoje";
-        } else if (diff.inDays == 1) {
-          lastWorkoutStr = "Ontem";
-        } else {
-          lastWorkoutStr = "Há ${diff.inDays} dias";
-        }
-      } catch (_) {
-        lastWorkoutStr = "Recente";
-      }
-    }
+    
+    // Calcula progresso da meta
+    final currentCount = streak.currentWeekCount;
+    final goal = streak.weeklyGoal > 0 ? streak.weeklyGoal : 1;
+    final progress = (currentCount / goal).clamp(0.0, 1.0);
+    final goalMet = currentCount >= goal;
 
     return GlassCard(
       padding: const EdgeInsets.all(16),
-      borderColor: Colors.orangeAccent.withOpacity(0.15),
+      borderColor: goalMet ? Colors.amber.withOpacity(0.3) : Colors.orangeAccent.withOpacity(0.15),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.local_fire_department_rounded,
-                  color: Colors.orangeAccent, size: 24),
+              Icon(Icons.local_fire_department_rounded,
+                  color: goalMet ? Colors.amber : Colors.orangeAccent, size: 24),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 "Consistência Semanal",
                 style: TextStyle(
-                  color: Colors.white,
+                  color: goalMet ? Colors.amber : Colors.white,
                   fontSize: 15,
                   fontWeight: FontWeight.w800,
                 ),
               ),
               const Spacer(),
+              // Freezes badge
+              if (streak.availableFreezes > 0)
+                Container(
+                  margin: const EdgeInsets.only(right: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.blueAccent.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blueAccent.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.ac_unit, color: Colors.blueAccent, size: 12),
+                      const SizedBox(width: 4),
+                      Text(
+                        "${streak.availableFreezes}",
+                        style: const TextStyle(
+                          color: Colors.blueAccent,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              // Weeks badge
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.orangeAccent.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orangeAccent.withOpacity(0.2)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -177,7 +189,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
                         color: Colors.orangeAccent, size: 14),
                     const SizedBox(width: 4),
                     Text(
-                      "${streak.consecutiveWeeks} ${streak.consecutiveWeeks == 1 ? 'semana' : 'semanas'}",
+                      "${streak.consecutiveWeeks} sem.",
                       style: const TextStyle(
                         color: Colors.orangeAccent,
                         fontSize: 11,
@@ -190,106 +202,197 @@ class _PlannerScreenState extends State<PlannerScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          // Indicador de treinos na semana
+          // Indicador de treinos na semana com Barra de Progresso
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                "Frequência Semanal:",
+                "Meta Semanal:",
                 style: TextStyle(
                     color: Colors.white70,
                     fontSize: 13,
                     fontWeight: FontWeight.w600),
               ),
               Text(
-                "${streak.currentWeekCount} ${streak.currentWeekCount == 1 ? 'dia' : 'dias'}",
-                style: const TextStyle(
-                    color: Colors.greenAccent,
+                "$currentCount / $goal dias",
+                style: TextStyle(
+                    color: goalMet ? Colors.amber : Colors.greenAccent,
                     fontSize: 13,
                     fontWeight: FontWeight.bold),
               ),
             ],
           ),
           const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: progress,
+              backgroundColor: Colors.white.withOpacity(0.05),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                  goalMet ? Colors.amber : Colors.greenAccent),
+              minHeight: 6,
+            ),
+          ),
+          const SizedBox(height: 16),
           // 7 círculos representando os treinos realizados
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: List.generate(7, (dayIndex) {
-              final filled = streak.weekdaysTrained.isNotEmpty
-                  ? streak.weekdaysTrained.contains(dayIndex + 1)
-                  : dayIndex < streak.currentWeekCount;
-              final dayInitial =
-                  _daysOfWeek[dayIndex].substring(0, 1).toUpperCase();
-              return Container(
-                width: 34,
-                height: 34,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: filled
-                      ? RadialGradient(
-                          colors: [
-                            Colors.greenAccent.withOpacity(0.35),
-                            Colors.green.withOpacity(0.12),
-                          ],
-                          center: const Alignment(-0.3, -0.3),
-                          radius: 0.8,
-                        )
-                      : LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Colors.white.withOpacity(0.05),
-                            Colors.white.withOpacity(0.01),
-                          ],
-                        ),
-                  boxShadow: filled
-                      ? [
-                          BoxShadow(
-                            color: Colors.greenAccent.withOpacity(0.25),
-                            blurRadius: 10,
-                            spreadRadius: 1,
-                          ),
-                        ]
-                      : [],
-                  border: Border.all(
-                    color: filled
-                        ? Colors.greenAccent.withOpacity(0.8)
-                        : Colors.white.withOpacity(0.08),
-                    width: 1.5,
-                  ),
+              final weekday = dayIndex + 1;
+              final isToday = weekday == DateTime.now().weekday;
+              final filled = streak.weekdaysTrained.contains(weekday);
+              final isPlannedRest = streak.plannedRestDays.contains(weekday);
+              final dayInitial = _daysOfWeek[dayIndex].substring(0, 1).toUpperCase();
+              
+              final dayData = streak.weekdaysData[weekday];
+              final isCardio = dayData != null && (dayData['isCardio'] == true);
+              
+              Color primaryColor = Colors.greenAccent;
+              Color secondaryColor = Colors.green;
+              if (isCardio) {
+                primaryColor = Colors.lightBlueAccent;
+                secondaryColor = Colors.blue;
+              }
+              
+              Widget content = Text(
+                dayInitial,
+                style: TextStyle(
+                  color: filled ? Colors.white : (isToday ? Colors.white70 : Colors.white24),
+                  fontSize: 12,
+                  fontWeight: filled || isToday ? FontWeight.bold : FontWeight.normal,
                 ),
-                child: Text(
-                  dayInitial,
-                  style: TextStyle(
-                    color: filled ? Colors.white : Colors.white24,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w900,
+              );
+              
+              if (!filled && isPlannedRest) {
+                content = Icon(Icons.battery_charging_full_rounded, color: Colors.white54, size: 16);
+              }
+
+              return GestureDetector(
+                onTap: filled && dayData != null ? () {
+                  _showWorkoutSummary(context, weekday, dayData);
+                } : null,
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: filled
+                        ? RadialGradient(
+                            colors: [
+                              primaryColor.withOpacity(0.35),
+                              secondaryColor.withOpacity(0.12),
+                            ],
+                            center: const Alignment(-0.3, -0.3),
+                            radius: 0.8,
+                          )
+                        : LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Colors.white.withOpacity(0.05),
+                              Colors.white.withOpacity(0.01),
+                            ],
+                          ),
+                    boxShadow: filled
+                        ? [
+                            BoxShadow(
+                              color: primaryColor.withOpacity(0.25),
+                              blurRadius: 10,
+                              spreadRadius: 1,
+                            ),
+                          ]
+                        : [],
+                    border: Border.all(
+                      color: isToday
+                          ? Colors.white.withOpacity(0.5)
+                          : (filled
+                              ? primaryColor.withOpacity(0.8)
+                              : (isPlannedRest ? Colors.white.withOpacity(0.15) : Colors.white.withOpacity(0.08))),
+                      width: isToday ? 2.0 : 1.5,
+                    ),
                   ),
+                  child: content,
                 ),
               );
             }),
           ),
-          const SizedBox(height: 12),
-          // Último treino realizado
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                "Último treino:",
-                style: TextStyle(color: Colors.white38, fontSize: 12),
-              ),
-              Text(
-                lastWorkoutStr,
-                style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
         ],
       ),
+    );
+  }
+
+  void _showWorkoutSummary(BuildContext context, int weekday, Map<String, dynamic> data) {
+    final name = data['name'] ?? 'Treino';
+    final isCardio = data['isCardio'] == true;
+    final tonnage = data['tonnage'] ?? 0.0;
+    final duration = data['duration'] ?? 0;
+    final cals = data['activeCalories'] ?? 0;
+    
+    final mins = duration ~/ 60;
+    final String dayName = _daysOfWeek[weekday - 1];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          decoration: const BoxDecoration(
+            color: Color(0xFF1E1E1E),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(isCardio ? Icons.directions_run : Icons.fitness_center, 
+                       color: isCardio ? Colors.lightBlueAccent : Colors.greenAccent),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          dayName,
+                          style: const TextStyle(color: Colors.white54, fontSize: 14),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildSummaryStat(Icons.timer, "$mins min", "Duração"),
+                  if (cals > 0) _buildSummaryStat(Icons.local_fire_department, "$cals kcal", "Calorias"),
+                  if (!isCardio && tonnage > 0) _buildSummaryStat(Icons.monitor_weight, "${(tonnage / 1000).toStringAsFixed(1)}t", "Volume"),
+                ],
+              ),
+              const SizedBox(height: 32),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSummaryStat(IconData icon, String value, String label) {
+    return Column(
+      children: [
+        Icon(icon, color: Colors.white70, size: 28),
+        const SizedBox(height: 8),
+        Text(value, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+        Text(label, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+      ],
     );
   }
 

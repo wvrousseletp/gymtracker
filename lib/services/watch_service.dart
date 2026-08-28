@@ -223,6 +223,16 @@ class WatchService {
         });
         break;
 
+      case 'adjustRestTimer':
+        final int seconds = call.arguments['seconds'] as int;
+        _provider!.workoutProvider?.adjustRestTimer(seconds);
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (_provider!.state?.activeWorkout != null) {
+            sendActiveWorkout(_provider!.state!.activeWorkout!);
+          }
+        });
+        break;
+
       case 'updateExerciseWeightReps':
         final int exerciseIndex = call.arguments['exerciseIndex'] as int;
         final double weight = (call.arguments['weight'] as num).toDouble();
