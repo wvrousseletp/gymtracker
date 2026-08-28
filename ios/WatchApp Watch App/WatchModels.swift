@@ -505,21 +505,27 @@ struct WatchStreak: Codable {
     let lastWorkoutDate: String
     let weekdaysTrained: [Int]
     let completedTodayRoutines: [String]
+    var weeklyGoal: Int?
+    var availableFreezes: Int?
 
     enum CodingKeys: String, CodingKey {
-        case currentWeekCount, consecutiveWeeks, lastWorkoutDate, weekdaysTrained, completedTodayRoutines
+        case currentWeekCount, consecutiveWeeks, lastWorkoutDate, weekdaysTrained, completedTodayRoutines, weeklyGoal, availableFreezes
     }
 
-    init(currentWeekCount: Int, consecutiveWeeks: Int, lastWorkoutDate: String, weekdaysTrained: [Int] = [], completedTodayRoutines: [String] = []) {
+    init(currentWeekCount: Int, consecutiveWeeks: Int, lastWorkoutDate: String, weekdaysTrained: [Int] = [], completedTodayRoutines: [String] = [], weeklyGoal: Int? = nil, availableFreezes: Int? = nil) {
         self.currentWeekCount = currentWeekCount
         self.consecutiveWeeks = consecutiveWeeks
         self.lastWorkoutDate = lastWorkoutDate
         self.weekdaysTrained = weekdaysTrained
         self.completedTodayRoutines = completedTodayRoutines
+        self.weeklyGoal = weeklyGoal
+        self.availableFreezes = availableFreezes
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.weeklyGoal = try container.decodeIfPresent(Int.self, forKey: .weeklyGoal)
+        self.availableFreezes = try container.decodeIfPresent(Int.self, forKey: .availableFreezes)
         currentWeekCount = (try? container.decode(Int.self, forKey: .currentWeekCount)) ?? 0
         consecutiveWeeks = (try? container.decode(Int.self, forKey: .consecutiveWeeks)) ?? 0
         lastWorkoutDate = (try? container.decode(String.self, forKey: .lastWorkoutDate)) ?? ""

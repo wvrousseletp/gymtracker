@@ -1566,7 +1566,7 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _ExerciseSelectionSheet(
+      builder: (context) => ExerciseSelectionSheet(
         library: library,
         accentColor: accentColor,
         onSave: (selectedExercises) {
@@ -1603,23 +1603,23 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
   }
 }
 
-class _ExerciseSelectionSheet extends StatefulWidget {
+class ExerciseSelectionSheet extends StatefulWidget {
   final List<LibraryExercise> library;
   final Color accentColor;
   final void Function(List<LibraryExercise>) onSave;
 
-  const _ExerciseSelectionSheet({
+  const ExerciseSelectionSheet({
     required this.library,
     required this.accentColor,
     required this.onSave,
   });
 
   @override
-  State<_ExerciseSelectionSheet> createState() =>
-      _ExerciseSelectionSheetState();
+  State<ExerciseSelectionSheet> createState() =>
+      ExerciseSelectionSheetState();
 }
 
-class _ExerciseSelectionSheetState extends State<_ExerciseSelectionSheet> {
+class ExerciseSelectionSheetState extends State<ExerciseSelectionSheet> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   final Set<String> _activeFilters = {};

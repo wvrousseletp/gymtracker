@@ -96,6 +96,7 @@ class RestTimerService {
   }
 
   void _handleCompleted() {
+    HapticFeedback.heavyImpact();
     isActive.value = false;
     isPrep.value = false;
     totalSeconds.value = 0;

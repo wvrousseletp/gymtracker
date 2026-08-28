@@ -1,3 +1,4 @@
+import 'routines_screen.dart';
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -280,7 +281,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 if (parts.length >= 3) {
                   final exerciseId = parts[1];
                   final sets = int.tryParse(parts[2]) ?? 3;
-                  final libEx = provider.library
+                  final libEx = provider.state!.library
                       .where((l) => l.id == exerciseId)
                       .firstOrNull;
                   if (libEx != null) {
@@ -985,7 +986,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                     itemCount: routine.exercises.length,
                     itemBuilder: (context, idx) {
                       final ex = routine.exercises[idx];
-                      final libEx = provider.library.firstWhere(
+                      final libEx = provider.state!.library.firstWhere(
                         (l) => l.id == ex.exerciseId,
                         orElse: () => LibraryExercise(
                             id: '',
@@ -1027,7 +1028,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                     onPressed: () async {
                       // Check if there are any cardio exercises in this routine
                       final hasCardio = routine.exercises.any((ex) {
-                        final libEx = provider.library.firstWhere(
+                        final libEx = provider.state!.library.firstWhere(
                           (l) => l.id == ex.exerciseId,
                           orElse: () => LibraryExercise(
                               id: '',
@@ -1171,7 +1172,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
                       final List<LogExercise> logExercises =
                           routine.exercises.map((re) {
-                        final lib = provider.library.firstWhere(
+                        final lib = provider.state!.library.firstWhere(
                           (l) => l.id == re.exerciseId,
                           orElse: () => LibraryExercise(
                               id: '',
@@ -1258,7 +1259,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
   void _showSelectExerciseDialog(
       BuildContext context, WorkoutProvider provider) {
-    final library = provider.library;
+    final library = provider.state!.library;
     final accentColor = ThemeUtils.getColor(
         Provider.of<ProfileProvider>(context, listen: false)
             .currentProfile
@@ -3277,6 +3278,31 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                 onTap: () {
                   Navigator.pop(ctx);
                   _showExerciseNotesDialog(context, provider, ex);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.swap_horiz, color: accentColor),
+                title: const Text("Substituir Exercício",
+                    style: TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.bold)),
+                subtitle: const Text("Trocar por outro exercício similar",
+                    style: TextStyle(color: Colors.white54, fontSize: 12)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (ctx) => ExerciseSelectionSheet(
+                      library: provider.state!.library,
+                      accentColor: accentColor,
+                      onSave: (selected) {
+                        if (selected.isNotEmpty) {
+                          provider.workoutProvider?.replaceActiveExercise(ex.id, selected.first);
+                        }
+                      },
+                    ),
+                  );
                 },
               ),
               ListTile(

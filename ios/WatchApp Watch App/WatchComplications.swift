@@ -89,12 +89,27 @@ struct CircularComplicationView: View {
                         .font(.system(size: 9, weight: .bold, design: .rounded))
                 }
             } else {
-                VStack(spacing: 0) {
-                    Image(systemName: "flame.fill")
-                        .font(.system(size: 11))
-                        .foregroundColor(.orange)
-                    Text("\(entry.streak?.consecutiveWeeks ?? 0)")
-                        .font(.system(size: 9, weight: .bold))
+                let current = entry.streak?.currentWeekCount ?? 0
+                let goal = entry.streak?.weeklyGoal ?? (entry.streak?.weekdaysTrained.count ?? 0 > 0 ? max(entry.streak!.weekdaysTrained.count, 3) : 3)
+                let actualGoal = goal > 0 ? goal : 1
+                let progress = min(Double(current) / Double(actualGoal), 1.0)
+                let freezes = entry.streak?.availableFreezes ?? 0
+
+                ZStack {
+                    Circle()
+                        .stroke(Color.orange.opacity(0.2), lineWidth: 3)
+                    Circle()
+                        .trim(from: 0, to: CGFloat(progress))
+                        .stroke(progress >= 1.0 ? Color.yellow : Color.orange, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                        .rotationEffect(.degrees(-90))
+                    
+                    VStack(spacing: 0) {
+                        Image(systemName: progress >= 1.0 ? "star.fill" : (freezes > 0 ? "snowflake" : "flame.fill"))
+                            .font(.system(size: 10))
+                            .foregroundColor(progress >= 1.0 ? .yellow : (freezes > 0 ? .cyan : .orange))
+                        Text("\(entry.streak?.consecutiveWeeks ?? 0)")
+                            .font(.system(size: 9, weight: .bold))
+                    }
                 }
             }
         }
