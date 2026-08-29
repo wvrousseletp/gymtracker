@@ -1,3 +1,4 @@
+// ignore_for_file: prefer_const_constructors, use_build_context_synchronously, use_key_in_widget_constructors
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/tracker_provider.dart';
