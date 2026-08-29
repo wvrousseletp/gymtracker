@@ -686,8 +686,6 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                     totalSeconds: newTotalSeconds,
                     nextExerciseName: timer.nextExerciseName,
                     nextSetNum: timer.nextSetNum,
-                    nextTargetReps: timer.nextTargetReps,
-                    nextTargetWeight: timer.nextTargetWeight,
                     isPrep: timer.isPrep
                 )
                 

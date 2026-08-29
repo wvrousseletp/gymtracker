@@ -328,42 +328,44 @@ class _MainNavigationState extends State<MainNavigation> {
 
           // Show report dialog
           if (mounted) {
-            showDialog(
-              context: context,
-              builder: (ctx) => AlertDialog(
-                backgroundColor: const Color(0xFF1E1E1E),
-                title: Row(
-                  children: [
-                    const Icon(Icons.emoji_events, color: Colors.amber, size: 28),
-                    const SizedBox(width: 8),
-                    Expanded(child: Text(title, style: const TextStyle(color: Colors.white, fontSize: 18))),
-                  ],
-                ),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(message, style: const TextStyle(color: Colors.white70, fontSize: 16)),
-                    if (totalWorkouts > 0) ...[
-                      const SizedBox(height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _buildReportStat(Icons.fitness_center, "$totalWorkouts", "Treinos"),
-                          _buildReportStat(Icons.timer, "${totalDuration ~/ 60}m", "Tempo"),
-                          if (totalTonnage > 0) _buildReportStat(Icons.monitor_weight, "${(totalTonnage / 1000).toStringAsFixed(1)}t", "Volume"),
-                        ],
-                      ),
-                    ]
-                  ],
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    child: const Text("Bora para a próxima!", style: TextStyle(color: Colors.greenAccent)),
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  backgroundColor: const Color(0xFF1E1E1E),
+                  title: Row(
+                    children: [
+                      const Icon(Icons.emoji_events, color: Colors.amber, size: 28),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(title, style: const TextStyle(color: Colors.white, fontSize: 18))),
+                    ],
                   ),
-                ],
-              ),
-            );
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(message, style: const TextStyle(color: Colors.white70, fontSize: 16)),
+                      if (totalWorkouts > 0) ...[
+                        const SizedBox(height: 24),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _buildReportStat(Icons.fitness_center, "$totalWorkouts", "Treinos"),
+                            _buildReportStat(Icons.timer, "${totalDuration ~/ 60}m", "Tempo"),
+                            if (totalTonnage > 0) _buildReportStat(Icons.monitor_weight, "${(totalTonnage / 1000).toStringAsFixed(1)}t", "Volume"),
+                          ],
+                        ),
+                      ]
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text("Bora para a próxima!", style: TextStyle(color: Colors.greenAccent)),
+                    ),
+                  ],
+                ),
+              );
+            });
           }
         }
         await prefs.setString('lastWeeklyReportDate', todayStr);
@@ -394,7 +396,9 @@ class _MainNavigationState extends State<MainNavigation> {
           : _releaseNotesHistory.where((n) => n.buildNumber > lastSeenBuild && n.buildNumber <= currentBuild).toList();
 
       if (notesToShow.isNotEmpty) {
-        _showWhatsNewDialog(context, notesToShow);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _showWhatsNewDialog(context, notesToShow);
+        });
       }
       await prefs.setInt('last_seen_whats_new_build', currentBuild);
     }
