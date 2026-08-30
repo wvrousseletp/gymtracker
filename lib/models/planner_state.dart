@@ -40,16 +40,17 @@ class WorkoutStreak {
     'weeklyGoal': weeklyGoal,
     'plannedRestDays': plannedRestDays,
     'availableFreezes': availableFreezes,
-    'weekdaysData': weekdaysData,
+    'weekdaysData': weekdaysData.map((k, v) => MapEntry(k.toString(), v)),
   };
 
   factory WorkoutStreak.fromJson(Map<String, dynamic> json) {
     Map<int, Map<String, dynamic>> parsedWeekdaysData = {};
     if (json['weekdaysData'] != null) {
-      final Map<String, dynamic> data = json['weekdaysData'];
+      final data = json['weekdaysData'] as Map;
       data.forEach((key, value) {
-        if (int.tryParse(key) != null) {
-          parsedWeekdaysData[int.parse(key)] = Map<String, dynamic>.from(value);
+        final intKey = int.tryParse(key.toString());
+        if (intKey != null && value is Map) {
+          parsedWeekdaysData[intKey] = Map<String, dynamic>.from(value);
         }
       });
     }
