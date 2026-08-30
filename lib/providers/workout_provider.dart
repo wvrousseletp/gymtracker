@@ -515,6 +515,36 @@ class WorkoutProvider extends ChangeNotifier {
         false);
   }
 
+  
+    void addDropSet(int exIdx, int sourceSetIdx, double dropWeight, int dropReps) {
+    if (activeWorkout == null) return;
+    final ex = activeWorkout!.exercises[exIdx];
+    
+    final newSetsState = List<bool>.from(ex.setsState)..insert(sourceSetIdx + 1, false);
+    final newWeights = ex.weightsPerSet != null 
+        ? (List<double>.from(ex.weightsPerSet!)..insert(sourceSetIdx + 1, dropWeight)) 
+        : (List<double>.filled(ex.sets, ex.weight, growable: true)..insert(sourceSetIdx + 1, dropWeight));
+    final newReps = ex.repsPerSet != null 
+        ? (List<int>.from(ex.repsPerSet!)..insert(sourceSetIdx + 1, dropReps)) 
+        : (List<int>.filled(ex.sets, ex.reps, growable: true)..insert(sourceSetIdx + 1, dropReps));
+    final newFailureReps = List<int?>.from(ex.failureReps);
+    if (newFailureReps.length < ex.sets + 1) {
+      while(newFailureReps.length < ex.sets) { newFailureReps.add(null); }
+      newFailureReps.insert(sourceSetIdx + 1, null);
+    }
+    
+    final newEx = ex.copyWith(
+      sets: ex.sets + 1,
+      setsState: newSetsState,
+      weightsPerSet: newWeights,
+      repsPerSet: newReps,
+      failureReps: newFailureReps,
+    );
+    
+    activeWorkout!.exercises[exIdx] = newEx;
+    notifyListeners();
+  }
+
   void completeSet(int exIndex, int setIndex, bool isDone,
       {double? distance,
       int? duration,
@@ -1892,6 +1922,20 @@ class WorkoutProvider extends ChangeNotifier {
   }
 
   // --- LIBRARY OPERATIONS ---
+  
+    LogExercise? getLastPerformance(String exerciseName) {
+    if (history.isEmpty) return null;
+    for (int i = history.length - 1; i >= 0; i--) {
+      final log = history[i];
+      for (final ex in log.exercises) {
+        if (ex.name == exerciseName) {
+          return ex;
+        }
+      }
+    }
+    return null;
+  }
+
   void addLibraryExercise(String name, String muscle, String measurementType,
       String? notes, String? executionType,
       {bool isStationary = false}) {

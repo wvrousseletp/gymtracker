@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <application
+    $toAdd<application
         android:label="Los Mooscles"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">

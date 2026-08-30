@@ -64,7 +64,7 @@
 			<array>
 				<string>losmooscles</string>
 			</array>
-		</dict>
+		$toAdd</dict>
 		<dict>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>

@@ -9,6 +9,7 @@ import '../services/watch_service.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/profile_avatar.dart';
 import 'workout_screen.dart';
+import '../widgets/floating_rest_timer.dart';
 import 'routines_screen.dart';
 import 'progress_screen.dart';
 import 'diet_screen.dart';
@@ -155,6 +156,14 @@ class _MainNavigationState extends State<MainNavigation> {
                 ),
               ],
             ),
+          ),
+
+          // Rest Timer Flutuante Global
+          const Positioned(
+            bottom: 100, // Acima do dock de navegação
+            left: 0,
+            right: 0,
+            child: FloatingRestTimer(),
           ),
 
           // Dock de Navegação Flutuante

@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/exercise.dart';
 import '../models/enums.dart';
+import '../models/workout_log.dart';
 
 class PremiumStrengthSetCard extends StatefulWidget {
   final int setIndex;
   final ActiveExercise ex;
+  final LogExercise? ghostSet;
   final bool isDone;
   final bool isActive;
   final bool isFailure;
@@ -22,6 +24,7 @@ class PremiumStrengthSetCard extends StatefulWidget {
     super.key,
     required this.setIndex,
     required this.ex,
+    this.ghostSet,
     required this.isDone,
     required this.isActive,
     required this.isFailure,
@@ -180,14 +183,18 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
             border: Border.all(
               color: widget.isFailure
                   ? Colors.redAccent.withOpacity(0.7)
-                  : widget.accentColor.withOpacity(0.6),
+                  : (widget.ghostSet != null && (weight * reps) > (widget.ghostSet!.weight * widget.ghostSet!.reps))
+                      ? const Color(0xff00e676).withOpacity(0.8) // Verde Neon se superou
+                      : widget.accentColor.withOpacity(0.6),
               width: 2.0,
             ),
             boxShadow: [
               BoxShadow(
-                color:
-                    (widget.isFailure ? Colors.redAccent : widget.accentColor)
-                        .withOpacity(0.20),
+                color: widget.isFailure 
+                    ? Colors.redAccent.withOpacity(0.20) 
+                    : (widget.ghostSet != null && (weight * reps) > (widget.ghostSet!.weight * widget.ghostSet!.reps))
+                        ? const Color(0xff00e676).withOpacity(0.3)
+                        : widget.accentColor.withOpacity(0.20),
                 blurRadius: 20,
                 spreadRadius: 2,
               )
@@ -294,10 +301,24 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        _buildBigValue(
-                          value: "$reps",
-                          unit: isTime ? "segundos" : "repetições",
-                          isActive: true,
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            _buildBigValue(
+                              value: "$reps",
+                              unit: isTime ? "segundos" : "repetições",
+                              isActive: true,
+                            ),
+                            if (widget.ghostSet != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                isTime 
+                                  ? "Último: ${widget.ghostSet!.reps ?? widget.ghostSet!.reps}s"
+                                  : "Último: ${widget.ghostSet!.reps}",
+                                style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 10, fontWeight: FontWeight.bold),
+                              ),
+                            ]
+                          ],
                         ),
                         if (!isTime || weight > 0) ...[
                           Container(
@@ -305,12 +326,24 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
                             height: 48,
                             color: Colors.white.withOpacity(0.12),
                           ),
-                          _buildBigValue(
-                            value: weight > 0
-                                ? weight.toStringAsFixed(1).replaceAll('.0', '')
-                                : "-",
-                            unit: "quilogramas (kg)",
-                            isActive: true,
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _buildBigValue(
+                                value: weight > 0
+                                    ? weight.toStringAsFixed(1).replaceAll('.0', '')
+                                    : "-",
+                                unit: "quilogramas (kg)",
+                                isActive: true,
+                              ),
+                              if (widget.ghostSet != null) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  "Último: ${widget.ghostSet!.weight.toStringAsFixed(1).replaceAll('.0', '')}kg",
+                                  style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 10, fontWeight: FontWeight.bold),
+                                ),
+                              ]
+                            ],
                           ),
                         ],
                         Container(

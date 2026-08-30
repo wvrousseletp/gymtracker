@@ -13,11 +13,13 @@ import '../models/exercise.dart';
 import '../models/workout_log.dart';
 import '../models/planner_state.dart';
 import '../widgets/glass_card.dart';
+import '../widgets/speech_notes_dialog.dart';
 
 import '../widgets/profile_avatar.dart';
 import '../utils/workout_starter.dart';
 import '../services/rest_timer_service.dart';
 import '../widgets/premium_strength_set_card.dart';
+import '../widgets/workout_numpad_sheet.dart';
 import '../widgets/plate_calculator_dialog.dart';
 import 'exercise_hub_screen.dart';
 
@@ -3187,16 +3189,36 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                     },
                   );
                 } else {
-                  return PremiumStrengthSetCard(
+                  final ghostSet = widget.provider.workoutProvider?.getLastPerformance(ex.name);
+                  final card = PremiumStrengthSetCard(
                     key: _getOrCreateKey(exIdx, setIdx),
                     setIndex: setIdx,
                     ex: ex,
+                    ghostSet: ghostSet,
                     isDone: isDone,
                     isActive: isActive,
                     isFailure: isFailure,
                     accentColor: accentColor,
-                    onEditTap: () => _showEditSetWeightRepsDialog(
-                        context, exIdx, setIdx, ex),
+                    onEditTap: () async {
+                      final currentWeight = ex.weightsPerSet != null && setIdx < ex.weightsPerSet!.length
+                          ? ex.weightsPerSet![setIdx]
+                          : ex.weight;
+                      final currentReps = ex.repsPerSet != null && setIdx < ex.repsPerSet!.length
+                          ? ex.repsPerSet![setIdx]
+                          : ex.reps;
+                      final result = await WorkoutNumpadSheet.show(
+                        context,
+                        initialWeight: currentWeight,
+                        initialReps: currentReps,
+                        isTime: ex.measurementType == MeasurementType.time,
+                        title: "Editar Série ${setIdx + 1}",
+                        ghostText: ghostSet != null ? "Último: ${ghostSet.reps} reps - ${ghostSet.weight}kg" : null,
+                      );
+                      if (result != null) {
+                        widget.provider.updateExerciseSetWeightReps(
+                            exIdx, setIdx, result['weight'], result['reps']);
+                      }
+                    },
                     onSaveValues: (w, r) {
                       widget.provider
                           .updateExerciseSetWeightReps(exIdx, setIdx, w, r);
@@ -3237,6 +3259,49 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                         _scrollToNextSet(exIdx);
                       }
                     },
+                  );
+                  return Dismissible(
+                    key: ValueKey('dismiss-${ex.id}-$setIdx'),
+                    direction: DismissDirection.horizontal,
+                    confirmDismiss: (direction) async {
+                      HapticFeedback.heavyImpact();
+                      if (direction == DismissDirection.startToEnd) {
+                        // Swipe Right: Falha
+                        widget.provider.completeSet(
+                          exIdx,
+                          setIdx,
+                          isDone,
+                          isFailure: !isFailure,
+                          failureRep: !isFailure ? ex.failureReps[setIdx] : null,
+                        );
+                        if (!isFailure) {
+                          _showFailureRepDialog(context, exIdx, setIdx, ex.failureReps[setIdx]);
+                        }
+                      } else if (direction == DismissDirection.endToStart) {
+                        // Swipe Left: Drop-set
+                        final w = ex.weightsPerSet != null && setIdx < ex.weightsPerSet!.length ? ex.weightsPerSet![setIdx] : ex.weight;
+                        final dropWeight = (w * 0.8).roundToDouble(); // -20%
+                        final r = ex.repsPerSet != null && setIdx < ex.repsPerSet!.length ? ex.repsPerSet![setIdx] : ex.reps;
+                        
+                        // We need a method to append a drop set. We will just modify the provider.
+                        widget.provider.workoutProvider?.addDropSet(exIdx, setIdx, dropWeight, r);
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Drop-set adicionado!'), duration: Duration(seconds: 1)));
+                      }
+                      return false; // Nunca remove o card
+                    },
+                    background: Container(
+                      alignment: Alignment.centerLeft,
+                      padding: const EdgeInsets.only(left: 20),
+                      color: Colors.redAccent,
+                      child: const Row(children: [Icon(Icons.warning, color: Colors.white), SizedBox(width: 8), Text("Falha", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))]),
+                    ),
+                    secondaryBackground: Container(
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.only(right: 20),
+                      color: Colors.purpleAccent,
+                      child: const Row(mainAxisAlignment: MainAxisAlignment.end, children: [Text("Drop-set", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), SizedBox(width: 8), Icon(Icons.arrow_downward, color: Colors.white)]),
+                    ),
+                    child: card,
                   );
                 }
               },
@@ -3331,47 +3396,14 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
   void _showExerciseNotesDialog(
       BuildContext context, TrackerProvider provider, ActiveExercise ex) {
     final initialNote = provider.state?.exerciseNotes[ex.id] ?? "";
-    final controller = TextEditingController(text: initialNote);
-
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xff1c1c1e),
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: Colors.white.withOpacity(0.1))),
-        title: Text("Anotações: ${ex.name}",
-            style: const TextStyle(color: Colors.white, fontSize: 16)),
-        content: TextField(
-          controller: controller,
-          maxLines: 5,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            hintText: "Ex: Regulagem do banco no 3...",
-            hintStyle: const TextStyle(color: Colors.white30),
-            filled: true,
-            fillColor: Colors.white.withOpacity(0.05),
-            border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child:
-                const Text("Cancelar", style: TextStyle(color: Colors.white54)),
-          ),
-          TextButton(
-            onPressed: () {
-              provider.updateExerciseNote(ex.id, controller.text);
-              Navigator.pop(ctx);
-            },
-            child: const Text("Salvar",
-                style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-        ],
+      builder: (ctx) => SpeechNotesDialog(
+        exerciseName: ex.name,
+        initialNote: initialNote,
+        onSave: (note) {
+          provider.updateExerciseNote(ex.id, note);
+        },
       ),
     );
   }
