@@ -61,35 +61,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     }
   }
 
-  Widget _buildQuickRoutineFilterChip(String label, Color accentColor) {
-    final isSelected = _quickRoutineFilter == label;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _quickRoutineFilter = label;
-        });
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: isSelected ? accentColor.withOpacity(0.2) : Colors.white.withOpacity(0.04),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: isSelected ? accentColor.withOpacity(0.6) : Colors.white.withOpacity(0.08),
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? accentColor : Colors.white60,
-            fontSize: 11,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-          ),
-        ),
-      ),
-    );
-  }
+  
 
   void _showRestDayModal(BuildContext context, WorkoutProvider provider, Color accentColor) {
     String selectedReason = 'Recuperação Muscular';
@@ -263,12 +235,75 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     }
   }
 
+  
+  Widget _buildTipRow(IconData icon, String title, String desc, Color accent) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(color: accent.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+            child: Icon(icon, color: accent, size: 16),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                const SizedBox(height: 2),
+                Text(desc, style: const TextStyle(color: Colors.white54, fontSize: 11, height: 1.3)),
+              ],
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPremiumFilterChip(String label, IconData icon, Color accentColor) {
+    final isSelected = _quickRoutineFilter == label;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _quickRoutineFilter = label;
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? accentColor : Colors.white.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? accentColor : Colors.white.withOpacity(0.1),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: isSelected ? Colors.black : Colors.white54, size: 16),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.black : Colors.white70,
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildIdleView(BuildContext context, WorkoutProvider provider) {
     final todayLabel = _getTodayLabel();
     final plannedRoutineIds = provider.todayPlannedItems;
-    final accentColor = context.select<ProfileProvider, Color>(
-      (p) => ThemeUtils.getColor(p.currentProfile.colorAccent),
-    );
+    final trackerProvider = Provider.of<TrackerProvider>(context, listen: false);
+    final accentColor = ThemeUtils.getColor(trackerProvider.currentProfile.colorAccent);
 
     final isRestDay = _isRestDayToday(provider.history);
 
@@ -293,23 +328,18 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                     MeasurementType.distance) &&
                             libEx.measurementType != MeasurementType.time;
                     return Routine(
-                      id: "temp-$exerciseId-$sets",
+                      id: "temp-${exerciseId}-${sets}",
                       name: "${libEx.name} (Avulso)",
                       defaultRest: 60,
                       exercises: [
                         RoutineExercise(
-                          id: "e-temp-${const Uuid().v4()}",
-                          exerciseId: exerciseId,
-                          sets: isCardio ? 1 : sets,
-                          reps: isCardio
-                              ? 0
-                              : (libEx.measurementType == MeasurementType.time
-                                  ? 45
-                                  : 10),
+                          id: "e-temp-1",
+                          exerciseId: libEx.id,
+                          sets: sets,
+                          reps: isCardio ? 30 : 10,
                           rest: 60,
-                          weight: 0,
+                          weight: 0.0,
                           isCardio: isCardio,
-                          allowCardioSets: false,
                         )
                       ],
                     );
@@ -331,595 +361,551 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: SingleChildScrollView(
-        padding:
-            const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 100),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Banners de Treinos Adiados
-            ...provider.postponedWorkouts.asMap().entries.map((entry) {
-              final index = entry.key;
-              final postponed = entry.value;
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: GlassCard(
-                  borderColor: accentColor.withOpacity(0.3),
-                  opacity: 0.05,
-                  padding: const EdgeInsets.all(14),
+      body: CustomScrollView(
+        slivers: [
+          // 1. Sticky Header
+          SliverAppBar(
+            backgroundColor: Colors.transparent,
+            pinned: true,
+            elevation: 0,
+            expandedHeight: 90,
+            flexibleSpace: FlexibleSpaceBar(
+              titlePadding: const EdgeInsets.only(left: 16, bottom: 12),
+              title: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "${_getGreeting()}, ${(trackerProvider.currentProfile.name.isNotEmpty ? trackerProvider.currentProfile.name : 'ATLETA').toUpperCase()} 👋",
+                    style: TextStyle(
+                      color: accentColor,
+                      fontSize: 8,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.0
+                    ),
+                  ),
+                  Text(
+                    todayLabel.toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              // Badge de Ofensiva / Streak
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: accentColor.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: accentColor.withOpacity(0.3)),
+                  ),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.snooze, color: accentColor, size: 24),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "TREINO ADIADO ${provider.postponedWorkouts.length > 1 ? '(${index + 1}/${provider.postponedWorkouts.length})' : ''}",
-                              style: const TextStyle(
-                                color: Colors.white54,
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              postponed.name,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () =>
-                            provider.discardPostponedWorkout(index),
-                        icon: const Icon(Icons.delete_outline,
-                            color: Colors.redAccent, size: 20),
-                        tooltip: "Descartar",
-                        constraints: const BoxConstraints(),
-                        padding: const EdgeInsets.all(6),
-                      ),
+                      const Text("🔥", style: TextStyle(fontSize: 12)),
                       const SizedBox(width: 4),
-                      ElevatedButton(
-                        onPressed: () {
-                          if (provider.activeWorkout != null) {
-                            // If there's an active workout, postpone it first, then resume this one
-                            provider.postponeActiveWorkout();
-                            // After postpone, resume this one (index might shift since we added to the list)
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              provider.resumePostponedWorkout(index);
-                            });
-                          } else {
-                            provider.resumePostponedWorkout(index);
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: accentColor,
-                          foregroundColor: Colors.black,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          minimumSize: Size.zero,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10)),
-                        ),
-                        child: const Text(
-                          "Retomar",
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 11),
+                      Text(
+                        "${provider.streak.consecutiveWeeks} sem",
+                        style: TextStyle(
+                          color: accentColor,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
                     ],
                   ),
                 ),
-              );
-            }),
-
-            // Cabeçalho Enriquecido com Saudação e Streak
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "${_getGreeting()}, ${(provider.currentProfile?.name ?? 'ATLETA').toUpperCase()} 👋",
-                      style: TextStyle(
-                          color: accentColor,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1.0),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      todayLabel.toUpperCase(),
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900),
-                    ),
-                  ],
-                ),
-                Row(
-                  children: [
-                    // Badge de Ofensiva / Streak
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: accentColor.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: accentColor.withOpacity(0.3)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text("🔥", style: TextStyle(fontSize: 12)),
-                          const SizedBox(width: 4),
-                          Text(
-                            "${provider.streak.consecutiveWeeks} sem",
-                            style: TextStyle(
-                              color: accentColor,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    IconButton(
-                      icon: const Icon(Icons.settings_outlined,
-                          color: Colors.white70),
-                      onPressed: () {
-                        _showSettingsDialog(context,
-                            Provider.of<TrackerProvider>(context, listen: false));
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  "Treino Planejado para Hoje",
-                  style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700),
-                ),
-                if (!isRestDay)
-                  TextButton.icon(
-                    onPressed: () {
-                      HapticFeedback.lightImpact();
-                      _showRestDayModal(context, provider, accentColor);
-                    },
-                    icon: Icon(Icons.nightlight_round,
-                        color: accentColor, size: 14),
-                    label: Text(
-                      "Descansar Hoje",
-                      style: TextStyle(
-                          color: accentColor,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold),
-                    ),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            if (isRestDay)
-              const GlassCard(
-                padding: EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-                child: Center(
-                  child: Text(
-                    "Hoje é seu dia de descanso!\nAproveite para se recuperar.",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold),
-                  ),
-                ),
-              )
-            else if (plannedRoutines.isEmpty)
-              const GlassCard(
-                padding: EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-                child: Center(
-                  child: Text(
-                    "Nenhum treino planejado para hoje.\nConfigure na aba 'Planejar' ou inicie um treino rápido abaixo.",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                        color: Colors.white38,
-                        fontSize: 12,
-                        fontStyle: FontStyle.italic),
-                  ),
-                ),
-              )
-            else
-              Column(
-                children: plannedRoutines.map((routine) {
-                  final isCompleted =
-                      _isRoutineCompletedToday(routine.name, provider.history);
-                  final totalSets = routine.exercises
-                      .fold<int>(0, (sum, ex) => sum + ex.sets);
-
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    child: GestureDetector(
-                      onTap: () {
-                        // Ao clicar no card, abre uma visão dos exercícios agendados
-                        _showPlannedRoutineDetails(context, provider, routine);
-                      },
-                      child: GlassCard(
-                        padding: const EdgeInsets.all(16),
-                        borderColor: isCompleted
-                            ? Colors.green.withOpacity(0.35)
-                            : Colors.white.withOpacity(0.04),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              ),
+              // Botão de dicas (gestos ocultos)
+              Center(
+                child: IconButton(
+                  icon: const Icon(Icons.help_outline, color: Colors.white54, size: 20),
+                  onPressed: () {
+                    showModalBottomSheet(
+                      context: context,
+                      backgroundColor: Colors.transparent,
+                      builder: (ctx) => Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: const BoxDecoration(
+                          color: Color(0xff1c1c1e),
+                          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            Row(
+                              children: [
+                                Icon(Icons.lightbulb_outline, color: accentColor),
+                                const SizedBox(width: 8),
+                                const Text("Dicas e Gestos", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            _buildTipRow(Icons.swipe_right, "Deslize para a Direita", "Marque a série instantaneamente como Falha.", accentColor),
+                            _buildTipRow(Icons.swipe_left, "Deslize para a Esquerda", "Cria um Drop-Set automático cortando 20% do peso.", accentColor),
+                            _buildTipRow(Icons.dialpad, "Teclado Rápido", "Toque no peso ou nas repetições para abrir o teclado numérico customizado.", accentColor),
+                            _buildTipRow(Icons.mic, "Notas por Voz", "No botão de notas do exercício, segure o microfone para ditar suas observações.", accentColor),
+                            const SizedBox(height: 24),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              // Settings
+              Center(
+                child: IconButton(
+                  icon: const Icon(Icons.settings_outlined, color: Colors.white70),
+                  onPressed: () {
+                    _showSettingsDialog(context, trackerProvider);
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+          ),
+
+          // Main Content
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.only(left: 16, right: 16, bottom: 100),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 2. Shimmer & Swipe nos Treinos Adiados
+                  ...provider.postponedWorkouts.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final postponed = entry.value;
+                    return Dismissible(
+                      key: ValueKey("postponed-${index}-${postponed.name}"),
+                      direction: DismissDirection.endToStart,
+                      onDismissed: (_) {
+                        provider.discardPostponedWorkout(index);
+                      },
+                      background: Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.redAccent,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.only(right: 20),
+                        child: const Icon(Icons.delete, color: Colors.white),
+                      ),
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          gradient: LinearGradient(
+                            colors: [
+                              accentColor.withOpacity(0.1),
+                              accentColor.withOpacity(0.02),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          border: Border.all(color: accentColor.withOpacity(0.3)),
+                        ),
+                        padding: const EdgeInsets.all(14),
+                        child: Row(
+                          children: [
+                            Icon(Icons.snooze, color: accentColor, size: 24),
+                            const SizedBox(width: 12),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          routine.name,
-                                          style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 15,
-                                              fontWeight: FontWeight.w800),
-                                        ),
-                                      ),
-                                      if (isCompleted) ...[
-                                        const SizedBox(width: 8),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 6, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color:
-                                                Colors.green.withOpacity(0.12),
-                                            borderRadius:
-                                                BorderRadius.circular(6),
-                                            border: Border.all(
-                                                color: Colors.green
-                                                    .withOpacity(0.35)),
-                                          ),
-                                          child: const Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Icon(Icons.check,
-                                                  color: Colors.green,
-                                                  size: 10),
-                                              SizedBox(width: 2),
-                                              Text(
-                                                "CONCLUÍDO",
-                                                style: TextStyle(
-                                                    color: Colors.green,
-                                                    fontSize: 9,
-                                                    fontWeight:
-                                                        FontWeight.w900),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ],
+                                  Text(
+                                    "TREINO ADIADO ${provider.postponedWorkouts.length > 1 ? '(' + (index + 1).toString() + '/' + provider.postponedWorkouts.length.toString() + ')' : ''}",
+                                    style: const TextStyle(
+                                      color: Colors.white54,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.5,
+                                    ),
                                   ),
-                                  const SizedBox(height: 6),
-                                  Builder(builder: (context) {
-                                    final estMin = provider.estimateRoutineDurationMinutes(routine);
-                                    final tags = provider.getRoutineMuscleTags(routine);
-                                    final last = provider.getLastRoutineExecution(routine.name);
-                                    final daysAgo = _getDaysAgoText(last?.date);
-                                    return Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          "${routine.exercises.length} ex • $totalSets séries • ~$estMin min${daysAgo.isNotEmpty ? ' • $daysAgo' : ''}",
-                                          style: const TextStyle(color: Colors.white54, fontSize: 11),
-                                        ),
-                                        if (tags.isNotEmpty) ...[
-                                          const SizedBox(height: 6),
-                                          Wrap(
-                                            spacing: 4,
-                                            runSpacing: 4,
-                                            children: tags.map((tag) => Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                              decoration: BoxDecoration(
-                                                color: accentColor.withOpacity(0.12),
-                                                borderRadius: BorderRadius.circular(4),
-                                              ),
-                                              child: Text(
-                                                tag,
-                                                style: TextStyle(
-                                                    color: accentColor,
-                                                    fontSize: 9,
-                                                    fontWeight: FontWeight.bold),
-                                              ),
-                                            )).toList(),
-                                          ),
-                                        ],
-                                      ],
-                                    );
-                                  }),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    postponed.name,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
-                            const SizedBox(width: 16),
                             ElevatedButton(
                               onPressed: () {
                                 if (provider.activeWorkout != null) {
-                                  _promptPostponeOrCreateWorkout(
-                                      context, provider, () {
-                                    WorkoutStarter.startWithCountdown(
-                                      context,
-                                      provider,
-                                      routine,
-                                      WorkoutRecovery(
-                                          sleepOk: SleepQuality.okay,
-                                          pain: [],
-                                          warmUpDone: false),
-                                      false,
-                                    );
+                                  provider.postponeActiveWorkout();
+                                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                                    provider.resumePostponedWorkout(index);
                                   });
                                 } else {
-                                  WorkoutStarter.startWithCountdown(
-                                    context,
-                                    provider,
-                                    routine,
-                                    WorkoutRecovery(
-                                        sleepOk: SleepQuality.okay,
-                                        pain: [],
-                                        warmUpDone: false),
-                                    false,
-                                  );
+                                  provider.resumePostponedWorkout(index);
                                 }
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: isCompleted
-                                    ? Colors.white.withOpacity(0.1)
-                                    : accentColor,
-                                foregroundColor:
-                                    isCompleted ? Colors.white : Colors.black,
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10)),
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 14, vertical: 8),
-                                elevation: 0,
+                                backgroundColor: accentColor,
+                                foregroundColor: Colors.black,
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                minimumSize: Size.zero,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                               ),
-                              child: Text(
-                                isCompleted ? "Treinar Denovo" : "Iniciar",
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w800, fontSize: 13),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-
-            const SizedBox(height: 24),
-
-            // Iniciar Treino Avulso/Rápido com Filtros
-            const Text(
-              "Treino Rápido (Qualquer Rotina)",
-              style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 8),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _buildQuickRoutineFilterChip('Todos', accentColor),
-                  const SizedBox(width: 6),
-                  _buildQuickRoutineFilterChip('Superiores', accentColor),
-                  const SizedBox(width: 6),
-                  _buildQuickRoutineFilterChip('Inferiores', accentColor),
-                  const SizedBox(width: 6),
-                  _buildQuickRoutineFilterChip('Cardio', accentColor),
-                ],
-              ),
-            ),
-            const SizedBox(height: 10),
-
-            if (provider.routines.isEmpty)
-              const GlassCard(
-                padding: EdgeInsets.all(16),
-                child: Center(
-                  child: Text(
-                    "Nenhuma rotina cadastrada na biblioteca.",
-                    style: TextStyle(
-                        color: Colors.white38,
-                        fontSize: 12,
-                        fontStyle: FontStyle.italic),
-                  ),
-                ),
-              )
-            else
-              Builder(builder: (context) {
-                final filtered = provider.routines.where((r) {
-                  if (_quickRoutineFilter == 'Todos') return true;
-                  final tags = provider.getRoutineMuscleTags(r).map((t) => t.toLowerCase()).toList();
-                  if (_quickRoutineFilter == 'Superiores') {
-                    return tags.any((t) => t.contains('peito') || t.contains('costas') || t.contains('ombro') || t.contains('bíceps') || t.contains('tríceps'));
-                  } else if (_quickRoutineFilter == 'Inferiores') {
-                    return tags.any((t) => t.contains('perna') || t.contains('quad') || t.contains('panturrilha') || t.contains('glút'));
-                  } else if (_quickRoutineFilter == 'Cardio') {
-                    return r.exercises.any((e) => e.isCardio);
-                  }
-                  return true;
-                }).toList();
-
-                if (filtered.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 12),
-                    child: Text(
-                      "Nenhuma rotina nesta categoria.",
-                      style: TextStyle(color: Colors.white38, fontSize: 12, fontStyle: FontStyle.italic),
-                    ),
-                  );
-                }
-
-                return GridView.count(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 2.0,
-                  children: filtered.map((routine) {
-                    final estMin = provider.estimateRoutineDurationMinutes(routine);
-                    final lastLog = provider.getLastRoutineExecution(routine.name);
-                    final daysAgoText = _getDaysAgoText(lastLog?.date);
-                    return GestureDetector(
-                      onTap: () {
-                        if (provider.activeWorkout != null) {
-                          _promptPostponeOrCreateWorkout(context, provider, () {
-                            WorkoutStarter.startWithCountdown(
-                              context,
-                              provider,
-                              routine,
-                              WorkoutRecovery(
-                                  sleepOk: SleepQuality.okay,
-                                  pain: [],
-                                  warmUpDone: false),
-                              false,
-                            );
-                          });
-                        } else {
-                          WorkoutStarter.startWithCountdown(
-                            context,
-                            provider,
-                            routine,
-                            WorkoutRecovery(
-                                sleepOk: SleepQuality.okay,
-                                pain: [],
-                                warmUpDone: false),
-                            false,
-                          );
-                        }
-                      },
-                      child: GlassCard(
-                        padding: const EdgeInsets.all(10),
-                        borderColor: Colors.white.withOpacity(0.04),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              routine.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(height: 2),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  "${routine.exercises.length} ex • ~$estMin min",
-                                  style: const TextStyle(
-                                      color: Colors.white38, fontSize: 10),
-                                ),
-                                if (daysAgoText.isNotEmpty)
-                                  Text(
-                                    daysAgoText,
-                                    style: TextStyle(
-                                        color: accentColor.withOpacity(0.8),
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                              ],
+                              child: const Text("Retomar", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
                             ),
                           ],
                         ),
                       ),
                     );
-                  }).toList(),
-                );
-              }),
-            const SizedBox(height: 24),
+                  }),
 
-            // Iniciar Exercício Avulso
-            const Text(
-              "Iniciar Exercício Avulso",
-              style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 8),
-
-            GestureDetector(
-              onTap: () {
-                _showSelectExerciseDialog(context, provider);
-              },
-              child: GlassCard(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
-                borderColor: Colors.white.withOpacity(0.04),
-                child: Row(
-                  children: [
-                    Icon(Icons.play_circle_outline,
-                        color: accentColor, size: 28),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Selecionar da Biblioteca",
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        "Treino Planejado para Hoje",
+                        style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w700),
+                      ),
+                      if (!isRestDay)
+                        TextButton.icon(
+                          onPressed: () {
+                            _showRestDayModal(context, provider, accentColor);
+                          },
+                          icon: Icon(Icons.nightlight_round, color: accentColor, size: 14),
+                          label: Text(
+                            "Descansar Hoje",
+                            style: TextStyle(color: accentColor, fontSize: 12, fontWeight: FontWeight.bold),
                           ),
-                          SizedBox(height: 2),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+
+                  // 3. Hero Card
+                  if (isRestDay)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xff1a1a2e), Color(0xff16213e)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        boxShadow: [
+                          BoxShadow(color: const Color(0xff1a1a2e).withOpacity(0.5), blurRadius: 20, offset: const Offset(0, 10))
+                        ],
+                      ),
+                      child: const Column(
+                        children: [
+                          Icon(Icons.nightlight_round, color: Colors.blueAccent, size: 40),
+                          SizedBox(height: 12),
                           Text(
-                            "Inicie uma sessão de treino rápida com unicamente esse exercício",
-                            style:
-                                TextStyle(color: Colors.white38, fontSize: 11),
+                            "Dia de Descanso",
+                            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            "Aproveite para se recuperar.",
+                            style: TextStyle(color: Colors.white54, fontSize: 13),
                           ),
                         ],
                       ),
+                    )
+                  else if (plannedRoutines.isEmpty)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        color: const Color(0xff1c1c1e),
+                        border: Border.all(color: Colors.white.withOpacity(0.05)),
+                      ),
+                      child: const Column(
+                        children: [
+                          Icon(Icons.calendar_today_outlined, color: Colors.white38, size: 40),
+                          SizedBox(height: 12),
+                          Text(
+                            "Nenhum treino planejado.",
+                            style: TextStyle(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            "Selecione um treino rápido abaixo.",
+                            style: TextStyle(color: Colors.white38, fontSize: 13),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    Column(
+                      children: plannedRoutines.map((routine) {
+                        final isCompleted = _isRoutineCompletedToday(routine.name, provider.history);
+                        return GestureDetector(
+                          onTap: () => _showPlannedRoutineDetails(context, provider, routine),
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              gradient: isCompleted 
+                                ? LinearGradient(colors: [Colors.green.withOpacity(0.2), Colors.green.withOpacity(0.05)])
+                                : LinearGradient(colors: [accentColor.withOpacity(0.3), accentColor.withOpacity(0.05)]),
+                              border: Border.all(
+                                color: isCompleted ? Colors.green.withOpacity(0.5) : accentColor.withOpacity(0.5),
+                                width: 1.5
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: (isCompleted ? Colors.green : accentColor).withOpacity(0.15),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 8)
+                                )
+                              ],
+                            ),
+                            child: Stack(
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.all(20),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Icon(isCompleted ? Icons.check_circle : Icons.fitness_center, 
+                                               color: isCompleted ? Colors.greenAccent : accentColor, size: 24),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              routine.name,
+                                              style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Wrap(
+                                        spacing: 6,
+                                        runSpacing: 6,
+                                        children: provider.getRoutineMuscleTags(routine).take(4).map((tag) => Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: Colors.black.withOpacity(0.4),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Text(tag, style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold)),
+                                        )).toList(),
+                                      ),
+                                      const SizedBox(height: 20),
+                                      SizedBox(
+                                        width: double.infinity,
+                                        height: 48,
+                                        child: ElevatedButton.icon(
+                                          onPressed: () {
+                                            if (provider.activeWorkout != null) {
+                                              _promptPostponeOrCreateWorkout(context, provider, () {
+                                                WorkoutStarter.startWithCountdown(context, provider, routine, WorkoutRecovery(sleepOk: SleepQuality.okay, pain: [], warmUpDone: false), false);
+                                              });
+                                            } else {
+                                              WorkoutStarter.startWithCountdown(context, provider, routine, WorkoutRecovery(sleepOk: SleepQuality.okay, pain: [], warmUpDone: false), false);
+                                            }
+                                          },
+                                          icon: Icon(isCompleted ? Icons.replay : Icons.play_arrow, color: isCompleted ? Colors.white : Colors.black),
+                                          label: Text(
+                                            isCompleted ? "TREINAR NOVAMENTE" : "INICIAR TREINO",
+                                            style: TextStyle(color: isCompleted ? Colors.white : Colors.black, fontWeight: FontWeight.bold, fontSize: 14),
+                                          ),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: isCompleted ? Colors.white.withOpacity(0.2) : accentColor,
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                            elevation: 0,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
                     ),
-                    const Icon(Icons.arrow_forward_ios,
-                        color: Colors.white38, size: 14),
-                  ],
-                ),
+
+                  const SizedBox(height: 24),
+                  
+                  // 4. Quick Filters
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        "Treino Rápido",
+                        style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w700),
+                      ),
+                      TextButton.icon(
+                        onPressed: () {
+                          // Treino Livre Vazio
+                          final emptyRoutine = Routine(
+                            id: "free-${const Uuid().v4()}",
+                            name: "Treino Livre",
+                            defaultRest: 60,
+                            exercises: [],
+                          );
+                          WorkoutStarter.startWithCountdown(context, provider, emptyRoutine, WorkoutRecovery(sleepOk: SleepQuality.okay, pain: [], warmUpDone: false), false);
+                        },
+                        icon: const Icon(Icons.add, color: Colors.white, size: 16),
+                        label: const Text("Treino Livre", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                        style: TextButton.styleFrom(backgroundColor: Colors.white.withOpacity(0.1), padding: const EdgeInsets.symmetric(horizontal: 12)),
+                      )
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _buildPremiumFilterChip('Todos', Icons.grid_view, accentColor),
+                        const SizedBox(width: 8),
+                        _buildPremiumFilterChip('Superiores', Icons.fitness_center, accentColor),
+                        const SizedBox(width: 8),
+                        _buildPremiumFilterChip('Inferiores', Icons.directions_run, accentColor),
+                        const SizedBox(width: 8),
+                        _buildPremiumFilterChip('Cardio', Icons.favorite, accentColor),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 5. Horizontal Carousel
+                  if (provider.routines.isEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.04),
+                        borderRadius: BorderRadius.circular(16)
+                      ),
+                      child: const Center(
+                        child: Text("Nenhuma rotina cadastrada.", style: TextStyle(color: Colors.white38)),
+                      ),
+                    )
+                  else
+                    Builder(builder: (context) {
+                      final filtered = provider.routines.where((r) {
+                        if (_quickRoutineFilter == 'Todos') return true;
+                        final tags = provider.getRoutineMuscleTags(r).map((t) => t.toLowerCase()).toList();
+                        if (_quickRoutineFilter == 'Superiores') {
+                          return tags.any((t) => t.contains('peito') || t.contains('costas') || t.contains('ombro') || t.contains('bíceps') || t.contains('tríceps'));
+                        } else if (_quickRoutineFilter == 'Inferiores') {
+                          return tags.any((t) => t.contains('perna') || t.contains('quad') || t.contains('panturrilha') || t.contains('glút'));
+                        } else if (_quickRoutineFilter == 'Cardio') {
+                          return r.exercises.any((e) => e.isCardio);
+                        }
+                        return true;
+                      }).toList();
+
+                      if (filtered.isEmpty) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: Text("Nenhuma rotina nesta categoria.", style: TextStyle(color: Colors.white38)),
+                        );
+                      }
+
+                      return SizedBox(
+                        height: 160,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
+                          itemCount: filtered.length,
+                          itemBuilder: (context, index) {
+                            final routine = filtered[index];
+                            final tags = provider.getRoutineMuscleTags(routine);
+                            return GestureDetector(
+                              onTap: () {
+                                if (provider.activeWorkout != null) {
+                                  _promptPostponeOrCreateWorkout(context, provider, () {
+                                    WorkoutStarter.startWithCountdown(context, provider, routine, WorkoutRecovery(sleepOk: SleepQuality.okay, pain: [], warmUpDone: false), false);
+                                  });
+                                } else {
+                                  WorkoutStarter.startWithCountdown(context, provider, routine, WorkoutRecovery(sleepOk: SleepQuality.okay, pain: [], warmUpDone: false), false);
+                                }
+                              },
+                              child: Container(
+                                width: 140,
+                                margin: const EdgeInsets.only(right: 12),
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xff1c1c1e),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: Colors.white.withOpacity(0.05)),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: accentColor.withOpacity(0.1),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(Icons.fitness_center, color: accentColor, size: 20),
+                                    ),
+                                    const Spacer(),
+                                    Text(
+                                      routine.name,
+                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      "${routine.exercises.length} ex.",
+                                      style: const TextStyle(color: Colors.white54, fontSize: 11),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    if (tags.isNotEmpty)
+                                      Text(
+                                        tags.first,
+                                        style: TextStyle(color: accentColor, fontSize: 10, fontWeight: FontWeight.bold),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      )
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    }),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
+
 
   void _showPlannedRoutineDetails(
       BuildContext context, WorkoutProvider provider, Routine routine) {
