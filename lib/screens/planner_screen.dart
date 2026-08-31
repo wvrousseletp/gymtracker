@@ -847,14 +847,11 @@ class _PlannerScreenState extends State<PlannerScreen> {
           const SizedBox(height: 16),
 
           // Agenda
-          if (state.settings.organizationMode == OrganizationMode.fixedDays)
-            ..._buildFixedDaysAgenda(context, provider, state, accentColor)
-          else if (state.settings.organizationMode ==
+          if (state.settings.organizationMode ==
               OrganizationMode.continuousList)
             ..._buildContinuousListAgenda(context, provider, state, accentColor)
-          else if (state.settings.organizationMode ==
-              OrganizationMode.weeklyGoals)
-            ..._buildWeeklyGoalsAgenda(context, provider, state, accentColor),
+          else
+            ..._buildFixedDaysAgenda(context, provider, state, accentColor),
         ],
       ),
     );
@@ -1286,15 +1283,6 @@ class _PlannerScreenState extends State<PlannerScreen> {
             provider: provider,
             accentColor: accentColor,
           ),
-          _buildModeOption(
-            context: context,
-            title: "Metas",
-            icon: Icons.checklist_rtl,
-            mode: OrganizationMode.weeklyGoals,
-            currentMode: state.settings.organizationMode,
-            provider: provider,
-            accentColor: accentColor,
-          ),
         ],
       ),
     );
@@ -1406,11 +1394,13 @@ class _PlannerScreenState extends State<PlannerScreen> {
       // Dias da semana
       ..._daysOfWeek.map((day) {
         final items = state.planner[day] ?? [];
+        final isToday = (_daysOfWeek.indexOf(day) + 1) == DateTime.now().weekday;
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
           child: GlassCard(
             padding: const EdgeInsets.all(16),
-            borderColor: Colors.white.withOpacity(0.06),
+            borderColor: isToday ? accentColor.withOpacity(0.6) : Colors.white.withOpacity(0.06),
+            opacity: isToday ? 0.12 : 0.07,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1418,13 +1408,43 @@ class _PlannerScreenState extends State<PlannerScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      _getDayNamePt(day),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                      ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _getDayNamePt(day),
+                          style: TextStyle(
+                            color: isToday ? Colors.white : Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        if (isToday)
+                          Container(
+                            margin: const EdgeInsets.only(left: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: accentColor,
+                              borderRadius: BorderRadius.circular(8),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: accentColor.withOpacity(0.4),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: const Text(
+                              "HOJE",
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                     Row(
                       children: [
@@ -1754,116 +1774,6 @@ class _PlannerScreenState extends State<PlannerScreen> {
                     ),
                   ),
                 ],
-              ),
-            ),
-          );
-        }),
-    ];
-  }
-
-  List<Widget> _buildWeeklyGoalsAgenda(BuildContext context,
-      TrackerProvider provider, PlannerState state, Color accentColor) {
-    final items = state.planner['weekly'] ?? [];
-    final completedNames = state.streak.completedThisWeekRoutines;
-
-    return [
-      Row(
-        children: [
-          const Icon(Icons.checklist_rtl, color: Colors.white70, size: 20),
-          const SizedBox(width: 8),
-          const Text(
-            "Metas Semanais",
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const Spacer(),
-          IconButton(
-            icon: const Icon(Icons.copy, color: Colors.white70, size: 20),
-            tooltip: "Importar de Dias Fixos",
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            onPressed: () {
-              _showImportDialog(context, provider, 'weekly');
-            },
-          ),
-          const SizedBox(width: 12),
-          IconButton(
-            icon: Icon(Icons.add_box_outlined, color: accentColor, size: 22),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            onPressed: () {
-              provider.addPlannerItem('weekly');
-            },
-          ),
-        ],
-      ),
-      const SizedBox(height: 12),
-      if (items.isEmpty)
-        const Padding(
-          padding: EdgeInsets.symmetric(vertical: 12),
-          child: Text(
-            "Nenhuma meta definida. Adicione os treinos que deseja concluir nesta semana.",
-            style: TextStyle(
-                color: Colors.white30,
-                fontSize: 13,
-                fontStyle: FontStyle.italic),
-          ),
-        )
-      else
-        ...items.asMap().entries.map((entry) {
-          final idx = entry.key;
-          final rawItem = entry.value;
-
-          bool isCompleted = false;
-          if (rawItem.startsWith('routine:')) {
-            final rId = rawItem.substring(8);
-            final r = state.routines.where((x) => x.id == rId).firstOrNull;
-            if (r != null && completedNames.contains(r.name)) {
-              isCompleted = true;
-            }
-          } else {
-            final r = state.routines.where((x) => x.id == rawItem).firstOrNull;
-            if (r != null && completedNames.contains(r.name)) {
-              isCompleted = true;
-            }
-          }
-
-          return Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            child: Opacity(
-              opacity: isCompleted ? 0.6 : 1.0,
-              child: GlassCard(
-                padding: const EdgeInsets.all(16),
-                borderColor: isCompleted
-                    ? Colors.greenAccent.withOpacity(0.3)
-                    : Colors.white.withOpacity(0.06),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          "Meta ${idx + 1}",
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        if (isCompleted)
-                          const Icon(Icons.check_circle,
-                              color: Colors.greenAccent, size: 20)
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    _buildPlannerItemRow(
-                        context, provider, 'weekly', idx, rawItem, accentColor),
-                  ],
-                ),
               ),
             ),
           );

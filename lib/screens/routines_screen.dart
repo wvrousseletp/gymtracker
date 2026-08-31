@@ -45,12 +45,57 @@ class _RoutinesScreenState extends State<RoutinesScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  Widget _buildSegmentTab(int index, String title, IconData icon, Color accentColor) {
+    final isSelected = _tabController.index == index;
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          HapticFeedback.selectionClick();
+          _tabController.animateTo(index);
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected ? accentColor.withOpacity(0.18) : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            border: isSelected ? Border.all(color: accentColor.withOpacity(0.4), width: 1.0) : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 15,
+                color: isSelected ? accentColor : Colors.white54,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                title,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : Colors.white54,
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -63,20 +108,23 @@ class _RoutinesScreenState extends State<RoutinesScreen>
       backgroundColor: Colors.transparent,
       body: Column(
         children: [
-          Container(
-            color: Colors.black,
-            child: TabBar(
-              controller: _tabController,
-              indicatorColor: accentColor,
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.white38,
-              labelStyle:
-                  const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-              tabs: const [
-                Tab(text: "Agenda"),
-                Tab(text: "Modelos"),
-                Tab(text: "Biblioteca"),
-              ],
+          // Segmented Control em cápsula de vidro estilo iOS
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white.withOpacity(0.08)),
+              ),
+              child: Row(
+                children: [
+                  _buildSegmentTab(0, "Agenda", Icons.calendar_month_outlined, accentColor),
+                  _buildSegmentTab(1, "Modelos", Icons.fitness_center_outlined, accentColor),
+                  _buildSegmentTab(2, "Biblioteca", Icons.menu_book_outlined, accentColor),
+                ],
+              ),
             ),
           ),
           Expanded(
@@ -163,6 +211,17 @@ class RoutinesTab extends StatelessWidget {
       BuildContext context, WorkoutProvider provider, Routine routine) {
     final state = provider;
 
+    // Calcular estimativa de tempo total do treino
+    int totalSets = 0;
+    int totalRestSec = 0;
+    for (final ex in routine.exercises) {
+      totalSets += ex.sets;
+      final r = (ex.rest > 0) ? ex.rest : routine.defaultRest;
+      totalRestSec += (ex.sets * r);
+    }
+    final totalSec = totalRestSec + (totalSets * 45); // ~45s por série
+    final estimatedMins = (totalSec / 60).round().clamp(10, 180);
+
     return GestureDetector(
       onTap: () => _openRoutineForm(context, provider, routine),
       child: Container(
@@ -214,18 +273,48 @@ class RoutinesTab extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 6),
-                          Row(
+                          Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 8,
+                            runSpacing: 4,
                             children: [
-                              Icon(Icons.timer_outlined,
-                                  size: 14,
-                                  color: Colors.white.withOpacity(0.5)),
-                              const SizedBox(width: 4),
-                              Text(
-                                "Descanso Padrão: ${routine.defaultRest}s",
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.6),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.timer_outlined,
+                                      size: 14,
+                                      color: Colors.white.withOpacity(0.5)),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    "Descanso: ${routine.defaultRest}s",
+                                    style: TextStyle(
+                                      color: Colors.white.withOpacity(0.6),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: accentColor.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.schedule, size: 11, color: accentColor),
+                                    const SizedBox(width: 3),
+                                    Text(
+                                      "~$estimatedMins min",
+                                      style: TextStyle(
+                                        color: accentColor,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
@@ -233,10 +322,53 @@ class RoutinesTab extends StatelessWidget {
                         ],
                       ),
                     ),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      color: Colors.white.withOpacity(0.3),
-                      size: 28,
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.copy_rounded, color: Colors.white54, size: 20),
+                          tooltip: "Duplicar Rotina",
+                          padding: const EdgeInsets.all(4),
+                          constraints: const BoxConstraints(),
+                          onPressed: () {
+                            HapticFeedback.selectionClick();
+                            final clonedExercises = routine.exercises.map((e) => RoutineExercise(
+                              id: const Uuid().v4(),
+                              exerciseId: e.exerciseId,
+                              sets: e.sets,
+                              reps: e.reps,
+                              rest: e.rest,
+                              weight: e.weight,
+                              weightsPerSet: e.weightsPerSet != null ? List.from(e.weightsPerSet!) : null,
+                              repsPerSet: e.repsPerSet != null ? List.from(e.repsPerSet!) : null,
+                              setTypes: e.setTypes != null ? List.from(e.setTypes!) : null,
+                              rirPerSet: e.rirPerSet != null ? List.from(e.rirPerSet!) : null,
+                              isCardio: e.isCardio,
+                              allowCardioSets: e.allowCardioSets,
+                            )).toList();
+
+                            provider.addRoutine(
+                              "${routine.name} (Cópia)",
+                              routine.defaultRest,
+                              clonedExercises,
+                            );
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text("Rotina '${routine.name} (Cópia)' criada com sucesso!"),
+                                backgroundColor: const Color(0xff1c1c1e),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          color: Colors.white.withOpacity(0.3),
+                          size: 28,
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -1984,12 +2116,19 @@ class _LibraryTabState extends State<LibraryTab> {
     final provider = Provider.of<WorkoutProvider>(context);
     final library = provider.library;
 
-    // Calcular frequência de treinos por exercício
+    // Calcular frequência de treinos e Recorde Pessoal (PR) por exercício
     final Map<String, int> exerciseFrequency = {};
+    final Map<String, double> exercisePR = {};
     for (final log in provider.history) {
       for (final ex in log.exercises) {
         if (ex.completedSets > 0) {
           exerciseFrequency[ex.name] = (exerciseFrequency[ex.name] ?? 0) + 1;
+        }
+        if (ex.completedSets > 0 && ex.weight > 0) {
+          final curPR = exercisePR[ex.name] ?? 0.0;
+          if (ex.weight > curPR) {
+            exercisePR[ex.name] = ex.weight;
+          }
         }
       }
     }
@@ -2158,6 +2297,7 @@ class _LibraryTabState extends State<LibraryTab> {
                           ),
                           ...exs.map((ex) {
                             final freq = exerciseFrequency[ex.name] ?? 0;
+                            final pr = exercisePR[ex.name] ?? 0.0;
                             return Container(
                               margin: const EdgeInsets.only(bottom: 8),
                               child: GestureDetector(
@@ -2194,6 +2334,23 @@ class _LibraryTabState extends State<LibraryTab> {
                                                     fontWeight:
                                                         FontWeight.w700),
                                               ),
+                                              if (pr > 0) ...[
+                                                const SizedBox(width: 6),
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.amber.withOpacity(0.15),
+                                                    borderRadius: BorderRadius.circular(4),
+                                                  ),
+                                                  child: Text(
+                                                    "👑 PR: ${pr.toStringAsFixed(pr.truncateToDouble() == pr ? 0 : 1)} kg",
+                                                    style: const TextStyle(
+                                                        color: Colors.amber,
+                                                        fontSize: 9,
+                                                        fontWeight: FontWeight.bold),
+                                                  ),
+                                                ),
+                                              ],
                                               if (freq > 0) ...[
                                                 const SizedBox(width: 6),
                                                 Container(

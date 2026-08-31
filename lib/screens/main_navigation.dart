@@ -1,6 +1,7 @@
 // ignore_for_file: prefer_const_constructors, use_build_context_synchronously, use_key_in_widget_constructors
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/tracker_provider.dart';
@@ -92,13 +93,32 @@ class _MainNavigationState extends State<MainNavigation> {
             child: FloatingRestTimer(),
           ),
 
-          // Dock de Navegação Flutuante
+          // Dock de Navegação Flutuante com suporte a gestos de deslizar
           Positioned(
             bottom: 24,
             left: 20,
             right: 20,
-            child: RepaintBoundary(
-              child: Container(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onHorizontalDragEnd: (details) {
+                if (details.primaryVelocity != null) {
+                  if (details.primaryVelocity! < -150) {
+                    // Deslizar para Esquerda -> Próxima Aba
+                    if (_currentIndex < _screens.length - 1) {
+                      HapticFeedback.selectionClick();
+                      setState(() => _currentIndex++);
+                    }
+                  } else if (details.primaryVelocity! > 150) {
+                    // Deslizar para Direita -> Aba Anterior
+                    if (_currentIndex > 0) {
+                      HapticFeedback.selectionClick();
+                      setState(() => _currentIndex--);
+                    }
+                  }
+                }
+              },
+              child: RepaintBoundary(
+                child: Container(
                 height: 64,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(24),
@@ -142,9 +162,10 @@ class _MainNavigationState extends State<MainNavigation> {
               ),
             ),
           ),
-        ],
-      ),
-    );
+        ),
+      ],
+    ),
+  );
   }
 
   Widget _buildNavItem(
