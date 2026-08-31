@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/tracker_provider.dart';
-import '../models/profile.dart';
 import '../services/watch_service.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/profile_avatar.dart';
@@ -13,7 +12,6 @@ import '../widgets/floating_rest_timer.dart';
 import 'routines_screen.dart';
 import 'progress_screen.dart';
 import 'diet_screen.dart';
-import 'profile_dialogs.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -69,13 +67,6 @@ class _MainNavigationState extends State<MainNavigation> {
     final accentColor = context.select<TrackerProvider, Color>(
       (p) => ThemeUtils.getColor(p.currentProfile.colorAccent),
     );
-    final activeProfile = context.select<TrackerProvider, Profile>(
-      (p) => p.currentProfile,
-    );
-
-    final hasActiveWorkout = context.select<TrackerProvider, bool>(
-      (p) => p.state?.activeWorkout != null,
-    );
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -87,74 +78,9 @@ class _MainNavigationState extends State<MainNavigation> {
           // Container do conteúdo principal
           SafeArea(
             bottom: false,
-            child: Column(
-              children: [
-                // Cabeçalho Global (oculto quando em treino ativo na aba de Treino para maximizar o foco na série)
-                if (!(hasActiveWorkout && _currentIndex == 0))
-                  Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          "Los Mooscles",
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-
-                        // Seletor de Perfil
-                        GestureDetector(
-                          onTap: () {
-                            showProfileManagerDialog(context);
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.03),
-                              border: Border.all(
-                                  color: Colors.white.withOpacity(0.06)),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  activeProfile.name,
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                ProfileAvatar(
-                                  avatar: activeProfile.avatar,
-                                  colorName: activeProfile.colorAccent,
-                                  size: 28,
-                                  fontSize: 14,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                // Tela Principal Ativa
-                Expanded(
-                  child: FadeIndexedStack(
-                    index: _currentIndex,
-                    children: _screens,
-                  ),
-                ),
-              ],
+            child: FadeIndexedStack(
+              index: _currentIndex,
+              children: _screens,
             ),
           ),
 
