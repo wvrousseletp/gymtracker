@@ -7,7 +7,6 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../providers/tracker_provider.dart';
 import '../providers/workout_provider.dart';
-import '../providers/profile_provider.dart';
 import '../models/routine.dart';
 import '../models/exercise.dart';
 import '../models/workout_log.dart';
@@ -44,20 +43,6 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       return "BOA TARDE";
     } else {
       return "BOA NOITE";
-    }
-  }
-
-  String _getDaysAgoText(String? dateStr) {
-    if (dateStr == null || dateStr.isEmpty) return "";
-    try {
-      final date = DateTime.parse(dateStr).toLocal();
-      final now = DateTime.now();
-      final diffDays = now.difference(DateTime(date.year, date.month, date.day)).inDays;
-      if (diffDays == 0) return "Hoje";
-      if (diffDays == 1) return "Ontem";
-      return "Há ${diffDays}d";
-    } catch (_) {
-      return "";
     }
   }
 
@@ -328,7 +313,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                     MeasurementType.distance) &&
                             libEx.measurementType != MeasurementType.time;
                     return Routine(
-                      id: "temp-${exerciseId}-${sets}",
+                      id: "temp-$exerciseId-$sets",
                       name: "${libEx.name} (Avulso)",
                       defaultRest: 60,
                       exercises: [
@@ -486,7 +471,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                     final index = entry.key;
                     final postponed = entry.value;
                     return Dismissible(
-                      key: ValueKey("postponed-${index}-${postponed.name}"),
+                      key: ValueKey("postponed-$index-${postponed.name}"),
                       direction: DismissDirection.endToStart,
                       onDismissed: (_) {
                         provider.discardPostponedWorkout(index);
@@ -525,7 +510,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    "TREINO ADIADO ${provider.postponedWorkouts.length > 1 ? '(' + (index + 1).toString() + '/' + provider.postponedWorkouts.length.toString() + ')' : ''}",
+                                    "TREINO ADIADO ${provider.postponedWorkouts.length > 1 ? '(${index + 1}/${provider.postponedWorkouts.length})' : ''}",
                                     style: const TextStyle(
                                       color: Colors.white54,
                                       fontSize: 9,
@@ -1242,296 +1227,6 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  void _showSelectExerciseDialog(
-      BuildContext context, WorkoutProvider provider) {
-    final library = provider.library;
-    final accentColor = ThemeUtils.getColor(
-        Provider.of<ProfileProvider>(context, listen: false)
-            .currentProfile
-            .colorAccent);
-
-    if (library.isEmpty) {
-      showDialog(
-        context: context,
-        builder: (dialogCtx) => Dialog(
-          backgroundColor: Colors.transparent,
-          child: GlassCard(
-            useBlur: true,
-            borderColor: Colors.white.withOpacity(0.08),
-            borderRadius: 20,
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text(
-                  "Biblioteca Vazia",
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  "Cadastre alguns exercícios na aba 'Rotinas' primeiro.",
-                  style: TextStyle(color: Colors.white70, fontSize: 13),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(dialogCtx),
-                      child: const Text("OK",
-                          style: TextStyle(
-                              color: Colors.blueAccent,
-                              fontWeight: FontWeight.bold)),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-      return;
-    }
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withOpacity(0.4),
-      isScrollControlled: true,
-      builder: (context) {
-        String searchQuery = "";
-        return StatefulBuilder(
-          builder: (context, setState) {
-            final Map<String, int> exerciseFrequency = {};
-            for (final log in provider.history) {
-              for (final ex in log.exercises) {
-                if (ex.completedSets > 0) {
-                  exerciseFrequency[ex.name] =
-                      (exerciseFrequency[ex.name] ?? 0) + 1;
-                }
-              }
-            }
-
-            final filteredList = library.where((ex) {
-              return ex.name
-                      .toLowerCase()
-                      .contains(searchQuery.toLowerCase()) ||
-                  ex.muscle.toLowerCase().contains(searchQuery.toLowerCase());
-            }).toList()
-              ..sort((a, b) {
-                final freqA = exerciseFrequency[a.name] ?? 0;
-                final freqB = exerciseFrequency[b.name] ?? 0;
-                if (freqA != freqB) {
-                  return freqB.compareTo(freqA);
-                }
-                return a.name.toLowerCase().compareTo(b.name.toLowerCase());
-              });
-
-            return ClipRRect(
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(24)),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                child: Container(
-                  height: MediaQuery.of(context).size.height * 0.75,
-                  decoration: BoxDecoration(
-                    color: const Color(0xff141416).withOpacity(0.65),
-                    borderRadius:
-                        const BorderRadius.vertical(top: Radius.circular(24)),
-                    border: Border.all(color: Colors.white.withOpacity(0.08)),
-                  ),
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Center(
-                        child: Container(
-                          width: 40,
-                          height: 5,
-                          decoration: BoxDecoration(
-                            color: Colors.white24,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      // Cabeçalho
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            "Iniciar Exercício",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.close_rounded,
-                                color: Colors.white, size: 22),
-                            onPressed: () => Navigator.pop(context),
-                            style: IconButton.styleFrom(
-                              backgroundColor: Colors.white.withOpacity(0.08),
-                              padding: const EdgeInsets.all(6),
-                              minimumSize: const Size(36, 36),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Campo de busca
-                      TextField(
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          hintText: "Buscar exercício ou grupo muscular...",
-                          hintStyle: const TextStyle(color: Colors.white30),
-                          prefixIcon:
-                              const Icon(Icons.search, color: Colors.white38),
-                          filled: true,
-                          fillColor: Colors.white.withOpacity(0.05),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(
-                                color: Colors.white.withOpacity(0.08)),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
-                        ),
-                        onChanged: (val) {
-                          setState(() {
-                            searchQuery = val;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Lista de exercícios
-                      Expanded(
-                        child: filteredList.isEmpty
-                            ? const Center(
-                                child: Text(
-                                  "Nenhum exercício encontrado.",
-                                  style: TextStyle(
-                                      color: Colors.white38,
-                                      fontStyle: FontStyle.italic),
-                                ),
-                              )
-                            : () {
-                                // Agrupar por músculo
-                                final Map<String, List<LibraryExercise>>
-                                    grouped = {};
-                                for (final ex in filteredList) {
-                                  grouped
-                                      .putIfAbsent(ex.muscle, () => [])
-                                      .add(ex);
-                                }
-                                final sortedMuscles = grouped.keys.toList()
-                                  ..sort((a, b) => a
-                                      .toLowerCase()
-                                      .compareTo(b.toLowerCase()));
-
-                                return ListView.builder(
-                                  itemCount: sortedMuscles.length,
-                                  itemBuilder: (context, mIdx) {
-                                    final muscle = sortedMuscles[mIdx];
-                                    final exs = grouped[muscle]!;
-                                    return Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Padding(
-                                          padding: const EdgeInsets.only(
-                                              top: 16, bottom: 8, left: 4),
-                                          child: Text(
-                                            muscle.toUpperCase(),
-                                            style: TextStyle(
-                                              color: accentColor,
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w900,
-                                              letterSpacing: 1.2,
-                                            ),
-                                          ),
-                                        ),
-                                        ...exs.map((ex) {
-                                          return Container(
-                                            margin: const EdgeInsets.only(
-                                                bottom: 8),
-                                            decoration: BoxDecoration(
-                                              color: Colors.white
-                                                  .withOpacity(0.02),
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                              border: Border.all(
-                                                  color: Colors.white
-                                                      .withOpacity(0.04)),
-                                            ),
-                                            child: ListTile(
-                                              title: Text(
-                                                ex.name,
-                                                style: const TextStyle(
-                                                    color: Colors.white,
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                              ),
-                                              subtitle: Text(
-                                                ex.measurementType ==
-                                                        MeasurementType.time
-                                                    ? 'Isometria'
-                                                    : 'Repetições',
-                                                style: const TextStyle(
-                                                    color: Colors.white38,
-                                                    fontSize: 11),
-                                              ),
-                                              trailing: const Icon(
-                                                  Icons.play_arrow_rounded,
-                                                  color: Colors.white54),
-                                              onTap: () {
-                                                Navigator.pop(
-                                                    context); // fecha modal
-                                                if (provider.activeWorkout !=
-                                                    null) {
-                                                  _promptPostponeOrCreateWorkout(
-                                                      context, provider, () {
-                                                    WorkoutStarter
-                                                        .startSingleExerciseWithCountdown(
-                                                            context,
-                                                            provider,
-                                                            ex);
-                                                  });
-                                                } else {
-                                                  WorkoutStarter
-                                                      .startSingleExerciseWithCountdown(
-                                                          context,
-                                                          provider,
-                                                          ex);
-                                                }
-                                              },
-                                            ),
-                                          );
-                                        }),
-                                      ],
-                                    );
-                                  },
-                                );
-                              }(),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
     );
   }
 
@@ -3394,119 +3089,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
     );
   }
 
-  void _showEditSetWeightRepsDialog(
-      BuildContext context, int exIdx, int setIdx, ActiveExercise ex) {
-    final currentWeight =
-        ex.weightsPerSet != null && setIdx < ex.weightsPerSet!.length
-            ? ex.weightsPerSet![setIdx]
-            : ex.weight;
-    final currentReps = ex.repsPerSet != null && setIdx < ex.repsPerSet!.length
-        ? ex.repsPerSet![setIdx]
-        : ex.reps;
 
-    final weightController = TextEditingController(
-        text: currentWeight.toStringAsFixed(1).replaceAll('.0', ''));
-    final repsController = TextEditingController(text: currentReps.toString());
-
-    showDialog(
-      context: context,
-      builder: (dialogCtx) => AlertDialog(
-        backgroundColor: const Color(0xff1c1c1e),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: Colors.white.withOpacity(0.08)),
-        ),
-        title: Text("Editar Série ${setIdx + 1}",
-            style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text("Peso (kg)",
-                          style:
-                              TextStyle(color: Colors.white70, fontSize: 12)),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: weightController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: Colors.white.withOpacity(0.05),
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide.none),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                          ex.measurementType == MeasurementType.time
-                              ? "Tempo (s)"
-                              : "Reps",
-                          style: const TextStyle(
-                              color: Colors.white70, fontSize: 12)),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: repsController,
-                        keyboardType: TextInputType.number,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: Colors.white.withOpacity(0.05),
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide.none),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child:
-                const Text("Cancelar", style: TextStyle(color: Colors.white54)),
-          ),
-          TextButton(
-            onPressed: () {
-              HapticFeedback.lightImpact();
-              final newWeight = double.tryParse(weightController.text.trim()) ??
-                  currentWeight;
-              final newReps =
-                  int.tryParse(repsController.text.trim()) ?? currentReps;
-              widget.provider.updateExerciseSetWeightReps(
-                  exIdx, setIdx, newWeight, newReps);
-              Navigator.pop(dialogCtx);
-
-            },
-            child: const Text("Salvar",
-                style: TextStyle(
-                    color: Colors.blueAccent, fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
-  }
 
   void _showFailureRepDialog(
       BuildContext context, int exIdx, int setIdx, int? currentRep) {

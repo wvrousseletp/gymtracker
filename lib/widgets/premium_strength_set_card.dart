@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/exercise.dart';
-import '../models/enums.dart';
 import '../models/workout_log.dart';
 
 class PremiumStrengthSetCard extends StatefulWidget {
@@ -313,7 +312,7 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
                               const SizedBox(height: 4),
                               Text(
                                 isTime 
-                                  ? "Último: ${widget.ghostSet!.reps ?? widget.ghostSet!.reps}s"
+                                  ? "Último: ${widget.ghostSet!.reps}s"
                                   : "Último: ${widget.ghostSet!.reps}",
                                 style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 10, fontWeight: FontWeight.bold),
                               ),

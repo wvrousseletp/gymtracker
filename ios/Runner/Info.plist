@@ -51,6 +51,10 @@
 	<string>Este aplicativo precisa ler seus dados de saúde (como treinos e batimentos cardíacos) para acompanhar seu progresso físico e histórico de exercícios.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>Este aplicativo precisa salvar seus treinos e dados de exercícios no aplicativo Saúde para manter seu histórico de atividades atualizado.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Este aplicativo precisa de acesso ao microfone para permitir anotações de treino por voz.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Este aplicativo usa reconhecimento de voz para transcrever suas anotações de exercícios.</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 	<key>CFBundleURLTypes</key>
@@ -58,13 +62,11 @@
 		<dict>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
-			<key>CFBundleURLName</key>
-			<string>com.vicente.losmooscles</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>losmooscles</string>
 			</array>
-		$toAdd</dict>
+		</dict>
 		<dict>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>

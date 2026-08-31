@@ -62,7 +62,7 @@ class _SpeechNotesDialogState extends State<SpeechNotesDialog> {
         side: BorderSide(color: Colors.white.withOpacity(0.1)),
       ),
       title: Text(
-        "Anotações: \${widget.exerciseName}",
+        "Anotações: ${widget.exerciseName}",
         style: const TextStyle(color: Colors.white, fontSize: 16),
       ),
       content: Column(

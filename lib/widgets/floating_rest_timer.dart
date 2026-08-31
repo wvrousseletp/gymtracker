@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/rest_timer_service.dart';
 import '../providers/tracker_provider.dart';
-import '../providers/profile_provider.dart';
 import '../widgets/profile_avatar.dart';
 
 class FloatingRestTimer extends StatelessWidget {
@@ -73,7 +72,7 @@ class FloatingRestTimer extends StatelessWidget {
                             style: const TextStyle(color: Colors.white70, fontSize: 12),
                           ),
                           Text(
-                            "\${(secondsRemaining ~/ 60).toString().padLeft(2, '0')}:\${(secondsRemaining % 60).toString().padLeft(2, '0')}",
+                            "${(secondsRemaining ~/ 60).toString().padLeft(2, '0')}:${(secondsRemaining % 60).toString().padLeft(2, '0')}",
                             style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
                           ),
                         ],
