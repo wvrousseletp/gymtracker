@@ -96,13 +96,15 @@ enum RoutineExecutionType {
 }
 
 RoutineExecutionType routineExecutionTypeFromString(String? val) {
-  switch (val) {
-    case 'circuit':
-      return RoutineExecutionType.circuit;
-    case 'standard':
-    default:
-      return RoutineExecutionType.standard;
+  if (val == null) return RoutineExecutionType.standard;
+  final clean = val.toLowerCase().trim();
+  if (clean == 'circuit' ||
+      clean == 'ciclo' ||
+      clean.contains('circuit') ||
+      clean.contains('ciclo')) {
+    return RoutineExecutionType.circuit;
   }
+  return RoutineExecutionType.standard;
 }
 
 String routineExecutionTypeToString(RoutineExecutionType type) {

@@ -738,9 +738,12 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void addRoutine(
-      String name, int defaultRest, List<RoutineExercise> exercises) {
+      String name, int defaultRest, List<RoutineExercise> exercises,
+      {RoutineExecutionType executionType = RoutineExecutionType.standard,
+      int circuitCycles = 3}) {
     if (_workoutProvider == null) return;
-    _workoutProvider!.addRoutine(name, defaultRest, exercises);
+    _workoutProvider!.addRoutine(name, defaultRest, exercises,
+        executionType: executionType, circuitCycles: circuitCycles);
   }
 
   void updateRoutine(Routine r) {

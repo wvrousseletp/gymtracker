@@ -20,6 +20,26 @@ class Routine {
     this.circuitCycles = 3,
   });
 
+  Routine copyWith({
+    String? id,
+    String? name,
+    int? defaultRest,
+    List<RoutineExercise>? exercises,
+    bool? isDynamicExercise,
+    RoutineExecutionType? executionType,
+    int? circuitCycles,
+  }) {
+    return Routine(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      defaultRest: defaultRest ?? this.defaultRest,
+      exercises: exercises ?? this.exercises,
+      isDynamicExercise: isDynamicExercise ?? this.isDynamicExercise,
+      executionType: executionType ?? this.executionType,
+      circuitCycles: circuitCycles ?? this.circuitCycles,
+    );
+  }
+
   Map<String, dynamic> toJson() => {
     'id': id,
     'name': name,
@@ -38,7 +58,7 @@ class Routine {
         ? (json['exercises'] as List).map((e) => RoutineExercise.fromJson(e)).toList()
         : [],
     isDynamicExercise: json['isDynamicExercise'] ?? false,
-    executionType: routineExecutionTypeFromString(json['executionType']),
+    executionType: routineExecutionTypeFromString(json['executionType']?.toString()),
     circuitCycles: (json['circuitCycles'] as num?)?.toInt() ?? 3,
   );
 }

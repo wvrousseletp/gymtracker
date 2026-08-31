@@ -1979,10 +1979,7 @@ class WorkoutProvider extends ChangeNotifier {
     });
 
     routines = routines.map((r) {
-      return Routine(
-        id: r.id,
-        name: r.name,
-        defaultRest: r.defaultRest,
+      return r.copyWith(
         exercises: r.exercises.where((ex) => ex.exerciseId != id).toList(),
       );
     }).toList();
@@ -2073,12 +2070,8 @@ class WorkoutProvider extends ChangeNotifier {
         return ex;
       }).toList();
 
-      updateRoutine(Routine(
-        id: routine.id,
-        name: routine.name,
-        defaultRest: routine.defaultRest,
+      updateRoutine(routine.copyWith(
         exercises: newExercises,
-        isDynamicExercise: routine.isDynamicExercise,
       ));
     }
   }

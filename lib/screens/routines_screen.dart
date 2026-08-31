@@ -626,7 +626,13 @@ class RoutinesTab extends StatelessWidget {
                           ));
                         }
 
-                        provider.addRoutine(routine.name, routine.defaultRest, updatedExercises);
+                        provider.addRoutine(
+                          routine.name,
+                          routine.defaultRest,
+                          updatedExercises,
+                          executionType: routine.executionType,
+                          circuitCycles: routine.circuitCycles,
+                        );
                         Navigator.pop(dialogCtx);
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -1554,6 +1560,30 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
                             ),
                           );
                           return;
+                        }
+
+                        // Se for ciclo, garantir que todos os exercícios tenham pelo menos 1 série por ciclo
+                        if (_executionType == RoutineExecutionType.circuit) {
+                          _exercises = _exercises.map((e) {
+                            if (e.sets <= 0) {
+                              return RoutineExercise(
+                                id: e.id,
+                                exerciseId: e.exerciseId,
+                                sets: 1,
+                                reps: e.reps > 0 ? e.reps : 10,
+                                rest: e.rest,
+                                weight: e.weight,
+                                weightsPerSet: e.weightsPerSet,
+                                repsPerSet: e.repsPerSet,
+                                setTypes: e.setTypes,
+                                rirPerSet: e.rirPerSet,
+                                isCardio: e.isCardio,
+                                allowCardioSets: e.allowCardioSets,
+                                supersetId: e.supersetId,
+                              );
+                            }
+                            return e;
+                          }).toList();
                         }
 
                         // Validar se há exercícios com 0 séries ou reps

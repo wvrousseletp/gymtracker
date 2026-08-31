@@ -936,6 +936,8 @@ class FirebaseSyncService {
       defaultRest: routine.defaultRest.clamp(0, 3600),
       exercises: exercises,
       isDynamicExercise: routine.isDynamicExercise,
+      executionType: routine.executionType,
+      circuitCycles: routine.circuitCycles,
     );
   }
 
