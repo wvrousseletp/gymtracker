@@ -507,12 +507,13 @@ struct WatchStreak: Codable {
     let completedTodayRoutines: [String]
     var weeklyGoal: Int?
     var availableFreezes: Int?
+    var weeklyCardioMinutes: Int?
 
     enum CodingKeys: String, CodingKey {
-        case currentWeekCount, consecutiveWeeks, lastWorkoutDate, weekdaysTrained, completedTodayRoutines, weeklyGoal, availableFreezes
+        case currentWeekCount, consecutiveWeeks, lastWorkoutDate, weekdaysTrained, completedTodayRoutines, weeklyGoal, availableFreezes, weeklyCardioMinutes
     }
 
-    init(currentWeekCount: Int, consecutiveWeeks: Int, lastWorkoutDate: String, weekdaysTrained: [Int] = [], completedTodayRoutines: [String] = [], weeklyGoal: Int? = nil, availableFreezes: Int? = nil) {
+    init(currentWeekCount: Int, consecutiveWeeks: Int, lastWorkoutDate: String, weekdaysTrained: [Int] = [], completedTodayRoutines: [String] = [], weeklyGoal: Int? = nil, availableFreezes: Int? = nil, weeklyCardioMinutes: Int? = nil) {
         self.currentWeekCount = currentWeekCount
         self.consecutiveWeeks = consecutiveWeeks
         self.lastWorkoutDate = lastWorkoutDate
@@ -520,12 +521,14 @@ struct WatchStreak: Codable {
         self.completedTodayRoutines = completedTodayRoutines
         self.weeklyGoal = weeklyGoal
         self.availableFreezes = availableFreezes
+        self.weeklyCardioMinutes = weeklyCardioMinutes
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.weeklyGoal = try container.decodeIfPresent(Int.self, forKey: .weeklyGoal)
         self.availableFreezes = try container.decodeIfPresent(Int.self, forKey: .availableFreezes)
+        self.weeklyCardioMinutes = try container.decodeIfPresent(Int.self, forKey: .weeklyCardioMinutes)
         currentWeekCount = (try? container.decode(Int.self, forKey: .currentWeekCount)) ?? 0
         consecutiveWeeks = (try? container.decode(Int.self, forKey: .consecutiveWeeks)) ?? 0
         lastWorkoutDate = (try? container.decode(String.self, forKey: .lastWorkoutDate)) ?? ""

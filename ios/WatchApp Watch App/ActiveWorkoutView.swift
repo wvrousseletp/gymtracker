@@ -309,6 +309,15 @@ struct ActiveWorkoutView: View {
         }
     }
 
+    private func getHeartRateZone(bpm: Double) -> (name: String, color: Color, level: Int) {
+        if bpm <= 0 { return ("--", .gray, 0) }
+        if bpm < 115 { return ("Z1 Recup", .blue, 1) }
+        if bpm < 138 { return ("Z2 Queima", .green, 2) }
+        if bpm < 156 { return ("Z3 Cardio", .yellow, 3) }
+        if bpm < 175 { return ("Z4 Limiar", .orange, 4) }
+        return ("Z5 Pico", .red, 5)
+    }
+
     private func strengthControls(exercise: WatchActiveExercise, exIndex: Int, selectedSetIdx: Int) -> some View {
         let isFailure = (selectedSetIdx >= 0 && selectedSetIdx < exercise.failureReport.count) ? exercise.failureReport[selectedSetIdx] : false
         let failureRep = (selectedSetIdx >= 0 && selectedSetIdx < exercise.failureReps.count) ? exercise.failureReps[selectedSetIdx] : nil
@@ -350,6 +359,31 @@ struct ActiveWorkoutView: View {
                 .cornerRadius(8)
                 
                 Spacer()
+            }
+            
+            // Quick Copy Previous Set Button (when on set 2+)
+            if selectedSetIdx > 0 && exercise.measurementType != "time" {
+                Button(action: {
+                    connectivityManager.updateExerciseWeightReps(
+                        exerciseIndex: exIndex,
+                        weight: exercise.weight,
+                        reps: exercise.reps
+                    )
+                    hapticManager.play(.light)
+                }) {
+                    HStack(spacing: 3) {
+                        Image(systemName: "doc.on.doc.fill")
+                            .font(.system(size: 8))
+                        Text("Repetir Carga/Reps (Série \(selectedSetIdx))")
+                            .font(.system(size: 8, weight: .bold))
+                    }
+                    .foregroundColor(.orange)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(Color.orange.opacity(0.12))
+                    .cornerRadius(6)
+                }
+                .buttonStyle(PlainButtonStyle())
             }
             
             if exercise.measurementType == "time" {
@@ -887,7 +921,9 @@ struct ActiveWorkoutView: View {
     }
 
     private func workoutControlsPageView(activeWorkout: WatchActiveWorkoutState) -> some View {
-        VStack(spacing: 4) {
+        let hrZone = getHeartRateZone(bpm: workoutManager.heartRate)
+        
+        return VStack(spacing: 4) {
             HStack(spacing: 12) {
                 VStack(spacing: 1) {
                     Text("TEMPO TOTAL")
@@ -908,13 +944,24 @@ struct ActiveWorkoutView: View {
                             Image(systemName: "heart.fill")
                                 .foregroundColor(.red)
                                 .font(.system(size: 8))
-                            Text("BATIMENTOS")
+                            Text("BPM")
                                 .font(.system(size: 6, weight: .bold))
                                 .foregroundColor(.gray)
                         }
-                        Text(workoutManager.heartRate > 0 ? "\(Int(workoutManager.heartRate))" : "--")
-                            .font(.system(size: 11, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
+                        HStack(spacing: 3) {
+                            Text(workoutManager.heartRate > 0 ? "\(Int(workoutManager.heartRate))" : "--")
+                                .font(.system(size: 11, weight: .bold, design: .rounded))
+                                .foregroundColor(.white)
+                            if workoutManager.heartRate > 0 {
+                                Text(hrZone.name)
+                                    .font(.system(size: 7, weight: .bold))
+                                    .foregroundColor(hrZone.color)
+                                    .padding(.horizontal, 3)
+                                    .padding(.vertical, 1)
+                                    .background(hrZone.color.opacity(0.15))
+                                    .cornerRadius(3)
+                            }
+                        }
                     }
                     
                     VStack(alignment: .leading, spacing: 1) {
@@ -949,10 +996,10 @@ struct ActiveWorkoutView: View {
                             .font(.system(size: 9, weight: .bold))
                         Spacer()
                     }
-                    .foregroundColor(.white)
+                    .foregroundColor(activeWorkout.paused ? .green : .orange)
                     .padding(.vertical, 5)
                     .padding(.horizontal, 8)
-                    .background(activeWorkout.paused ? Color.green.opacity(0.15) : Color.orange.opacity(0.15))
+                    .background(activeWorkout.paused ? Color.green.opacity(0.12) : Color.orange.opacity(0.12))
                     .cornerRadius(8)
                     .overlay(
                         RoundedRectangle(cornerRadius: 8)
@@ -968,14 +1015,14 @@ struct ActiveWorkoutView: View {
                     HStack(spacing: 4) {
                         Image(systemName: "snooze")
                             .font(.system(size: 8, weight: .bold))
-                        Text("Adiar")
+                        Text("Adiar Treino")
                             .font(.system(size: 9, weight: .bold))
                         Spacer()
                     }
-                    .foregroundColor(.white)
+                    .foregroundColor(.blue)
                     .padding(.vertical, 5)
                     .padding(.horizontal, 8)
-                    .background(Color.blue.opacity(0.15))
+                    .background(Color.blue.opacity(0.12))
                     .cornerRadius(8)
                     .overlay(
                         RoundedRectangle(cornerRadius: 8)
@@ -1038,7 +1085,36 @@ struct ActiveWorkoutView: View {
         }
     }
 
-
+    @ViewBuilder
+    private func activeWorkoutMainView(activeWorkout: WatchActiveWorkoutState) -> some View {
+        TabView {
+            // Page 1: Exercício Ativo
+            currentExercisePageView(activeWorkout: activeWorkout)
+            
+            // Page 2: Controles do Treino
+            if !isLuminanceReduced {
+                workoutControlsPageView(activeWorkout: activeWorkout)
+            }
+            
+            // Page 3: Controles de Música (NowPlaying)
+            #if os(watchOS)
+            if !isLuminanceReduced {
+                NowPlayingView()
+            }
+            #endif
+        }
+        .tabViewStyle(.page(indexDisplayMode: .automatic))
+        .focusable()
+        .digitalCrownRotation($crownValue, from: 0, through: 100, sensitivity: .medium, isContinuous: true, isHapticFeedbackEnabled: true)
+        .onChange(of: crownValue) { newValue in
+            if isControlsPageFocused {
+                adjustFontSize(delta: newValue - lastCrownValue)
+            } else {
+                handleCrownRotation(newValue: newValue, oldValue: lastCrownValue, activeWorkout: activeWorkout)
+            }
+            lastCrownValue = newValue
+        }
+    }
     
     private func handleCrownRotation(newValue: Double, oldValue: Double, activeWorkout: WatchActiveWorkoutState) {
         let delta = Int(newValue - oldValue)
@@ -1203,26 +1279,6 @@ struct ActiveWorkoutView: View {
         #endif
     }
     
-    @ViewBuilder
-    private func activeWorkoutMainView(activeWorkout: WatchActiveWorkoutState) -> some View {
-        TabView {
-            currentExercisePageView(activeWorkout: activeWorkout)
-            if !isLuminanceReduced {
-                workoutControlsPageView(activeWorkout: activeWorkout)
-            }
-        }
-        .tabViewStyle(.page(indexDisplayMode: .never))
-        .focusable()
-        .digitalCrownRotation($crownValue, from: 0, through: 100, sensitivity: .medium, isContinuous: true, isHapticFeedbackEnabled: true)
-        .onChange(of: crownValue) { newValue in
-            if isControlsPageFocused {
-                adjustFontSize(delta: newValue - lastCrownValue)
-            } else {
-                handleCrownRotation(newValue: newValue, oldValue: lastCrownValue, activeWorkout: activeWorkout)
-            }
-            lastCrownValue = newValue
-        }
-    }
 
     var body: some View {
         Group {

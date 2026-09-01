@@ -167,6 +167,24 @@ class WatchHapticManager {
         }
     }
     
+    /// Play haptic for rest timer countdown warning (3s, 2s, 1s)
+    func playCountdownTick() {
+        #if os(watchOS)
+        WKInterfaceDevice.current().play(.click)
+        #endif
+    }
+    
+    /// Play haptic when rest countdown hits 0 (strong double pulse)
+    func playCountdownFinal() {
+        #if os(watchOS)
+        let device = WKInterfaceDevice.current()
+        device.play(.notification)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+            device.play(.success)
+        }
+        #endif
+    }
+
     /// Play haptic when workout is cancelled
     func playWorkoutCancelled() {
         play(.failure)

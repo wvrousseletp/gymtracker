@@ -551,12 +551,60 @@ struct WorkoutSelectionView: View {
     }
 
     @ViewBuilder
+    private var quickStartSection: some View {
+        Section {
+            Button(action: {
+                if let first = connectivityManager.library.first {
+                    connectivityManager.startSingleExercise(exerciseId: first.id)
+                    #if canImport(WatchKit)
+                    WKInterfaceDevice.current().play(.start)
+                    #endif
+                }
+            }) {
+                HStack(spacing: 8) {
+                    ZStack {
+                        Circle()
+                            .fill(LinearGradient(colors: [.orange, .red], startPoint: .topLeading, endPoint: .bottomTrailing))
+                            .frame(width: 26, height: 26)
+                        Image(systemName: "bolt.fill")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Treino Livre")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.white)
+                        Text("Iniciar sessão avulsa")
+                            .font(.system(size: 9))
+                            .foregroundColor(.orange.opacity(0.8))
+                    }
+                    Spacer()
+                    Image(systemName: "play.circle.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(.orange)
+                }
+                .padding(.vertical, 4)
+            }
+            .buttonStyle(PlainButtonStyle())
+            .padding(8)
+            .background(Color.orange.opacity(0.08))
+            .cornerRadius(10)
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color.orange.opacity(0.25), lineWidth: 1)
+            )
+        }
+    }
+
+    @ViewBuilder
     private var workoutContentList: some View {
         VStack(spacing: 0) {
             searchAndFilterBar
             
             List {
                 offlineWarningSection
+                quickStartSection
                 if let activeWorkout = connectivityManager.activeWorkout {
                     postponedWorkoutSection(activeWorkout: activeWorkout)
                 }
@@ -643,8 +691,8 @@ struct WatchWaterView: View {
     @StateObject var connectivityManager = WatchConnectivityManager.shared
     @State private var showRemoveSheet = false
     
-    // Quick add presets
-    let presets = [150, 250, 500]
+    // Quick add presets: Copo 200ml, Garrafa 500ml, Shakeira 750ml
+    let presets = [200, 500, 750]
     
     var progress: Double {
         let current = Double(connectivityManager.waterIntakeCurrent)
@@ -666,7 +714,7 @@ struct WatchWaterView: View {
                         .trim(from: 0.0, to: CGFloat(progress))
                         .stroke(
                             LinearGradient(
-                                colors: [.blue, .cyan],
+                                colors: progress >= 1.0 ? [.green, .cyan] : [.blue, .cyan],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             ),
@@ -677,9 +725,9 @@ struct WatchWaterView: View {
                         .animation(.spring(), value: connectivityManager.waterIntakeCurrent)
                     
                     VStack(spacing: 1) {
-                        Image(systemName: "drop.fill")
+                        Image(systemName: progress >= 1.0 ? "checkmark.seal.fill" : "drop.fill")
                             .font(.system(size: 16))
-                            .foregroundColor(.blue)
+                            .foregroundColor(progress >= 1.0 ? .green : .blue)
                         
                         Text("\(connectivityManager.waterIntakeCurrent)")
                             .font(.system(size: 14, weight: .bold, design: .rounded))
@@ -700,7 +748,11 @@ struct WatchWaterView: View {
                                 let newTotal = connectivityManager.waterIntakeCurrent + amount
                                 connectivityManager.updateWaterIntake(newAmountMl: newTotal)
                                 #if os(watchOS)
-                                WKInterfaceDevice.current().play(.click)
+                                if Double(newTotal) >= Double(connectivityManager.waterIntakeTarget) {
+                                    WKInterfaceDevice.current().play(.success)
+                                } else {
+                                    WKInterfaceDevice.current().play(.click)
+                                }
                                 #endif
                             }) {
                                 VStack(spacing: 2) {

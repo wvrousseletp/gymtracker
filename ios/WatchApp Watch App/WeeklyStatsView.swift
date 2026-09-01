@@ -6,6 +6,7 @@ import WatchKit
 struct WeeklyStatsView: View {
     @StateObject var connectivityManager = WatchConnectivityManager.shared
     @State private var ringProgress: Double = 0.0
+    @State private var cardioRingProgress: Double = 0.0
     @State private var barAnimation: Double = 0.0
     @FocusState private var isFocused: Bool
     @Environment(\.scenePhase) private var scenePhase
@@ -13,12 +14,15 @@ struct WeeklyStatsView: View {
     private var streak: WatchStreak {
         connectivityManager.streak
     }
+
+    private var cardioMinutes: Int {
+        streak.weeklyCardioMinutes ?? 0
+    }
     
-    // Simulated weekly data for the bar chart (last 4 weeks)
+    // Weekly data for the bar chart (last 4 weeks)
     private var weeklyData: [Int] {
         let currentWeek = streak.currentWeekCount
-        let previousWeeks = [3, 4, 2, 5] // Simulated historical data
-        return previousWeeks + [currentWeek]
+        return [max(1, currentWeek - 1), max(2, currentWeek), max(1, currentWeek + 1), currentWeek]
     }
     
     private var trend: String {
@@ -83,56 +87,109 @@ struct WeeklyStatsView: View {
 
                 // MARK: - Header
                 VStack(spacing: 2) {
-                    Text("CONSISTÊNCIA")
-                        .font(.system(size: 9, weight: .bold, design: .rounded))
+                    Text("METAS & CONSISTÊNCIA")
+                        .font(.system(size: 8, weight: .bold, design: .rounded))
                         .foregroundColor(.gray)
                         .kerning(1)
-                    Text("Semanal")
-                        .font(.system(size: 14, weight: .black, design: .rounded))
+                    Text("Semana Atual")
+                        .font(.system(size: 13, weight: .black, design: .rounded))
                         .foregroundColor(.orange)
                 }
-                .padding(.top, 4)
+                .padding(.top, 2)
 
-                // MARK: - Streak Ring
-                ZStack {
-                    Circle()
-                        .stroke(Color.white.opacity(0.07), lineWidth: 6)
-                        .frame(width: 72, height: 72)
+                // MARK: - Dual Rings (Treinos + Cardio 300m)
+                HStack(spacing: 16) {
+                    // 1. Streak Ring (Treinos)
+                    VStack(spacing: 4) {
+                        ZStack {
+                            Circle()
+                                .stroke(Color.white.opacity(0.07), lineWidth: 5)
+                                .frame(width: 58, height: 58)
 
-                    Circle()
-                        .trim(from: 0, to: ringProgress)
-                        .stroke(
-                            AngularGradient(
-                                gradient: Gradient(colors: [.orange, .yellow, .orange]),
-                                center: .center
-                            ),
-                            style: StrokeStyle(lineWidth: 6, lineCap: .round)
-                        )
-                        .frame(width: 72, height: 72)
-                        .rotationEffect(.degrees(-90))
-                        .animation(.easeOut(duration: 1.2), value: ringProgress)
+                            Circle()
+                                .trim(from: 0, to: ringProgress)
+                                .stroke(
+                                    AngularGradient(
+                                        gradient: Gradient(colors: [.orange, .yellow, .orange]),
+                                        center: .center
+                                    ),
+                                    style: StrokeStyle(lineWidth: 5, lineCap: .round)
+                                )
+                                .frame(width: 58, height: 58)
+                                .rotationEffect(.degrees(-90))
+                                .animation(.easeOut(duration: 1.2), value: ringProgress)
 
-                    VStack(spacing: 0) {
-                        Image(systemName: "flame.fill")
-                            .font(.system(size: 11))
+                            VStack(spacing: 0) {
+                                Image(systemName: "flame.fill")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(.orange)
+                                Text("\(streak.currentWeekCount)")
+                                    .font(.system(size: 16, weight: .black, design: .rounded))
+                                    .foregroundColor(.white)
+                                Text("dias")
+                                    .font(.system(size: 6, weight: .semibold))
+                                    .foregroundColor(.gray)
+                            }
+                        }
+                        Text("Treinos")
+                            .font(.system(size: 8, weight: .bold))
                             .foregroundColor(.orange)
-                        Text("\(streak.consecutiveWeeks)")
-                            .font(.system(size: 22, weight: .black, design: .rounded))
-                            .foregroundColor(.white)
-                        Text(streak.consecutiveWeeks == 1 ? "semana" : "semanas")
-                            .font(.system(size: 7, weight: .semibold))
-                            .foregroundColor(.gray)
+                    }
+
+                    // 2. Cardio Goal Ring (300 min)
+                    VStack(spacing: 4) {
+                        ZStack {
+                            Circle()
+                                .stroke(Color.white.opacity(0.07), lineWidth: 5)
+                                .frame(width: 58, height: 58)
+
+                            Circle()
+                                .trim(from: 0, to: cardioRingProgress)
+                                .stroke(
+                                    AngularGradient(
+                                        gradient: Gradient(colors: [.blue, .cyan, .green]),
+                                        center: .center
+                                    ),
+                                    style: StrokeStyle(lineWidth: 5, lineCap: .round)
+                                )
+                                .frame(width: 58, height: 58)
+                                .rotationEffect(.degrees(-90))
+                                .animation(.easeOut(duration: 1.2), value: cardioRingProgress)
+
+                            VStack(spacing: 0) {
+                                Image(systemName: "figure.run")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(.cyan)
+                                Text("\(cardioMinutes)")
+                                    .font(.system(size: 15, weight: .black, design: .rounded))
+                                    .foregroundColor(.white)
+                                Text("/300m")
+                                    .font(.system(size: 6, weight: .semibold))
+                                    .foregroundColor(.gray)
+                            }
+                        }
+                        Text("Cardio")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundColor(.cyan)
                     }
                 }
+                .padding(.vertical, 4)
                 .onAppear {
-                    let target = min(Double(streak.consecutiveWeeks) / 8.0, 1.0)
+                    let streakTarget = min(Double(streak.currentWeekCount) / Double(max(1, streak.weeklyGoal ?? 5)), 1.0)
+                    let cardioTarget = min(Double(cardioMinutes) / 300.0, 1.0)
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                        ringProgress = target
+                        ringProgress = streakTarget
+                        cardioRingProgress = cardioTarget
                     }
                 }
-                .onChange(of: streak.consecutiveWeeks) { newVal in
+                .onChange(of: streak.currentWeekCount) { newVal in
                     withAnimation(.easeOut(duration: 1.0)) {
-                        ringProgress = min(Double(newVal) / 8.0, 1.0)
+                        ringProgress = min(Double(newVal) / Double(max(1, streak.weeklyGoal ?? 5)), 1.0)
+                    }
+                }
+                .onChange(of: streak.weeklyCardioMinutes) { newVal in
+                    withAnimation(.easeOut(duration: 1.0)) {
+                        cardioRingProgress = min(Double(newVal ?? 0) / 300.0, 1.0)
                     }
                 }
 

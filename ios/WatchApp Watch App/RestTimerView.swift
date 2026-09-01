@@ -13,6 +13,9 @@ struct RestTimerView: View {
     @State private var pulseScale: CGFloat = 1.0
     @State private var pulseOpacity: Double = 0.5
     @State private var rotationAngle: Double = 0
+    @State private var lastTickedSecond: Int = -1
+    @State private var crownAccumulator: Double = 0
+    @FocusState private var isCrownFocused: Bool
     @Environment(\.isLuminanceReduced) var isLuminanceReduced
 
     private var themeColor: Color {
@@ -85,7 +88,7 @@ struct RestTimerView: View {
                 Text("\(timeRemaining)")
                     .font(.system(size: isLuminanceReduced ? 80 : 64, weight: .heavy, design: .rounded))
                     .foregroundColor(isLuminanceReduced ? .gray : .white)
-                    .tracking(-2.0) // Aproximar os números (estilo iOS)
+                    .tracking(-2.0)
                     .minimumScaleFactor(0.7)
                     .lineLimit(1)
                     .shadow(color: .black.opacity(0.5), radius: 2, x: 0, y: 2)
@@ -178,8 +181,29 @@ struct RestTimerView: View {
                 }
             }
         }
+        .focusable()
+        .focused($isCrownFocused)
+        .digitalCrownRotation(
+            $crownAccumulator,
+            from: -1000,
+            through: 1000,
+            by: 1.0,
+            sensitivity: .medium,
+            isContinuous: true,
+            isHapticFeedbackEnabled: true
+        )
+        .onChange(of: crownAccumulator) { newCrown in
+            let diff = newCrown
+            if abs(diff) >= 1.0 {
+                let adjustment = diff > 0 ? 5 : -5
+                connectivityManager.adjustRestTimer(by: adjustment)
+                crownAccumulator = 0
+            }
+        }
         .onAppear {
             didAutoSkip = false
+            lastTickedSecond = -1
+            isCrownFocused = true
             updateTimeRemaining()
         }
         .onChange(of: restTimer.endTime) { _ in
@@ -205,14 +229,17 @@ struct RestTimerView: View {
         
         if remaining != timeRemaining {
             timeRemaining = remaining
+            
+            // Multi-stage haptic countdown for 3, 2, 1
+            if (remaining == 3 || remaining == 2 || remaining == 1) && remaining != lastTickedSecond {
+                lastTickedSecond = remaining
+                WatchHapticManager.shared.playCountdownTick()
+            }
         }
         
         if remaining == 0 && !didAutoSkip {
             didAutoSkip = true
-            #if canImport(WatchKit)
-            WKInterfaceDevice.current().play(.success)
-            WKInterfaceDevice.current().play(.click)
-            #endif
+            WatchHapticManager.shared.playCountdownFinal()
             connectivityManager.skipRest()
         }
     }
