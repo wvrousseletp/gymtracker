@@ -858,6 +858,155 @@ class _PlannerScreenState extends State<PlannerScreen> {
   }
 
   
+
+  void _showItemSelectionSheet(BuildContext context, TrackerProvider provider, PlannerState state, Color accentColor, {required Function(String) onSelected, bool allowExercises = true}) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          height: MediaQuery.of(ctx).size.height * 0.75,
+          decoration: const BoxDecoration(
+            color: Color(0xFF141414),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 12),
+                width: 40, height: 4,
+                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+              ),
+              const Text("Selecionar", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  children: [
+                    const Text("MODELOS DE TREINO", style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                    const SizedBox(height: 8),
+                    ...state.routines.map((r) => ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(color: accentColor.withOpacity(0.1), shape: BoxShape.circle),
+                        child: Icon(Icons.fitness_center, color: accentColor, size: 20),
+                      ),
+                      title: Text(r.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                      subtitle: Text("${r.exercises.length} exercícios", style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                      onTap: () { Navigator.pop(ctx); onSelected("routine:${r.id}"); },
+                    )),
+                    if (allowExercises) ...[
+                      const SizedBox(height: 24),
+                      const Text("CARDIO E EXERCÍCIOS AVULSOS", style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                      const SizedBox(height: 8),
+                      ...state.library.map((ex) {
+                        final isCardio = ex.muscle.toLowerCase().contains('cardio');
+                        final color = isCardio ? Colors.blueAccent : Colors.orangeAccent;
+                        return ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+                            child: Icon(isCardio ? Icons.directions_run : Icons.accessibility_new, color: color, size: 20),
+                          ),
+                          title: Text(ex.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                          subtitle: Text(ex.muscle, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                          onTap: () { Navigator.pop(ctx); onSelected("exercise:${ex.id}"); },
+                        );
+                      }),
+                    ]
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+    );
+  }
+
+  Widget _buildModernPlannerCard({
+    required BuildContext context,
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+    VoidCallback? onStart,
+    VoidCallback? onDelete,
+    Widget? trailing,
+  }) {
+    return Dismissible(
+      key: UniqueKey(),
+      direction: DismissibleDirection.endToStart,
+      onDismissed: (_) => onDelete?.call(),
+      background: Container(
+        margin: const EdgeInsets.symmetric(vertical: 6),
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        decoration: BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.circular(16)),
+        child: const Icon(Icons.delete, color: Colors.white),
+      ),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 6),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: color.withOpacity(0.15)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                    if (subtitle.isNotEmpty)
+                      const SizedBox(height: 2),
+                    if (subtitle.isNotEmpty)
+                      Text(subtitle, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                  ],
+                ),
+              ),
+              if (trailing != null) trailing,
+              if (onStart != null) ...[
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: onStart,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: color,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(color: color.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 2)),
+                      ]
+                    ),
+                    child: const Text("COMEÇAR", style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildBlockItemRow(
     BuildContext context,
     TrackerProvider provider,
