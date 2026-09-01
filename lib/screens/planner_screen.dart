@@ -1,6 +1,9 @@
 // ignore_for_file: prefer_const_constructors, use_build_context_synchronously, use_key_in_widget_constructors
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../widgets/planner/volume_history_sheet.dart';
+import '../widgets/planner/cardio_history_sheet.dart';
+
 import '../providers/tracker_provider.dart';
 import '../models/planner_state.dart';
 import '../models/routine.dart';
@@ -643,12 +646,32 @@ class _PlannerScreenState extends State<PlannerScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Icon(Icons.fitness_center_rounded, color: accentColor, size: 22),
-                  const SizedBox(width: 8),
-                  const Text(
-                    "Volume de Treino Planejado",
-                    style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800),
+                  Row(
+                    children: [
+                      Icon(Icons.fitness_center_rounded, color: accentColor, size: 22),
+                      const SizedBox(width: 8),
+                      const Text(
+                        "Volume de Treino Planejado",
+                        style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800),
+                      ),
+                    ],
+                  ),
+                  InkWell(
+                    onTap: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (ctx) => VolumeHistorySheet(accentColor: accentColor),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(color: Colors.white12, shape: BoxShape.circle),
+                      child: const Icon(Icons.history, color: Colors.white70, size: 18),
+                    ),
                   ),
                 ],
               ),
@@ -753,13 +776,33 @@ class _PlannerScreenState extends State<PlannerScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Row(
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Icon(Icons.directions_run_rounded, color: Colors.blueAccent, size: 22),
-                  SizedBox(width: 8),
-                  Text(
-                    "Volume de Cardio Planejado",
-                    style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800),
+                  const Row(
+                    children: [
+                      Icon(Icons.directions_run_rounded, color: Colors.blueAccent, size: 22),
+                      SizedBox(width: 8),
+                      Text(
+                        "Volume de Cardio Planejado",
+                        style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800),
+                      ),
+                    ],
+                  ),
+                  InkWell(
+                    onTap: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (ctx) => CardioHistorySheet(accentColor: Colors.blueAccent),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: const BoxDecoration(color: Colors.white12, shape: BoxShape.circle),
+                      child: const Icon(Icons.history, color: Colors.white70, size: 18),
+                    ),
                   ),
                 ],
               ),
