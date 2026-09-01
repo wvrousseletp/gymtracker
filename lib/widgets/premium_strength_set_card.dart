@@ -63,14 +63,14 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
     if (isRunning) {
       timer?.cancel();
       setState(() {
-        if (isRight) _isRunningRight = false;
-        else _isRunningLeft = false;
+        if (isRight) { _isRunningRight = false; }
+        else { _isRunningLeft = false; }
       });
       _saveLocalTime();
     } else {
       setState(() {
-        if (isRight) _isRunningRight = true;
-        else _isRunningLeft = true;
+        if (isRight) { _isRunningRight = true; }
+        else { _isRunningLeft = true; }
       });
       
       final newTimer = Timer.periodic(const Duration(seconds: 1), (t) {

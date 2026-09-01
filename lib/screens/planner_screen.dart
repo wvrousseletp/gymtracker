@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/tracker_provider.dart';
-import '../models/exercise.dart';
 import '../models/planner_state.dart';
 import '../models/routine.dart';
 import '../providers/workout_provider.dart';
