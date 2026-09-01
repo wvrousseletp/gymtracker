@@ -8,6 +8,7 @@ class LibraryExercise {
   final String? executionType;  // 'isometric' ou null
   final String? notes;
   final bool isStationary;
+  final bool isUnilateral;
 
   LibraryExercise({
     required this.id,
@@ -17,6 +18,7 @@ class LibraryExercise {
     this.executionType,
     this.notes,
     this.isStationary = false,
+    this.isUnilateral = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -27,6 +29,7 @@ class LibraryExercise {
     'executionType': executionType ?? 'Livre',
     'notes': notes,
     'isStationary': isStationary,
+    'isUnilateral': isUnilateral,
   };
 
   factory LibraryExercise.fromJson(Map<String, dynamic> json) => LibraryExercise(
@@ -37,6 +40,7 @@ class LibraryExercise {
     executionType: json['executionType'] ?? 'Livre',
     notes: json['notes'],
     isStationary: json['isStationary'] ?? false,
+    isUnilateral: json['isUnilateral'] ?? false,
   );
 
   bool get isCardio {
@@ -73,6 +77,7 @@ class RoutineExercise {
   final bool isCardio; // Se true, usa distance/duration em vez de sets/reps
   final bool allowCardioSets;
   final String? supersetId; // Se true, permite múltiplos sets (para HIIT)
+  final bool isUnilateral;
 
   RoutineExercise({
     required this.id,
@@ -88,6 +93,7 @@ class RoutineExercise {
     this.isCardio = false,
     this.allowCardioSets = false,
     this.supersetId,
+    this.isUnilateral = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -102,6 +108,7 @@ class RoutineExercise {
     'isCardio': isCardio,
     'allowCardioSets': allowCardioSets,
     'supersetId': supersetId,
+    'isUnilateral': isUnilateral,
   };
 
   factory RoutineExercise.fromJson(Map<String, dynamic> json) {
@@ -121,6 +128,7 @@ class RoutineExercise {
       isCardio: json['isCardio'] ?? false,
       allowCardioSets: json['allowCardioSets'] ?? false,
     supersetId: json['supersetId'],
+      isUnilateral: json['isUnilateral'] ?? false,
     );
   }
 }
@@ -170,6 +178,7 @@ class ActiveExercise {
   final bool allowCardioSets;
   final String? supersetId;
   final bool isStationary;
+  final bool isUnilateral;
   // Single cardio session data (for non-set cardio)
   PerformedCardio? singleCardioSession;
   final int? rpe;
@@ -196,6 +205,7 @@ class ActiveExercise {
     this.allowCardioSets = false,
     this.supersetId,
     this.isStationary = false,
+    this.isUnilateral = false,
     this.singleCardioSession,
     this.rpe,
   }) : failureReps = failureReps ?? List<int?>.filled(sets, null);
@@ -220,6 +230,7 @@ class ActiveExercise {
     'allowCardioSets': allowCardioSets,
     'supersetId': supersetId,
     'isStationary': isStationary,
+    'isUnilateral': isUnilateral,
     'singleCardioSession': singleCardioSession?.toJson(),
     'rpe': rpe,
   };
@@ -255,6 +266,7 @@ class ActiveExercise {
       allowCardioSets: json['allowCardioSets'] ?? false,
     supersetId: json['supersetId'],
       isStationary: json['isStationary'] ?? false,
+      isUnilateral: json['isUnilateral'] ?? false,
       singleCardioSession: json['singleCardioSession'] != null
           ? PerformedCardio.fromJson(json['singleCardioSession'])
           : null,
@@ -284,6 +296,7 @@ class ActiveExercise {
     bool? allowCardioSets,
     String? supersetId,
     bool? isStationary,
+    bool? isUnilateral,
     PerformedCardio? singleCardioSession,
     int? rpe,
   }) {
@@ -309,6 +322,7 @@ class ActiveExercise {
       allowCardioSets: allowCardioSets ?? this.allowCardioSets,
       supersetId: supersetId ?? this.supersetId,
       isStationary: isStationary ?? this.isStationary,
+      isUnilateral: isUnilateral ?? this.isUnilateral,
       singleCardioSession: singleCardioSession ?? this.singleCardioSession,
       rpe: rpe ?? this.rpe,
     );

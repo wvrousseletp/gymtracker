@@ -2604,6 +2604,7 @@ class _LibraryTabState extends State<LibraryTab> {
     }
     final notesCtrl = TextEditingController(text: existing?.notes ?? "");
     bool isStationary = existing?.isStationary ?? false;
+    bool isUnilateral = existing?.isUnilateral ?? false;
 
     showDialog(
       context: context,
@@ -3102,6 +3103,46 @@ class _LibraryTabState extends State<LibraryTab> {
                         const SizedBox(height: 16),
                       ],
 
+                      // Unilateral (só para Isometria)
+                      if (measurement == "Tempo de Isometria") ...[
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "Unilateral",
+                                    style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                  SizedBox(height: 2),
+                                  Text(
+                                    "Execução separada para cada lado do corpo.",
+                                    style: TextStyle(
+                                        color: Colors.white30,
+                                        fontSize: 10),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Switch.adaptive(
+                              value: isUnilateral,
+                              activeColor: widget.accentColor,
+                              onChanged: (val) {
+                                setState(() {
+                                  isUnilateral = val;
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+
                       // Observação
                       TextField(
                         controller: notesCtrl,
@@ -3183,6 +3224,7 @@ class _LibraryTabState extends State<LibraryTab> {
                                       notesCtrl.text.trim(),
                                       execType,
                                       isStationary: isStationary,
+                                      isUnilateral: measurement == "Tempo de Isometria" ? isUnilateral : false,
                                     );
                                   } else {
                                     provider.updateLibraryExercise(
@@ -3193,6 +3235,7 @@ class _LibraryTabState extends State<LibraryTab> {
                                       notesCtrl.text.trim(),
                                       execType,
                                       isStationary: isStationary,
+                                      isUnilateral: measurement == "Tempo de Isometria" ? isUnilateral : false,
                                     );
                                   }
                                   Navigator.pop(dialogCtx);

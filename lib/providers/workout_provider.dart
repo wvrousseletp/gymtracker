@@ -561,26 +561,13 @@ class WorkoutProvider extends ChangeNotifier {
     // For cardio exercises without sets, store in singleCardioSession instead
     if (ex.isCardio && !ex.allowCardioSets) {
       if (distance != null && duration != null) {
-        exercises[exIndex] = ActiveExercise(
-          id: ex.id,
-          name: ex.name,
-          muscle: ex.muscle,
-          executionType: ex.executionType,
-          measurementType: ex.measurementType,
-          sets: ex.sets,
-          reps: ex.reps,
-          rest: ex.rest,
-          weight: ex.weight,
-          weightsPerSet: ex.weightsPerSet,
-          repsPerSet: ex.repsPerSet,
+        exercises[exIndex] = ex.copyWith(
           setsState: List<bool>.filled(1, isDone), // Mark as completed
           performedCardios: [
             PerformedCardio(distanceKm: distance, durationSeconds: duration)
           ],
           failureReport: List<bool>.filled(1, false),
           failureReps: List<int?>.filled(1, null),
-          isCardio: ex.isCardio,
-          allowCardioSets: ex.allowCardioSets,
           singleCardioSession:
               PerformedCardio(distanceKm: distance, durationSeconds: duration),
         );
@@ -605,25 +592,11 @@ class WorkoutProvider extends ChangeNotifier {
     final newFailureReps = List<int?>.from(ex.failureReps);
     newFailureReps[setIndex] = isFailure ? failureRep : null;
 
-    exercises[exIndex] = ActiveExercise(
-      id: ex.id,
-      name: ex.name,
-      muscle: ex.muscle,
-      executionType: ex.executionType,
-      measurementType: ex.measurementType,
-      sets: ex.sets,
-      reps: ex.reps,
-      rest: ex.rest,
-      weight: ex.weight,
-      weightsPerSet: ex.weightsPerSet,
-      repsPerSet: ex.repsPerSet,
+    exercises[exIndex] = ex.copyWith(
       setsState: newSetsState,
       performedCardios: newCardios,
       failureReport: newFailure,
       failureReps: newFailureReps,
-      isCardio: ex.isCardio,
-      allowCardioSets: ex.allowCardioSets,
-      singleCardioSession: ex.singleCardioSession,
     );
 
     WatchRestTimer? computedRestTimer = active.restTimer;
@@ -901,22 +874,9 @@ class WorkoutProvider extends ChangeNotifier {
     if (exIndex >= exercises.length) return;
 
     final ex = exercises[exIndex];
-    exercises[exIndex] = ActiveExercise(
-      id: ex.id,
-      name: ex.name,
-      muscle: ex.muscle,
-      executionType: ex.executionType,
-      measurementType: ex.measurementType,
-      sets: ex.sets,
+    exercises[exIndex] = ex.copyWith(
       reps: reps,
-      rest: ex.rest,
       weight: weight,
-      weightsPerSet: ex.weightsPerSet,
-      repsPerSet: ex.repsPerSet,
-      setsState: ex.setsState,
-      performedCardios: ex.performedCardios,
-      failureReport: ex.failureReport,
-      failureReps: ex.failureReps,
     );
 
     activeWorkout = active.copyWith(
@@ -933,29 +893,8 @@ class WorkoutProvider extends ChangeNotifier {
     final types = ex.setTypes != null ? List<String>.from(ex.setTypes!) : List<String>.filled(ex.sets, 'N');
     if (setIdx < types.length) {
       types[setIdx] = type;
-      _activeWorkout!.exercises[exIdx] = ActiveExercise(
-        id: ex.id,
-        name: ex.name,
-        muscle: ex.muscle,
-        executionType: ex.executionType,
-        measurementType: ex.measurementType,
-        sets: ex.sets,
-        reps: ex.reps,
-        rest: ex.rest,
-        weight: ex.weight,
-        setsState: ex.setsState,
-        performedCardios: ex.performedCardios,
-        failureReport: ex.failureReport,
-        failureReps: ex.failureReps,
-        weightsPerSet: ex.weightsPerSet,
-        repsPerSet: ex.repsPerSet,
+      _activeWorkout!.exercises[exIdx] = ex.copyWith(
         setTypes: types,
-        rirPerSet: ex.rirPerSet,
-        isCardio: ex.isCardio,
-        allowCardioSets: ex.allowCardioSets,
-        isStationary: ex.isStationary,
-        singleCardioSession: ex.singleCardioSession,
-        
       );
       _save();
     }
@@ -967,29 +906,8 @@ class WorkoutProvider extends ChangeNotifier {
     final rirs = ex.rirPerSet != null ? List<int?>.from(ex.rirPerSet!) : List<int?>.filled(ex.sets, null);
     if (setIdx < rirs.length) {
       rirs[setIdx] = rir;
-      _activeWorkout!.exercises[exIdx] = ActiveExercise(
-        id: ex.id,
-        name: ex.name,
-        muscle: ex.muscle,
-        executionType: ex.executionType,
-        measurementType: ex.measurementType,
-        sets: ex.sets,
-        reps: ex.reps,
-        rest: ex.rest,
-        weight: ex.weight,
-        setsState: ex.setsState,
-        performedCardios: ex.performedCardios,
-        failureReport: ex.failureReport,
-        failureReps: ex.failureReps,
-        weightsPerSet: ex.weightsPerSet,
-        repsPerSet: ex.repsPerSet,
-        setTypes: ex.setTypes,
+      _activeWorkout!.exercises[exIdx] = ex.copyWith(
         rirPerSet: rirs,
-        isCardio: ex.isCardio,
-        allowCardioSets: ex.allowCardioSets,
-        isStationary: ex.isStationary,
-        singleCardioSession: ex.singleCardioSession,
-        
       );
       _save();
     }
@@ -1026,22 +944,11 @@ class WorkoutProvider extends ChangeNotifier {
       mainReps = reps;
     }
 
-    exercises[exIndex] = ActiveExercise(
-      id: ex.id,
-      name: ex.name,
-      muscle: ex.muscle,
-      executionType: ex.executionType,
-      measurementType: ex.measurementType,
-      sets: ex.sets,
+    exercises[exIndex] = ex.copyWith(
       reps: mainReps,
-      rest: ex.rest,
       weight: mainWeight,
       weightsPerSet: newWeights,
       repsPerSet: newReps,
-      setsState: ex.setsState,
-      performedCardios: ex.performedCardios,
-      failureReport: ex.failureReport,
-      failureReps: ex.failureReps,
     );
 
     activeWorkout = active.copyWith(
@@ -1167,22 +1074,9 @@ class WorkoutProvider extends ChangeNotifier {
           }
         }
 
-        merged[i] = ActiveExercise(
-          id: ios.id,
-          name: ios.name,
-          muscle: ios.muscle,
-          executionType: ios.executionType,
-          measurementType: ios.measurementType,
-          sets: ios.sets,
-          reps: ios.reps,
-          rest: ios.rest,
-          weight: ios.weight,
-          weightsPerSet: ios.weightsPerSet,
-          repsPerSet: ios.repsPerSet,
+        merged[i] = ios.copyWith(
           setsState: mergedSets,
           performedCardios: mergedCardios,
-          failureReport: ios.failureReport,
-          failureReps: ios.failureReps,
         );
       }
 
@@ -1938,7 +1832,7 @@ class WorkoutProvider extends ChangeNotifier {
 
   void addLibraryExercise(String name, String muscle, String measurementType,
       String? notes, String? executionType,
-      {bool isStationary = false}) {
+      {bool isStationary = false, bool isUnilateral = false}) {
     final newEx = LibraryExercise(
       id: "lib-${DateTime.now().millisecondsSinceEpoch}",
       name: name,
@@ -1947,6 +1841,7 @@ class WorkoutProvider extends ChangeNotifier {
       notes: notes,
       executionType: executionType,
       isStationary: isStationary,
+      isUnilateral: isUnilateral,
     );
     library = List<LibraryExercise>.from(library)..add(newEx);
     _save();
@@ -1954,7 +1849,7 @@ class WorkoutProvider extends ChangeNotifier {
 
   void updateLibraryExercise(String id, String name, String muscle,
       String measurementType, String? notes, String? executionType,
-      {bool isStationary = false}) {
+      {bool isStationary = false, bool isUnilateral = false}) {
     final idx = library.indexWhere((e) => e.id == id);
     if (idx != -1) {
       library[idx] = LibraryExercise(
@@ -1965,6 +1860,7 @@ class WorkoutProvider extends ChangeNotifier {
         notes: notes,
         executionType: executionType,
         isStationary: isStationary,
+        isUnilateral: isUnilateral,
       );
       _save();
     }

@@ -716,20 +716,20 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   void addLibraryExercise(String name, String muscle, String measurementType,
       String? notes, String? executionType,
-      {bool isStationary = false}) {
+      {bool isStationary = false, bool isUnilateral = false}) {
     if (_workoutProvider == null) return;
     _workoutProvider!.addLibraryExercise(
         name, muscle, measurementType, notes, executionType,
-        isStationary: isStationary);
+        isStationary: isStationary, isUnilateral: isUnilateral);
   }
 
   void updateLibraryExercise(String id, String name, String muscle,
       String measurementType, String? notes, String? executionType,
-      {bool isStationary = false}) {
+      {bool isStationary = false, bool isUnilateral = false}) {
     if (_workoutProvider == null) return;
     _workoutProvider!.updateLibraryExercise(
         id, name, muscle, measurementType, notes, executionType,
-        isStationary: isStationary);
+        isStationary: isStationary, isUnilateral: isUnilateral);
   }
 
   void deleteLibraryExercise(String id) {

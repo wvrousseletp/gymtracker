@@ -41,41 +41,69 @@ class PremiumStrengthSetCard extends StatefulWidget {
 }
 
 class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
-  Timer? _timer;
-  int _elapsed = 0;
-  bool _isRunning = false;
+  Timer? _timerLeft;
+  int _elapsedLeft = 0;
+  bool _isRunningLeft = false;
+
+  Timer? _timerRight;
+  int _elapsedRight = 0;
+  bool _isRunningRight = false;
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _timerLeft?.cancel();
+    _timerRight?.cancel();
     super.dispose();
   }
 
-  void _toggleTimer(int targetReps) {
-    if (_isRunning) {
-      _timer?.cancel();
+  void _toggleTimer(int targetReps, {bool isRight = false}) {
+    final isRunning = isRight ? _isRunningRight : _isRunningLeft;
+    final timer = isRight ? _timerRight : _timerLeft;
+
+    if (isRunning) {
+      timer?.cancel();
       setState(() {
-        _isRunning = false;
+        if (isRight) _isRunningRight = false;
+        else _isRunningLeft = false;
       });
       _saveLocalTime();
     } else {
       setState(() {
-        _isRunning = true;
+        if (isRight) _isRunningRight = true;
+        else _isRunningLeft = true;
       });
-      _timer = Timer.periodic(const Duration(seconds: 1), (t) {
+      
+      final newTimer = Timer.periodic(const Duration(seconds: 1), (t) {
         setState(() {
-          _elapsed++;
+          if (isRight) _elapsedRight++;
+          else _elapsedLeft++;
         });
         _saveLocalTime();
-        if (_elapsed == targetReps) {
-          _timer?.cancel();
-          setState(() {
-            _isRunning = false;
-          });
+        
+        final currentElapsed = isRight ? _elapsedRight : _elapsedLeft;
+        if (currentElapsed == targetReps) {
+          if (isRight) {
+            _timerRight?.cancel();
+            setState(() => _isRunningRight = false);
+          } else {
+            _timerLeft?.cancel();
+            setState(() => _isRunningLeft = false);
+          }
+          
           _playIsometryAlarm();
-          widget.onDoneTap();
+          
+          final bothDone = widget.ex.isUnilateral 
+              ? (_elapsedLeft >= targetReps && _elapsedRight >= targetReps)
+              : true;
+              
+          if (bothDone) {
+            widget.onDoneTap();
+          }
         }
       });
+      
+      if (isRight) _timerRight = newTimer;
+      else _timerLeft = newTimer;
     }
   }
 
@@ -91,11 +119,17 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
     }
   }
 
-  void _resetTimer() {
-    _timer?.cancel();
+  void _resetTimer({bool isRight = false}) {
     setState(() {
-      _isRunning = false;
-      _elapsed = 0;
+      if (isRight) {
+        _timerRight?.cancel();
+        _elapsedRight = 0;
+        _isRunningRight = false;
+      } else {
+        _timerLeft?.cancel();
+        _elapsedLeft = 0;
+        _isRunningLeft = false;
+      }
     });
     _saveLocalTime();
   }
@@ -106,7 +140,8 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
               widget.setIndex < widget.ex.weightsPerSet!.length)
           ? widget.ex.weightsPerSet![widget.setIndex]
           : widget.ex.weight;
-      widget.onSaveValues!(weight, _elapsed > 0 ? _elapsed : widget.ex.reps);
+      final elapsed = _elapsedLeft > _elapsedRight ? _elapsedLeft : _elapsedRight;
+      widget.onSaveValues!(weight, elapsed > 0 ? elapsed : widget.ex.reps);
     }
   }
 
@@ -114,6 +149,101 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
     final m = seconds ~/ 60;
     final s = seconds % 60;
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
+
+  Widget _buildTimerRow({required bool isRight, required int targetSeconds}) {
+    final elapsed = isRight ? _elapsedRight : _elapsedLeft;
+    final isRunning = isRight ? _isRunningRight : _isRunningLeft;
+    final progress = targetSeconds > 0 ? elapsed / targetSeconds : 0.0;
+    final cappedProgress = progress.clamp(0.0, 1.0);
+    
+    return Container(
+      margin: EdgeInsets.only(bottom: widget.ex.isUnilateral && !isRight ? 8.0 : 0.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.02),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
+      ),
+      child: Row(
+        children: [
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 50,
+                height: 50,
+                child: CircularProgressIndicator(
+                  value: cappedProgress,
+                  strokeWidth: 3.5,
+                  backgroundColor: Colors.white.withOpacity(0.05),
+                  valueColor: AlwaysStoppedAnimation(
+                    elapsed >= targetSeconds ? Colors.greenAccent : widget.accentColor,
+                  ),
+                ),
+              ),
+              Text(
+                _formatTime(elapsed > 0 ? elapsed : targetSeconds),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  fontFeatures: [FontFeature.tabularFigures()],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.ex.isUnilateral 
+                    ? (isRight ? "LADO DIREITO" : "LADO ESQUERDO") 
+                    : (isRunning ? "CRONÔMETRO ATIVO" : "ISOMETRIA"),
+                  style: TextStyle(
+                    color: isRunning ? widget.accentColor : Colors.white60,
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  isRunning ? "Tempo sob tensão correndo..." : "Toque para cronometrar a série",
+                  style: const TextStyle(color: Colors.white30, fontSize: 10),
+                ),
+              ],
+            ),
+          ),
+          Row(
+            children: [
+              if (elapsed > 0) ...[
+                IconButton(
+                  onPressed: () => _resetTimer(isRight: isRight),
+                  icon: const Icon(Icons.refresh_rounded, color: Colors.white60, size: 20),
+                  tooltip: "Reiniciar",
+                  constraints: const BoxConstraints(),
+                  padding: const EdgeInsets.all(8),
+                ),
+                const SizedBox(width: 4),
+              ],
+              IconButton(
+                onPressed: () => _toggleTimer(targetSeconds, isRight: isRight),
+                icon: Icon(
+                  isRunning ? Icons.pause_circle_filled_rounded : Icons.play_circle_filled_rounded,
+                  color: isRunning ? Colors.orangeAccent : widget.accentColor,
+                  size: 36,
+                ),
+                constraints: const BoxConstraints(),
+                padding: EdgeInsets.zero,
+              ),
+            ],
+          )
+        ],
+      ),
+    );
   }
 
   @override
@@ -169,8 +299,6 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
     // ─── 1. SÉRIE ATIVA: HERO CARD (DESTAQUE TOTAL) ───
     if (widget.isActive) {
       final targetSeconds = reps;
-      final progress = targetSeconds > 0 ? _elapsed / targetSeconds : 0.0;
-      final cappedProgress = progress.clamp(0.0, 1.0);
 
       return RepaintBoundary(
         child: AnimatedContainer(
@@ -364,114 +492,16 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
                     ),
                   ),
                 ),
-
                 // ─── CRONÔMETRO INLINE PARA ISOMETRIA ───
                 if (isTime) ...[
                   const SizedBox(height: 14),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.02),
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: Colors.white.withOpacity(0.06)),
-                    ),
-                    child: Row(
-                      children: [
-                        Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            SizedBox(
-                              width: 50,
-                              height: 50,
-                              child: CircularProgressIndicator(
-                                value: cappedProgress,
-                                strokeWidth: 3.5,
-                                backgroundColor: Colors.white.withOpacity(0.05),
-                                valueColor: AlwaysStoppedAnimation(
-                                  _elapsed >= targetSeconds
-                                      ? Colors.greenAccent
-                                      : widget.accentColor,
-                                ),
-                              ),
-                            ),
-                            Text(
-                              _formatTime(
-                                  _elapsed > 0 ? _elapsed : targetSeconds),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                fontFeatures: [FontFeature.tabularFigures()],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _isRunning ? "CRONÔMETRO ATIVO" : "ISOMETRIA",
-                                style: TextStyle(
-                                  color: _isRunning
-                                      ? widget.accentColor
-                                      : Colors.white60,
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.0,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                _isRunning
-                                    ? "Tempo sob tensão correndo..."
-                                    : "Toque para cronometrar a série",
-                                style: const TextStyle(
-                                  color: Colors.white30,
-                                  fontSize: 10,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            if (_elapsed > 0) ...[
-                              IconButton(
-                                onPressed: _resetTimer,
-                                icon: const Icon(Icons.refresh_rounded,
-                                    color: Colors.white60, size: 20),
-                                tooltip: "Reiniciar",
-                                constraints: const BoxConstraints(),
-                                padding: const EdgeInsets.all(8),
-                              ),
-                              const SizedBox(width: 4),
-                            ],
-                            IconButton(
-                              onPressed: () => _toggleTimer(targetSeconds),
-                              icon: Icon(
-                                _isRunning
-                                    ? Icons.pause_circle_filled_rounded
-                                    : Icons.play_circle_filled_rounded,
-                                color: _isRunning
-                                    ? Colors.orangeAccent
-                                    : widget.accentColor,
-                                size: 36,
-                              ),
-                              constraints: const BoxConstraints(),
-                              padding: EdgeInsets.zero,
-                            ),
-                          ],
-                        )
-                      ],
-                    ),
-                  ),
+                  if (widget.ex.isUnilateral) ...[
+                    _buildTimerRow(isRight: false, targetSeconds: targetSeconds),
+                    _buildTimerRow(isRight: true, targetSeconds: targetSeconds),
+                  ] else ...[
+                    _buildTimerRow(isRight: false, targetSeconds: targetSeconds),
+                  ],
                 ],
-
-                const SizedBox(height: 16),
-
                 // Action Buttons
                 Row(
                   children: [

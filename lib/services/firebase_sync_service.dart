@@ -927,6 +927,12 @@ class FirebaseSyncService {
         weight: ex.weight.clamp(0.0, 1000.0),
         weightsPerSet: ex.weightsPerSet,
         repsPerSet: ex.repsPerSet,
+        setTypes: ex.setTypes,
+        rirPerSet: ex.rirPerSet,
+        isCardio: ex.isCardio,
+        allowCardioSets: ex.allowCardioSets,
+        supersetId: ex.supersetId,
+        isUnilateral: ex.isUnilateral,
       );
     }).toList();
 
