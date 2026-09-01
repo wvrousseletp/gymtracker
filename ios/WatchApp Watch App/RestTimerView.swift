@@ -5,6 +5,7 @@ import WatchKit
 
 struct RestTimerView: View {
     let restTimer: WatchRestTimer
+    var onMinimize: (() -> Void)? = nil
     @StateObject var connectivityManager = WatchConnectivityManager.shared
     @State private var timeRemaining: Int = 0
     @State private var didAutoSkip = false
@@ -75,7 +76,29 @@ struct RestTimerView: View {
             }
 
             VStack(spacing: 0) {
-                Spacer(minLength: 8)
+                if !isLuminanceReduced, let onMinimize = onMinimize {
+                    HStack {
+                        Button(action: onMinimize) {
+                            HStack(spacing: 3) {
+                                Image(systemName: "chevron.down")
+                                    .font(.system(size: 8, weight: .bold))
+                                Text("Minimizar")
+                                    .font(.system(size: 8, weight: .bold))
+                            }
+                            .foregroundColor(.white.opacity(0.8))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(Color.white.opacity(0.12))
+                            .cornerRadius(10)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        Spacer()
+                    }
+                    .padding(.horizontal, 6)
+                    .padding(.top, 2)
+                } else {
+                    Spacer(minLength: 4)
+                }
                 
                 // Título: PREPARE-SE ou DESCANSO
                 Text(restTimer.isPrep ? "PREPARE-SE" : "DESCANSO")

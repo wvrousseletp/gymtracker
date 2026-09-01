@@ -90,6 +90,10 @@ struct ActiveWorkoutView: View {
     @State private var showingCancelAlert = false
     @State private var showSummary: Bool = false
     @State private var showingFinishSheet = false
+    @State private var showPlateCalculator: Bool = false
+    @State private var showNotesSheet: Bool = false
+    @State private var isRestTimerMinimized: Bool = false
+    @State private var activeWorkoutPage: Int = 1
     @State private var elapsedSeconds: Int = 0
     @State private var selectedSetIndexMap: [String: Int] = [:] // exerciseId -> selectedSetIndex
     @State private var crownValue: Double = 0
@@ -106,6 +110,24 @@ struct ActiveWorkoutView: View {
     @State private var timeTimerElapsed: Int = 0
 
     let stopwatchTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+
+    private func muscleColor(for muscle: String) -> Color {
+        let lower = muscle.lowercased()
+        if lower.contains("peito") || lower.contains("tríc") {
+            return Color.orange
+        } else if lower.contains("costa") || lower.contains("dorsal") || lower.contains("bíceps") {
+            return Color.blue
+        } else if lower.contains("perna") || lower.contains("quadrí") || lower.contains("glút") || lower.contains("panturrilha") {
+            return Color.green
+        } else if lower.contains("ombro") || lower.contains("deltoide") || lower.contains("trapézio") {
+            return Color.purple
+        } else if lower.contains("abdômen") || lower.contains("core") {
+            return Color.yellow
+        } else if lower.contains("cardio") || lower.contains("corrida") {
+            return Color.cyan
+        }
+        return Color.orange
+    }
 
     private func resetTimeTimer() {
         isTimeTimerRunning = false
@@ -326,21 +348,33 @@ struct ActiveWorkoutView: View {
             HStack {
                 Spacer()
                 
-                // Weight Info Block
-                HStack(spacing: 4) {
-                    Image(systemName: "dumbbell.fill")
-                        .font(.system(size: 10))
-                        .foregroundColor(.orange)
-                    Text(String(format: "%.1f kg", exercise.weight))
-                        .font(.system(size: 12, weight: .bold, design: .rounded))
-                        .foregroundColor(crownFeedbackColor)
-                        .scaleEffect(crownFeedbackScale)
-                        .animation(.spring(response: 0.2, dampingFraction: 0.5), value: crownFeedbackScale)
+                // Weight Info Block (Tappable for Plate Calculator)
+                Button(action: {
+                    showPlateCalculator = true
+                    #if canImport(WatchKit)
+                    hapticManager.play(.click)
+                    #endif
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "dumbbell.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(.orange)
+                        Text(String(format: "%.1f kg", exercise.weight))
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .foregroundColor(crownFeedbackColor)
+                            .scaleEffect(crownFeedbackScale)
+                            .animation(.spring(response: 0.2, dampingFraction: 0.5), value: crownFeedbackScale)
+                    }
+                    .padding(.vertical, 6)
+                    .padding(.horizontal, 10)
+                    .background(Color.white.opacity(0.06))
+                    .cornerRadius(8)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.orange.opacity(0.25), lineWidth: 0.5)
+                    )
                 }
-                .padding(.vertical, 6)
-                .padding(.horizontal, 10)
-                .background(Color.white.opacity(0.06))
-                .cornerRadius(8)
+                .buttonStyle(PlainButtonStyle())
                 
                 Spacer(minLength: 12)
                 
@@ -675,6 +709,39 @@ struct ActiveWorkoutView: View {
         let exIndex = activeWorkout.currentExerciseIndex
         
         return VStack(spacing: 0) {
+            // Minimized Rest Timer Bar (if running and minimized)
+            if let restTimer = activeWorkout.restTimer, isRestTimerMinimized {
+                Button(action: {
+                    withAnimation(.spring()) {
+                        isRestTimerMinimized = false
+                    }
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "timer")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundColor(.orange)
+                        Text(restTimer.isPrep ? "PREPARO" : "DESCANSO ATIVO")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundColor(.white)
+                        Spacer()
+                        Image(systemName: "chevron.up")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundColor(.orange)
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(Color.orange.opacity(0.18))
+                    .cornerRadius(8)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.orange.opacity(0.35), lineWidth: 0.5)
+                    )
+                }
+                .buttonStyle(PlainButtonStyle())
+                .padding(.horizontal, 4)
+                .padding(.bottom, 2)
+            }
+            
             // Battery Indicator
             if !isLuminanceReduced {
                 batteryIndicatorView()
@@ -689,16 +756,17 @@ struct ActiveWorkoutView: View {
             if exIndex >= 0 && exIndex < activeWorkout.exercises.count {
                 let exercise = activeWorkout.exercises[exIndex]
                 let isCardio = exercise.isCardio
+                let themeAccent = muscleColor(for: exercise.muscle)
                 
                 VStack(spacing: 4) {
-                    // 1. Exercise Info Header with Navigation Chevrons (More Compact)
+                    // 1. Exercise Info Header with Navigation Chevrons & Notes button
                     HStack(alignment: .center) {
                         Button(action: {
                             connectivityManager.changeExercise(to: exIndex - 1)
                         }) {
                             Image(systemName: "chevron.left")
                                 .font(.system(size: 11, weight: .bold))
-                                .foregroundColor(.orange)
+                                .foregroundColor(themeAccent)
                         }
                         .disabled(exIndex == 0 || isLuminanceReduced)
                         .opacity(isLuminanceReduced ? 0.0 : (exIndex == 0 ? 0.2 : 1.0))
@@ -708,11 +776,25 @@ struct ActiveWorkoutView: View {
                         Spacer()
                         
                         VStack(alignment: .center, spacing: 0) {
-                            Text(exercise.name)
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundColor(.orange)
-                                .multilineTextAlignment(.center)
-                                .lineLimit(1)
+                            HStack(spacing: 3) {
+                                Text(exercise.name)
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundColor(themeAccent)
+                                    .multilineTextAlignment(.center)
+                                    .lineLimit(1)
+                                
+                                Button(action: {
+                                    showNotesSheet = true
+                                    #if canImport(WatchKit)
+                                    hapticManager.play(.click)
+                                    #endif
+                                }) {
+                                    Image(systemName: "square.and.pencil")
+                                        .font(.system(size: 8))
+                                        .foregroundColor(.gray)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
                             
                             HStack(spacing: 4) {
                                 Text(exercise.muscle)
@@ -737,7 +819,7 @@ struct ActiveWorkoutView: View {
                         }) {
                             Image(systemName: "chevron.right")
                                 .font(.system(size: 11, weight: .bold))
-                                .foregroundColor(.orange)
+                                .foregroundColor(themeAccent)
                         }
                         .disabled(exIndex + 1 >= activeWorkout.exercises.count || isLuminanceReduced)
                         .opacity(isLuminanceReduced ? 0.0 : (exIndex + 1 >= activeWorkout.exercises.count ? 0.2 : 1.0))
@@ -1087,32 +1169,51 @@ struct ActiveWorkoutView: View {
 
     @ViewBuilder
     private func activeWorkoutMainView(activeWorkout: WatchActiveWorkoutState) -> some View {
-        TabView {
-            // Page 1: Exercício Ativo
-            currentExercisePageView(activeWorkout: activeWorkout)
-            
-            // Page 2: Controles do Treino
+        let exIndex = activeWorkout.currentExerciseIndex
+        let currentMuscle = (exIndex >= 0 && exIndex < activeWorkout.exercises.count) ? activeWorkout.exercises[exIndex].muscle : ""
+        let glowColor = muscleColor(for: currentMuscle)
+
+        ZStack {
             if !isLuminanceReduced {
-                workoutControlsPageView(activeWorkout: activeWorkout)
+                RadialGradient(
+                    colors: [glowColor.opacity(0.12), Color.black],
+                    center: .top,
+                    startRadius: 10,
+                    endRadius: 180
+                )
+                .ignoresSafeArea()
             }
-            
-            // Page 3: Controles de Música (NowPlaying)
-            #if os(watchOS)
-            if !isLuminanceReduced {
-                NowPlayingView()
+
+            TabView(selection: $activeWorkoutPage) {
+                // Page 0: Controles do Treino (Padrão Apple Workout: controles à esquerda)
+                if !isLuminanceReduced {
+                    workoutControlsPageView(activeWorkout: activeWorkout)
+                        .tag(0)
+                }
+                
+                // Page 1: Exercício Ativo & Séries (Principal no centro)
+                currentExercisePageView(activeWorkout: activeWorkout)
+                    .tag(1)
+                
+                // Page 2: Controles de Música (NowPlaying à direita)
+                #if os(watchOS)
+                if !isLuminanceReduced {
+                    NowPlayingView()
+                        .tag(2)
+                }
+                #endif
             }
-            #endif
-        }
-        .tabViewStyle(.page(indexDisplayMode: .automatic))
-        .focusable()
-        .digitalCrownRotation($crownValue, from: 0, through: 100, sensitivity: .medium, isContinuous: true, isHapticFeedbackEnabled: true)
-        .onChange(of: crownValue) { newValue in
-            if isControlsPageFocused {
-                adjustFontSize(delta: newValue - lastCrownValue)
-            } else {
-                handleCrownRotation(newValue: newValue, oldValue: lastCrownValue, activeWorkout: activeWorkout)
+            .tabViewStyle(.page(indexDisplayMode: .automatic))
+            .focusable()
+            .digitalCrownRotation($crownValue, from: 0, through: 100, sensitivity: .medium, isContinuous: true, isHapticFeedbackEnabled: true)
+            .onChange(of: crownValue) { newValue in
+                if isControlsPageFocused {
+                    adjustFontSize(delta: newValue - lastCrownValue)
+                } else {
+                    handleCrownRotation(newValue: newValue, oldValue: lastCrownValue, activeWorkout: activeWorkout)
+                }
+                lastCrownValue = newValue
             }
-            lastCrownValue = newValue
         }
     }
     
@@ -1285,9 +1386,13 @@ struct ActiveWorkoutView: View {
             if showSummary, let activeWorkout = connectivityManager.activeWorkout {
                 WorkoutSummaryView(activeWorkout: activeWorkout)
             } else if let activeWorkout = connectivityManager.activeWorkout {
-                if let restTimer = activeWorkout.restTimer {
-                    RestTimerView(restTimer: restTimer)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                if let restTimer = activeWorkout.restTimer, !isRestTimerMinimized {
+                    RestTimerView(restTimer: restTimer, onMinimize: {
+                        withAnimation(.spring()) {
+                            isRestTimerMinimized = true
+                        }
+                    })
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     activeWorkoutMainView(activeWorkout: activeWorkout)
                         .onAppear {
@@ -1332,6 +1437,31 @@ struct ActiveWorkoutView: View {
         .sheet(isPresented: $showingFinishSheet) {
             FinishWorkoutSheet(isPresented: $showingFinishSheet) { rpe, notes in
                 connectivityManager.completeWorkout(rpe: rpe, notes: notes)
+            }
+        }
+        .sheet(isPresented: $showPlateCalculator) {
+            if let activeWorkout = connectivityManager.activeWorkout,
+               activeWorkout.currentExerciseIndex >= 0 && activeWorkout.currentExerciseIndex < activeWorkout.exercises.count {
+                let currentWeight = activeWorkout.exercises[activeWorkout.currentExerciseIndex].weight
+                WatchPlateCalculatorView(targetWeight: currentWeight)
+            }
+        }
+        .sheet(isPresented: $showNotesSheet) {
+            if let activeWorkout = connectivityManager.activeWorkout,
+               activeWorkout.currentExerciseIndex >= 0 && activeWorkout.currentExerciseIndex < activeWorkout.exercises.count {
+                let exercise = activeWorkout.exercises[activeWorkout.currentExerciseIndex]
+                WatchExerciseNotesView(
+                    exerciseName: exercise.name,
+                    existingNote: "",
+                    onSave: { note in
+                        // Future: Sync exercise specific notes
+                    }
+                )
+            }
+        }
+        .onChange(of: connectivityManager.activeWorkout?.restTimer == nil) { isFinished in
+            if isFinished {
+                isRestTimerMinimized = false
             }
         }
         .overlay(
