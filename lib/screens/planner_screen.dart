@@ -557,8 +557,9 @@ class _PlannerScreenState extends State<PlannerScreen> {
                 final muscle = libEx.muscle;
                 final isCardio = muscle.toLowerCase().contains('cardio');
                 if (isCardio) {
-                  cardioMap[muscle] =
-                      (cardioMap[muscle] ?? 0) + re.sets.toInt();
+                  int durationMinutes = (re.reps > 0) ? (re.reps ~/ 60) : 30; // Default 30 min if no duration set
+                  if (re.sets > 1) durationMinutes *= re.sets;
+                  cardioMap[muscle] = (cardioMap[muscle] ?? 0) + durationMinutes;
                 } else {
                   strengthMap[muscle] =
                       (strengthMap[muscle] ?? 0) + re.sets.toInt();
@@ -593,8 +594,9 @@ class _PlannerScreenState extends State<PlannerScreen> {
                 final muscle = libEx.muscle;
                 final isCardio = muscle.toLowerCase().contains('cardio');
                 if (isCardio) {
-                  cardioMap[muscle] =
-                      (cardioMap[muscle] ?? 0) + re.sets.toInt();
+                  int durationMinutes = (re.reps > 0) ? (re.reps ~/ 60) : 30;
+                  if (re.sets > 1) durationMinutes *= re.sets;
+                  cardioMap[muscle] = (cardioMap[muscle] ?? 0) + durationMinutes;
                 } else {
                   strengthMap[muscle] =
                       (strengthMap[muscle] ?? 0) + re.sets.toInt();
@@ -606,11 +608,29 @@ class _PlannerScreenState extends State<PlannerScreen> {
       }
     }
 
+    // Filter "Outros"
+    int outrosVolume = 0;
+    final keysToRemove = [];
+    for (final key in strengthMap.keys) {
+      if (key.toLowerCase().contains("outros")) {
+        outrosVolume += strengthMap[key]!;
+        keysToRemove.add(key);
+      }
+    }
+    for (final key in keysToRemove) {
+      strengthMap.remove(key);
+    }
+
     final sortedStrength = strengthMap.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
-    final sortedCardio = cardioMap.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
+    final int totalCardio = cardioMap.values.fold(0, (sum, val) => sum + val);
+
+    Color getVolumeColor(int sets) {
+      if (sets < 10) return Colors.orangeAccent;
+      if (sets <= 20) return Colors.greenAccent;
+      return Colors.redAccent;
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -624,16 +644,11 @@ class _PlannerScreenState extends State<PlannerScreen> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.fitness_center_rounded,
-                      color: accentColor, size: 22),
+                  Icon(Icons.fitness_center_rounded, color: accentColor, size: 22),
                   const SizedBox(width: 8),
                   const Text(
                     "Volume de Treino Planejado",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                    ),
+                    style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800),
                   ),
                 ],
               ),
@@ -644,70 +659,72 @@ class _PlannerScreenState extends State<PlannerScreen> {
                   child: Center(
                     child: Text(
                       "Nenhum treino de musculação planejado.",
-                      style: TextStyle(
-                          color: Colors.white38,
-                          fontStyle: FontStyle.italic,
-                          fontSize: 13),
+                      style: TextStyle(color: Colors.white38, fontStyle: FontStyle.italic, fontSize: 13),
                     ),
                   ),
                 )
               else
                 Column(
                   children: sortedStrength.map((entry) {
-                    final maxVolume = sortedStrength.isNotEmpty
-                        ? sortedStrength.first.value
-                        : 1;
-                    final fraction =
-                        maxVolume > 0 ? entry.value / maxVolume : 0.0;
+                    const maxTarget = 24.0;
+                    final fraction = (entry.value / maxTarget).clamp(0.0, 1.0);
+                    final barColor = getVolumeColor(entry.value);
 
                     return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                entry.key,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                              Text(entry.key, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
                               Text(
                                 "${entry.value} séries",
-                                style: TextStyle(
-                                  color: accentColor,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w800,
-                                ),
+                                style: TextStyle(color: barColor, fontSize: 13, fontWeight: FontWeight.w800),
                               ),
                             ],
                           ),
                           const SizedBox(height: 5),
                           ClipRRect(
-                            borderRadius: BorderRadius.circular(3),
-                            child: Container(
-                              height: 5,
+                            borderRadius: BorderRadius.circular(4),
+                            child: SizedBox(
+                              height: 6,
                               width: double.infinity,
-                              color: Colors.white.withOpacity(0.05),
-                              child: Align(
-                                alignment: Alignment.centerLeft,
-                                child: FractionallySizedBox(
-                                  widthFactor: fraction,
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          accentColor.withOpacity(0.35),
-                                          accentColor,
-                                        ],
+                              child: Stack(
+                                children: [
+                                  Container(color: Colors.white.withOpacity(0.05)),
+                                  // Marker 10 sets
+                                  FractionallySizedBox(
+                                    widthFactor: 10 / maxTarget,
+                                    child: Align(
+                                      alignment: Alignment.centerRight,
+                                      child: Container(width: 2, color: Colors.white38),
+                                    )
+                                  ),
+                                  // Marker 20 sets
+                                  FractionallySizedBox(
+                                    widthFactor: 20 / maxTarget,
+                                    child: Align(
+                                      alignment: Alignment.centerRight,
+                                      child: Container(width: 2, color: Colors.white38),
+                                    )
+                                  ),
+                                  FractionallySizedBox(
+                                    widthFactor: fraction,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(4),
+                                        gradient: LinearGradient(
+                                          colors: [barColor.withOpacity(0.5), barColor],
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(color: barColor.withOpacity(0.3), blurRadius: 4, offset: const Offset(0, 1))
+                                        ]
                                       ),
                                     ),
                                   ),
-                                ),
+                                ],
                               ),
                             ),
                           ),
@@ -715,106 +732,103 @@ class _PlannerScreenState extends State<PlannerScreen> {
                       ),
                     );
                   }).toList(),
+                ),
+              if (outrosVolume > 0)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Text(
+                    "Você também possui $outrosVolume séries de exercícios marcados como 'Outros'.",
+                    style: const TextStyle(color: Colors.white38, fontSize: 11, fontStyle: FontStyle.italic),
+                  ),
                 ),
             ],
           ),
         ),
 
-        if (sortedCardio.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          // 2. Volume de Cardio
-          GlassCard(
-            padding: const EdgeInsets.all(16),
-            borderColor: Colors.amber.withOpacity(0.15),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  children: [
-                    Icon(Icons.directions_run_rounded,
-                        color: Colors.amber, size: 22),
-                    SizedBox(width: 8),
-                    Text(
-                      "Volume de Cardio Planejado",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                      ),
+        const SizedBox(height: 16),
+        // 2. Volume de Cardio
+        GlassCard(
+          padding: const EdgeInsets.all(16),
+          borderColor: Colors.blueAccent.withOpacity(0.15),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.directions_run_rounded, color: Colors.blueAccent, size: 22),
+                  SizedBox(width: 8),
+                  Text(
+                    "Volume de Cardio Planejado",
+                    style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              if (totalCardio == 0)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Center(
+                    child: Text(
+                      "Nenhum cardio planejado.",
+                      style: TextStyle(color: Colors.white38, fontStyle: FontStyle.italic, fontSize: 13),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 12),
+                  ),
+                )
+              else
                 Column(
-                  children: sortedCardio.map((entry) {
-                    final maxVolume =
-                        sortedCardio.isNotEmpty ? sortedCardio.first.value : 1;
-                    final fraction =
-                        maxVolume > 0 ? entry.value / maxVolume : 0.0;
-
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                entry.key,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                "${entry.value} min",
-                                style: const TextStyle(
-                                  color: Colors.amber,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 5),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(3),
-                            child: Container(
-                              height: 5,
-                              width: double.infinity,
-                              color: Colors.white.withOpacity(0.05),
-                              child: Align(
-                                alignment: Alignment.centerLeft,
-                                child: FractionallySizedBox(
-                                  widthFactor: fraction,
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          Colors.amber.withOpacity(0.35),
-                                          Colors.amber,
-                                        ],
-                                      ),
-                                    ),
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text("Progresso Semanal", style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                        Text(
+                          "$totalCardio / 300 min",
+                          style: const TextStyle(color: Colors.blueAccent, fontSize: 13, fontWeight: FontWeight.w800),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: SizedBox(
+                        height: 6,
+                        width: double.infinity,
+                        child: Stack(
+                          children: [
+                            Container(color: Colors.white.withOpacity(0.05)),
+                            FractionallySizedBox(
+                              widthFactor: (totalCardio / 300.0).clamp(0.0, 1.0),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(4),
+                                  gradient: LinearGradient(
+                                    colors: [Colors.blueAccent.withOpacity(0.5), Colors.blueAccent],
                                   ),
+                                  boxShadow: [
+                                    BoxShadow(color: Colors.blueAccent.withOpacity(0.3), blurRadius: 4, offset: const Offset(0, 1))
+                                  ]
                                 ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    );
-                  }).toList(),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      "Meta ideal de saúde e queima calórica: 300 min/semana.",
+                      style: TextStyle(color: Colors.white54, fontSize: 11),
+                    )
+                  ],
                 ),
-              ],
-            ),
+            ],
           ),
-        ],
+        ),
       ],
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
