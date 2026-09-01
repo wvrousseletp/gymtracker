@@ -4,11 +4,14 @@ import 'package:provider/provider.dart';
 import '../providers/tracker_provider.dart';
 import '../models/exercise.dart';
 import '../models/planner_state.dart';
+import '../models/routine.dart';
+import '../providers/workout_provider.dart';
+import '../utils/workout_starter.dart';
 import '../models/workout_log.dart';
 import '../services/ai_service.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/profile_avatar.dart';
-import 'exercise_hub_screen.dart';
+
 
 class PlannerScreen extends StatefulWidget {
   const PlannerScreen({super.key});
@@ -940,7 +943,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
   }) {
     return Dismissible(
       key: UniqueKey(),
-      direction: DismissibleDirection.endToStart,
+      direction: DismissDirection.endToStart,
       onDismissed: (_) => onDelete?.call(),
       background: Container(
         margin: const EdgeInsets.symmetric(vertical: 6),
@@ -1017,99 +1020,63 @@ class _PlannerScreenState extends State<PlannerScreen> {
     Color accentColor,
     int blockLength,
   ) {
-    
-    final routines = state.routines;
-
-    String selectedValue = "";
-
-    if (rawItem.startsWith('routine:')) {
-      selectedValue = rawItem;
-    } else if (rawItem.isNotEmpty) {
-      // old format or generic, let's keep empty if unknown
-      selectedValue = "";
+    String selectedValue = rawItem.startsWith('routine:') ? rawItem : "";
+    Routine? selectedRoutine;
+    if (selectedValue.isNotEmpty) {
+      final rId = selectedValue.substring(8);
+      selectedRoutine = state.routines.where((r) => r.id == rId).firstOrNull;
     }
 
-    final dropdownItems = <DropdownMenuItem<String>>[
-      const DropdownMenuItem(
-        value: "",
-        child: Text("Selecione..."),
-      ),
-      if (routines.isNotEmpty) ...[
-        const DropdownMenuItem(
-          value: "_divider_routines",
-          enabled: false,
-          child: Text("— MODELOS DE TREINO —",
-              style: TextStyle(
-                  color: Colors.white30,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold)),
-        ),
-        ...routines.map((r) => DropdownMenuItem(
-              value: "routine:${r.id}",
-              child: Text(r.name),
-            )),
-      ],
-    ];
+    if (selectedRoutine == null) {
+      return _buildModernPlannerCard(
+        context: context,
+        title: "Tocar para escolher treino...",
+        subtitle: "",
+        icon: Icons.search,
+        color: Colors.white54,
+        onTap: () {
+          _showItemSelectionSheet(context, provider, state, accentColor, allowExercises: false, onSelected: (val) {
+            provider.updateRoutineInContinuousBlock(blockId, idx, val);
+          });
+        },
+        onDelete: () => provider.removeRoutineFromContinuousBlock(blockId, idx),
+      );
+    }
 
-    return Row(
-      children: [
-        Expanded(
-          flex: 3,
-          child: Container(
-            height: 48,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withOpacity(0.1)),
-            ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: dropdownItems.any((e) => e.value == selectedValue)
-                    ? selectedValue
-                    : "",
-                isExpanded: true,
-                dropdownColor: const Color(0xff1c1c1e),
-                icon:
-                    const Icon(Icons.arrow_drop_down, color: Colors.white54),
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600),
-                items: dropdownItems,
-                onChanged: (val) {
-                  if (val != null && !val.startsWith('_divider')) {
-                    provider.updateRoutineInContinuousBlock(blockId, idx, val);
-                  }
-                },
-              ),
-            ),
+    return _buildModernPlannerCard(
+      context: context,
+      title: selectedRoutine.name,
+      subtitle: "${selectedRoutine.exercises.length} exercícios",
+      icon: Icons.fitness_center,
+      color: accentColor,
+      onTap: () {
+        _showItemSelectionSheet(context, provider, state, accentColor, allowExercises: false, onSelected: (val) {
+          provider.updateRoutineInContinuousBlock(blockId, idx, val);
+        });
+      },
+      onStart: () {
+        final wp = Provider.of<WorkoutProvider>(context, listen: false);
+        WorkoutStarter.startWithCountdown(
+          context,
+          wp,
+          selectedRoutine!,
+          WorkoutRecovery(sleepOk: SleepQuality.okay, pain: [], warmUpDone: false),
+          false,
+        );
+      },
+      onDelete: () => provider.removeRoutineFromContinuousBlock(blockId, idx),
+      trailing: Column(
+        children: [
+          InkWell(
+            onTap: idx > 0 ? () => provider.reorderRoutinesInContinuousBlock(blockId, idx, idx - 1) : null,
+            child: Icon(Icons.keyboard_arrow_up, color: idx > 0 ? Colors.white54 : Colors.transparent, size: 20),
           ),
-        ),
-        const SizedBox(width: 8),
-        Column(
-          children: [
-            InkWell(
-              onTap: idx > 0 ? () => provider.reorderRoutinesInContinuousBlock(blockId, idx, idx - 1) : null,
-              child: Icon(Icons.keyboard_arrow_up, color: idx > 0 ? Colors.white54 : Colors.transparent, size: 20),
-            ),
-            InkWell(
-              onTap: idx < blockLength - 1 ? () => provider.reorderRoutinesInContinuousBlock(blockId, idx, idx + 1) : null,
-              child: Icon(Icons.keyboard_arrow_down, color: idx < blockLength - 1 ? Colors.white54 : Colors.transparent, size: 20),
-            ),
-          ],
-        ),
-        const SizedBox(width: 4),
-        IconButton(
-          icon: const Icon(Icons.delete_outline,
-              color: Colors.white54, size: 20),
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-          onPressed: () {
-            provider.removeRoutineFromContinuousBlock(blockId, idx);
-          },
-        ),
-      ],
+          InkWell(
+            onTap: idx < blockLength - 1 ? () => provider.reorderRoutinesInContinuousBlock(blockId, idx, idx + 1) : null,
+            child: Icon(Icons.keyboard_arrow_down, color: idx < blockLength - 1 ? Colors.white54 : Colors.transparent, size: 20),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1121,15 +1088,12 @@ class _PlannerScreenState extends State<PlannerScreen> {
     String rawItem,
     Color accentColor,
   ) {
-    final state =
-        context.select<TrackerProvider, PlannerState>((p) => p.state!);
-    
+    final state = context.select<TrackerProvider, PlannerState>((p) => p.state!);
     final library = state.library;
     final routines = state.routines;
 
-    // Decodificar valor selecionado e quantidade
-    String selectedValue = ""; // "routine:preset-a" ou "exercise:lib-14"
-    int quantityValue = 3; // séries ou minutos
+    String selectedValue = "";
+    int quantityValue = 3;
 
     if (rawItem.startsWith('routine:')) {
       selectedValue = rawItem;
@@ -1145,261 +1109,103 @@ class _PlannerScreenState extends State<PlannerScreen> {
       selectedValue = "routine:$rawItem";
     }
 
-    // Identificar se é cardio
     bool isCardio = false;
-    if (selectedValue.startsWith('exercise:')) {
+    String title = "Tocar para adicionar...";
+    String subtitle = "";
+    IconData icon = Icons.add_circle_outline;
+    Color color = Colors.white54;
+    Routine? routineToStart;
+
+    if (selectedValue.startsWith('routine:')) {
+      final rId = selectedValue.substring(8);
+      routineToStart = routines.where((r) => r.id == rId).firstOrNull;
+      if (routineToStart != null) {
+        title = routineToStart.name;
+        subtitle = "${routineToStart.exercises.length} exercícios";
+        icon = Icons.fitness_center;
+        color = accentColor;
+      }
+    } else if (selectedValue.startsWith('exercise:')) {
       final exId = selectedValue.substring(9);
       final libEx = library.where((e) => e.id == exId).firstOrNull;
-      if (libEx != null && libEx.muscle.toLowerCase().contains('cardio')) {
-        isCardio = true;
+      if (libEx != null) {
+        isCardio = libEx.muscle.toLowerCase().contains('cardio');
+        title = libEx.name;
+        subtitle = isCardio ? "Cardio" : "Exercício Isolado";
+        icon = isCardio ? Icons.directions_run : Icons.accessibility_new;
+        color = isCardio ? Colors.blueAccent : Colors.orangeAccent;
       }
     }
 
-    // Ordenar biblioteca de exercícios (corrigindo bug de desorganização)
-    final sortedLibrary = List<LibraryExercise>.from(library)
-      ..sort((a, b) {
-        final muscleComp =
-            a.muscle.toLowerCase().compareTo(b.muscle.toLowerCase());
-        if (muscleComp != 0) return muscleComp;
-        return a.name.toLowerCase().compareTo(b.name.toLowerCase());
-      });
-
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          // Dropdown de Seleção de Item
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.white.withOpacity(0.08)),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: (() {
-                    if (selectedValue.isEmpty) return null;
-                    final bool hasRoutine =
-                        routines.any((r) => "routine:${r.id}" == selectedValue);
-                    final bool hasExercise = library
-                        .any((ex) => "exercise:${ex.id}" == selectedValue);
-                    if (hasRoutine || hasExercise) return selectedValue;
-                    return null;
-                  })(),
-                  hint: const Text(
-                    "Selecione o Item",
-                    style: TextStyle(color: Colors.white30, fontSize: 13),
-                  ),
-                  dropdownColor: const Color(0xff1c1c1e),
-                  icon: const Icon(Icons.arrow_drop_down,
-                      color: Colors.white54, size: 18),
-                  style: const TextStyle(color: Colors.white, fontSize: 13),
-                  isExpanded: true,
-                  onChanged: (val) {
-                    if (val == null) return;
-                    if (val.startsWith('exercise:')) {
-                      final exId = val.substring(9);
-                      final libEx =
-                          library.where((e) => e.id == exId).firstOrNull;
-                      final checkCardio = libEx != null &&
-                          libEx.muscle.toLowerCase().contains('cardio');
-                      if (checkCardio) {
-                        provider.updatePlannerItem(
-                            day, idx, "$val:30"); // Default 30 min
-                      } else {
-                        provider.updatePlannerItem(
-                            day, idx, "$val:3"); // Default 3 sets
-                      }
-                    } else {
-                      provider.updatePlannerItem(day, idx, val);
-                    }
-                  },
-                  items: [
-                    // Categoria Rotinas
-                    const DropdownMenuItem<String>(
-                      enabled: false,
-                      value: "title:routines",
-                      child: Text(
-                        "--- Blocos de Treino (Rotinas) ---",
-                        style: TextStyle(
-                            color: Colors.white30,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12),
-                      ),
-                    ),
-                    ...routines.map((r) => DropdownMenuItem<String>(
-                          value: "routine:${r.id}",
-                          child: Padding(
-                            padding: const EdgeInsets.only(left: 8.0),
-                            child: Text(r.name),
-                          ),
-                        )),
-                    // Categoria Exercícios Avulsos
-                    const DropdownMenuItem<String>(
-                      enabled: false,
-                      value: "title:exercises",
-                      child: Text(
-                        "--- Exercícios Avulsos ---",
-                        style: TextStyle(
-                            color: Colors.white30,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12),
-                      ),
-                    ),
-                    ...sortedLibrary.map((ex) => DropdownMenuItem<String>(
-                          value: "exercise:${ex.id}",
-                          child: Padding(
-                            padding: const EdgeInsets.only(left: 8.0),
-                            child: Text("${ex.name} (${ex.muscle})"),
-                          ),
-                        )),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-
-          if (selectedValue.startsWith('exercise:')) ...[
-            GestureDetector(
-              onTap: () {
-                final exId = selectedValue.substring(9);
-                final libEx = library.where((e) => e.id == exId).firstOrNull;
-                if (libEx != null) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ExerciseHubScreen(exercise: libEx),
-                    ),
-                  );
-                }
-              },
-              child: Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: accentColor.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: accentColor.withOpacity(0.3)),
-                ),
-                child: Icon(Icons.info_outline, color: accentColor, size: 16),
-              ),
-            ),
-            const SizedBox(width: 8),
-          ],
-
-          // Seletor de Quantidade (séries ou min para exercícios avulsos)
-          if (selectedValue.startsWith('exercise:')) ...[
-            Container(
-              width: 50,
-              height: 36,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.white.withOpacity(0.12)),
-              ),
+    return _buildModernPlannerCard(
+      context: context,
+      title: title,
+      subtitle: subtitle,
+      icon: icon,
+      color: color,
+      onTap: () {
+        _showItemSelectionSheet(context, provider, state, accentColor, onSelected: (val) {
+          if (val.startsWith('exercise:')) {
+            final exId = val.substring(9);
+            final libEx = library.where((e) => e.id == exId).firstOrNull;
+            if (libEx != null && libEx.muscle.toLowerCase().contains('cardio')) {
+              provider.updatePlannerItem(day, idx, "$val:30");
+            } else {
+              provider.updatePlannerItem(day, idx, "$val:3");
+            }
+          } else {
+            provider.updatePlannerItem(day, idx, val);
+          }
+        });
+      },
+      onStart: routineToStart != null ? () {
+        final wp = Provider.of<WorkoutProvider>(context, listen: false);
+        WorkoutStarter.startWithCountdown(
+          context,
+          wp,
+          routineToStart!,
+          WorkoutRecovery(sleepOk: SleepQuality.okay, pain: [], warmUpDone: false),
+          false,
+        );
+      } : null,
+      onDelete: () => provider.updatePlannerItem(day, idx, ""),
+      trailing: selectedValue.startsWith('exercise:') ? Container(
+        margin: const EdgeInsets.only(right: 8),
+        width: 70,
+        height: 32,
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Expanded(
               child: TextFormField(
                 initialValue: quantityValue.toString(),
                 keyboardType: TextInputType.number,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold),
+                style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
                 decoration: const InputDecoration(
                   border: InputBorder.none,
-                  contentPadding: EdgeInsets.zero,
+                  contentPadding: EdgeInsets.only(bottom: 14),
                   isDense: true,
                 ),
                 onChanged: (val) {
                   int quantity = int.tryParse(val) ?? (isCardio ? 30 : 3);
                   if (quantity < 1) quantity = 1;
-
                   final parts = rawItem.split(':');
                   if (parts.length >= 2) {
-                    provider.updatePlannerItem(
-                        day, idx, "${parts[0]}:${parts[1]}:$quantity");
+                    provider.updatePlannerItem(day, idx, "${parts[0]}:${parts[1]}:$quantity");
                   }
                 },
               ),
             ),
-            const SizedBox(width: 4),
-            Text(
-              isCardio ? 'min' : 'sér',
-              style: const TextStyle(
-                  color: Colors.white54,
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold),
-            ),
+            Text(isCardio ? "min" : "sér", style: const TextStyle(color: Colors.white54, fontSize: 10)),
             const SizedBox(width: 8),
           ],
-
-          // Botões Reordenar (▲)
-          GestureDetector(
-            onTap: idx == 0
-                ? null
-                : () {
-                    provider.reorderPlannerItem(day, idx, true);
-                  },
-            child: Opacity(
-              opacity: idx == 0 ? 0.3 : 1.0,
-              child: Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.03),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.white.withOpacity(0.08)),
-                ),
-                child: const Text('▲',
-                    style: TextStyle(color: Colors.white70, fontSize: 10)),
-              ),
-            ),
-          ),
-          const SizedBox(width: 4),
-
-          // Botões Reordenar (▼)
-          GestureDetector(
-            onTap: idx == (state.planner[day]!.length - 1)
-                ? null
-                : () {
-                    provider.reorderPlannerItem(day, idx, false);
-                  },
-            child: Opacity(
-              opacity: idx == (state.planner[day]!.length - 1) ? 0.3 : 1.0,
-              child: Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.03),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.white.withOpacity(0.08)),
-                ),
-                child: const Text('▼',
-                    style: TextStyle(color: Colors.white70, fontSize: 10)),
-              ),
-            ),
-          ),
-          const SizedBox(width: 6),
-
-          // Botão Remover
-          GestureDetector(
-            onTap: () {
-              provider.removePlannerItem(day, idx);
-            },
-            child: Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: Colors.redAccent.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
-              ),
-              child: const Icon(Icons.delete_outline,
-                  color: Colors.redAccent, size: 16),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ) : null,
     );
   }
 
