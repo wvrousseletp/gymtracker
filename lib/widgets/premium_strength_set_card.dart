@@ -550,10 +550,12 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
                       flex: 2,
                       child: ElevatedButton.icon(
                         onPressed: () {
-                          if (_isRunning) {
-                            _timer?.cancel();
-                            _isRunning = false;
-                          }
+                          _timerLeft?.cancel();
+                          _timerRight?.cancel();
+                          setState(() {
+                            _isRunningLeft = false;
+                            _isRunningRight = false;
+                          });
                           widget.onDoneTap();
                         },
                         icon: const Icon(
