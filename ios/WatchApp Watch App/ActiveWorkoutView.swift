@@ -352,7 +352,7 @@ struct ActiveWorkoutView: View {
                 Button(action: {
                     showPlateCalculator = true
                     #if canImport(WatchKit)
-                    hapticManager.play(.click)
+                    hapticManager.play(.light)
                     #endif
                 }) {
                     HStack(spacing: 4) {
@@ -786,7 +786,7 @@ struct ActiveWorkoutView: View {
                                 Button(action: {
                                     showNotesSheet = true
                                     #if canImport(WatchKit)
-                                    hapticManager.play(.click)
+                                    hapticManager.play(.light)
                                     #endif
                                 }) {
                                     Image(systemName: "square.and.pencil")
@@ -1381,6 +1381,23 @@ struct ActiveWorkoutView: View {
     }
     
 
+    @ViewBuilder
+    private var emptyWorkoutView: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "figure.walk")
+                .font(.system(size: 32))
+                .foregroundColor(.orange)
+            Text("Nenhum treino ativo")
+                .foregroundColor(.gray)
+                .font(.caption)
+            Text("Inicie um treino no iPhone\nou nesta tela.")
+                .font(.system(size: 10))
+                .foregroundColor(.gray.opacity(0.7))
+                .multilineTextAlignment(.center)
+        }
+        .padding()
+    }
+
     var body: some View {
         Group {
             if showSummary, let activeWorkout = connectivityManager.activeWorkout {
@@ -1408,19 +1425,7 @@ struct ActiveWorkoutView: View {
                         }
                 }
             } else {
-                VStack(spacing: 12) {
-                    Image(systemName: "figure.walk")
-                        .font(.system(size: 32))
-                        .foregroundColor(.orange)
-                    Text("Nenhum treino ativo")
-                        .foregroundColor(.gray)
-                        .font(.caption)
-                    Text("Inicie um treino no iPhone\nou nesta tela.")
-                        .font(.system(size: 10))
-                        .foregroundColor(.gray.opacity(0.7))
-                        .multilineTextAlignment(.center)
-                }
-                .padding()
+                emptyWorkoutView
             }
         }
         .navigationBarHidden(true) // Remove "Treino" text from the top of watch screens
@@ -1675,5 +1680,292 @@ struct StatCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.white.opacity(0.1))
         .cornerRadius(10)
+    }
+}
+
+// MARK: - Watch Plate Calculator View
+
+struct WatchPlateCalculatorView: View {
+    @Environment(\.dismiss) private var dismiss
+    let targetWeight: Double
+    
+    @State private var barWeight: Double = 20.0 // Default Olympic bar 20kg
+    
+    // Standard available plates (in kg)
+    let availablePlates: [Double] = [25.0, 20.0, 15.0, 10.0, 5.0, 2.5, 1.25]
+    
+    // Calculates plates needed per side
+    private var platesPerSide: [(weight: Double, count: Int)] {
+        let weightForPlates = max(0, targetWeight - barWeight)
+        var weightPerSide = weightForPlates / 2.0
+        
+        var result: [(weight: Double, count: Int)] = []
+        
+        for plate in availablePlates {
+            if weightPerSide >= plate {
+                let count = Int(weightPerSide / plate)
+                if count > 0 {
+                    result.append((weight: plate, count: count))
+                    weightPerSide -= Double(count) * plate
+                }
+            }
+        }
+        return result
+    }
+    
+    private func plateColor(for weight: Double) -> Color {
+        switch weight {
+        case 25.0: return .red
+        case 20.0: return .blue
+        case 15.0: return .yellow
+        case 10.0: return .green
+        case 5.0: return .white
+        case 2.5: return .orange
+        case 1.25: return .purple
+        default: return .gray
+        }
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 8) {
+                // Header
+                HStack {
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("CALCULADORA DE ANILHAS")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundColor(.gray)
+                        Text(String(format: "%.1f kg Total", targetWeight))
+                            .font(.system(size: 13, weight: .black, design: .rounded))
+                            .foregroundColor(.orange)
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 4)
+                
+                // Bar selector
+                HStack(spacing: 4) {
+                    Button(action: {
+                        barWeight = 20.0
+                        #if canImport(WatchKit)
+                        WKInterfaceDevice.current().play(.click)
+                        #endif
+                    }) {
+                        Text("20kg")
+                            .font(.system(size: 9, weight: barWeight == 20.0 ? .bold : .regular))
+                            .foregroundColor(barWeight == 20.0 ? .white : .gray)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 4)
+                            .background(barWeight == 20.0 ? Color.orange.opacity(0.3) : Color.white.opacity(0.06))
+                            .cornerRadius(6)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    Button(action: {
+                        barWeight = 10.0
+                        #if canImport(WatchKit)
+                        WKInterfaceDevice.current().play(.click)
+                        #endif
+                    }) {
+                        Text("10kg")
+                            .font(.system(size: 9, weight: barWeight == 10.0 ? .bold : .regular))
+                            .foregroundColor(barWeight == 10.0 ? .white : .gray)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 4)
+                            .background(barWeight == 10.0 ? Color.orange.opacity(0.3) : Color.white.opacity(0.06))
+                            .cornerRadius(6)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    Button(action: {
+                        barWeight = 0.0
+                        #if canImport(WatchKit)
+                        WKInterfaceDevice.current().play(.click)
+                        #endif
+                    }) {
+                        Text("Sem Barra")
+                            .font(.system(size: 9, weight: barWeight == 0.0 ? .bold : .regular))
+                            .foregroundColor(barWeight == 0.0 ? .white : .gray)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 4)
+                            .background(barWeight == 0.0 ? Color.orange.opacity(0.3) : Color.white.opacity(0.06))
+                            .cornerRadius(6)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+                
+                Divider().background(Color.white.opacity(0.1))
+                
+                // Plates Breakdown
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("POR LADO DA BARRA:")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundColor(.gray)
+                    
+                    if platesPerSide.isEmpty {
+                        Text(targetWeight <= barWeight ? "Apenas o peso da barra" : "Carga muito leve para anilhas")
+                            .font(.system(size: 10))
+                            .foregroundColor(.gray)
+                            .padding(.vertical, 4)
+                    } else {
+                        ForEach(platesPerSide, id: \.weight) { item in
+                            HStack(spacing: 6) {
+                                Circle()
+                                    .fill(plateColor(for: item.weight))
+                                    .frame(width: 10, height: 10)
+                                
+                                Text("\(item.count)x")
+                                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                                    .foregroundColor(.white)
+                                
+                                Text(String(format: "%.2f kg", item.weight))
+                                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                                    .foregroundColor(.white)
+                                
+                                Spacer()
+                                
+                                Text(String(format: "= %.1f kg", item.weight * Double(item.count)))
+                                    .font(.system(size: 9))
+                                    .foregroundColor(.gray)
+                            }
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 4)
+                            .background(Color.white.opacity(0.04))
+                            .cornerRadius(6)
+                        }
+                    }
+                }
+                
+                // Dismiss Button
+                Button(action: {
+                    dismiss()
+                }) {
+                    Text("Fechar")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 6)
+                        .background(Color.white.opacity(0.12))
+                        .cornerRadius(8)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .padding(.top, 4)
+            }
+            .padding(.horizontal, 4)
+            .padding(.bottom, 6)
+        }
+        .navigationTitle("Anilhas")
+    }
+}
+
+// MARK: - Watch Exercise Notes View
+
+struct WatchExerciseNotesView: View {
+    @Environment(\.dismiss) private var dismiss
+    let exerciseName: String
+    let existingNote: String
+    let onSave: (String) -> Void
+    
+    @State private var noteText: String = ""
+    
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 8) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("NOTA DO EXERCÍCIO")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundColor(.gray)
+                        Text(exerciseName)
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(.orange)
+                            .lineLimit(1)
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 4)
+                
+                TextField("Fale ou digite sua nota...", text: $noteText)
+                    .font(.system(size: 11))
+                    .padding(6)
+                    .background(Color.white.opacity(0.08))
+                    .cornerRadius(8)
+                
+                // Quick preset tags
+                VStack(spacing: 4) {
+                    HStack(spacing: 4) {
+                        quickTagButton("Subir carga")
+                        quickTagButton("Leve")
+                        quickTagButton("Pesado")
+                    }
+                    HStack(spacing: 4) {
+                        quickTagButton("Dor leve")
+                        quickTagButton("Execução boa")
+                    }
+                }
+                .padding(.top, 2)
+                
+                HStack(spacing: 6) {
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        Text("Cancelar")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundColor(.gray)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 6)
+                            .background(Color.white.opacity(0.08))
+                            .cornerRadius(8)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    Button(action: {
+                        onSave(noteText)
+                        #if canImport(WatchKit)
+                        WKInterfaceDevice.current().play(.success)
+                        #endif
+                        dismiss()
+                    }) {
+                        Text("Salvar")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 6)
+                            .background(Color.orange)
+                            .cornerRadius(8)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+                .padding(.top, 4)
+            }
+            .padding(.horizontal, 4)
+            .padding(.bottom, 6)
+        }
+        .navigationTitle("Nota")
+        .onAppear {
+            noteText = existingNote
+        }
+    }
+    
+    private func quickTagButton(_ tag: String) -> some View {
+        Button(action: {
+            if noteText.isEmpty {
+                noteText = tag
+            } else {
+                noteText += ", \(tag)"
+            }
+            #if canImport(WatchKit)
+            WKInterfaceDevice.current().play(.click)
+            #endif
+        }) {
+            Text(tag)
+                .font(.system(size: 8, weight: .semibold))
+                .foregroundColor(.white)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 4)
+                .background(Color.white.opacity(0.06))
+                .cornerRadius(6)
+        }
+        .buttonStyle(PlainButtonStyle())
     }
 }
