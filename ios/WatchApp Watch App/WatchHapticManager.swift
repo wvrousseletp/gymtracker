@@ -25,61 +25,33 @@ class WatchHapticManager {
     // MARK: - Public Methods
     
     func play(_ pattern: HapticPattern) {
+        guard hapticsEnabled else { return }
         #if os(watchOS)
         let device = WKInterfaceDevice.current()
         
         switch pattern {
         case .success:
-            // Success pattern: two quick taps
             device.play(.success)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                device.play(.success)
-            }
             
         case .failure:
-            // Failure pattern: long downward vibration
             device.play(.directionDown)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                device.play(.directionDown)
-            }
             
         case .reminder:
-            // Reminder pattern: three short taps
             device.play(.notification)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                device.play(.notification)
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    device.play(.notification)
-                }
-            }
             
         case .celebration:
-            // Celebration pattern: ascending pattern
             device.play(.directionUp)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                device.play(.directionUp)
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    device.play(.success)
-                }
-            }
             
         case .warning:
-            // Warning pattern: two strong taps
             device.play(.failure)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                device.play(.failure)
-            }
             
         case .light:
-            // Light feedback: single tap
             device.play(.click)
             
         case .medium:
-            // Medium feedback: standard haptic
             device.play(.success)
             
         case .heavy:
-            // Heavy feedback: strong haptic
             device.play(.notification)
         }
         

@@ -1236,9 +1236,7 @@ struct ActiveWorkoutView: View {
             connectivityManager.updateExerciseWeightReps(exerciseIndex: activeWorkout.currentExerciseIndex, weight: newWeight, reps: exercise.reps)
         }
         
-        #if canImport(WatchKit)
-        hapticManager.playCrownRotation()
-        #endif
+        // Native crown rotation haptic is handled by isHapticFeedbackEnabled: true on .digitalCrownRotation
         
         withAnimation(.spring(response: 0.2, dampingFraction: 0.5)) {
             crownFeedbackScale = 1.15
