@@ -389,7 +389,6 @@ struct WatchActiveExercise: Codable, Identifiable {
                nameLower.contains("elíptico") ||
                nameLower.contains("eliptico") ||
                nameLower.contains("caminhada") ||
-               measurementType == "time" ||
                performedCardios.contains(where: { $0 != nil })
     }
 

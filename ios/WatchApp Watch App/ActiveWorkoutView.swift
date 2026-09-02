@@ -701,8 +701,9 @@ struct ActiveWorkoutView: View {
     private func currentExercisePageView(activeWorkout: WatchActiveWorkoutState) -> some View {
         let exIndex = activeWorkout.currentExerciseIndex
         
-        return VStack(spacing: 0) {
-            // Minimized Rest Timer Bar (if running and minimized)
+        return ScrollView {
+            VStack(spacing: 6) {
+                // Minimized Rest Timer Bar (if running and minimized)
             if let restTimer = activeWorkout.restTimer, isRestTimerMinimized {
                 Button(action: {
                     withAnimation(.spring()) {
@@ -988,166 +989,170 @@ struct ActiveWorkoutView: View {
                     .font(.caption)
             }
         }
+        .padding(.bottom, 15) // Extra padding for digital crown / scroll comfortably
+        }
         .focusable()
     }
 
     private func workoutControlsPageView(activeWorkout: WatchActiveWorkoutState) -> some View {
         let hrZone = getHeartRateZone(bpm: workoutManager.heartRate)
         
-        return VStack(spacing: 4) {
-            HStack(spacing: 12) {
-                VStack(spacing: 1) {
-                    Text("TEMPO TOTAL")
-                        .font(.system(size: 7, weight: .bold, design: .rounded))
-                        .foregroundColor(.gray)
+        return ScrollView {
+            VStack(spacing: 8) {
+                HStack(spacing: 12) {
+                    VStack(spacing: 1) {
+                        Text(formatDuration(elapsedSeconds))
+                            .font(.system(size: 20, weight: .bold, design: .monospaced))
+                            .foregroundColor(.white)
+                        Text(activeWorkout.paused ? "PAUSADO" : "TEMPO")
+                            .font(.system(size: 12, weight: .black, design: .rounded))
+                            .foregroundColor(activeWorkout.paused ? .orange : .green)
+                    }
                     
-                    Text(formatDuration(elapsedSeconds))
-                        .font(.system(size: 14, weight: .black, design: .rounded))
-                        .foregroundColor(activeWorkout.paused ? .orange : .green)
-                }
-                
-                Spacer()
-                
-                // HealthKit Metrics
-                HStack(spacing: 8) {
-                    VStack(alignment: .leading, spacing: 1) {
-                        HStack(spacing: 2) {
-                            Image(systemName: "heart.fill")
-                                .foregroundColor(.red)
-                                .font(.system(size: 8))
-                            Text("BPM")
-                                .font(.system(size: 6, weight: .bold))
-                                .foregroundColor(.gray)
-                        }
-                        HStack(spacing: 3) {
-                            Text(workoutManager.heartRate > 0 ? "\(Int(workoutManager.heartRate))" : "--")
-                                .font(.system(size: 11, weight: .bold, design: .rounded))
-                                .foregroundColor(.white)
-                            if workoutManager.heartRate > 0 {
-                                Text(hrZone.name)
-                                    .font(.system(size: 7, weight: .bold))
-                                    .foregroundColor(hrZone.color)
-                                    .padding(.horizontal, 3)
-                                    .padding(.vertical, 1)
-                                    .background(hrZone.color.opacity(0.15))
-                                    .cornerRadius(3)
+                    Spacer()
+                    
+                    // HealthKit Metrics
+                    HStack(spacing: 8) {
+                        VStack(alignment: .leading, spacing: 1) {
+                            HStack(spacing: 2) {
+                                Image(systemName: "heart.fill")
+                                    .foregroundColor(.red)
+                                    .font(.system(size: 10))
+                                Text("BPM")
+                                    .font(.system(size: 8, weight: .bold))
+                                    .foregroundColor(.gray)
+                            }
+                            HStack(spacing: 3) {
+                                Text(workoutManager.heartRate > 0 ? "\(Int(workoutManager.heartRate))" : "--")
+                                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                                    .foregroundColor(.white)
+                                if workoutManager.heartRate > 0 {
+                                    Text(hrZone.name)
+                                        .font(.system(size: 9, weight: .bold))
+                                        .foregroundColor(hrZone.color)
+                                        .padding(.horizontal, 3)
+                                        .padding(.vertical, 1)
+                                        .background(hrZone.color.opacity(0.15))
+                                        .cornerRadius(3)
+                                }
                             }
                         }
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 1) {
-                        HStack(spacing: 2) {
-                            Image(systemName: "flame.fill")
-                                .foregroundColor(.orange)
-                                .font(.system(size: 8))
-                            Text("CALORIAS")
-                                .font(.system(size: 6, weight: .bold))
-                                .foregroundColor(.gray)
+                        
+                        VStack(alignment: .leading, spacing: 1) {
+                            HStack(spacing: 2) {
+                                Image(systemName: "flame.fill")
+                                    .foregroundColor(.orange)
+                                    .font(.system(size: 10))
+                                Text("CALORIAS")
+                                    .font(.system(size: 8, weight: .bold))
+                                    .foregroundColor(.gray)
+                            }
+                            Text(workoutManager.activeCalories > 0 ? "\(Int(workoutManager.activeCalories))" : "--")
+                                .font(.system(size: 13, weight: .bold, design: .rounded))
+                                .foregroundColor(.white)
                         }
-                        Text(workoutManager.activeCalories > 0 ? "\(Int(workoutManager.activeCalories))" : "--")
-                            .font(.system(size: 11, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
                     }
                 }
-            }
-            .padding(.horizontal, 4)
-            .padding(.top, 2)
-            
-            Divider().background(Color.white.opacity(0.1))
-            
-            VStack(spacing: 4) {
-                // Pause/Resume Workout
-                Button(action: {
-                    connectivityManager.togglePause(currentlyPaused: activeWorkout.paused)
-                }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: activeWorkout.paused ? "play.fill" : "pause.fill")
-                            .font(.system(size: 8, weight: .bold))
-                        Text(activeWorkout.paused ? "Retomar" : "Pausar")
-                            .font(.system(size: 9, weight: .bold))
-                        Spacer()
-                    }
-                    .foregroundColor(activeWorkout.paused ? .green : .orange)
-                    .padding(.vertical, 5)
-                    .padding(.horizontal, 8)
-                    .background(activeWorkout.paused ? Color.green.opacity(0.12) : Color.orange.opacity(0.12))
-                    .cornerRadius(8)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(activeWorkout.paused ? Color.green.opacity(0.3) : Color.orange.opacity(0.3), lineWidth: 0.5)
-                    )
-                }
-                .buttonStyle(PlainButtonStyle())
+                .padding(.horizontal, 4)
+                .padding(.top, 10)
                 
-                // Adiar Treino (Postpone)
-                Button(action: {
-                    connectivityManager.postponeWorkout()
-                }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "snooze")
-                            .font(.system(size: 8, weight: .bold))
-                        Text("Adiar Treino")
-                            .font(.system(size: 9, weight: .bold))
-                        Spacer()
-                    }
-                    .foregroundColor(.blue)
-                    .padding(.vertical, 5)
-                    .padding(.horizontal, 8)
-                    .background(Color.blue.opacity(0.12))
-                    .cornerRadius(8)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.blue.opacity(0.3), lineWidth: 0.5)
-                    )
-                }
-                .buttonStyle(PlainButtonStyle())
-
-                Button(action: {
-                    showSummary = true
-                }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "checkmark.seal.fill")
-                            .font(.system(size: 8, weight: .bold))
-                        Text("Finalizar")
-                            .font(.system(size: 9, weight: .bold))
-                        Spacer()
-                    }
-                    .foregroundColor(.green)
-                    .padding(.vertical, 5)
-                    .padding(.horizontal, 8)
-                    .background(Color.green.opacity(0.12))
-                    .cornerRadius(8)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.green.opacity(0.3), lineWidth: 0.5)
-                    )
-                }
-                .buttonStyle(PlainButtonStyle())
+                Divider().background(Color.white.opacity(0.1))
                 
-                // Cancelar Treino
-                Button(action: {
-                    showingCancelAlert = true
-                }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "trash.fill")
-                            .font(.system(size: 8, weight: .bold))
-                        Text("Cancelar")
-                            .font(.system(size: 9, weight: .bold))
-                        Spacer()
+                VStack(spacing: 6) {
+                    // Pause/Resume Workout
+                    Button(action: {
+                        connectivityManager.togglePause(currentlyPaused: activeWorkout.paused)
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: activeWorkout.paused ? "play.fill" : "pause.fill")
+                                .font(.system(size: 14, weight: .bold))
+                            Text(activeWorkout.paused ? "Retomar" : "Pausar")
+                                .font(.system(size: 14, weight: .bold))
+                            Spacer()
+                        }
+                        .foregroundColor(activeWorkout.paused ? .green : .orange)
+                        .padding(.vertical, 10)
+                        .padding(.horizontal, 12)
+                        .background(activeWorkout.paused ? Color.green.opacity(0.12) : Color.orange.opacity(0.12))
+                        .cornerRadius(10)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(activeWorkout.paused ? Color.green.opacity(0.3) : Color.orange.opacity(0.3), lineWidth: 0.5)
+                        )
                     }
-                    .foregroundColor(.red)
-                    .padding(.vertical, 5)
-                    .padding(.horizontal, 8)
-                    .background(Color.red.opacity(0.12))
-                    .cornerRadius(8)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.red.opacity(0.3), lineWidth: 0.5)
-                    )
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    // Adiar Treino (Postpone)
+                    Button(action: {
+                        connectivityManager.postponeWorkout()
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "snooze")
+                                .font(.system(size: 14, weight: .bold))
+                            Text("Adiar Treino")
+                                .font(.system(size: 14, weight: .bold))
+                            Spacer()
+                        }
+                        .foregroundColor(.blue)
+                        .padding(.vertical, 10)
+                        .padding(.horizontal, 12)
+                        .background(Color.blue.opacity(0.12))
+                        .cornerRadius(10)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.blue.opacity(0.3), lineWidth: 0.5)
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    Button(action: {
+                        showSummary = true
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "checkmark.seal.fill")
+                                .font(.system(size: 14, weight: .bold))
+                            Text("Finalizar")
+                                .font(.system(size: 14, weight: .bold))
+                            Spacer()
+                        }
+                        .foregroundColor(.green)
+                        .padding(.vertical, 10)
+                        .padding(.horizontal, 12)
+                        .background(Color.green.opacity(0.12))
+                        .cornerRadius(10)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.green.opacity(0.3), lineWidth: 0.5)
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    // Cancelar Treino
+                    Button(action: {
+                        showingCancelAlert = true
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "trash.fill")
+                                .font(.system(size: 14, weight: .bold))
+                            Text("Cancelar")
+                                .font(.system(size: 14, weight: .bold))
+                            Spacer()
+                        }
+                        .foregroundColor(.red)
+                        .padding(.vertical, 10)
+                        .padding(.horizontal, 12)
+                        .background(Color.red.opacity(0.12))
+                        .cornerRadius(10)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.red.opacity(0.3), lineWidth: 0.5)
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
-                .buttonStyle(PlainButtonStyle())
+                .padding(.horizontal, 4)
+                .padding(.bottom, 20)
             }
-            .padding(.horizontal, 4)
         }
         .focusable()
     }
