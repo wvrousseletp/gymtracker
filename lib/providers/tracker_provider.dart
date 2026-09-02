@@ -536,6 +536,11 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     _workoutProvider!.clearRestTimer();
   }
 
+  void adjustRestTimer(int seconds) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.adjustRestTimer(seconds);
+  }
+
   void updateExerciseWeightReps(int exIndex, double weight, int reps) {
     if (_workoutProvider == null) return;
     _workoutProvider!.updateExerciseWeightReps(exIndex, weight, reps);

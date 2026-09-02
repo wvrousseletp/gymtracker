@@ -2327,8 +2327,8 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                   ),
                 ),
 
-              // OVERLAY DE DESCANSO / PREPARO ATIVO (CircularProgressTimer) - REDESENHO PREMIUM TELA CHEIA
-              if (_timerActive)
+              // Full-screen rest overlay disabled in favor of FloatingRestTimer bar
+              if (false)
                 Positioned.fill(
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
