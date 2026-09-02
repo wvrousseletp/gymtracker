@@ -20,7 +20,10 @@ platform :ios do
     setup_ci
     ENV["FASTLANE_MATCH_READONLY"] = "false"
     begin
-      sh("bundle exec fastlane match nuke appstore --skip_confirmation")
+      match_nuke(
+        type: "appstore",
+        skip_confirmation: true
+      )
     rescue => e
       UI.message("Nuke notice: #{e}")
     end
