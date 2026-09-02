@@ -22,6 +22,7 @@ platform :ios do
     begin
       match_nuke(
         type: "appstore",
+        readonly: false,
         skip_confirmation: true
       )
     rescue => e
