@@ -13,6 +13,38 @@ platform :ios do
     end
   end
 
+  desc "Nuke existing certs and regenerate new ones"
+  lane :nuke_and_generate do
+    setup_ci
+    ENV["FASTLANE_MATCH_READONLY"] = "false"
+    begin
+      match_nuke(
+        type: "appstore",
+        skip_confirmation: true
+      )
+    rescue => e
+      UI.message("Nuke notice: #{e}")
+    end
+    match(
+      type: "appstore",
+      readonly: false,
+      force: true,
+      force_for_new_certificates: true,
+      skip_confirmation: true,
+      app_identifier: [
+        "com.vicente.losmooscles",
+        "com.vicente.losmooscles.watchkitapp",
+        "com.vicente.losmooscles.watchkitapp.WatchWidgetExtension",
+        "com.vicente.losmooscles.WorkoutWidgetExtension"
+      ]
+    )
+  end
+
+  desc "Alias for nuke_and_generate"
+  lane :generate_certs do
+    nuke_and_generate
+  end
+
   desc "Release new version to TestFlight"
   lane :release do
     setup_ci
