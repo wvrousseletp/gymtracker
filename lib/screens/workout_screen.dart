@@ -1608,6 +1608,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
   // circular ring and text update each second, but the timer keeps running even
   // when this widget is not mounted (user navigated to another tab).
   bool _timerActive = false;
+  final bool _showFullScreenRestOverlay = false;
   bool _timerIsPrep = false;
   String _timerNextExName = '';
   int _timerNextSetNum = 0;
@@ -2326,6 +2327,153 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                     ),
                   ),
                 ),
+
+              // OVERLAY DE DESCANSO / PREPARO ATIVO - DISABLED IN FAVOR OF FLOATING BAR
+              if (_timerActive && _showFullScreenRestOverlay)
+                Positioned.fill(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                    child: Container(
+                      color: Colors.black.withOpacity(0.94),
+                      child: SafeArea(
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            return SingleChildScrollView(
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                    minHeight: constraints.maxHeight),
+                                child: Padding(
+                                  padding: EdgeInsets.only(
+                                    left: 24,
+                                    right: 24,
+                                    top: 24,
+                                    bottom: 24 +
+                                        88 +
+                                        MediaQuery.of(context).padding.bottom,
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      // Cabeçalho da tela de descanso
+                                      Column(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 16, vertical: 6),
+                                            decoration: BoxDecoration(
+                                              color: _timerIsPrep
+                                                  ? Colors.amber
+                                                      .withOpacity(0.12)
+                                                  : accentColor
+                                                      .withOpacity(0.12),
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                              border: Border.all(
+                                                color: _timerIsPrep
+                                                    ? Colors.amber
+                                                        .withOpacity(0.25)
+                                                    : accentColor
+                                                        .withOpacity(0.25),
+                                                width: 1.5,
+                                              ),
+                                            ),
+                                            child: Text(
+                                              _timerIsPrep
+                                                  ? "TEMPO DE PREPARO"
+                                                  : "DESCANSO ATIVO",
+                                              style: TextStyle(
+                                                color: _timerIsPrep
+                                                    ? Colors.amber
+                                                    : accentColor,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w900,
+                                                letterSpacing: 1.5,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+
+                                      // Painel Central com Timer e controles de acréscimo
+                                      Column(
+                                        children: [
+                                          ValueListenableBuilder<int>(
+                                            valueListenable: RestTimerService
+                                                .instance.secondsRemaining,
+                                            builder:
+                                                (context, remaining, child) {
+                                              return Stack(
+                                                alignment: Alignment.center,
+                                                children: [
+                                                  // Anel de progresso grande e elegante
+                                                  SizedBox(
+                                                    width: 220,
+                                                    height: 220,
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                      value: _countdownTotalSeconds >
+                                                              0
+                                                          ? (remaining /
+                                                              _countdownTotalSeconds)
+                                                          : 0,
+                                                      strokeWidth: 6,
+                                                      backgroundColor: Colors
+                                                          .white
+                                                          .withOpacity(0.04),
+                                                      valueColor:
+                                                          AlwaysStoppedAnimation<
+                                                                  Color>(
+                                                              _timerIsPrep
+                                                                  ? Colors.amber
+                                                                  : accentColor),
+                                                    ),
+                                                  ),
+                                                  Column(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      Text(
+                                                        "$remaining",
+                                                        style: const TextStyle(
+                                                          color: Colors.white,
+                                                          fontSize: 72,
+                                                          fontWeight:
+                                                              FontWeight.w900,
+                                                          letterSpacing: -2.0,
+                                                        ),
+                                                      ),
+                                                      const Text(
+                                                        "segundos",
+                                                        style: TextStyle(
+                                                          color: Colors.white30,
+                                                          fontSize: 12,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ],
+                                              );
+                                            },
+                                          ),
+                                          const SizedBox(height: 32),
+                                          // Ajustes rápidos de tempo (+15s / -15s) - Mais destacados
+                                          Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Container(
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white
+                                                      .withOpacity(0.06),
+                                                  borderRadius:
+                                                      BorderRadius.circular(16),
+                                                  border: Border.all(
+                                                      color: Colors.white
                                                           .withOpacity(0.12),
                                                       width: 1.5),
                                                 ),
