@@ -486,6 +486,8 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                 self.isLocalWorkout = true
                 if let workout = self.localWorkoutManager.startLocalWorkout(routineId: routineId, customExercises: customExercises, routines: self.routines, library: self.library) {
                     self.activeWorkout = workout
+                } else {
+                    WorkoutManager.shared.endWorkout(save: false)
                 }
             }
             // Guaranteed delivery when iPhone is in background (mirrors Fitness handoff).
@@ -510,6 +512,8 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                 self.isLocalWorkout = true
                 if let workout = self.localWorkoutManager.startLocalSingleExercise(exerciseId: exerciseId, library: self.library) {
                     self.activeWorkout = workout
+                } else {
+                    WorkoutManager.shared.endWorkout(save: false)
                 }
             }
             self.session?.transferUserInfo(msg)

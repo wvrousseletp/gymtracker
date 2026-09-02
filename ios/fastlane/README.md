@@ -15,29 +15,13 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 
 ## iOS
 
-### ios match_appstore
+### ios release
 
 ```sh
-[bundle exec] fastlane ios match_appstore
+[bundle exec] fastlane ios release
 ```
 
-Fetch certificates and provisioning profiles using match
-
-### ios generate_certs
-
-```sh
-[bundle exec] fastlane ios generate_certs
-```
-
-Generate new certificates and profiles
-
-### ios nuke_and_generate
-
-```sh
-[bundle exec] fastlane ios nuke_and_generate
-```
-
-Nuke and generate new certificates and profiles
+Release new version to TestFlight
 
 ----
 

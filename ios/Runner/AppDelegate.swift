@@ -160,26 +160,28 @@ func _force_load_swiftCompatibilityDynamicReplacements() {}
     }
     
     // 2. Real-time message if reachable
+    var msg: [String: Any] = [:]
+    if clearActive {
+      msg["action"] = "clearActiveWorkout"
+      msg["clearActiveWorkout"] = true
+    } else if let keyVal = json {
+      let actionName = "update" + key.prefix(1).uppercased() + key.dropFirst()
+      msg["action"] = actionName
+      msg[key] = shouldCompress(key: key, data: keyVal) ? compressData(keyVal) : keyVal
+      msg["\(key)_compressed"] = shouldCompress(key: key, data: keyVal)
+    }
+
     if session.isReachable {
-      var msg: [String: Any] = [:]
-      if clearActive {
-        msg["action"] = "clearActiveWorkout"
-        msg["clearActiveWorkout"] = true
-      } else if let keyVal = json {
-        let actionName = "update" + key.prefix(1).uppercased() + key.dropFirst()
-        msg["action"] = actionName
-        msg[key] = shouldCompress(key: key, data: keyVal) ? compressData(keyVal) : keyVal
-        msg["\(key)_compressed"] = shouldCompress(key: key, data: keyVal)
-      }
-      session.sendMessage(msg, replyHandler: nil) { error in
+      session.sendMessage(msg, replyHandler: nil) { [weak self] error in
         print("[AppDelegate] Error sending real-time message for \(key): \(error.localizedDescription)")
-        // Removed transferUserInfo fallback to prevent queue clogging.
-        // updateApplicationContext handles state updates reliably.
+        if key == "activeWorkout" || clearActive {
+           self?.session?.transferUserInfo(msg)
+        }
       }
     } else {
-      // The watch is unreachable. We rely purely on updateApplicationContext 
-      // (called above) to deliver the latest state when the watch reconnects.
-      // This prevents enqueueing massive state payloads that choke WatchConnectivity.
+      if key == "activeWorkout" || clearActive {
+         session.transferUserInfo(msg)
+      }
     }
   }
   
