@@ -20,7 +20,7 @@ platform :ios do
     setup_ci
     ENV["FASTLANE_MATCH_READONLY"] = "false"
     begin
-      match_nuke(
+      nuke(
         type: "appstore",
         skip_confirmation: true
       )
