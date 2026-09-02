@@ -3,11 +3,13 @@ default_platform(:ios)
 platform :ios do
   before_all do
     if ENV["ASC_KEY_ID"] && !ENV["ASC_KEY_ID"].empty?
+      key_content = ENV["ASC_KEY_CONTENT"] && !ENV["ASC_KEY_CONTENT"].empty? ? ENV["ASC_KEY_CONTENT"] : ENV["ASC_KEY_CONTENT_B64"]
+      is_b64 = (ENV["ASC_KEY_CONTENT"] && !ENV["ASC_KEY_CONTENT"].empty?) ? false : true
       app_store_connect_api_key(
         key_id: ENV["ASC_KEY_ID"],
         issuer_id: ENV["ASC_ISSUER_ID"],
-        key_content: ENV["ASC_KEY_CONTENT_B64"],
-        is_key_content_base64: true,
+        key_content: key_content,
+        is_key_content_base64: is_b64,
         in_house: false
       )
     end
