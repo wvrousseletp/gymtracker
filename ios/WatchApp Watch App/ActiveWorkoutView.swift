@@ -76,14 +76,7 @@ struct ActiveWorkoutView: View {
     @State private var crownFeedbackScale: CGFloat = 1.0
     @State private var crownFeedbackColor: Color = .white
     
-    enum CrownFocusedField: Hashable {
-        case weight
-        case reps
-    }
-    
-    @FocusState private var crownFocus: CrownFocusedField?
-    @FocusState private var isCurrentPageFocused: Bool
-    @FocusState private var isControlsPageFocused: Bool
+    @FocusState private var tabViewFocus: Bool
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.isLuminanceReduced) var isLuminanceReduced
     
@@ -996,10 +989,6 @@ struct ActiveWorkoutView: View {
             }
         }
         .focusable()
-        .focused($isCurrentPageFocused)
-        .onAppear {
-            isCurrentPageFocused = true
-        }
     }
 
     private func workoutControlsPageView(activeWorkout: WatchActiveWorkoutState) -> some View {
@@ -1161,10 +1150,6 @@ struct ActiveWorkoutView: View {
             .padding(.horizontal, 4)
         }
         .focusable()
-        .focused($isControlsPageFocused)
-        .onAppear {
-            isControlsPageFocused = true
-        }
     }
 
     @ViewBuilder
@@ -1205,9 +1190,10 @@ struct ActiveWorkoutView: View {
             }
             .tabViewStyle(.page(indexDisplayMode: .automatic))
             .focusable()
+            .focused($tabViewFocus)
             .digitalCrownRotation($crownValue, from: 0, through: 100, sensitivity: .medium, isContinuous: true, isHapticFeedbackEnabled: true)
             .onChange(of: crownValue) { newValue in
-                if isControlsPageFocused {
+                if activeWorkoutPage == 0 {
                     adjustFontSize(delta: newValue - lastCrownValue)
                 } else {
                     handleCrownRotation(newValue: newValue, oldValue: lastCrownValue, activeWorkout: activeWorkout)
@@ -1488,14 +1474,11 @@ struct ActiveWorkoutView: View {
         .onAppear {
             connectivityManager.requestSync()
             updateStopwatch()
-            crownFocus = .reps
-            isCurrentPageFocused = true
-            isControlsPageFocused = true
+            tabViewFocus = true
         }
         .onChange(of: scenePhase) { phase in
             if phase == .active {
-                isCurrentPageFocused = true
-                isControlsPageFocused = true
+                tabViewFocus = true
             }
         }
         .onChange(of: connectivityManager.activeWorkout?.currentExerciseIndex) { _ in
