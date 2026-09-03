@@ -33,6 +33,7 @@ platform :ios do
       readonly: false,
       force: true,
       force_for_new_certificates: true,
+      skip_certificate_matching: true,
       skip_confirmation: true,
       app_identifier: [
         "com.vicente.losmooscles",
@@ -58,6 +59,7 @@ platform :ios do
       readonly: false,
       force: true,
       force_for_new_certificates: true,
+      skip_certificate_matching: true,
       skip_confirmation: true,
       app_identifier: [
         "com.vicente.losmooscles",
