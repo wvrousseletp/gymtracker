@@ -1838,7 +1838,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
     if (!mounted) return;
     final settings = widget.provider.state?.settings;
     if (settings?.vibration == true) {
-      HapticFeedback.vibrate();
+      HapticFeedback.mediumImpact();
     }
     if (settings?.sound == true) {
       SystemSound.play(SystemSoundType.click);

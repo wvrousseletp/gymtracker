@@ -34,7 +34,7 @@ class WatchHapticManager {
             device.play(.success)
             
         case .failure:
-            device.play(.directionDown)
+            device.play(.failure)
             
         case .reminder:
             device.play(.notification)
@@ -43,16 +43,16 @@ class WatchHapticManager {
             device.play(.directionUp)
             
         case .warning:
-            device.play(.failure)
+            device.play(.retry)
             
         case .light:
             device.play(.click)
             
         case .medium:
-            device.play(.success)
+            device.play(.start)
             
         case .heavy:
-            device.play(.notification)
+            device.play(.stop)
         }
         
         os_log("Played haptic pattern: %d", log: OSLog(subsystem: "com.losmooscles.watch", category: "Haptic"), type: .info, pattern.hashValue)
@@ -71,9 +71,9 @@ class WatchHapticManager {
         play(.light)
     }
     
-    /// Play haptic when isometry count is finished (intense vibration)
+    /// Play haptic when isometry count is finished (clean success burst)
     func playIsometryFinished() {
-        play(.warning)
+        play(.success)
     }
     
     /// Play haptic when failure is registered
@@ -128,32 +128,27 @@ class WatchHapticManager {
     
     /// Play haptic for error
     func playError() {
-        play(.warning)
+        play(.failure)
     }
     
     /// Play haptic when battery becomes critical
     func playBatteryCritical() {
         play(.warning)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-            self.play(.warning)
-        }
     }
     
     /// Play haptic for rest timer countdown warning (3s, 2s, 1s)
     func playCountdownTick() {
         #if os(watchOS)
+        guard hapticsEnabled else { return }
         WKInterfaceDevice.current().play(.click)
         #endif
     }
     
-    /// Play haptic when rest countdown hits 0 (strong double pulse)
+    /// Play haptic when rest countdown hits 0 (clean single notification burst)
     func playCountdownFinal() {
         #if os(watchOS)
-        let device = WKInterfaceDevice.current()
-        device.play(.notification)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
-            device.play(.success)
-        }
+        guard hapticsEnabled else { return }
+        WKInterfaceDevice.current().play(.notification)
         #endif
     }
 
