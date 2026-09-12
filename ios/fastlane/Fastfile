@@ -52,11 +52,12 @@ platform :ios do
   desc "Release new version to TestFlight"
   lane :release do
     setup_ci
-    ENV["FASTLANE_MATCH_READONLY"] = "true"
+    ENV["FASTLANE_MATCH_READONLY"] = "false"
 
     match(
       type: "appstore",
-      readonly: true,
+      readonly: false,
+      force_for_new_certificates: true,
       app_identifier: [
         "com.vicente.losmooscles",
         "com.vicente.losmooscles.watchkitapp",
