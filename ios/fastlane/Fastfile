@@ -54,10 +54,25 @@ platform :ios do
     setup_ci
     ENV["FASTLANE_MATCH_READONLY"] = "false"
 
+    # Remove stale/revoked cert files from the match storage repo
+    # (does NOT revoke anything on Apple Developer Portal)
+    begin
+      match_nuke(
+        type: "appstore",
+        readonly: false,
+        skip_confirmation: true
+      )
+    rescue => e
+      UI.message("Nuke notice (safe to ignore): #{e}")
+    end
+
+    # Generate a new valid certificate and provisioning profiles
     match(
       type: "appstore",
       readonly: false,
+      force: true,
       force_for_new_certificates: true,
+      skip_confirmation: true,
       app_identifier: [
         "com.vicente.losmooscles",
         "com.vicente.losmooscles.watchkitapp",
