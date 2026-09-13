@@ -388,6 +388,127 @@ struct ActiveWorkoutView: View {
                 Spacer()
             }
             
+            // Fast Touch Controls for Weight & Reps
+            if exercise.measurementType != "time" {
+                VStack(spacing: 3) {
+                    // Weight Fast Increment/Decrement (-2.5, -1.0, +1.0, +2.5 kg)
+                    HStack(spacing: 3) {
+                        Button(action: {
+                            let newW = max(0.0, exercise.weight - 2.5)
+                            connectivityManager.updateExerciseWeightReps(exerciseIndex: exIndex, weight: newW, reps: exercise.reps)
+                            #if canImport(WatchKit)
+                            hapticManager.play(.light)
+                            #endif
+                        }) {
+                            Text("-2.5")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundColor(.orange)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 24)
+                                .background(Color.orange.opacity(0.12))
+                                .cornerRadius(6)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+
+                        Button(action: {
+                            let newW = max(0.0, exercise.weight - 1.0)
+                            connectivityManager.updateExerciseWeightReps(exerciseIndex: exIndex, weight: newW, reps: exercise.reps)
+                            #if canImport(WatchKit)
+                            hapticManager.play(.light)
+                            #endif
+                        }) {
+                            Text("-1.0")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundColor(.orange)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 24)
+                                .background(Color.orange.opacity(0.12))
+                                .cornerRadius(6)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+
+                        Button(action: {
+                            let newW = exercise.weight + 1.0
+                            connectivityManager.updateExerciseWeightReps(exerciseIndex: exIndex, weight: newW, reps: exercise.reps)
+                            #if canImport(WatchKit)
+                            hapticManager.play(.light)
+                            #endif
+                        }) {
+                            Text("+1.0")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundColor(.orange)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 24)
+                                .background(Color.orange.opacity(0.12))
+                                .cornerRadius(6)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+
+                        Button(action: {
+                            let newW = exercise.weight + 2.5
+                            connectivityManager.updateExerciseWeightReps(exerciseIndex: exIndex, weight: newW, reps: exercise.reps)
+                            #if canImport(WatchKit)
+                            hapticManager.play(.light)
+                            #endif
+                        }) {
+                            Text("+2.5")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundColor(.orange)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 24)
+                                .background(Color.orange.opacity(0.12))
+                                .cornerRadius(6)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+
+                    // Reps Fast Increment/Decrement (-1, +1 rep)
+                    HStack(spacing: 4) {
+                        Button(action: {
+                            let newR = max(1, exercise.reps - 1)
+                            connectivityManager.updateExerciseWeightReps(exerciseIndex: exIndex, weight: exercise.weight, reps: newR)
+                            #if canImport(WatchKit)
+                            hapticManager.play(.light)
+                            #endif
+                        }) {
+                            HStack(spacing: 2) {
+                                Image(systemName: "minus")
+                                    .font(.system(size: 8, weight: .bold))
+                                Text("1 rep")
+                                    .font(.system(size: 8, weight: .bold))
+                            }
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 22)
+                            .background(Color.white.opacity(0.08))
+                            .cornerRadius(6)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+
+                        Button(action: {
+                            let newR = exercise.reps + 1
+                            connectivityManager.updateExerciseWeightReps(exerciseIndex: exIndex, weight: exercise.weight, reps: newR)
+                            #if canImport(WatchKit)
+                            hapticManager.play(.light)
+                            #endif
+                        }) {
+                            HStack(spacing: 2) {
+                                Image(systemName: "plus")
+                                    .font(.system(size: 8, weight: .bold))
+                                Text("1 rep")
+                                    .font(.system(size: 8, weight: .bold))
+                            }
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 22)
+                            .background(Color.white.opacity(0.08))
+                            .cornerRadius(6)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+            }
+
             // Quick Copy Previous Set Button (when on set 2+)
             if selectedSetIdx > 0 && exercise.measurementType != "time" {
                 Button(action: {

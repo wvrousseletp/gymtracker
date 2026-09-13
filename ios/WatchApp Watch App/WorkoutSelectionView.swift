@@ -198,11 +198,14 @@ struct WorkoutSelectionView: View {
     }
     
     private var muscleGroups: [String] {
-        // WatchRoutineExercise only has exerciseId, sets, reps, rest, weight
-        // Muscle info not available on watch model
-        return []
+        let libraryMuscles = connectivityManager.library.compactMap { $0.muscle.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+        let unique = Array(Set(libraryMuscles)).sorted()
+        if !unique.isEmpty {
+            return unique
+        }
+        return ["Peito", "Costas", "Pernas", "Ombros", "Bíceps", "Tríceps", "Core", "Cardio"]
     }
-    
+
     private var filteredRoutines: [WatchRoutine] {
         var routines = connectivityManager.routines
         
@@ -212,9 +215,6 @@ struct WorkoutSelectionView: View {
                 routine.name.localizedCaseInsensitiveContains(searchText)
             }
         }
-        
-        // Muscle filter not available (WatchRoutineExercise lacks muscle field)
-        let _ = selectedMuscleFilter
         
         // Filter by favorites
         if showFavoritesOnly {
@@ -293,59 +293,66 @@ struct WorkoutSelectionView: View {
 
     @ViewBuilder
     private var searchAndFilterBar: some View {
-        VStack(spacing: 4) {
-            // Filter buttons
-            HStack(spacing: 4) {
-                // Favorites toggle
-                Button(action: {
-                    showFavoritesOnly.toggle()
-                }) {
-                    HStack(spacing: 2) {
-                        Image(systemName: showFavoritesOnly ? "star.fill" : "star")
-                            .font(.system(size: 8))
-                        Text("Favoritos")
-                            .font(.system(size: 8, weight: .semibold))
-                    }
-                    .foregroundColor(showFavoritesOnly ? .yellow : .gray)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 4)
-                    .background(showFavoritesOnly ? Color.yellow.opacity(0.15) : Color.white.opacity(0.06))
-                    .cornerRadius(6)
-                }
-                .buttonStyle(PlainButtonStyle())
-                
-                // Muscle filter
-                if !muscleGroups.isEmpty {
-                    Button {
-                        Button("Todos") {
-                            selectedMuscleFilter = nil
+        VStack(spacing: 6) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 5) {
+                    // Favorites chip
+                    Button(action: {
+                        showFavoritesOnly.toggle()
+                    }) {
+                        HStack(spacing: 3) {
+                            Image(systemName: showFavoritesOnly ? "star.fill" : "star")
+                                .font(.system(size: 8))
+                            Text("Favoritos")
+                                .font(.system(size: 8, weight: .bold))
                         }
-                        ForEach(muscleGroups, id: \.self) { muscle in
-                            Button(muscle) {
+                        .foregroundColor(showFavoritesOnly ? .black : .yellow)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 4)
+                        .background(showFavoritesOnly ? Color.yellow : Color.yellow.opacity(0.12))
+                        .cornerRadius(10)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+
+                    // "Todos" muscle chip
+                    Button(action: {
+                        selectedMuscleFilter = nil
+                    }) {
+                        Text("Todos")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundColor(selectedMuscleFilter == nil ? .black : .white)
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 4)
+                            .background(selectedMuscleFilter == nil ? Color.white : Color.white.opacity(0.12))
+                            .cornerRadius(10)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+
+                    // Muscle group chips
+                    ForEach(muscleGroups, id: \.self) { muscle in
+                        let isSelected = selectedMuscleFilter == muscle
+                        Button(action: {
+                            if isSelected {
+                                selectedMuscleFilter = nil
+                            } else {
                                 selectedMuscleFilter = muscle
                             }
+                        }) {
+                            Text(muscle)
+                                .font(.system(size: 8, weight: .bold))
+                                .foregroundColor(isSelected ? .black : .white)
+                                .padding(.horizontal, 7)
+                                .padding(.vertical, 4)
+                                .background(isSelected ? Color.orange : Color.white.opacity(0.12))
+                                .cornerRadius(10)
                         }
-                    } label: {
-                        HStack(spacing: 2) {
-                            Image(systemName: "line.3.horizontal.decrease.circle")
-                                .font(.system(size: 8))
-                            Text(selectedMuscleFilter ?? "Músculos")
-                                .font(.system(size: 8, weight: .semibold))
-                                .lineLimit(1)
-                        }
-                        .foregroundColor(selectedMuscleFilter != nil ? .blue : .gray)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 4)
-                        .background(selectedMuscleFilter != nil ? Color.blue.opacity(0.15) : Color.white.opacity(0.06))
-                        .cornerRadius(6)
+                        .buttonStyle(PlainButtonStyle())
                     }
                 }
-                
-                Spacer()
+                .padding(.horizontal, 2)
             }
         }
-        .padding(.horizontal, 4)
-        .padding(.bottom, 4)
+        .padding(.bottom, 2)
     }
 
     @ViewBuilder
