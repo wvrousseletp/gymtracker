@@ -824,39 +824,6 @@ struct ActiveWorkoutView: View {
         
         return ScrollView {
             VStack(spacing: 6) {
-                // Minimized Rest Timer Bar (if running and minimized)
-            if let restTimer = activeWorkout.restTimer, isRestTimerMinimized {
-                Button(action: {
-                    withAnimation(.spring()) {
-                        isRestTimerMinimized = false
-                    }
-                }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "timer")
-                            .font(.system(size: 8, weight: .bold))
-                            .foregroundColor(.orange)
-                        Text(restTimer.isPrep ? "PREPARO" : "DESCANSO ATIVO")
-                            .font(.system(size: 8, weight: .bold))
-                            .foregroundColor(.white)
-                        Spacer()
-                        Image(systemName: "chevron.up")
-                            .font(.system(size: 8, weight: .bold))
-                            .foregroundColor(.orange)
-                    }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(Color.orange.opacity(0.18))
-                    .cornerRadius(8)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.orange.opacity(0.35), lineWidth: 0.5)
-                    )
-                }
-                .buttonStyle(PlainButtonStyle())
-                .padding(.horizontal, 4)
-                .padding(.bottom, 2)
-            }
-            
             // Battery Indicator
             if !isLuminanceReduced {
                 batteryIndicatorView()
@@ -1157,6 +1124,11 @@ struct ActiveWorkoutView: View {
                                         .cornerRadius(3)
                                 }
                             }
+                            if workoutManager.heartRate > 0 {
+                                HRZoneBar(level: hrZone.level)
+                                    .padding(.top, 2)
+                                    .frame(maxWidth: 80)
+                            }
                         }
                         
                         VStack(alignment: .leading, spacing: 1) {
@@ -1325,6 +1297,19 @@ struct ActiveWorkoutView: View {
                     handleCrownRotation(newValue: newValue, oldValue: lastCrownValue, activeWorkout: activeWorkout)
                 }
                 lastCrownValue = newValue
+            }
+            
+            // Floating Rest Timer
+            if let restTimer = activeWorkout.restTimer, isRestTimerMinimized {
+                VStack {
+                    FloatingRestTimerView(restTimer: restTimer) {
+                        withAnimation(.spring()) {
+                            isRestTimerMinimized = false
+                        }
+                    }
+                    .padding(.top, 2)
+                    Spacer()
+                }
             }
         }
     }
@@ -2074,5 +2059,105 @@ struct WatchExerciseNotesView: View {
                 .cornerRadius(6)
         }
         .buttonStyle(PlainButtonStyle())
+    }
+}
+struct FloatingRestTimerView: View {
+    let restTimer: WatchRestTimer
+    let onMaximize: () -> Void
+    @StateObject var connectivityManager = WatchConnectivityManager.shared
+    @State private var timeRemaining: Int = 0
+    @State private var timer = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Button(action: onMaximize) {
+                HStack(spacing: 4) {
+                    Image(systemName: "timer")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.orange)
+                    Text("\(timeRemaining / 60):\(String(format: "%02d", timeRemaining % 60))")
+                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                        .foregroundColor(.white)
+                }
+            }
+            .buttonStyle(PlainButtonStyle())
+
+            Spacer()
+
+            Button(action: {
+                connectivityManager.adjustRestTimer(by: -15)
+                #if canImport(WatchKit)
+                WKInterfaceDevice.current().play(.click)
+                #endif
+            }) {
+                Text("-15")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 4)
+                    .background(Color.white.opacity(0.15))
+                    .cornerRadius(6)
+            }
+            .buttonStyle(PlainButtonStyle())
+
+            Button(action: {
+                connectivityManager.adjustRestTimer(by: 15)
+                #if canImport(WatchKit)
+                WKInterfaceDevice.current().play(.click)
+                #endif
+            }) {
+                Text("+15")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 4)
+                    .background(Color.white.opacity(0.15))
+                    .cornerRadius(6)
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(Color.black.opacity(0.7))
+        .background(Color.orange.opacity(0.18))
+        .cornerRadius(10)
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color.orange.opacity(0.35), lineWidth: 0.5)
+        )
+        .padding(.horizontal, 4)
+        .onAppear { updateTimeRemaining() }
+        .onReceive(timer) { _ in updateTimeRemaining() }
+    }
+
+    private func updateTimeRemaining() {
+        let now = Int64(Date().timeIntervalSince1970 * 1000)
+        let diff = restTimer.endTime - now
+        timeRemaining = max(0, Int(round(Double(diff) / 1000.0)))
+    }
+}
+struct HRZoneBar: View {
+    let level: Int
+    
+    var body: some View {
+        HStack(spacing: 2) {
+            ForEach(1...5, id: \.self) { i in
+                Rectangle()
+                    .fill(i <= level ? zoneColor(for: i) : Color.white.opacity(0.1))
+                    .frame(height: 4)
+                    .cornerRadius(2)
+            }
+        }
+    }
+    
+    private func zoneColor(for level: Int) -> Color {
+        switch level {
+        case 1: return .blue
+        case 2: return .green
+        case 3: return .yellow
+        case 4: return .orange
+        case 5: return .red
+        default: return .gray
+        }
     }
 }

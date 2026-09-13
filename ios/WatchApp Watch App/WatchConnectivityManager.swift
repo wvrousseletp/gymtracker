@@ -524,8 +524,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         if isLocalWorkout {
             toggleSetLocal(exerciseIndex: exerciseIndex, setIndex: setIndex, isDone: isDone, isFailure: isFailure, failureRep: failureRep, distance: distance, duration: duration)
         } else {
-            // Add to batch queue instead of sending immediately
-            var update: [String: Any] = [
+            var msg: [String: Any] = [
                 "action": "toggleSet",
                 "exerciseIndex": exerciseIndex,
                 "setIndex": setIndex,
@@ -533,36 +532,20 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                 "isFailure": isFailure
             ]
             if let rep = failureRep {
-                update["failureRep"] = rep
+                msg["failureRep"] = rep
             }
             if let dist = distance {
-                update["distance"] = dist
+                msg["distance"] = dist
             }
             if let dur = duration {
-                update["duration"] = dur
+                msg["duration"] = dur
             }
-            
-            pendingSetUpdates.append(update)
-            
-            // Debounce batch sending - send after 200ms of no new updates
-            setUpdateBatchTimer?.invalidate()
-            setUpdateBatchTimer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: false) { [weak self] _ in
-                self?.flushSetUpdateBatch()
-            }
+            sendToiPhone(msg)
         }
     }
     
     private func flushSetUpdateBatch() {
-        guard !pendingSetUpdates.isEmpty else { return }
-        
-        // Send all pending updates in a single batch message
-        let batchMessage: [String: Any] = [
-            "action": "batchSetUpdates",
-            "updates": pendingSetUpdates
-        ]
-        
-        sendToiPhone(batchMessage)
-        pendingSetUpdates.removeAll()
+        // Obsolete
     }
 
     func updateFailure(exerciseIndex: Int, setIndex: Int, isFailure: Bool, failureRep: Int?) {

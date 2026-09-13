@@ -234,9 +234,7 @@ struct RestTimerView: View {
             updateTimeRemaining()
         }
         .onReceive(timer) { _ in
-            if !isLuminanceReduced {
-                updateTimeRemaining()
-            }
+            updateTimeRemaining()
         }
         .onChange(of: isLuminanceReduced) { reduced in
             if !reduced {

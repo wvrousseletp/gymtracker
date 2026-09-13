@@ -24,9 +24,15 @@ class WatchHapticManager {
     
     // MARK: - Public Methods
     
+    private var lastPlayedTime: Date = Date.distantPast
+    
     func play(_ pattern: HapticPattern) {
         guard hapticsEnabled else { return }
         #if os(watchOS)
+        let now = Date()
+        guard now.timeIntervalSince(lastPlayedTime) > 0.1 else { return }
+        lastPlayedTime = now
+        
         let device = WKInterfaceDevice.current()
         
         switch pattern {
@@ -138,20 +144,14 @@ class WatchHapticManager {
     
     /// Play haptic for rest timer countdown warning (3s, 2s, 1s)
     func playCountdownTick() {
-        #if os(watchOS)
-        guard hapticsEnabled else { return }
-        WKInterfaceDevice.current().play(.click)
-        #endif
+        play(.medium) // Use .start for a more noticeable tick than .click
     }
     
     /// Play haptic when rest countdown hits 0 (clean single notification burst)
     func playCountdownFinal() {
-        #if os(watchOS)
-        guard hapticsEnabled else { return }
-        WKInterfaceDevice.current().play(.notification)
-        #endif
+        play(.heavy) // Use .stop for a strong but shorter burst than .notification
     }
-
+    
     /// Play haptic when workout is cancelled
     func playWorkoutCancelled() {
         play(.failure)
