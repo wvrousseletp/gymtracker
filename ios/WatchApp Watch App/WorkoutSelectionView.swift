@@ -169,20 +169,11 @@ struct WorkoutSelectionView: View {
     @StateObject var connectivityManager = WatchConnectivityManager.shared
     @StateObject var workoutManager = WorkoutManager.shared
     @State private var activeTab = 0
-    @State private var searchText = ""
-    @State private var selectedMuscleFilter: String? = nil
-    @State private var showFavoritesOnly = false
+    @State private var showAllWorkouts = false
 
     private var todayPlannedItems: [PlannedWatchItem] {
         WatchPlannerHelper.resolveTodayPlannedItems(
             routines: connectivityManager.routines,
-            library: connectivityManager.library,
-            planner: connectivityManager.planner
-        )
-    }
-
-    private var filteredLibrary: [WatchLibraryExercise] {
-        WatchPlannerHelper.filteredLibraryForWatch(
             library: connectivityManager.library,
             planner: connectivityManager.planner
         )
@@ -195,52 +186,6 @@ struct WorkoutSelectionView: View {
         set {
             UserDefaults.standard.set(Array(newValue), forKey: "favorite_routines")
         }
-    }
-    
-    private var muscleGroups: [String] {
-        let libraryMuscles = connectivityManager.library.compactMap { $0.muscle.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
-        let unique = Array(Set(libraryMuscles)).sorted()
-        if !unique.isEmpty {
-            return unique
-        }
-        return ["Peito", "Costas", "Pernas", "Ombros", "Bíceps", "Tríceps", "Core", "Cardio"]
-    }
-
-    private var filteredRoutines: [WatchRoutine] {
-        var routines = connectivityManager.routines
-        
-        // Filter by search text
-        if !searchText.isEmpty {
-            routines = routines.filter { routine in
-                routine.name.localizedCaseInsensitiveContains(searchText)
-            }
-        }
-        
-        // Filter by favorites
-        if showFavoritesOnly {
-            routines = routines.filter { favoriteRoutines.contains($0.id) }
-        }
-        
-        return routines
-    }
-    
-    private var filteredExercises: [WatchLibraryExercise] {
-        var exercises = filteredLibrary
-        
-        // Filter by search text
-        if !searchText.isEmpty {
-            exercises = exercises.filter { exercise in
-                exercise.name.localizedCaseInsensitiveContains(searchText) ||
-                exercise.muscle.localizedCaseInsensitiveContains(searchText)
-            }
-        }
-        
-        // Filter by muscle group
-        if let muscle = selectedMuscleFilter {
-            exercises = exercises.filter { $0.muscle == muscle }
-        }
-        
-        return exercises
     }
     
     private func toggleFavorite(routineId: String) {
@@ -289,70 +234,6 @@ struct WorkoutSelectionView: View {
             .padding(.horizontal, 8)
         }
         .padding()
-    }
-
-    @ViewBuilder
-    private var searchAndFilterBar: some View {
-        VStack(spacing: 6) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 5) {
-                    // Favorites chip
-                    Button(action: {
-                        showFavoritesOnly.toggle()
-                    }) {
-                        HStack(spacing: 3) {
-                            Image(systemName: showFavoritesOnly ? "star.fill" : "star")
-                                .font(.system(size: 8))
-                            Text("Favoritos")
-                                .font(.system(size: 8, weight: .bold))
-                        }
-                        .foregroundColor(showFavoritesOnly ? .black : .yellow)
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 4)
-                        .background(showFavoritesOnly ? Color.yellow : Color.yellow.opacity(0.12))
-                        .cornerRadius(10)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-
-                    // "Todos" muscle chip
-                    Button(action: {
-                        selectedMuscleFilter = nil
-                    }) {
-                        Text("Todos")
-                            .font(.system(size: 8, weight: .bold))
-                            .foregroundColor(selectedMuscleFilter == nil ? .black : .white)
-                            .padding(.horizontal, 7)
-                            .padding(.vertical, 4)
-                            .background(selectedMuscleFilter == nil ? Color.white : Color.white.opacity(0.12))
-                            .cornerRadius(10)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-
-                    // Muscle group chips
-                    ForEach(muscleGroups, id: \.self) { muscle in
-                        let isSelected = selectedMuscleFilter == muscle
-                        Button(action: {
-                            if isSelected {
-                                selectedMuscleFilter = nil
-                            } else {
-                                selectedMuscleFilter = muscle
-                            }
-                        }) {
-                            Text(muscle)
-                                .font(.system(size: 8, weight: .bold))
-                                .foregroundColor(isSelected ? .black : .white)
-                                .padding(.horizontal, 7)
-                                .padding(.vertical, 4)
-                                .background(isSelected ? Color.orange : Color.white.opacity(0.12))
-                                .cornerRadius(10)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                }
-                .padding(.horizontal, 2)
-            }
-        }
-        .padding(.bottom, 2)
     }
 
     @ViewBuilder
@@ -427,16 +308,16 @@ struct WorkoutSelectionView: View {
 
     @ViewBuilder
     private var todayPlannedSection: some View {
-        if !todayPlannedItems.isEmpty {
-            Section(header: 
-                HStack(spacing: 4) {
-                    Image(systemName: "calendar")
-                        .font(.system(size: 8, weight: .bold))
-                    Text("TREINOS DE HOJE")
-                        .font(.system(size: 8, weight: .bold, design: .rounded))
-                }
-                .foregroundColor(.green)
-            ) {
+        Section(header: 
+            HStack(spacing: 4) {
+                Image(systemName: "calendar")
+                    .font(.system(size: 8, weight: .bold))
+                Text("TREINOS DE HOJE")
+                    .font(.system(size: 8, weight: .bold, design: .rounded))
+            }
+            .foregroundColor(.green)
+        ) {
+            if !todayPlannedItems.isEmpty {
                 ForEach(todayPlannedItems) { item in
                     let isCompleted = connectivityManager.streak.completedTodayRoutines.contains(item.title)
                     PlannedItemRow(
@@ -448,13 +329,63 @@ struct WorkoutSelectionView: View {
                         routines: connectivityManager.routines
                     )
                 }
+            } else {
+                HStack {
+                    Spacer()
+                    Text("Nenhum treino agendado hoje")
+                        .font(.system(size: 10))
+                        .foregroundColor(.gray)
+                    Spacer()
+                }
+                .padding(.vertical, 4)
             }
         }
     }
 
     @ViewBuilder
+    private var allWorkoutsToggleButtonSection: some View {
+        Section {
+            Button(action: {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                    showAllWorkouts.toggle()
+                }
+            }) {
+                HStack(spacing: 8) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.orange.opacity(0.12))
+                            .frame(width: 24, height: 24)
+                        Image(systemName: "list.bullet")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.orange)
+                    }
+                    
+                    Text("Todos os treinos")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(.white)
+                    
+                    Spacer()
+                    
+                    Image(systemName: showAllWorkouts ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.orange)
+                }
+                .padding(.vertical, 4)
+            }
+            .buttonStyle(PlainButtonStyle())
+            .padding(8)
+            .background(Color.white.opacity(0.04))
+            .cornerRadius(10)
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
+            )
+        }
+    }
+
+    @ViewBuilder
     private var routinesSection: some View {
-        if !filteredRoutines.isEmpty {
+        if !connectivityManager.routines.isEmpty {
             Section(header: 
                 HStack(spacing: 4) {
                     Image(systemName: "list.bullet")
@@ -464,7 +395,7 @@ struct WorkoutSelectionView: View {
                 }
                 .foregroundColor(.orange)
             ) {
-                ForEach(filteredRoutines) { routine in
+                ForEach(connectivityManager.routines) { routine in
                     let isCompleted = connectivityManager.streak.completedTodayRoutines.contains(routine.name)
                     let isFavorite = favoriteRoutines.contains(routine.id)
                     
@@ -478,7 +409,7 @@ struct WorkoutSelectionView: View {
                     )
                 }
             }
-        } else if !connectivityManager.routines.isEmpty {
+        } else {
             Section {
                 HStack {
                     Spacer()
@@ -493,134 +424,19 @@ struct WorkoutSelectionView: View {
     }
 
     @ViewBuilder
-    private var singleExercisesSection: some View {
-        if !filteredExercises.isEmpty {
-            Section(header: 
-                HStack(spacing: 4) {
-                    Image(systemName: "dumbbell.fill")
-                        .font(.system(size: 8, weight: .bold))
-                    Text("EXERCÍCIOS AVULSOS")
-                        .font(.system(size: 8, weight: .bold, design: .rounded))
-                }
-                .foregroundColor(.blue)
-            ) {
-                ForEach(filteredExercises) { exercise in
-                    Button(action: {
-                        connectivityManager.startSingleExercise(exerciseId: exercise.id)
-                    }) {
-                        HStack(spacing: 8) {
-                            ZStack {
-                                Circle()
-                                    .fill(Color.blue.opacity(0.12))
-                                    .frame(width: 24, height: 24)
-                                Image(systemName: "plus")
-                                    .font(.system(size: 10, weight: .bold))
-                                    .foregroundColor(.blue)
-                            }
-                            
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(exercise.name)
-                                    .font(.system(size: 12, weight: .bold))
-                                    .foregroundColor(.white)
-                                Text(exercise.muscle)
-                                    .font(.system(size: 9))
-                                    .foregroundColor(.gray)
-                            }
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 8, weight: .bold))
-                                .foregroundColor(.gray)
-                        }
-                        .padding(.vertical, 4)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    .padding(8)
-                    .background(Color.white.opacity(0.04))
-                    .cornerRadius(10)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                    )
-                }
-            }
-        } else if !filteredLibrary.isEmpty {
-            Section {
-                HStack {
-                    Spacer()
-                    Text("Nenhum exercício encontrado")
-                        .font(.system(size: 10))
-                        .foregroundColor(.gray)
-                    Spacer()
-                }
-                .padding(.vertical, 8)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var quickStartSection: some View {
-        Section {
-            Button(action: {
-                if let first = connectivityManager.library.first {
-                    connectivityManager.startSingleExercise(exerciseId: first.id)
-                    #if canImport(WatchKit)
-                    WKInterfaceDevice.current().play(.start)
-                    #endif
-                }
-            }) {
-                HStack(spacing: 8) {
-                    ZStack {
-                        Circle()
-                            .fill(LinearGradient(colors: [.orange, .red], startPoint: .topLeading, endPoint: .bottomTrailing))
-                            .frame(width: 26, height: 26)
-                        Image(systemName: "bolt.fill")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(.white)
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text("Treino Livre")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(.white)
-                        Text("Iniciar sessão avulsa")
-                            .font(.system(size: 9))
-                            .foregroundColor(.orange.opacity(0.8))
-                    }
-                    Spacer()
-                    Image(systemName: "play.circle.fill")
-                        .font(.system(size: 14))
-                        .foregroundColor(.orange)
-                }
-                .padding(.vertical, 4)
-            }
-            .buttonStyle(PlainButtonStyle())
-            .padding(8)
-            .background(Color.orange.opacity(0.08))
-            .cornerRadius(10)
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(Color.orange.opacity(0.25), lineWidth: 1)
-            )
-        }
-    }
-
-    @ViewBuilder
     private var workoutContentList: some View {
-        VStack(spacing: 0) {
-            searchAndFilterBar
-            
-            List {
-                offlineWarningSection
-                quickStartSection
-                if let activeWorkout = connectivityManager.activeWorkout {
-                    postponedWorkoutSection(activeWorkout: activeWorkout)
-                }
-                todayPlannedSection
-                routinesSection
-                singleExercisesSection
+        List {
+            offlineWarningSection
+            if let activeWorkout = connectivityManager.activeWorkout {
+                postponedWorkoutSection(activeWorkout: activeWorkout)
             }
-            .listStyle(.carousel)
+            todayPlannedSection
+            allWorkoutsToggleButtonSection
+            if showAllWorkouts {
+                routinesSection
+            }
         }
+        .listStyle(.carousel)
     }
 
     @ViewBuilder
