@@ -27,7 +27,7 @@
 	<key>WKCompanionAppBundleIdentifier</key>
 	<string>com.vicente.losmooscles</string>
 	<key>WKRunsIndependentlyOfCompanionApp</key>
-	<true/>
+	<false/>
 	<key>WKApplication</key>
 	<true/>
 	<key>WKBackgroundModes</key>

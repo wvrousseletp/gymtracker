@@ -113,7 +113,7 @@
 		D316F3422FE20CC9008A94F4 /* Embed Watch Content */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = "";
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
 			dstSubfolderSpec = 16;
 			files = (
 				D316F3412FE20CC9008A94F4 /* Los Mooscles.app in Embed Watch Content */,
