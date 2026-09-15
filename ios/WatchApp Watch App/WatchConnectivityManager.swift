@@ -561,7 +561,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             }
             workout.exercises[exerciseIndex] = ex
             self.activeWorkout = workout
-            cache.setActiveWorkout(workout)
+            cache.setLocalWorkoutState(workout)
         }
 
         if isLocalWorkout {
@@ -603,7 +603,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             
             workout.exercises[exerciseIndex] = ex
             self.activeWorkout = workout
-            cache.setActiveWorkout(workout)
+            cache.setLocalWorkoutState(workout)
         }
 
         if isLocalWorkout {

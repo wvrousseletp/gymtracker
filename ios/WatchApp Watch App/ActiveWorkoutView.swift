@@ -2199,7 +2199,7 @@ struct SetOptionsSheet: View {
     let setIndex: Int
     let exercise: WatchActiveExercise
     @StateObject var connectivityManager = WatchConnectivityManager.shared
-    @StateObject var hapticManager = WatchHapticManager.shared
+    let hapticManager = WatchHapticManager.shared
 
     var body: some View {
         ScrollView {

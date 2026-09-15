@@ -363,10 +363,10 @@ struct WatchActiveExercise: Codable, Identifiable {
     var id: String { instanceId }
     let name: String
     let muscle: String
-    let sets: Int
+    var sets: Int
     let reps: Int
     let rest: Int
-    let weight: Double
+    var weight: Double
     var setsState: [Bool]
     let measurementType: String
     let executionType: String?
