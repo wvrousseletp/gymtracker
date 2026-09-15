@@ -549,6 +549,21 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     }
 
     func updateFailure(exerciseIndex: Int, setIndex: Int, isFailure: Bool, failureRep: Int?) {
+        if var workout = activeWorkout, exerciseIndex >= 0 && exerciseIndex < workout.exercises.count {
+            var ex = workout.exercises[exerciseIndex]
+            if setIndex < ex.failureReport.count {
+                ex.failureReport[setIndex] = isFailure
+            } else if setIndex < ex.sets {
+                while ex.failureReport.count <= setIndex {
+                    ex.failureReport.append(false)
+                }
+                ex.failureReport[setIndex] = isFailure
+            }
+            workout.exercises[exerciseIndex] = ex
+            self.activeWorkout = workout
+            cache.setActiveWorkout(workout)
+        }
+
         if isLocalWorkout {
             var currentIsDone = false
             if let active = self.activeWorkout, exerciseIndex < active.exercises.count {
@@ -568,6 +583,39 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             if let rep = failureRep {
                 msg["failureRep"] = rep
             }
+            sendToiPhone(msg)
+        }
+    }
+
+    func addDropSet(exerciseIndex: Int, setIndex: Int, dropWeight: Double, dropReps: Int) {
+        if var workout = activeWorkout, exerciseIndex >= 0 && exerciseIndex < workout.exercises.count {
+            var ex = workout.exercises[exerciseIndex]
+            
+            ex.sets += 1
+            let targetIdx = min(setIndex + 1, ex.setsState.count)
+            ex.setsState.insert(false, at: targetIdx)
+            if targetIdx <= ex.failureReport.count {
+                ex.failureReport.insert(false, at: targetIdx)
+            } else {
+                ex.failureReport.append(false)
+            }
+            ex.weight = dropWeight
+            
+            workout.exercises[exerciseIndex] = ex
+            self.activeWorkout = workout
+            cache.setActiveWorkout(workout)
+        }
+
+        if isLocalWorkout {
+            // Handled locally
+        } else {
+            let msg: [String: Any] = [
+                "action": "addDropSet",
+                "exerciseIndex": exerciseIndex,
+                "setIndex": setIndex,
+                "dropWeight": dropWeight,
+                "dropReps": dropReps
+            ]
             sendToiPhone(msg)
         }
     }

@@ -682,6 +682,18 @@ func _force_load_swiftCompatibilityDynamicReplacements() {}
           }
           self.invokeOrQueue(method: "updateFailure", arguments: args)
         }
+      case "addDropSet":
+        if let exerciseIndex = data["exerciseIndex"] as? Int,
+           let setIndex = data["setIndex"] as? Int,
+           let dropWeight = data["dropWeight"] as? Double,
+           let dropReps = data["dropReps"] as? Int {
+          self.invokeOrQueue(method: "addDropSet", arguments: [
+            "exerciseIndex": exerciseIndex,
+            "setIndex": setIndex,
+            "dropWeight": dropWeight,
+            "dropReps": dropReps
+          ])
+        }
       case "skipRest":
         self.invokeOrQueue(method: "skipRest", arguments: nil)
       case "updateExerciseWeightReps":

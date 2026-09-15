@@ -211,6 +211,19 @@ class WatchService {
         }
         break;
 
+      case 'addDropSet':
+        final int exerciseIndex = call.arguments['exerciseIndex'] as int;
+        final int setIndex = call.arguments['setIndex'] as int;
+        final double dropWeight = (call.arguments['dropWeight'] as num).toDouble();
+        final int dropReps = call.arguments['dropReps'] as int;
+
+        _provider!.workoutProvider?.addDropSet(exerciseIndex, setIndex, dropWeight, dropReps);
+        _provider!.persistActiveWorkoutState();
+        if (_provider!.state?.activeWorkout != null) {
+          sendActiveWorkout(_provider!.state!.activeWorkout!);
+        }
+        break;
+
       case 'skipRest':
         _provider!.clearRestTimer();
         // Envia estado atualizado após pular descanso

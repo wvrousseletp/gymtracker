@@ -85,6 +85,7 @@ struct ActiveWorkoutView: View {
     @State private var showingFinishSheet = false
     @State private var showPlateCalculator: Bool = false
     @State private var showNotesSheet: Bool = false
+    @State private var showSetOptionsSheet: Bool = false
     @State private var isRestTimerMinimized: Bool = false
     @State private var activeWorkoutPage: Int = 1
     @State private var elapsedSeconds: Int = 0
@@ -1000,6 +1001,20 @@ struct ActiveWorkoutView: View {
                             }
                             .buttonStyle(PlainButtonStyle())
                         }
+                        
+                        // 3 Pontinhos Button for Set Options (Falha / Drop Set)
+                        Button(action: {
+                            showSetOptionsSheet = true
+                            #if canImport(WatchKit)
+                            hapticManager.play(.light)
+                            #endif
+                        }) {
+                            Image(systemName: "ellipsis.circle.fill")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(.orange)
+                                .padding(.leading, 2)
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
                     .padding(.vertical, 2)
                     
@@ -1556,6 +1571,20 @@ struct ActiveWorkoutView: View {
                     onSave: { note in
                         // Future: Sync exercise specific notes
                     }
+                )
+            }
+        }
+        .sheet(isPresented: $showSetOptionsSheet) {
+            if let activeWorkout = connectivityManager.activeWorkout,
+               activeWorkout.currentExerciseIndex >= 0 && activeWorkout.currentExerciseIndex < activeWorkout.exercises.count {
+                let exIdx = activeWorkout.currentExerciseIndex
+                let exercise = activeWorkout.exercises[exIdx]
+                let activeSetIdx = getSelectedSetIndex(for: exercise, index: exIdx)
+                SetOptionsSheet(
+                    isPresented: $showSetOptionsSheet,
+                    exerciseIndex: exIdx,
+                    setIndex: activeSetIdx,
+                    exercise: exercise
                 )
             }
         }
@@ -2158,6 +2187,103 @@ struct HRZoneBar: View {
         case 4: return .orange
         case 5: return .red
         default: return .gray
+        }
+    }
+}
+
+// MARK: - Set Options Sheet (3 Pontinhos)
+
+struct SetOptionsSheet: View {
+    @Binding var isPresented: Bool
+    let exerciseIndex: Int
+    let setIndex: Int
+    let exercise: WatchActiveExercise
+    @StateObject var connectivityManager = WatchConnectivityManager.shared
+    @StateObject var hapticManager = WatchHapticManager.shared
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 8) {
+                Text("Opções - Série \(setIndex + 1)")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(.top, 4)
+
+                let safeSetIndex = max(0, min(setIndex, exercise.sets - 1))
+                let isFailure = (safeSetIndex >= 0 && safeSetIndex < exercise.failureReport.count) ? exercise.failureReport[safeSetIndex] : false
+
+                // Toggle Failure Button
+                Button(action: {
+                    let newFailure = !isFailure
+                    connectivityManager.updateFailure(
+                        exerciseIndex: exerciseIndex,
+                        setIndex: safeSetIndex,
+                        isFailure: newFailure,
+                        failureRep: newFailure ? exercise.reps : nil
+                    )
+                    #if canImport(WatchKit)
+                    if newFailure {
+                        hapticManager.playFailureRegistered()
+                    } else {
+                        hapticManager.playSetUncompleted()
+                    }
+                    #endif
+                    isPresented = false
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: isFailure ? "xmark.octagon.fill" : "flame.fill")
+                            .font(.system(size: 12))
+                            .foregroundColor(isFailure ? .red : .orange)
+                        Text(isFailure ? "Remover Falha" : "Marcar Falha")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(.white)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+                    .background(isFailure ? Color.red.opacity(0.18) : Color.orange.opacity(0.18))
+                    .cornerRadius(8)
+                }
+                .buttonStyle(PlainButtonStyle())
+
+                // Add Drop Set Button
+                Button(action: {
+                    let dropWeight = max(0.5, (exercise.weight * 0.8 * 2.0).rounded() / 2.0)
+                    let dropReps = exercise.reps
+                    connectivityManager.addDropSet(
+                        exerciseIndex: exerciseIndex,
+                        setIndex: safeSetIndex,
+                        dropWeight: dropWeight,
+                        dropReps: dropReps
+                    )
+                    #if canImport(WatchKit)
+                    hapticManager.play(.medium)
+                    #endif
+                    isPresented = false
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "arrow.down.forward.square.fill")
+                            .font(.system(size: 12))
+                            .foregroundColor(.purple)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("Adicionar Drop Set")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(.white)
+                            let dropW = max(0.5, (exercise.weight * 0.8 * 2.0).rounded() / 2.0)
+                            Text("Carga: \(String(format: "%.1f", dropW))kg (-20%)")
+                                .font(.system(size: 8))
+                                .foregroundColor(.purple.opacity(0.8))
+                        }
+                        Spacer()
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+                    .background(Color.purple.opacity(0.18))
+                    .cornerRadius(8)
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+            .padding(.horizontal, 4)
         }
     }
 }
