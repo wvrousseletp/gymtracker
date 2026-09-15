@@ -92,6 +92,7 @@ struct ActiveWorkoutView: View {
     @State private var selectedSetIndexMap: [String: Int] = [:] // exerciseId -> selectedSetIndex
     @State private var crownValue: Double = 0
     @State private var lastCrownValue: Double = 0
+    @State private var crownAccumulator: Double = 0.0
     @State private var timerCancellable: Cancellable?
     @State private var isLongWorkout: Bool = false
     @State private var uiRefreshInterval: Double = 1.0
@@ -1304,14 +1305,23 @@ struct ActiveWorkoutView: View {
             .tabViewStyle(.page(indexDisplayMode: .automatic))
             .focusable()
             .focused($tabViewFocus)
-            .digitalCrownRotation($crownValue, from: 0, through: 100, sensitivity: .medium, isContinuous: true, isHapticFeedbackEnabled: true)
+            .digitalCrownRotation($crownValue, from: -10000.0, through: 10000.0, sensitivity: .low, isContinuous: true, isHapticFeedbackEnabled: true)
             .onChange(of: crownValue) { newValue in
-                if activeWorkoutPage == 0 {
-                    adjustFontSize(delta: newValue - lastCrownValue)
-                } else {
-                    handleCrownRotation(newValue: newValue, oldValue: lastCrownValue, activeWorkout: activeWorkout)
-                }
+                let diff = newValue - lastCrownValue
                 lastCrownValue = newValue
+                
+                crownAccumulator += diff
+                if abs(crownAccumulator) >= 1.0 {
+                    let steps = Int(crownAccumulator)
+                    crownAccumulator -= Double(steps)
+                    handleCrownStep(steps: steps, activeWorkout: activeWorkout)
+                }
+            }
+            .onAppear {
+                tabViewFocus = true
+            }
+            .onChange(of: activeWorkoutPage) { _ in
+                tabViewFocus = true
             }
             
             // Floating Rest Timer
@@ -1329,9 +1339,8 @@ struct ActiveWorkoutView: View {
         }
     }
     
-    private func handleCrownRotation(newValue: Double, oldValue: Double, activeWorkout: WatchActiveWorkoutState) {
-        let delta = Int(newValue - oldValue)
-        guard delta != 0 else { return }
+    private func handleCrownStep(steps: Int, activeWorkout: WatchActiveWorkoutState) {
+        guard steps != 0 else { return }
         
         guard activeWorkout.currentExerciseIndex >= 0 && activeWorkout.currentExerciseIndex < activeWorkout.exercises.count else { return }
         let exercise = activeWorkout.exercises[activeWorkout.currentExerciseIndex]
@@ -1344,20 +1353,18 @@ struct ActiveWorkoutView: View {
             let currentDuration = pc?.durationSeconds ?? 0
             
             if selectedCardioField == "distance" {
-                let newDistance = max(0.0, currentDistance + Double(delta) * 0.1)
+                let newDistance = max(0.0, currentDistance + Double(steps) * 0.1)
                 connectivityManager.updateCardio(exerciseIndex: activeWorkout.currentExerciseIndex, setIndex: activeSetIdx, distance: newDistance, duration: currentDuration)
             } else {
-                let newDuration = max(0, currentDuration + delta * 30) // Scroll shifts by 30s
+                let newDuration = max(0, currentDuration + steps * 15) // Scroll shifts by 15s
                 connectivityManager.updateCardio(exerciseIndex: activeWorkout.currentExerciseIndex, setIndex: activeSetIdx, distance: currentDistance, duration: newDuration)
             }
         } else {
-            // Adjust weight
+            // Adjust weight by 0.5kg per step
             let currentWeight = exercise.weight
-            let newWeight = max(0, currentWeight + Double(delta) * 0.5)
+            let newWeight = max(0.0, (currentWeight + Double(steps) * 0.5 * 2.0).rounded() / 2.0)
             connectivityManager.updateExerciseWeightReps(exerciseIndex: activeWorkout.currentExerciseIndex, weight: newWeight, reps: exercise.reps)
         }
-        
-        // Native crown rotation haptic is handled by isHapticFeedbackEnabled: true on .digitalCrownRotation
         
         withAnimation(.spring(response: 0.2, dampingFraction: 0.5)) {
             crownFeedbackScale = 1.15
