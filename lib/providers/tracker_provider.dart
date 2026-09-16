@@ -1002,6 +1002,7 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
                 prep: rest.isPrep,
                 exName: rest.nextExerciseName,
                 setNum: rest.nextSetNum,
+                onCompleted: () => _workoutProvider!.clearRestTimer(),
               );
             } else {
               RestTimerService.instance.clear();

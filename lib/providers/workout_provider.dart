@@ -715,6 +715,7 @@ class WorkoutProvider extends ChangeNotifier {
           setNum: computedRestTimer.nextSetNum,
           targetReps: computedRestTimer.nextTargetReps,
           targetWeight: computedRestTimer.nextTargetWeight,
+          onCompleted: clearRestTimer,
         );
       } else {
         RestTimerService.instance.clear();
@@ -817,6 +818,7 @@ class WorkoutProvider extends ChangeNotifier {
       setNum: nextSetNum,
       targetReps: targetReps,
       targetWeight: targetWeight,
+      onCompleted: clearRestTimer,
     );
   }
 
@@ -864,6 +866,7 @@ class WorkoutProvider extends ChangeNotifier {
       setNum: newTimer.nextSetNum,
       targetReps: newTimer.nextTargetReps,
       targetWeight: newTimer.nextTargetWeight,
+      onCompleted: clearRestTimer,
     );
   }
 
