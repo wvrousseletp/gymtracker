@@ -396,6 +396,12 @@ func _force_load_swiftCompatibilityDynamicReplacements() {}
         if let restTimerMode = args["restTimerMode"] as? String {
           sharedDefaults?.set(restTimerMode, forKey: "restTimerMode")
         }
+        if let silentNightStartHour = args["silentNightStartHour"] as? String {
+          sharedDefaults?.set(silentNightStartHour, forKey: "silentNightStartHour")
+        }
+        if let silentNightEndHour = args["silentNightEndHour"] as? String {
+          sharedDefaults?.set(silentNightEndHour, forKey: "silentNightEndHour")
+        }
         sharedDefaults?.synchronize()
         result(nil)
       } else {
@@ -930,6 +936,10 @@ func _force_load_swiftCompatibilityDynamicReplacements() {}
     }
     
     let silenceAtNight = sharedDefaults?.bool(forKey: "silenceHydrationAtNight") ?? true
+    let nightStartStr = sharedDefaults?.string(forKey: "silentNightStartHour") ?? "22"
+    let nightEndStr = sharedDefaults?.string(forKey: "silentNightEndHour") ?? "08"
+    let nightStart = Int(nightStartStr) ?? 22
+    let nightEnd = Int(nightEndStr) ?? 8
     
     let messages = [
       "Que tal um gole d'água? Você bebeu \(waterIntake)ml de \(waterGoal)ml hoje. Vamos bater a meta!",
@@ -937,33 +947,74 @@ func _force_load_swiftCompatibilityDynamicReplacements() {}
       "Não se esqueça de se hidratar hoje! Seu corpo agradece. 💪"
     ]
     
+    let calendar = Calendar.current
+    var lastScheduledDate: Date? = nil
+    
     for i in 0..<intervals.count {
       let content = UNMutableNotificationContent()
       content.title = "💧 Lembrete de Hidratação"
       content.body = messages[i]
       content.sound = UNNotificationSound.default
       
-      let triggerDate = Date().addingTimeInterval(intervals[i])
-      var components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: triggerDate)
+      var targetDate = Date().addingTimeInterval(intervals[i])
       
       if silenceAtNight {
-         if let hour = components.hour, (hour >= 22 || hour < 8) {
-            // Push to next morning 8 AM
-            if hour >= 22 {
-               if let nextDay = Calendar.current.date(byAdding: .day, value: 1, to: triggerDate) {
-                  let nextComponents = Calendar.current.dateComponents([.year, .month, .day], from: nextDay)
-                  components.year = nextComponents.year
-                  components.month = nextComponents.month
-                  components.day = nextComponents.day
-               }
+        let hour = calendar.component(.hour, from: targetDate)
+        let isNight = (nightStart > nightEnd)
+          ? (hour >= nightStart || hour < nightEnd)
+          : (hour >= nightStart && hour < nightEnd)
+          
+        if isNight {
+          var components = calendar.dateComponents([.year, .month, .day], from: targetDate)
+          if hour >= nightStart {
+            if let nextDay = calendar.date(byAdding: .day, value: 1, to: targetDate) {
+              components = calendar.dateComponents([.year, .month, .day], from: nextDay)
             }
-            components.hour = 8
-            components.minute = 0
-            components.second = 0
-         }
+          }
+          components.hour = nightEnd
+          components.minute = 0
+          components.second = 0
+          if let morningDate = calendar.date(from: components) {
+            targetDate = morningDate
+          }
+        }
       }
       
-      let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+      // Prevent overlapping notifications firing at the same hour/minute
+      if let prevDate = lastScheduledDate {
+        let minSpacing: TimeInterval = (agg == "aggressive") ? 3600 : 7200 // 1h or 2h minimum spacing
+        if targetDate <= prevDate.addingTimeInterval(minSpacing - 60) {
+          targetDate = prevDate.addingTimeInterval(minSpacing)
+          
+          if silenceAtNight {
+            let hour = calendar.component(.hour, from: targetDate)
+            let isNight = (nightStart > nightEnd)
+              ? (hour >= nightStart || hour < nightEnd)
+              : (hour >= nightStart && hour < nightEnd)
+            if isNight {
+              var components = calendar.dateComponents([.year, .month, .day], from: targetDate)
+              if hour >= nightStart {
+                if let nextDay = calendar.date(byAdding: .day, value: 1, to: targetDate) {
+                  components = calendar.dateComponents([.year, .month, .day], from: nextDay)
+                }
+              }
+              components.hour = nightEnd
+              components.minute = 0
+              components.second = 0
+              if let morningDate = calendar.date(from: components) {
+                targetDate = morningDate
+              }
+            }
+          }
+        }
+      }
+      
+      let secondsFromNow = targetDate.timeIntervalSince(Date())
+      guard secondsFromNow > 10 else { continue }
+      
+      lastScheduledDate = targetDate
+      
+      let trigger = UNTimeIntervalNotificationTrigger(timeInterval: secondsFromNow, repeats: false)
       let request = UNNotificationRequest(
         identifier: hydrationNotificationIds[i],
         content: content,
