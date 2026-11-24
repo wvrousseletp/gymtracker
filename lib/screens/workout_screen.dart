@@ -1237,6 +1237,11 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     final soundState = ValueNotifier<bool>(provider.state!.settings.sound);
     final vibrationState =
         ValueNotifier<bool>(provider.state!.settings.vibration);
+    final reminderEnabled = ValueNotifier<bool>(
+        provider.state!.settings.workoutReminderEnabled);
+    final reminderTime = ValueNotifier<TimeOfDay>(TimeOfDay(
+        hour: provider.state!.settings.workoutReminderHour,
+        minute: provider.state!.settings.workoutReminderMinute));
     final waterController = TextEditingController(
         text: (provider.state?.diet.waterGoalMl ?? 2000).toString());
     final accentColor =
@@ -1371,6 +1376,64 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                     onChanged: (newVal) => vibrationState.value = newVal,
                   ),
                 ),
+                ValueListenableBuilder<bool>(
+                  valueListenable: reminderEnabled,
+                  builder: (context, enabled, child) => Column(
+                    children: [
+                      SwitchListTile(
+                        title: const Text("Lembrete de Treino",
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600)),
+                        subtitle: const Text(
+                            "Notificação diária no horário escolhido",
+                            style: TextStyle(
+                                color: Colors.white38, fontSize: 11)),
+                        value: enabled,
+                        activeColor: accentColor,
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        onChanged: (newVal) =>
+                            reminderEnabled.value = newVal,
+                      ),
+                      if (enabled)
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: ValueListenableBuilder<TimeOfDay>(
+                            valueListenable: reminderTime,
+                            builder: (context, time, child) => TextButton.icon(
+                              onPressed: () async {
+                                final picked = await showTimePicker(
+                                  context: context,
+                                  initialTime: time,
+                                );
+                                if (picked != null) {
+                                  reminderTime.value = picked;
+                                }
+                              },
+                              icon: Icon(Icons.access_time,
+                                  color: accentColor, size: 16),
+                              label: Text(
+                                "Todos os dias às ${time.format(context)}",
+                                style: TextStyle(
+                                    color: accentColor,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                minimumSize: Size.zero,
+                                tapTargetSize:
+                                    MaterialTapTargetSize.shrinkWrap,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
 
                 const SizedBox(height: 24),
 
@@ -1480,6 +1543,10 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                             soundState.value,
                             vibrationState.value,
                             provider.state!.settings.prepSeconds);
+                        provider.updateWorkoutReminder(
+                            reminderEnabled.value,
+                            reminderTime.value.hour,
+                            reminderTime.value.minute);
                         provider.updateWaterGoal(waterGoal);
                         waterController.dispose();
                         Navigator.pop(dialogCtx);
@@ -2768,7 +2835,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
                           onPressed: () => _showExerciseOptionsBottomSheet(
-                              context, widget.provider, ex, accentColor),
+                              context, widget.provider, ex, exIdx, accentColor),
                         ),
                       ],
                     ),
@@ -3003,49 +3070,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                       }
                     },
                   );
-                  return Dismissible(
-                    key: ValueKey('dismiss-${ex.id}-$setIdx'),
-                    direction: DismissDirection.horizontal,
-                    confirmDismiss: (direction) async {
-                      HapticFeedback.heavyImpact();
-                      if (direction == DismissDirection.startToEnd) {
-                        // Swipe Right: Falha
-                        widget.provider.completeSet(
-                          exIdx,
-                          setIdx,
-                          isDone,
-                          isFailure: !isFailure,
-                          failureRep: !isFailure ? ex.failureReps[setIdx] : null,
-                        );
-                        if (!isFailure) {
-                          _showFailureRepDialog(context, exIdx, setIdx, ex.failureReps[setIdx]);
-                        }
-                      } else if (direction == DismissDirection.endToStart) {
-                        // Swipe Left: Drop-set
-                        final w = ex.weightsPerSet != null && setIdx < ex.weightsPerSet!.length ? ex.weightsPerSet![setIdx] : ex.weight;
-                        final dropWeight = (w * 0.8).roundToDouble(); // -20%
-                        final r = ex.repsPerSet != null && setIdx < ex.repsPerSet!.length ? ex.repsPerSet![setIdx] : ex.reps;
-                        
-                        // We need a method to append a drop set. We will just modify the provider.
-                        widget.provider.workoutProvider?.addDropSet(exIdx, setIdx, dropWeight, r);
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Drop-set adicionado!'), duration: Duration(seconds: 1)));
-                      }
-                      return false; // Nunca remove o card
-                    },
-                    background: Container(
-                      alignment: Alignment.centerLeft,
-                      padding: const EdgeInsets.only(left: 20),
-                      color: Colors.redAccent,
-                      child: const Row(children: [Icon(Icons.warning, color: Colors.white), SizedBox(width: 8), Text("Falha", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))]),
-                    ),
-                    secondaryBackground: Container(
-                      alignment: Alignment.centerRight,
-                      padding: const EdgeInsets.only(right: 20),
-                      color: Colors.purpleAccent,
-                      child: const Row(mainAxisAlignment: MainAxisAlignment.end, children: [Text("Drop-set", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), SizedBox(width: 8), Icon(Icons.arrow_downward, color: Colors.white)]),
-                    ),
-                    child: card,
-                  );
+                  return card;
                 }
               },
             );
@@ -3056,7 +3081,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
   }
 
   void _showExerciseOptionsBottomSheet(BuildContext context,
-      TrackerProvider provider, ActiveExercise ex, Color accentColor) {
+      TrackerProvider provider, ActiveExercise ex, int exIdx, Color accentColor) {
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xff1c1c1e),
@@ -3113,6 +3138,81 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                   );
                 },
               ),
+              if (!ex.isCardio && ex.sets > 0) ...[
+                Builder(builder: (context) {
+                  final activeIdx = ex.setsState.indexOf(false);
+                  final setIdx = activeIdx >= 0 ? activeIdx : ex.sets - 1;
+                  final isFailure = ex.failureReport[setIdx];
+                  return Column(
+                    children: [
+                      ListTile(
+                        leading: Icon(
+                          Icons.whatshot,
+                          color: isFailure ? Colors.redAccent : accentColor,
+                        ),
+                        title: Text(
+                          isFailure ? "Remover Falha" : "Marcar Falha",
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text("Série ${setIdx + 1} de ${ex.sets}",
+                            style: const TextStyle(
+                                color: Colors.white54, fontSize: 12)),
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          HapticFeedback.heavyImpact();
+                          widget.provider.completeSet(
+                            exIdx,
+                            setIdx,
+                            ex.setsState[setIdx],
+                            isFailure: !isFailure,
+                            failureRep: !isFailure
+                                ? ex.failureReps[setIdx]
+                                : null,
+                          );
+                          if (!isFailure) {
+                            _showFailureRepDialog(context, exIdx, setIdx,
+                                ex.failureReps[setIdx]);
+                            _scrollToNextSet(exIdx);
+                          }
+                        },
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.arrow_downward,
+                            color: Colors.purpleAccent),
+                        title: const Text("Adicionar Drop-set",
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold)),
+                        subtitle: const Text(
+                            "Insere uma série com -20% do peso após a série atual",
+                            style: TextStyle(
+                                color: Colors.white54, fontSize: 12)),
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          HapticFeedback.heavyImpact();
+                          final w = ex.weightsPerSet != null &&
+                                  setIdx < ex.weightsPerSet!.length
+                              ? ex.weightsPerSet![setIdx]
+                              : ex.weight;
+                          final dropWeight = (w * 0.8).roundToDouble();
+                          final r = ex.repsPerSet != null &&
+                                  setIdx < ex.repsPerSet!.length
+                              ? ex.repsPerSet![setIdx]
+                              : ex.reps;
+                          provider.workoutProvider?.addDropSet(
+                              exIdx, setIdx, dropWeight, r);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('Drop-set adicionado!'),
+                                  duration: Duration(seconds: 1)));
+                        },
+                      ),
+                    ],
+                  );
+                }),
+              ],
               ListTile(
                 leading:
                     const Icon(Icons.calculate_outlined, color: Colors.white),

@@ -191,6 +191,7 @@ class WorkoutProvider extends ChangeNotifier {
     if (mode == OrganizationMode.continuousList) {
       final list = flatContinuousList;
       if (list.isEmpty) return [];
+      if (settings.continuousListRestDate == _todayDateKey()) return [];
       final idx = settings.continuousListCurrentIndex % list.length;
       return [list[idx]];
     } else if (mode == OrganizationMode.weeklyGoals) {
@@ -1774,6 +1775,11 @@ class WorkoutProvider extends ChangeNotifier {
     _save();
   }
 
+  void copyPlannerDay(String fromDay, String toDay) {
+    planner[toDay] = List<String>.from(planner[fromDay] ?? []);
+    _save();
+  }
+
 
   void importFromFixedDay(String sourceDay, String targetKey) {
     if (targetKey == 'continuous') {
@@ -2049,6 +2055,10 @@ class WorkoutProvider extends ChangeNotifier {
       prepSeconds: prepSeconds,
       organizationMode: settings.organizationMode,
       continuousListCurrentIndex: settings.continuousListCurrentIndex,
+      continuousListRestDate: settings.continuousListRestDate,
+      workoutReminderEnabled: settings.workoutReminderEnabled,
+      workoutReminderHour: settings.workoutReminderHour,
+      workoutReminderMinute: settings.workoutReminderMinute,
     );
     _save();
   }
@@ -2061,6 +2071,10 @@ class WorkoutProvider extends ChangeNotifier {
         prepSeconds: settings.prepSeconds,
         organizationMode: mode,
         continuousListCurrentIndex: settings.continuousListCurrentIndex,
+        continuousListRestDate: settings.continuousListRestDate,
+        workoutReminderEnabled: settings.workoutReminderEnabled,
+        workoutReminderHour: settings.workoutReminderHour,
+        workoutReminderMinute: settings.workoutReminderMinute,
       );
       _save();
       WatchService.instance
@@ -2076,11 +2090,44 @@ class WorkoutProvider extends ChangeNotifier {
       prepSeconds: settings.prepSeconds,
       organizationMode: settings.organizationMode,
       continuousListCurrentIndex: index,
+      continuousListRestDate: settings.continuousListRestDate,
+      workoutReminderEnabled: settings.workoutReminderEnabled,
+      workoutReminderHour: settings.workoutReminderHour,
+      workoutReminderMinute: settings.workoutReminderMinute,
     );
     _save();
     WatchService.instance
         .sendTodayRoutines(settings, planner, routines, streak);
     WatchService.instance.syncWidgetData();
+  }
+
+  bool get isContinuousRestToday =>
+      settings.continuousListRestDate == _todayDateKey();
+
+  void setContinuousListRestToday(bool isRest) {
+    settings = settings.copyWith(
+      continuousListRestDate: isRest ? _todayDateKey() : '',
+    );
+    _save();
+    WatchService.instance
+        .sendTodayRoutines(settings, planner, routines, streak);
+    WatchService.instance.syncWidgetData();
+  }
+
+  void updateWorkoutReminder(bool enabled, int hour, int minute) {
+    settings = settings.copyWith(
+      workoutReminderEnabled: enabled,
+      workoutReminderHour: hour,
+      workoutReminderMinute: minute,
+    );
+    _save();
+    WatchService.instance
+        .sendWorkoutReminder(enabled, hour, minute);
+  }
+
+  String _todayDateKey() {
+    final now = DateTime.now();
+    return "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
   }
 
   void checkAndPopulateDefaultLibrary() {

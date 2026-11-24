@@ -47,7 +47,7 @@ class WorkoutNumpadSheet extends StatefulWidget {
 }
 
 class _WorkoutNumpadSheetState extends State<WorkoutNumpadSheet> {
-  bool _editingWeight = true;
+  bool _editingWeight = false;
   String _weightStr = "";
   String _repsStr = "";
 
@@ -212,70 +212,9 @@ class _WorkoutNumpadSheetState extends State<WorkoutNumpadSheet> {
           ],
           const SizedBox(height: 20),
 
-          // Cards Row (Peso vs Reps/Tempo)
+          // Cards Row (Reps/Tempo vs Peso)
           Row(
             children: [
-              // Card Peso
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => setState(() => _editingWeight = true),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: _editingWeight ? accentColor.withOpacity(0.15) : const Color(0xFF2C2C2E),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: _editingWeight ? accentColor : Colors.transparent,
-                        width: 2,
-                      ),
-                      boxShadow: _editingWeight
-                          ? [
-                              BoxShadow(
-                                color: accentColor.withOpacity(0.3),
-                                blurRadius: 10,
-                                spreadRadius: 1,
-                              )
-                            ]
-                          : [],
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.scale_rounded,
-                              size: 14,
-                              color: _editingWeight ? accentColor : Colors.white54,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              "Peso (kg)",
-                              style: TextStyle(
-                                color: _editingWeight ? accentColor : Colors.white54,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          _weightStr.isEmpty ? "0" : _weightStr,
-                          style: TextStyle(
-                            color: _editingWeight ? accentColor : Colors.white,
-                            fontSize: 26,
-                            fontWeight: FontWeight.w900,
-                            fontFamily: 'monospace',
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
               // Card Reps / Segundos
               Expanded(
                 child: GestureDetector(
@@ -326,6 +265,67 @@ class _WorkoutNumpadSheetState extends State<WorkoutNumpadSheet> {
                           _repsStr.isEmpty ? "0" : _repsStr,
                           style: TextStyle(
                             color: !_editingWeight ? accentColor : Colors.white,
+                            fontSize: 26,
+                            fontWeight: FontWeight.w900,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Card Peso
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _editingWeight = true),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: _editingWeight ? accentColor.withOpacity(0.15) : const Color(0xFF2C2C2E),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: _editingWeight ? accentColor : Colors.transparent,
+                        width: 2,
+                      ),
+                      boxShadow: _editingWeight
+                          ? [
+                              BoxShadow(
+                                color: accentColor.withOpacity(0.3),
+                                blurRadius: 10,
+                                spreadRadius: 1,
+                              )
+                            ]
+                          : [],
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.scale_rounded,
+                              size: 14,
+                              color: _editingWeight ? accentColor : Colors.white54,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              "Peso (kg)",
+                              style: TextStyle(
+                                color: _editingWeight ? accentColor : Colors.white54,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          _weightStr.isEmpty ? "0" : _weightStr,
+                          style: TextStyle(
+                            color: _editingWeight ? accentColor : Colors.white,
                             fontSize: 26,
                             fontWeight: FontWeight.w900,
                             fontFamily: 'monospace',

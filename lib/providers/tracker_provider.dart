@@ -400,6 +400,11 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     await _syncWithFirebase(completeState, forceDownload: forceDownload);
 
     _workoutProvider!.checkAndPopulateDefaultLibrary();
+
+    // Push workout reminder schedule to native side on launch
+    final s = _workoutProvider!.settings;
+    WatchService.instance.sendWorkoutReminder(
+        s.workoutReminderEnabled, s.workoutReminderHour, s.workoutReminderMinute);
   }
 
   Future<void> saveState({bool immediateSync = false}) async {
@@ -702,6 +707,11 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     _workoutProvider!.removePlannerItem(day, index);
   }
 
+  void copyPlannerDay(String fromDay, String toDay) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.copyPlannerDay(fromDay, toDay);
+  }
+
   void importFromFixedDay(String sourceDay, String targetKey) {
     if (_workoutProvider == null) return;
     _workoutProvider!.importFromFixedDay(sourceDay, targetKey);
@@ -784,6 +794,21 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
   void setOrganizationMode(OrganizationMode mode) {
     if (_workoutProvider == null) return;
     _workoutProvider!.setOrganizationMode(mode);
+  }
+
+  void setContinuousListIndex(int index) {
+    _workoutProvider?.setContinuousListIndex(index);
+  }
+
+  bool get isContinuousRestToday =>
+      _workoutProvider?.isContinuousRestToday ?? false;
+
+  void setContinuousListRestToday(bool isRest) {
+    _workoutProvider?.setContinuousListRestToday(isRest);
+  }
+
+  void updateWorkoutReminder(bool enabled, int hour, int minute) {
+    _workoutProvider?.updateWorkoutReminder(enabled, hour, minute);
   }
 
   void updateWaterIntake(int quantityMl) {

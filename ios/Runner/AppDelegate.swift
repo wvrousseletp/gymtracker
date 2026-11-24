@@ -407,6 +407,16 @@ func _force_load_swiftCompatibilityDynamicReplacements() {}
       } else {
         result(FlutterError(code: "INVALID_ARGUMENT", message: "Expected dictionary", details: nil))
       }
+    case "scheduleWorkoutReminder":
+      if let args = call.arguments as? [String: Any] {
+        let enabled = args["enabled"] as? Bool ?? false
+        let hour = args["hour"] as? Int ?? 19
+        let minute = args["minute"] as? Int ?? 0
+        self.scheduleWorkoutReminder(enabled: enabled, hour: hour, minute: minute)
+        result(nil)
+      } else {
+        result(FlutterError(code: "INVALID_ARGUMENT", message: "Expected dictionary", details: nil))
+      }
     case "updateWidgetData":
       if let args = call.arguments as? [String: Any] {
         let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles")
@@ -1024,6 +1034,34 @@ func _force_load_swiftCompatibilityDynamicReplacements() {}
         if let error = error {
           print("[AppDelegate] Failed to schedule hydration notification \(i): \(error.localizedDescription)")
         }
+      }
+    }
+  }
+
+  private func scheduleWorkoutReminder(enabled: Bool, hour: Int, minute: Int) {
+    let reminderId = "workout_reminder_daily"
+    UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [reminderId])
+
+    guard enabled else { return }
+
+    let content = UNMutableNotificationContent()
+    content.title = "💪 Hora do Treino"
+    content.body = "Seu treino está te esperando. Toque para começar!"
+    content.sound = UNNotificationSound.default
+
+    var dateComponents = DateComponents()
+    dateComponents.hour = hour
+    dateComponents.minute = minute
+
+    let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
+    let request = UNNotificationRequest(
+      identifier: reminderId,
+      content: content,
+      trigger: trigger
+    )
+    UNUserNotificationCenter.current().add(request) { error in
+      if let error = error {
+        print("[AppDelegate] Failed to schedule workout reminder: \(error.localizedDescription)")
       }
     }
   }

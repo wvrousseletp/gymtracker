@@ -76,6 +76,10 @@ class SettingsState {
   final int prepSeconds;
   final OrganizationMode organizationMode;
   final int continuousListCurrentIndex;
+  final String continuousListRestDate; // yyyy-MM-dd do dia marcado como descanso na lista contínua ('' = nenhum)
+  final bool workoutReminderEnabled;
+  final int workoutReminderHour;
+  final int workoutReminderMinute;
 
   SettingsState({
     required this.sound,
@@ -83,6 +87,10 @@ class SettingsState {
     required this.prepSeconds,
     this.organizationMode = OrganizationMode.fixedDays,
     this.continuousListCurrentIndex = 0,
+    this.continuousListRestDate = '',
+    this.workoutReminderEnabled = false,
+    this.workoutReminderHour = 19,
+    this.workoutReminderMinute = 0,
   });
 
   SettingsState copyWith({
@@ -91,6 +99,10 @@ class SettingsState {
     int? prepSeconds,
     OrganizationMode? organizationMode,
     int? continuousListCurrentIndex,
+    String? continuousListRestDate,
+    bool? workoutReminderEnabled,
+    int? workoutReminderHour,
+    int? workoutReminderMinute,
   }) {
     return SettingsState(
       sound: sound ?? this.sound,
@@ -98,6 +110,10 @@ class SettingsState {
       prepSeconds: prepSeconds ?? this.prepSeconds,
       organizationMode: organizationMode ?? this.organizationMode,
       continuousListCurrentIndex: continuousListCurrentIndex ?? this.continuousListCurrentIndex,
+      continuousListRestDate: continuousListRestDate ?? this.continuousListRestDate,
+      workoutReminderEnabled: workoutReminderEnabled ?? this.workoutReminderEnabled,
+      workoutReminderHour: workoutReminderHour ?? this.workoutReminderHour,
+      workoutReminderMinute: workoutReminderMinute ?? this.workoutReminderMinute,
     );
   }
 
@@ -107,6 +123,10 @@ class SettingsState {
     'prepSeconds': prepSeconds,
     'organizationMode': organizationModeToString(organizationMode),
     'continuousListCurrentIndex': continuousListCurrentIndex,
+    'continuousListRestDate': continuousListRestDate,
+    'workoutReminderEnabled': workoutReminderEnabled,
+    'workoutReminderHour': workoutReminderHour,
+    'workoutReminderMinute': workoutReminderMinute,
   };
 
   factory SettingsState.fromJson(Map<String, dynamic> json) => SettingsState(
@@ -115,6 +135,10 @@ class SettingsState {
     prepSeconds: (json['prepSeconds'] as num?)?.toInt() ?? 5,
     organizationMode: json['organizationMode'] != null ? organizationModeFromString(json['organizationMode']) : OrganizationMode.fixedDays,
     continuousListCurrentIndex: (json['continuousListCurrentIndex'] as num?)?.toInt() ?? 0,
+    continuousListRestDate: json['continuousListRestDate']?.toString() ?? '',
+    workoutReminderEnabled: json['workoutReminderEnabled'] ?? false,
+    workoutReminderHour: (json['workoutReminderHour'] as num?)?.toInt() ?? 19,
+    workoutReminderMinute: (json['workoutReminderMinute'] as num?)?.toInt() ?? 0,
   );
 }
 

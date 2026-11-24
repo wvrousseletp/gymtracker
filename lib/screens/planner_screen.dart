@@ -1,5 +1,6 @@
 // ignore_for_file: prefer_const_constructors, use_build_context_synchronously, use_key_in_widget_constructors
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../widgets/planner/volume_history_sheet.dart';
 import '../widgets/planner/cardio_history_sheet.dart';
@@ -7,6 +8,7 @@ import '../widgets/planner/cardio_history_sheet.dart';
 import '../providers/tracker_provider.dart';
 import '../models/planner_state.dart';
 import '../models/routine.dart';
+import '../models/exercise.dart';
 import '../providers/workout_provider.dart';
 import '../utils/workout_starter.dart';
 import '../models/workout_log.dart';
@@ -1074,65 +1076,173 @@ class _PlannerScreenState extends State<PlannerScreen> {
     int idx,
     String rawItem,
     Color accentColor,
+    int flatIndex,
     int blockLength,
   ) {
-    String selectedValue = rawItem.startsWith('routine:') ? rawItem : "";
-    Routine? selectedRoutine;
-    if (selectedValue.isNotEmpty) {
-      final rId = selectedValue.substring(8);
-      selectedRoutine = state.routines.where((r) => r.id == rId).firstOrNull;
+    void onPick(String val) {
+      if (val.startsWith('exercise:')) {
+        final exId = val.substring(9);
+        final libEx =
+            state.library.where((e) => e.id == exId).firstOrNull;
+        final isCardio = libEx != null &&
+            ((libEx.measurementType == MeasurementType.cardio ||
+                    libEx.measurementType == MeasurementType.distance) &&
+                libEx.measurementType != MeasurementType.time);
+        provider.updateRoutineInContinuousBlock(
+            blockId, idx, "$val:${isCardio ? 30 : 3}");
+      } else {
+        provider.updateRoutineInContinuousBlock(blockId, idx, val);
+      }
     }
 
-    if (selectedRoutine == null) {
+    void openSelection() {
+      _showItemSelectionSheet(context, provider, state, accentColor,
+          onSelected: onPick);
+    }
+
+    Widget buildTrailing() => Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            InkWell(
+              onTap: () => provider.setContinuousListIndex(flatIndex),
+              child: Padding(
+                padding: const EdgeInsets.all(2),
+                child: Icon(Icons.play_circle_outline,
+                    color: accentColor, size: 18),
+              ),
+            ),
+            InkWell(
+              onTap: idx > 0
+                  ? () => provider.reorderRoutinesInContinuousBlock(
+                      blockId, idx, idx - 1)
+                  : null,
+              child: Icon(Icons.keyboard_arrow_up,
+                  color: idx > 0 ? Colors.white54 : Colors.transparent,
+                  size: 20),
+            ),
+            InkWell(
+              onTap: idx < blockLength - 1
+                  ? () => provider.reorderRoutinesInContinuousBlock(
+                      blockId, idx, idx + 1)
+                  : null,
+              child: Icon(Icons.keyboard_arrow_down,
+                  color: idx < blockLength - 1
+                      ? Colors.white54
+                      : Colors.transparent,
+                  size: 20),
+            ),
+          ],
+        );
+
+    // Rotina
+    Routine? selectedRoutine;
+    if (rawItem.startsWith('routine:')) {
+      final rId = rawItem.substring(8);
+      selectedRoutine =
+          state.routines.where((r) => r.id == rId).firstOrNull;
+    } else if (rawItem.isNotEmpty && !rawItem.startsWith('exercise:')) {
+      selectedRoutine =
+          state.routines.where((r) => r.id == rawItem).firstOrNull;
+    }
+
+    if (selectedRoutine != null) {
       return _buildModernPlannerCard(
         context: context,
-        title: "Tocar para escolher treino...",
-        subtitle: "",
-        icon: Icons.search,
-        color: Colors.white54,
-        onTap: () {
-          _showItemSelectionSheet(context, provider, state, accentColor, allowExercises: false, onSelected: (val) {
-            provider.updateRoutineInContinuousBlock(blockId, idx, val);
-          });
+        title: selectedRoutine.name,
+        subtitle: "${selectedRoutine.exercises.length} exercícios",
+        icon: Icons.fitness_center,
+        color: accentColor,
+        onTap: openSelection,
+        onStart: () {
+          final wp = Provider.of<WorkoutProvider>(context, listen: false);
+          WorkoutStarter.startWithCountdown(
+            context,
+            wp,
+            selectedRoutine!,
+            WorkoutRecovery(
+                sleepOk: SleepQuality.okay, pain: [], warmUpDone: false),
+            false,
+          );
         },
         onDelete: () => provider.removeRoutineFromContinuousBlock(blockId, idx),
+        trailing: buildTrailing(),
+      );
+    }
+
+    // Exercício avulso / cardio
+    LibraryExercise? selectedExercise;
+    int exerciseQty = 3;
+    bool exerciseIsCardio = false;
+    if (rawItem.startsWith('exercise:')) {
+      final parts = rawItem.split(':');
+      if (parts.length >= 2) {
+        exerciseQty =
+            parts.length >= 3 ? (int.tryParse(parts[2]) ?? 3) : 3;
+        selectedExercise =
+            state.library.where((e) => e.id == parts[1]).firstOrNull;
+        if (selectedExercise != null) {
+          exerciseIsCardio =
+              (selectedExercise.measurementType == MeasurementType.cardio ||
+                      selectedExercise.measurementType ==
+                          MeasurementType.distance) &&
+                  selectedExercise.measurementType != MeasurementType.time;
+        }
+      }
+    }
+
+    if (selectedExercise != null) {
+      final libEx = selectedExercise;
+      return _buildModernPlannerCard(
+        context: context,
+        title: libEx.name,
+        subtitle: exerciseIsCardio
+            ? "Cardio • $exerciseQty min"
+            : "Avulso • $exerciseQty séries",
+        icon: exerciseIsCardio
+            ? Icons.directions_run
+            : Icons.accessibility_new,
+        color: exerciseIsCardio ? Colors.blueAccent : Colors.orangeAccent,
+        onTap: openSelection,
+        onStart: () {
+          final tempRoutine = Routine(
+            id: "temp-${libEx.id}-$exerciseQty",
+            name: "${libEx.name} (Avulso)",
+            defaultRest: 60,
+            exercises: [
+              RoutineExercise(
+                id: "e-temp-1",
+                exerciseId: libEx.id,
+                sets: exerciseQty,
+                reps: exerciseIsCardio ? 30 : 10,
+                rest: 60,
+                weight: 0.0,
+                isCardio: exerciseIsCardio,
+              )
+            ],
+          );
+          final wp = Provider.of<WorkoutProvider>(context, listen: false);
+          WorkoutStarter.startWithCountdown(
+            context,
+            wp,
+            tempRoutine,
+            WorkoutRecovery(
+                sleepOk: SleepQuality.okay, pain: [], warmUpDone: false),
+            false,
+          );
+        },
+        onDelete: () => provider.removeRoutineFromContinuousBlock(blockId, idx),
+        trailing: buildTrailing(),
       );
     }
 
     return _buildModernPlannerCard(
       context: context,
-      title: selectedRoutine.name,
-      subtitle: "${selectedRoutine.exercises.length} exercícios",
-      icon: Icons.fitness_center,
-      color: accentColor,
-      onTap: () {
-        _showItemSelectionSheet(context, provider, state, accentColor, allowExercises: false, onSelected: (val) {
-          provider.updateRoutineInContinuousBlock(blockId, idx, val);
-        });
-      },
-      onStart: () {
-        final wp = Provider.of<WorkoutProvider>(context, listen: false);
-        WorkoutStarter.startWithCountdown(
-          context,
-          wp,
-          selectedRoutine!,
-          WorkoutRecovery(sleepOk: SleepQuality.okay, pain: [], warmUpDone: false),
-          false,
-        );
-      },
+      title: "Tocar para escolher treino...",
+      subtitle: "",
+      icon: Icons.search,
+      color: Colors.white54,
+      onTap: openSelection,
       onDelete: () => provider.removeRoutineFromContinuousBlock(blockId, idx),
-      trailing: Column(
-        children: [
-          InkWell(
-            onTap: idx > 0 ? () => provider.reorderRoutinesInContinuousBlock(blockId, idx, idx - 1) : null,
-            child: Icon(Icons.keyboard_arrow_up, color: idx > 0 ? Colors.white54 : Colors.transparent, size: 20),
-          ),
-          InkWell(
-            onTap: idx < blockLength - 1 ? () => provider.reorderRoutinesInContinuousBlock(blockId, idx, idx + 1) : null,
-            child: Icon(Icons.keyboard_arrow_down, color: idx < blockLength - 1 ? Colors.white54 : Colors.transparent, size: 20),
-          ),
-        ],
-      ),
     );
   }
 
@@ -1141,6 +1251,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
     TrackerProvider provider,
     String day,
     int idx,
+    int itemCount,
     String rawItem,
     Color accentColor,
   ) {
@@ -1224,44 +1335,65 @@ class _PlannerScreenState extends State<PlannerScreen> {
           false,
         );
       } : null,
-      onDelete: () => provider.updatePlannerItem(day, idx, ""),
-      trailing: selectedValue.startsWith('exercise:') ? Container(
-        margin: const EdgeInsets.only(right: 8),
-        width: 70,
-        height: 32,
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Expanded(
-              child: TextFormField(
-                initialValue: quantityValue.toString(),
-                keyboardType: TextInputType.number,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
-                decoration: const InputDecoration(
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.only(bottom: 14),
-                  isDense: true,
-                ),
-                onChanged: (val) {
-                  int quantity = int.tryParse(val) ?? (isCardio ? 30 : 3);
-                  if (quantity < 1) quantity = 1;
-                  final parts = rawItem.split(':');
-                  if (parts.length >= 2) {
-                    provider.updatePlannerItem(day, idx, "${parts[0]}:${parts[1]}:$quantity");
-                  }
-                },
+      onDelete: () => provider.removePlannerItem(day, idx),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (selectedValue.startsWith('exercise:'))
+            Container(
+              margin: const EdgeInsets.only(right: 8),
+              width: 70,
+              height: 32,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      initialValue: quantityValue.toString(),
+                      keyboardType: TextInputType.number,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.only(bottom: 14),
+                        isDense: true,
+                      ),
+                      onChanged: (val) {
+                        int quantity = int.tryParse(val) ?? (isCardio ? 30 : 3);
+                        if (quantity < 1) quantity = 1;
+                        final parts = rawItem.split(':');
+                        if (parts.length >= 2) {
+                          provider.updatePlannerItem(day, idx, "${parts[0]}:${parts[1]}:$quantity");
+                        }
+                      },
+                    ),
+                  ),
+                  Text(isCardio ? "min" : "sér", style: const TextStyle(color: Colors.white54, fontSize: 10)),
+                  const SizedBox(width: 8),
+                ],
               ),
             ),
-            Text(isCardio ? "min" : "sér", style: const TextStyle(color: Colors.white54, fontSize: 10)),
-            const SizedBox(width: 8),
-          ],
-        ),
-      ) : null,
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              InkWell(
+                onTap: idx > 0 ? () => provider.reorderPlannerItem(day, idx, true) : null,
+                child: Icon(Icons.keyboard_arrow_up,
+                    color: idx > 0 ? Colors.white54 : Colors.transparent, size: 20),
+              ),
+              InkWell(
+                onTap: idx < itemCount - 1 ? () => provider.reorderPlannerItem(day, idx, false) : null,
+                child: Icon(Icons.keyboard_arrow_down,
+                    color: idx < itemCount - 1 ? Colors.white54 : Colors.transparent, size: 20),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -1478,6 +1610,16 @@ class _PlannerScreenState extends State<PlannerScreen> {
                           ),
                         if (items.isNotEmpty) const SizedBox(width: 16),
                         IconButton(
+                          icon: Icon(Icons.copy_all_outlined,
+                              color: Colors.white54, size: 20),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          tooltip: "Copiar este dia para outro",
+                          onPressed: () {
+                            _showCopyDayDialog(context, provider, day, accentColor);
+                          },
+                        ),
+                        IconButton(
                           icon: Icon(Icons.add_box_outlined,
                               color: accentColor, size: 22),
                           padding: EdgeInsets.zero,
@@ -1512,7 +1654,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
                     itemBuilder: (context, idx) {
                       final rawItem = items[idx];
                       return _buildPlannerItemRow(
-                          context, provider, day, idx, rawItem, accentColor);
+                          context, provider, day, idx, items.length, rawItem, accentColor);
                     },
                   ),
 
@@ -1601,6 +1743,141 @@ class _PlannerScreenState extends State<PlannerScreen> {
     ];
   }
 
+  String _resolveContinuousItemName(PlannerState state, String raw) {
+    if (raw.isEmpty) return "Treino não definido";
+    String id = raw;
+    if (raw.startsWith('routine:')) id = raw.substring(8);
+    final r = state.routines.where((x) => x.id == id).firstOrNull;
+    if (r != null) return r.name;
+    if (raw.startsWith('exercise:')) {
+      final parts = raw.split(':');
+      if (parts.length >= 2) {
+        final ex = state.library.where((e) => e.id == parts[1]).firstOrNull;
+        if (ex != null) return ex.name;
+      }
+    }
+    return raw;
+  }
+
+  Widget _buildContinuousTodayCard(
+    BuildContext context,
+    TrackerProvider provider,
+    PlannerState state,
+    Color accentColor,
+    List<String> flatList,
+    int currentIndex,
+  ) {
+    final len = flatList.length;
+    final idx = len > 0 ? currentIndex % len : 0;
+    final isRest = provider.isContinuousRestToday;
+
+    return GlassCard(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      borderColor: isRest
+          ? Colors.white24
+          : accentColor.withOpacity(0.35),
+      child: Row(
+        children: [
+          Icon(
+            isRest ? Icons.bedtime_outlined : Icons.play_circle_outline,
+            color: isRest ? Colors.white54 : accentColor,
+            size: 22,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isRest ? "HOJE: DESCANSO" : "PRÓXIMO TREINO",
+                  style: TextStyle(
+                    color: isRest ? Colors.white54 : accentColor,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  isRest
+                      ? "Nenhum treino será exibido na página inicial"
+                      : _resolveContinuousItemName(state, flatList[idx]),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (!isRest && len > 1)
+                  Text(
+                    "Posição ${idx + 1} de $len na sequência",
+                    style: const TextStyle(
+                      color: Colors.white38,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.skip_previous,
+                color: Colors.white54, size: 20),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            tooltip: "Treino anterior",
+            onPressed: len > 1
+                ? () => provider
+                    .setContinuousListIndex((idx - 1 + len) % len)
+                : null,
+          ),
+          IconButton(
+            icon: const Icon(Icons.skip_next,
+                color: Colors.white54, size: 20),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            tooltip: "Pular para o próximo da fila",
+            onPressed: len > 1
+                ? () => provider.setContinuousListIndex((idx + 1) % len)
+                : null,
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              provider.setContinuousListRestToday(!isRest);
+            },
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              decoration: BoxDecoration(
+                color: isRest
+                    ? accentColor.withOpacity(0.2)
+                    : Colors.white.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isRest
+                      ? accentColor.withOpacity(0.5)
+                      : Colors.white.withOpacity(0.15),
+                ),
+              ),
+              child: Text(
+                isRest ? "Voltar Treino" : "Descanso Hoje",
+                style: TextStyle(
+                  color: isRest ? accentColor : Colors.white70,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   List<Widget> _buildContinuousListAgenda(BuildContext context,
       TrackerProvider provider, PlannerState state, Color accentColor) {
     
@@ -1645,6 +1922,12 @@ class _PlannerScreenState extends State<PlannerScreen> {
         ],
       ),
       const SizedBox(height: 12),
+      if (flatList.isNotEmpty)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: _buildContinuousTodayCard(
+              context, provider, state, accentColor, flatList, currentIndex),
+        ),
       if (blocks.isEmpty)
         const Padding(
           padding: EdgeInsets.symmetric(vertical: 12),
@@ -1690,6 +1973,15 @@ class _PlannerScreenState extends State<PlannerScreen> {
                               provider.renameContinuousBlock(block.id, val.trim());
                             }
                           },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        "${blockIdx + 1}/${blocks.length} • ${block.routineIds.length} ${block.routineIds.length == 1 ? 'treino' : 'treinos'}",
+                        style: const TextStyle(
+                          color: Colors.white38,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       Row(
@@ -1764,7 +2056,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
                                   child: const Text("PRÓXIMO", style: TextStyle(color: Colors.black, fontSize: 9, fontWeight: FontWeight.bold)),
                                 ),
                               ),
-                            _buildBlockItemRow(context, provider, state, block.id, rIdx, rawItem, accentColor, block.routineIds.length),
+                            _buildBlockItemRow(context, provider, state, block.id, rIdx, rawItem, accentColor, flatIndex, block.routineIds.length),
                           ],
                         ),
                       );
@@ -1790,6 +2082,92 @@ class _PlannerScreenState extends State<PlannerScreen> {
           );
         }),
     ];
+  }
+
+  void _showCopyDayDialog(BuildContext context, TrackerProvider provider,
+      String sourceDay, Color accentColor) {
+    final sourceName = _getDayNamePt(sourceDay);
+    final targets = _daysOfWeek.where((d) => d != sourceDay).toList();
+    final state = provider.state!;
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: const Color(0xff1c1c1e),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: Colors.white.withOpacity(0.08)),
+        ),
+        title: Text("Copiar $sourceName",
+            style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold)),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView(
+            shrinkWrap: true,
+            children: targets.map((day) {
+              final targetItems = state.planner[day] ?? [];
+              final hasItems = targetItems.any((i) => i.isNotEmpty);
+              return ListTile(
+                dense: true,
+                leading: Icon(Icons.calendar_month,
+                    color: hasItems ? Colors.orangeAccent : accentColor,
+                    size: 20),
+                title: Text(_getDayNamePt(day),
+                    style: const TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.w600)),
+                subtitle: hasItems
+                    ? const Text("Substituirá itens existentes",
+                        style: TextStyle(color: Colors.orangeAccent, fontSize: 11))
+                    : null,
+                onTap: () {
+                  Navigator.pop(dialogCtx);
+                  if (hasItems) {
+                    showDialog(
+                      context: context,
+                      builder: (confirmCtx) => AlertDialog(
+                        backgroundColor: const Color(0xff1c1c1e),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          side: BorderSide(color: Colors.white.withOpacity(0.08)),
+                        ),
+                        title: const Text("Substituir dia?",
+                            style: TextStyle(color: Colors.white, fontSize: 15)),
+                        content: Text(
+                          "${_getDayNamePt(day)} já tem itens. O conteúdo de $sourceName vai substituir tudo.",
+                          style: const TextStyle(color: Colors.white70, fontSize: 13),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(confirmCtx),
+                            child: const Text("Cancelar",
+                                style: TextStyle(color: Colors.white54)),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pop(confirmCtx);
+                              provider.copyPlannerDay(sourceDay, day);
+                            },
+                            child: const Text("Substituir",
+                                style: TextStyle(
+                                    color: Colors.redAccent,
+                                    fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                    );
+                  } else {
+                    provider.copyPlannerDay(sourceDay, day);
+                  }
+                },
+              );
+            }).toList(),
+          ),
+        ),
+      ),
+    );
   }
 
   void _showImportDialog(

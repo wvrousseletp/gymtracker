@@ -50,6 +50,19 @@ class WatchService {
     }
   }
 
+  Future<void> sendWorkoutReminder(
+      bool enabled, int hour, int minute) async {
+    try {
+      await _channel.invokeMethod('scheduleWorkoutReminder', {
+        'enabled': enabled,
+        'hour': hour,
+        'minute': minute,
+      });
+    } catch (e) {
+      debugPrint('[WatchService] Error scheduling workout reminder: $e');
+    }
+  }
+
   Future<void> _handleMethodCall(MethodCall call) async {
     if (_provider == null) return;
 
@@ -454,6 +467,9 @@ class WatchService {
     final mode = settings.organizationMode;
 
     if (mode == OrganizationMode.continuousList) {
+      final now = DateTime.now();
+      final todayKey = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+      if (settings.continuousListRestDate == todayKey) return [];
       final list = planner['continuous'] ?? [];
       if (list.isEmpty) return [];
       final idx = settings.continuousListCurrentIndex % list.length;
