@@ -632,6 +632,11 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     _workoutProvider!.addManualWorkoutLog(log);
   }
 
+  void addOfflineWatchWorkout(Map<String, dynamic> workoutData, String workoutId) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.addOfflineWatchWorkout(workoutData, workoutId);
+  }
+
   Future<List<WorkoutLog>> loadWorkoutHistory() {
     if (_workoutProvider == null) return Future.value([]);
     return _workoutProvider!.loadWorkoutHistory();

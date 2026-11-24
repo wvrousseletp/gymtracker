@@ -1183,11 +1183,9 @@ class WorkoutProvider extends ChangeNotifier {
     }
   }
 
-  void finishWorkout(int duration, int rpeValue, String notes) {
-    if (activeWorkout == null) return;
-    RestTimerService.instance.clear();
-
-    final active = activeWorkout!;
+  WorkoutLog _buildLogFromActive(ActiveWorkoutState active, int duration,
+      int rpeValue, String notes,
+      {String? id, DateTime? date}) {
     int totalSets = 0;
     int completedSets = 0;
     double totalWeightVolume = 0.0;
@@ -1255,9 +1253,9 @@ class WorkoutProvider extends ChangeNotifier {
         : rpeValue;
 
     final log = WorkoutLog(
-      id: "log-${DateTime.now().millisecondsSinceEpoch}",
+      id: id ?? "log-${DateTime.now().millisecondsSinceEpoch}",
       name: active.name,
-      date: DateTime.now().toUtc().toIso8601String(),
+      date: (date ?? DateTime.now()).toUtc().toIso8601String(),
       duration: duration,
       completedSets: completedSets,
       totalSets: totalSets,
@@ -1270,6 +1268,15 @@ class WorkoutProvider extends ChangeNotifier {
       avgHeartRate: active.heartRate > 0 ? active.heartRate : null,
       activeCalories: active.activeCalories > 0 ? active.activeCalories : null,
     );
+    return log;
+  }
+
+  void finishWorkout(int duration, int rpeValue, String notes) {
+    if (activeWorkout == null) return;
+    RestTimerService.instance.clear();
+
+    final active = activeWorkout!;
+    final log = _buildLogFromActive(active, duration, rpeValue, notes);
 
     history = List.from(history)..insert(0, log);
 
@@ -1350,6 +1357,47 @@ class WorkoutProvider extends ChangeNotifier {
         date: log.date,
         calories: log.activeCalories,
       ));
+    }
+  }
+
+  /// Registers a workout completed on the Apple Watch while the iPhone was
+  /// unreachable. [workoutData] is the WatchActiveWorkoutState payload and
+  /// [workoutId] is the queue id used by the Watch for ack/dedup.
+  void addOfflineWatchWorkout(
+      Map<String, dynamic> workoutData, String workoutId) {
+    final effectiveId = workoutId.isNotEmpty
+        ? workoutId
+        : "watch-${DateTime.now().millisecondsSinceEpoch}";
+    if (history.any((l) => l.id == effectiveId)) return;
+
+    try {
+      final active = ActiveWorkoutState.fromJson(workoutData);
+      var duration = active.elapsedSeconds;
+      if (duration <= 0 && active.startTime > 0) {
+        duration = ((DateTime.now().millisecondsSinceEpoch -
+                    active.startTime) ~/
+                1000)
+            .clamp(0, 86400);
+      }
+      final startDate = active.startTime > 0
+          ? DateTime.fromMillisecondsSinceEpoch(active.startTime)
+          : DateTime.now();
+      final log = _buildLogFromActive(active, duration, 7,
+          'Treino concluído offline via Apple Watch',
+          id: effectiveId, date: startDate);
+      addManualWorkoutLog(log);
+
+      // Advance continuous list like finishWorkout does
+      if (settings.organizationMode == OrganizationMode.continuousList) {
+        final continuousList = flatContinuousList;
+        if (continuousList.isNotEmpty) {
+          setContinuousListIndex(
+              (settings.continuousListCurrentIndex + 1) %
+                  continuousList.length);
+        }
+      }
+    } catch (e) {
+      debugPrint('[WorkoutProvider] addOfflineWatchWorkout failed: $e');
     }
   }
 
@@ -2080,7 +2128,7 @@ class WorkoutProvider extends ChangeNotifier {
       );
       _save();
       WatchService.instance
-          .sendTodayRoutines(settings, planner, routines, streak);
+          .sendTodayRoutines(settings, planner, routines, streak, continuousBlocks);
       WatchService.instance.syncWidgetData();
     }
   }
@@ -2099,7 +2147,7 @@ class WorkoutProvider extends ChangeNotifier {
     );
     _save();
     WatchService.instance
-        .sendTodayRoutines(settings, planner, routines, streak);
+        .sendTodayRoutines(settings, planner, routines, streak, continuousBlocks);
     WatchService.instance.syncWidgetData();
   }
 
@@ -2112,7 +2160,7 @@ class WorkoutProvider extends ChangeNotifier {
     );
     _save();
     WatchService.instance
-        .sendTodayRoutines(settings, planner, routines, streak);
+        .sendTodayRoutines(settings, planner, routines, streak, continuousBlocks);
     WatchService.instance.syncWidgetData();
   }
 

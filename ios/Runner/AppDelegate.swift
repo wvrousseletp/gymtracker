@@ -766,7 +766,11 @@ func _force_load_swiftCompatibilityDynamicReplacements() {}
         }
       case "syncOfflineWorkout":
         if let workoutData = data["workoutData"] as? [String: Any] {
-          self.invokeOrQueue(method: "syncOfflineWorkout", arguments: workoutData)
+          var syncArgs: [String: Any] = ["workoutData": workoutData]
+          if let workoutId = data["workoutId"] as? String {
+            syncArgs["workoutId"] = workoutId
+          }
+          self.invokeOrQueue(method: "syncOfflineWorkout", arguments: syncArgs)
         }
       case "changeExercise":
         if let exerciseIndex = data["exerciseIndex"] as? Int {

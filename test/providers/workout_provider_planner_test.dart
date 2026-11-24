@@ -4,6 +4,7 @@ import 'package:gym_tracker_flutter/models/enums.dart';
 import 'package:gym_tracker_flutter/models/exercise.dart';
 import 'package:gym_tracker_flutter/models/planner_state.dart';
 import 'package:gym_tracker_flutter/models/routine.dart';
+import 'package:gym_tracker_flutter/models/workout_log.dart';
 import 'package:gym_tracker_flutter/providers/workout_provider.dart';
 
 Routine _routine(String id, String name, {int sets = 3}) => Routine(
@@ -200,6 +201,73 @@ void main() {
       final updated = s.copyWith(workoutReminderEnabled: false);
       expect(updated.workoutReminderEnabled, isFalse);
       expect(updated.workoutReminderHour, 8);
+    });
+  });
+
+  group('Offline watch workout sync', () {
+    late WorkoutProvider provider;
+
+    setUp(() {
+      provider = WorkoutProvider();
+    });
+
+    Map<String, dynamic> watchWorkoutJson() {
+      final start =
+          DateTime.now().millisecondsSinceEpoch - 1800000; // 30 min atrás
+      final active = ActiveWorkoutState(
+        name: 'Treino Watch Offline',
+        startTime: start,
+        exercises: [
+          ActiveExercise(
+            id: 'ex-1',
+            name: 'Supino',
+            muscle: 'Peito',
+            measurementType: MeasurementType.reps,
+            sets: 3,
+            reps: 10,
+            rest: 60,
+            weight: 40,
+            setsState: [true, true, false],
+            performedCardios: [null, null, null],
+            failureReport: [false, false, false],
+          ),
+        ],
+        currentExerciseIndex: 0,
+        elapsedSeconds: 1800,
+        recovery: WorkoutRecovery(
+            sleepOk: SleepQuality.okay, pain: [], warmUpDone: true),
+        isWarmup: false,
+        warmupDurationSeconds: 0,
+      );
+      return active.toJson();
+    }
+
+    test('converte payload do Watch em WorkoutLog com métricas corretas', () {
+      provider.addOfflineWatchWorkout(watchWorkoutJson(), 'watch-q-1');
+
+      expect(provider.history, hasLength(1));
+      final log = provider.history.first;
+      expect(log.id, 'watch-q-1');
+      expect(log.name, 'Treino Watch Offline');
+      expect(log.duration, 1800);
+      expect(log.completedSets, 2);
+      expect(log.totalSets, 3);
+      expect(log.totalWeight, 800); // 40kg * 10 reps * 2 séries
+      expect(log.exercises.single.name, 'Supino');
+      expect(log.exercises.single.completedSets, 2);
+    });
+
+    test('deduplica por workoutId e usa data de início do treino', () {
+      final json = watchWorkoutJson();
+      provider.addOfflineWatchWorkout(json, 'watch-q-2');
+      provider.addOfflineWatchWorkout(json, 'watch-q-2');
+
+      expect(provider.history, hasLength(1));
+      final logDate = DateTime.parse(provider.history.first.date);
+      // Data deve ser ~30min atrás (startTime), não "agora"
+      final diff = DateTime.now().difference(logDate).inMinutes;
+      expect(diff, greaterThan(20));
+      expect(diff, lessThan(40));
     });
   });
 }

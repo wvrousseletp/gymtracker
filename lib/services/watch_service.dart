@@ -31,7 +31,7 @@ class WatchService {
     // Only send initial data if state is available
     if (provider.state != null) {
       // Send only today's routines for selective sync
-      sendTodayRoutines(provider.state!.settings, provider.state!.planner, provider.state!.routines, provider.state!.streak);
+      sendTodayRoutines(provider.state!.settings, provider.state!.planner, provider.state!.routines, provider.state!.streak, provider.state!.continuousBlocks);
       sendLibrary(provider.state!.library);
       sendPlanner(provider.state!.planner);
       if (provider.state!.activeWorkout != null) {
@@ -368,15 +368,21 @@ class WatchService {
         break;
 
       case 'syncOfflineWorkout':
+        // arguments = { "workoutData": {...WatchActiveWorkoutState...}, "workoutId": "..." }
+        final args = call.arguments as Map;
         final Map<String, dynamic> workoutData =
-            Map<String, dynamic>.from(call.arguments as Map);
+            Map<String, dynamic>.from(args['workoutData'] as Map);
         try {
-          final log = WorkoutLog.fromJson(workoutData);
-          _provider!.addManualWorkoutLog(log);
+          // O Watch envia o estado do treino ativo + o id da fila separadamente.
+          // Convertemos para WorkoutLog no provider para gerar métricas corretas
+          // (volume, séries, cardio) e usar o id da fila na deduplicação.
+          final workoutId = (args['workoutId'] as String?) ??
+              (workoutData['id'] as String?) ??
+              '';
+          _provider!.addOfflineWatchWorkout(workoutData, workoutId);
           debugPrint(
-              "[WatchService] Synced offline workout from watch: ${log.name}");
-          final workoutId = workoutData['id'] as String?;
-          if (workoutId != null && workoutId.isNotEmpty) {
+              "[WatchService] Synced offline workout from watch: $workoutId");
+          if (workoutId.isNotEmpty) {
             await _channel.invokeMethod('ackOfflineWorkout', workoutId);
           }
         } catch (e) {
@@ -463,17 +469,22 @@ class WatchService {
     }
   }
 
-  List<Routine> _getTodayRoutines(SettingsState settings, Map<String, List<String>> planner, List<Routine> routines, WorkoutStreak streak) {
+  List<Routine> _getTodayRoutines(SettingsState settings, Map<String, List<String>> planner, List<Routine> routines, WorkoutStreak streak, [List<WorkoutBlock> continuousBlocks = const []]) {
     final mode = settings.organizationMode;
 
     if (mode == OrganizationMode.continuousList) {
       final now = DateTime.now();
       final todayKey = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
       if (settings.continuousListRestDate == todayKey) return [];
-      final list = planner['continuous'] ?? [];
+      // Prefere os blocos contínuos (lista plana); fallback para planner['continuous'] legado
+      final list = continuousBlocks.isNotEmpty
+          ? continuousBlocks.map((b) => b.routineIds).expand((x) => x).toList()
+          : (planner['continuous'] ?? []);
       if (list.isEmpty) return [];
       final idx = settings.continuousListCurrentIndex % list.length;
       final targetId = list[idx];
+      // Itens exercise: não são suportados pelo fluxo de treino do Watch
+      if (targetId.startsWith('exercise:')) return [];
       return routines.where((r) => targetId == r.id || targetId == "routine:${r.id}").toList();
     } else if (mode == OrganizationMode.weeklyGoals) {
       final list = planner['weekly'] ?? [];
@@ -528,9 +539,9 @@ class WatchService {
         .toList();
   }
 
-  Future<void> sendTodayRoutines(SettingsState settings, Map<String, List<String>> planner, List<Routine> routines, WorkoutStreak streak) async {
+  Future<void> sendTodayRoutines(SettingsState settings, Map<String, List<String>> planner, List<Routine> routines, WorkoutStreak streak, [List<WorkoutBlock> continuousBlocks = const []]) async {
     try {
-      final todayRoutines = _getTodayRoutines(settings, planner, routines, streak);
+      final todayRoutines = _getTodayRoutines(settings, planner, routines, streak, continuousBlocks);
 
       // Send only today's routines to reduce bandwidth
       final List<Map<String, dynamic>> routinesJson =
