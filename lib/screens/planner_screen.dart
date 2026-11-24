@@ -1024,6 +1024,22 @@ class _PlannerScreenState extends State<PlannerScreen> {
     Widget buildTrailing() => Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (rawItem.startsWith('exercise:'))
+              InkWell(
+                onTap: () => _showExercisePlanConfigSheet(
+                  context,
+                  state,
+                  rawItem,
+                  accentColor,
+                  (newRaw) => provider.updateRoutineInContinuousBlock(
+                      blockId, idx, newRaw),
+                ),
+                child: const Padding(
+                  padding: EdgeInsets.all(2),
+                  child: Icon(Icons.tune,
+                      color: Colors.white54, size: 16),
+                ),
+              ),
             InkWell(
               onTap: () => provider.setContinuousListIndex(flatIndex),
               child: Padding(
@@ -1092,12 +1108,19 @@ class _PlannerScreenState extends State<PlannerScreen> {
     // Exercício avulso / cardio
     LibraryExercise? selectedExercise;
     int exerciseQty = 3;
+    int exerciseReps = 0;
+    double exerciseWeight = 0;
     bool exerciseIsCardio = false;
     if (rawItem.startsWith('exercise:')) {
       final parts = rawItem.split(':');
       if (parts.length >= 2) {
         exerciseQty =
             parts.length >= 3 ? (int.tryParse(parts[2]) ?? 3) : 3;
+        exerciseReps =
+            parts.length >= 4 ? int.tryParse(parts[3]) ?? 0 : 0;
+        exerciseWeight = parts.length >= 5
+            ? double.tryParse(parts[4]) ?? 0
+            : 0;
         selectedExercise =
             state.library.where((e) => e.id == parts[1]).firstOrNull;
         if (selectedExercise != null) {
@@ -1112,11 +1135,15 @@ class _PlannerScreenState extends State<PlannerScreen> {
 
     if (selectedExercise != null) {
       final libEx = selectedExercise;
+      final wTxt =
+          exerciseWeight > 0 ? ' • $exerciseWeight' 'kg' : '';
       return ModernPlannerCard(
         title: libEx.name,
         subtitle: exerciseIsCardio
             ? "Cardio • $exerciseQty min"
-            : "Avulso • $exerciseQty séries",
+            : (exerciseReps > 0 || exerciseWeight > 0)
+                ? "Avulso • $exerciseQty×${exerciseReps > 0 ? exerciseReps : 10} reps$wTxt"
+                : "Avulso • $exerciseQty séries",
         icon: exerciseIsCardio
             ? Icons.directions_run
             : Icons.accessibility_new,
@@ -1127,14 +1154,15 @@ class _PlannerScreenState extends State<PlannerScreen> {
             id: "temp-${libEx.id}-$exerciseQty",
             name: "${libEx.name} (Avulso)",
             defaultRest: 60,
+            isDynamicExercise: true,
             exercises: [
               RoutineExercise(
                 id: "e-temp-1",
                 exerciseId: libEx.id,
                 sets: exerciseQty,
-                reps: exerciseIsCardio ? 30 : 10,
+                reps: exerciseIsCardio ? 30 : (exerciseReps > 0 ? exerciseReps : 10),
                 rest: 60,
-                weight: 0.0,
+                weight: exerciseIsCardio ? 0.0 : exerciseWeight,
                 isCardio: exerciseIsCardio,
               )
             ],
@@ -1164,6 +1192,171 @@ class _PlannerScreenState extends State<PlannerScreen> {
     );
   }
 
+  /// Abre um sheet para configurar séries/reps/peso (ou minutos, no caso de
+  /// cardio) de um item "exercise:" do planejador. Salva no formato
+  /// exercise:<id>:<sets>:<reps>:<weight> (cardio mantém exercise:<id>:<min>).
+  void _showExercisePlanConfigSheet(
+    BuildContext context,
+    PlannerState state,
+    String rawItem,
+    Color accentColor,
+    void Function(String newRaw) onSave,
+  ) {
+    final parts = rawItem.split(':');
+    if (parts.length < 2) return;
+    final exId = parts[1];
+    final libEx =
+        state.library.where((e) => e.id == exId).firstOrNull;
+    if (libEx == null) return;
+    final isCardio =
+        (libEx.measurementType == MeasurementType.cardio ||
+                libEx.measurementType == MeasurementType.distance) &&
+            libEx.measurementType != MeasurementType.time;
+
+    final setsCtrl = TextEditingController(
+        text: parts.length >= 3 && parts[2].isNotEmpty ? parts[2] : '3');
+    final repsCtrl = TextEditingController(
+        text: parts.length >= 4 && parts[3].isNotEmpty ? parts[3] : '10');
+    final weightCtrl = TextEditingController(
+        text: parts.length >= 5 && parts[4].isNotEmpty ? parts[4] : '0');
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFF141414),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 16,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                "Configurar ${libEx.name}",
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                isCardio
+                    ? "Defina a duração em minutos"
+                    : "Defina séries, repetições e peso-alvo",
+                style: const TextStyle(color: Colors.white54, fontSize: 12),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: _configField(
+                      label: isCardio ? "Minutos" : "Séries",
+                      controller: setsCtrl,
+                    ),
+                  ),
+                  if (!isCardio) ...[
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _configField(
+                          label: "Reps", controller: repsCtrl),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _configField(
+                          label: "Peso (kg)", controller: weightCtrl),
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: accentColor,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                  ),
+                  onPressed: () {
+                    final sets =
+                        int.tryParse(setsCtrl.text.trim()) ?? (isCardio ? 30 : 3);
+                    if (isCardio) {
+                      onSave("exercise:$exId:${sets < 1 ? 1 : sets}");
+                    } else {
+                      final reps =
+                          int.tryParse(repsCtrl.text.trim()) ?? 10;
+                      final weight =
+                          double.tryParse(weightCtrl.text.trim()) ?? 0.0;
+                      onSave(
+                          "exercise:$exId:${sets < 1 ? 1 : sets}:${reps < 1 ? 1 : reps}:${weight < 0 ? 0 : weight}");
+                    }
+                    Navigator.pop(ctx);
+                  },
+                  child: const Text("Salvar",
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800)),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _configField(
+      {required String label, required TextEditingController controller}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style: const TextStyle(
+                color: Colors.white54,
+                fontSize: 11,
+                fontWeight: FontWeight.w700)),
+        const SizedBox(height: 6),
+        TextField(
+          controller: controller,
+          keyboardType:
+              const TextInputType.numberWithOptions(decimal: true),
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.white.withOpacity(0.06),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12, vertical: 12),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildPlannerItemRow(
     BuildContext context,
     TrackerProvider provider,
@@ -1179,6 +1372,8 @@ class _PlannerScreenState extends State<PlannerScreen> {
 
     String selectedValue = "";
     int quantityValue = 3;
+    int exerciseReps = 0;
+    double exerciseWeight = 0;
 
     if (rawItem.startsWith('routine:')) {
       selectedValue = rawItem;
@@ -1187,6 +1382,11 @@ class _PlannerScreenState extends State<PlannerScreen> {
       if (parts.length >= 3) {
         selectedValue = "${parts[0]}:${parts[1]}";
         quantityValue = int.tryParse(parts[2]) ?? 3;
+        exerciseReps =
+            parts.length >= 4 ? int.tryParse(parts[3]) ?? 0 : 0;
+        exerciseWeight = parts.length >= 5
+            ? double.tryParse(parts[4]) ?? 0
+            : 0;
       } else {
         selectedValue = rawItem;
       }
@@ -1216,7 +1416,15 @@ class _PlannerScreenState extends State<PlannerScreen> {
       if (libEx != null) {
         isCardio = libEx.muscle.toLowerCase().contains('cardio');
         title = libEx.name;
-        subtitle = isCardio ? "Cardio" : "Exercício Isolado";
+        if (isCardio) {
+          subtitle = "Cardio";
+        } else if (exerciseReps > 0 || exerciseWeight > 0) {
+          final wTxt = exerciseWeight > 0 ? ' • $exerciseWeight' 'kg' : '';
+          subtitle =
+              "Avulso • $quantityValue×${exerciseReps > 0 ? exerciseReps : 10} reps$wTxt";
+        } else {
+          subtitle = "Exercício Isolado";
+        }
         icon = isCardio ? Icons.directions_run : Icons.accessibility_new;
         color = isCardio ? Colors.blueAccent : Colors.orangeAccent;
       }
@@ -1256,6 +1464,24 @@ class _PlannerScreenState extends State<PlannerScreen> {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (selectedValue.startsWith('exercise:')) ...[
+            InkWell(
+              onTap: () => _showExercisePlanConfigSheet(
+                context,
+                state,
+                rawItem,
+                accentColor,
+                (newRaw) =>
+                    provider.updatePlannerItem(day, idx, newRaw),
+              ),
+              child: const Padding(
+                padding: EdgeInsets.all(4),
+                child: Icon(Icons.tune,
+                    color: Colors.white54, size: 18),
+              ),
+            ),
+            const SizedBox(width: 4),
+          ],
           if (selectedValue.startsWith('exercise:'))
             Container(
               margin: const EdgeInsets.only(right: 8),
@@ -1284,7 +1510,11 @@ class _PlannerScreenState extends State<PlannerScreen> {
                         if (quantity < 1) quantity = 1;
                         final parts = rawItem.split(':');
                         if (parts.length >= 2) {
-                          provider.updatePlannerItem(day, idx, "${parts[0]}:${parts[1]}:$quantity");
+                          final tail = parts.length > 3
+                              ? ':${parts.sublist(3).join(':')}'
+                              : '';
+                          provider.updatePlannerItem(
+                              day, idx, "${parts[0]}:${parts[1]}:$quantity$tail");
                         }
                       },
                     ),

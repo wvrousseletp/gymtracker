@@ -777,7 +777,7 @@ class FirebaseSyncService {
         }
       }
 
-      final combinedState = remoteState.copyWith(
+      var combinedState = remoteState.copyWith(
         library: mergedLibrary,
         history: mergedWorkouts,
         routines: mergedRoutines,
@@ -786,6 +786,38 @@ class FirebaseSyncService {
           ...remoteState.deletedHealthWorkoutIds
         }.toList(),
       );
+
+      // Merge campo-a-campo dos dados de planejamento: quando o estado
+      // local tem timestamp mais recente para um campo específico, a
+      // versão local vence apenas aquele campo (em vez do estado inteiro).
+      const mergeableFields = ['planner', 'continuousBlocks', 'weekTemplates'];
+      final mergedFieldTs = Map<String, String>.from(remoteState.fieldUpdatedAt);
+      var fieldMergeApplied = false;
+      for (final field in mergeableFields) {
+        final localTs = localState.fieldUpdatedAt[field] ?? '';
+        final remoteTs = remoteState.fieldUpdatedAt[field] ?? '';
+        if (localTs.isNotEmpty && localTs.compareTo(remoteTs) > 0) {
+          switch (field) {
+            case 'planner':
+              combinedState = combinedState.copyWith(planner: localState.planner);
+              break;
+            case 'continuousBlocks':
+              combinedState = combinedState.copyWith(
+                  continuousBlocks: localState.continuousBlocks);
+              break;
+            case 'weekTemplates':
+              combinedState = combinedState.copyWith(
+                  weekTemplates: localState.weekTemplates);
+              break;
+          }
+          mergedFieldTs[field] = localTs;
+          fieldMergeApplied = true;
+        }
+      }
+      if (fieldMergeApplied) {
+        combinedState =
+            combinedState.copyWith(fieldUpdatedAt: mergedFieldTs);
+      }
 
       await onRemoteApplied?.call(combinedState, _readRemoteProfile(data));
       return combinedState;

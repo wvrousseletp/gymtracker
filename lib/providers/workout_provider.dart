@@ -361,9 +361,11 @@ class WorkoutProvider extends ChangeNotifier {
           if (previousEx.weight > 0 && ex.weight == 0) {
             exercises[i] = ex.copyWith(
               weight: previousEx.weight,
-              reps: previousEx.reps > 0 ? previousEx.reps : ex.reps,
+              reps: ex.reps == 10 && previousEx.reps > 0
+                  ? previousEx.reps
+                  : ex.reps,
             );
-          } else if (ex.weight == 0 && previousEx.reps > 0) {
+          } else if (ex.weight == 0 && ex.reps == 10 && previousEx.reps > 0) {
             exercises[i] = ex.copyWith(reps: previousEx.reps);
           }
           break;
@@ -965,6 +967,67 @@ class WorkoutProvider extends ChangeNotifier {
     );
     WatchService.instance.sendActiveWorkout(activeWorkout!);
     _save();
+  }
+
+  /// Localiza a rotina de origem de um exercício do treino ativo,
+  /// casando o id do exercício ativo com o RoutineExercise.id.
+  /// Retorna null para exercícios avulsos/dinâmicos.
+  ({Routine routine, int exerciseIndex})? findActiveExerciseSourceRoutine(
+      int exIndex) {
+    final active = _activeWorkout;
+    if (active == null ||
+        exIndex < 0 ||
+        exIndex >= active.exercises.length) {
+      return null;
+    }
+    var exId = active.exercises[exIndex].id;
+    final cycleSep = exId.indexOf('_cycle_');
+    if (cycleSep >= 0) exId = exId.substring(0, cycleSep);
+    for (final r in routines) {
+      final idx = r.exercises.indexWhere((e) => e.id == exId);
+      if (idx >= 0) return (routine: r, exerciseIndex: idx);
+    }
+    return null;
+  }
+
+  /// Copia peso/reps/séries atuais do exercício ativo de volta para a
+  /// rotina que o originou. Retorna false se não houver rotina de origem.
+  bool applyActiveExerciseToRoutine(int exIndex) {
+    final active = _activeWorkout;
+    if (active == null) return false;
+    final found = findActiveExerciseSourceRoutine(exIndex);
+    if (found == null) return false;
+
+    final activeEx = active.exercises[exIndex];
+    final re = found.routine.exercises[found.exerciseIndex];
+
+    final updatedRe = RoutineExercise(
+      id: re.id,
+      exerciseId: re.exerciseId,
+      sets: activeEx.isCardio ? re.sets : activeEx.sets,
+      reps: activeEx.reps,
+      rest: re.rest,
+      weight: activeEx.weight,
+      weightsPerSet: activeEx.weightsPerSet,
+      repsPerSet: activeEx.repsPerSet,
+      setTypes: re.setTypes,
+      rirPerSet: re.rirPerSet,
+      isCardio: re.isCardio,
+      allowCardioSets: re.allowCardioSets,
+      supersetId: re.supersetId,
+      isUnilateral: re.isUnilateral,
+    );
+
+    final newExercises = List<RoutineExercise>.from(found.routine.exercises);
+    newExercises[found.exerciseIndex] = updatedRe;
+
+    routines = routines
+        .map((r) => r.id == found.routine.id
+            ? r.copyWith(exercises: newExercises)
+            : r)
+        .toList();
+    _save();
+    return true;
   }
 
   void updateExerciseRpe(int exIndex, int rpe) {

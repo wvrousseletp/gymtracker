@@ -418,6 +418,9 @@ class PlannerState {
   final List<String> deletedHealthWorkoutIds;
   final List<String> unlockedBadgeIds;
   final List<ActiveWorkoutState> postponedWorkouts;
+  // Timestamps ISO por campo mesclável ('planner', 'continuousBlocks',
+  // 'weekTemplates') para merge campo-a-campo no sync com a nuvem.
+  final Map<String, String> fieldUpdatedAt;
 
   PlannerState({
     required this.library,
@@ -437,6 +440,7 @@ class PlannerState {
     WorkoutStreak? streak,
     List<String>? deletedHealthWorkoutIds,
     List<String>? unlockedBadgeIds,
+    Map<String, String>? fieldUpdatedAt,
   }) : weekTemplates = weekTemplates ?? {},
        dietHistory = dietHistory ?? {},
        deletedHealthWorkoutIds = deletedHealthWorkoutIds ?? [],
@@ -447,7 +451,8 @@ class PlannerState {
               currentWeekCount: 0,
               consecutiveWeeks: 0,
               lastWorkoutDate: '',
-            );
+            ),
+       fieldUpdatedAt = fieldUpdatedAt ?? {};
 
   PlannerState copyWith({
     List<LibraryExercise>? library,
@@ -468,6 +473,7 @@ class PlannerState {
     Map<String, DietHistoryDay>? dietHistory,
     List<String>? deletedHealthWorkoutIds,
     List<String>? unlockedBadgeIds,
+    Map<String, String>? fieldUpdatedAt,
   }) {
     return PlannerState(
       library: library ?? this.library,
@@ -487,6 +493,7 @@ class PlannerState {
       dietHistory: dietHistory ?? this.dietHistory,
       deletedHealthWorkoutIds: deletedHealthWorkoutIds ?? this.deletedHealthWorkoutIds,
       unlockedBadgeIds: unlockedBadgeIds ?? this.unlockedBadgeIds,
+      fieldUpdatedAt: fieldUpdatedAt ?? this.fieldUpdatedAt,
     );
   }
 
@@ -507,6 +514,7 @@ class PlannerState {
     'dietHistory': dietHistory.map((k, v) => MapEntry(k, v.toJson())),
     'deletedHealthWorkoutIds': deletedHealthWorkoutIds,
     'unlockedBadgeIds': unlockedBadgeIds,
+    'fieldUpdatedAt': fieldUpdatedAt,
   };
 
   factory PlannerState.fromJson(Map<String, dynamic> json) {
@@ -526,6 +534,9 @@ class PlannerState {
         plannerMap[k.toString()] = List<String>.from(v);
       });
     }
+    // 'continuous' é uma chave legada já migrada para continuousBlocks;
+    // removê-la evita que dados antigos reapareçam como fallback no Watch/widget.
+    plannerMap.remove('continuous');
 
     Map<String, PersonalRecord> prsMap = {};
     if (json['prs'] != null) {
@@ -612,6 +623,13 @@ class PlannerState {
           ? List<String>.from(json['unlockedBadgeIds'])
           : [],
       exerciseNotes: exerciseNotesMap,
+      fieldUpdatedAt: json['fieldUpdatedAt'] != null
+          ? Map<String, String>.from(
+              (json['fieldUpdatedAt'] as Map).map(
+                (k, v) => MapEntry(k.toString(), v.toString()),
+              ),
+            )
+          : {},
     );
   }
 }

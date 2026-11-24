@@ -45,6 +45,53 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
   Timer? _dailyResetTimer;
   String _lastCheckedDay = '';
 
+  // Merge campo-a-campo no sync: timestamps por campo de planejamento e
+  // snapshot do último estado salvo para detectar quais campos mudaram.
+  static const List<String> _mergeablePlanningFields = [
+    'planner',
+    'continuousBlocks',
+    'weekTemplates',
+  ];
+  final Map<String, String> _fieldUpdatedAt = {};
+  Map<String, String>? _lastMergeableSnapshot;
+
+  String _encodeMergeableField(String field) {
+    final wp = _workoutProvider;
+    if (wp == null) return '';
+    switch (field) {
+      case 'planner':
+        return json.encode(wp.planner);
+      case 'continuousBlocks':
+        return json.encode(
+            wp.continuousBlocks.map((b) => b.toJson()).toList());
+      case 'weekTemplates':
+        return json.encode(
+            wp.weekTemplates.map((k, v) => MapEntry(k, v.toJson())));
+    }
+    return '';
+  }
+
+  Map<String, String> _snapshotMergeableFields() => {
+        for (final f in _mergeablePlanningFields) f: _encodeMergeableField(f),
+      };
+
+  void _stampChangedMergeableFields() {
+    if (_workoutProvider == null) return;
+    final snapshot = _snapshotMergeableFields();
+    final baseline = _lastMergeableSnapshot;
+    if (baseline == null) {
+      _lastMergeableSnapshot = snapshot;
+      return;
+    }
+    final now = DateTime.now().toUtc().toIso8601String();
+    for (final f in _mergeablePlanningFields) {
+      if (snapshot[f] != baseline[f]) {
+        _fieldUpdatedAt[f] = now;
+      }
+    }
+    _lastMergeableSnapshot = snapshot;
+  }
+
   int get todaySteps => _todaySteps;
   int get todayBurnedCalories => _todayBurnedCalories;
   int get currentHeartRate => _currentHeartRate;
@@ -88,6 +135,7 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
       streak: _workoutProvider!.streak,
       deletedHealthWorkoutIds: _workoutProvider!.deletedHealthWorkoutIds,
       unlockedBadgeIds: _workoutProvider!.unlockedBadgeIds,
+      fieldUpdatedAt: Map<String, String>.from(_fieldUpdatedAt),
     );
   }
 
@@ -376,6 +424,13 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     _dietProvider!.dietHistory = state.dietHistory;
 
     _workoutProvider!.refreshStreak();
+
+    // Restaura timestamps de merge e snapshot para não marcar como
+    // "editado localmente" campos que vieram do remoto.
+    _fieldUpdatedAt
+      ..clear()
+      ..addAll(state.fieldUpdatedAt);
+    _lastMergeableSnapshot = _snapshotMergeableFields();
   }
 
   Future<void> loadCurrentState() async {
@@ -411,6 +466,7 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> saveState({bool immediateSync = false}) async {
+    _stampChangedMergeableFields();
     final compiledState = state;
     if (compiledState == null || currentUserId.isEmpty) return;
 

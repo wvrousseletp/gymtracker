@@ -581,6 +581,11 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 if (parts.length >= 3) {
                   final exerciseId = parts[1];
                   final sets = int.tryParse(parts[2]) ?? 3;
+                  final confReps =
+                      parts.length >= 4 ? int.tryParse(parts[3]) : null;
+                  final confWeight = parts.length >= 5
+                      ? double.tryParse(parts[4])
+                      : null;
                   final libEx = provider.library
                       .where((l) => l.id == exerciseId)
                       .firstOrNull;
@@ -594,14 +599,23 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                       id: "temp-$exerciseId-$sets",
                       name: "${libEx.name} (Avulso)",
                       defaultRest: 60,
+                      isDynamicExercise: true,
                       exercises: [
                         RoutineExercise(
                           id: "e-temp-1",
                           exerciseId: libEx.id,
                           sets: sets,
-                          reps: isCardio ? 30 : 10,
+                          reps: isCardio
+                              ? 30
+                              : (confReps != null && confReps > 0
+                                  ? confReps
+                                  : 10),
                           rest: 60,
-                          weight: 0.0,
+                          weight: isCardio
+                              ? 0.0
+                              : (confWeight != null && confWeight > 0
+                                  ? confWeight
+                                  : 0.0),
                           isCardio: isCardio,
                         )
                       ],
@@ -3392,6 +3406,35 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                   _showExerciseNotesDialog(context, provider, ex);
                 },
               ),
+              if (provider.workoutProvider
+                      ?.findActiveExerciseSourceRoutine(exIdx) !=
+                  null)
+                ListTile(
+                  leading: const Icon(Icons.bookmark_added,
+                      color: Colors.white),
+                  title: const Text("Aplicar à Rotina",
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold)),
+                  subtitle: const Text(
+                      "Salva peso/reps/séries atuais na rotina de origem",
+                      style: TextStyle(
+                          color: Colors.white54, fontSize: 12)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    final ok = provider.workoutProvider
+                            ?.applyActiveExerciseToRoutine(exIdx) ??
+                        false;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(ok
+                            ? 'Rotina atualizada com os valores atuais!'
+                            : 'Não foi possível aplicar à rotina.'),
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                ),
               ListTile(
                 leading: Icon(Icons.swap_horiz, color: accentColor),
                 title: const Text("Substituir Exercício",

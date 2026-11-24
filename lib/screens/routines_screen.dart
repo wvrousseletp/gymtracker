@@ -1549,7 +1549,7 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
                   width: double.infinity,
                   height: 48,
                   child: ElevatedButton(
-                    onPressed: () {
+                    onPressed: () async {
                       if (_formKey.currentState!.validate()) {
                         if (_exercises.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -1612,6 +1612,93 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
                             ),
                           );
                           return;
+                        }
+
+                        // Avisar sobre exercícios de força sem peso configurado
+                        final missingWeight = _exercises
+                            .where((e) => !e.isCardio && e.weight <= 0)
+                            .toList();
+                        if (missingWeight.isNotEmpty) {
+                          String exName(RoutineExercise e) =>
+                              widget.provider.library
+                                      .where((l) => l.id == e.exerciseId)
+                                      .firstOrNull
+                                      ?.name ??
+                                  e.exerciseId;
+                          final shown = missingWeight
+                              .take(3)
+                              .map(exName)
+                              .join(', ');
+                          final extra = missingWeight.length > 3
+                              ? ' +${missingWeight.length - 3}'
+                              : '';
+                          final useLast = await showDialog<bool>(
+                            context: context,
+                            builder: (dctx) => AlertDialog(
+                              backgroundColor: const Color(0xFF1c1c1e),
+                              title: const Text("Exercícios sem peso",
+                                  style: TextStyle(color: Colors.white)),
+                              content: Text(
+                                "$shown$extra está(ão) sem peso definido. "
+                                "Quer usar o último peso realizado?",
+                                style: const TextStyle(
+                                    color: Colors.white70, fontSize: 13),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(dctx),
+                                  child: const Text("Cancelar",
+                                      style:
+                                          TextStyle(color: Colors.white54)),
+                                ),
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(dctx, false),
+                                  child: const Text("Salvar assim mesmo",
+                                      style:
+                                          TextStyle(color: Colors.orange)),
+                                ),
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(dctx, true),
+                                  child: Text("Usar último peso",
+                                      style: TextStyle(color: accentColor)),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (useLast == null) return;
+                          if (useLast) {
+                            _exercises = _exercises.map((e) {
+                              if (e.isCardio || e.weight > 0) return e;
+                              final libEx = widget.provider.library
+                                  .where((l) => l.id == e.exerciseId)
+                                  .firstOrNull;
+                              final perf = libEx != null
+                                  ? widget.provider
+                                      .getLastPerformance(libEx.name)
+                                  : null;
+                              if (perf == null || perf.weight <= 0) {
+                                return e;
+                              }
+                              return RoutineExercise(
+                                id: e.id,
+                                exerciseId: e.exerciseId,
+                                sets: e.sets,
+                                reps: e.reps,
+                                rest: e.rest,
+                                weight: perf.weight,
+                                weightsPerSet: e.weightsPerSet,
+                                repsPerSet: e.repsPerSet,
+                                setTypes: e.setTypes,
+                                rirPerSet: e.rirPerSet,
+                                isCardio: e.isCardio,
+                                allowCardioSets: e.allowCardioSets,
+                                supersetId: e.supersetId,
+                                isUnilateral: e.isUnilateral,
+                              );
+                            }).toList();
+                          }
                         }
 
                         final name = _nameController.text.trim();

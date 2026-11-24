@@ -370,4 +370,134 @@ void main() {
       expect(diff, lessThan(40));
     });
   });
+
+  group('Histórico vs configuração do planejamento', () {
+    late WorkoutProvider provider;
+
+    WorkoutRecovery recovery() => WorkoutRecovery(
+        sleepOk: SleepQuality.okay, pain: [], warmUpDone: false);
+
+    WorkoutLog supinoLog() => WorkoutLog(
+          id: 'log-1',
+          name: 'Treino A',
+          date: DateTime.now().toIso8601String(),
+          duration: 3600,
+          completedSets: 3,
+          totalSets: 3,
+          totalWeight: 1200,
+          rpe: 8,
+          notes: '',
+          exercises: [
+            LogExercise(
+              name: 'Supino',
+              muscle: 'Peito',
+              sets: 3,
+              completedSets: 3,
+              reps: 8,
+              weight: 50,
+              rpe: 8,
+            ),
+          ],
+        );
+
+    Routine supinoRoutine({int reps = 15, double weight = 0}) => Routine(
+          id: 'r1',
+          name: 'Treino A',
+          defaultRest: 60,
+          exercises: [
+            RoutineExercise(
+              id: 're1',
+              exerciseId: 'ex1',
+              sets: 4,
+              reps: reps,
+              rest: 60,
+              weight: weight,
+            ),
+          ],
+        );
+
+    setUp(() {
+      provider = WorkoutProvider();
+      provider.library = [
+        LibraryExercise(
+          id: 'ex1',
+          name: 'Supino',
+          muscle: 'Peito',
+          measurementType: MeasurementType.reps,
+        ),
+      ];
+      provider.history = [supinoLog()];
+    });
+
+    test('não sobrescreve reps configurados quando peso é 0', () {
+      provider.startWorkout(supinoRoutine(reps: 15), recovery(), false);
+
+      final ex = provider.activeWorkout!.exercises.single;
+      expect(ex.weight, 50); // peso sugerido do histórico
+      expect(ex.reps, 15); // reps configurados preservados
+    });
+
+    test('reps padrão (10) recebe sugestão do histórico', () {
+      provider.startWorkout(supinoRoutine(reps: 10), recovery(), false);
+
+      final ex = provider.activeWorkout!.exercises.single;
+      expect(ex.weight, 50);
+      expect(ex.reps, 8);
+    });
+
+    test('peso configurado não é sobrescrito pelo histórico', () {
+      provider.startWorkout(supinoRoutine(reps: 12, weight: 30), recovery(),
+          false);
+
+      final ex = provider.activeWorkout!.exercises.single;
+      expect(ex.weight, 30);
+      expect(ex.reps, 12);
+    });
+  });
+
+  group('Aplicar edição do treino à rotina', () {
+    late WorkoutProvider provider;
+
+    WorkoutRecovery recovery() => WorkoutRecovery(
+        sleepOk: SleepQuality.okay, pain: [], warmUpDone: false);
+
+    setUp(() {
+      provider = WorkoutProvider();
+      provider.routines = [_routine('r1', 'Treino A')];
+    });
+
+    test('applyActiveExerciseToRoutine grava peso/reps na rotina', () {
+      provider.startWorkout(provider.routines.first, recovery(), false);
+      provider.updateExerciseWeightReps(0, 32.5, 12);
+
+      final ok = provider.applyActiveExerciseToRoutine(0);
+
+      expect(ok, isTrue);
+      final re = provider.routines.first.exercises.single;
+      expect(re.weight, 32.5);
+      expect(re.reps, 12);
+    });
+
+    test('retorna false para exercício sem rotina de origem', () {
+      final temp = Routine(
+        id: 'temp-1',
+        name: 'Supino (Avulso)',
+        defaultRest: 60,
+        isDynamicExercise: true,
+        exercises: [
+          RoutineExercise(
+            id: 'e-temp-1',
+            exerciseId: 'ex-x',
+            sets: 3,
+            reps: 10,
+            rest: 60,
+            weight: 0,
+          ),
+        ],
+      );
+      provider.startWorkout(temp, recovery(), false);
+
+      expect(provider.applyActiveExerciseToRoutine(0), isFalse);
+    });
+  });
 }

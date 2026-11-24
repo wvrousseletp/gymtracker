@@ -36,4 +36,36 @@ void main() {
     expect(restored.streak.weekdaysTrained, [1, 3, 5]);
     expect(restored.planner['seg'], ['routine:1']);
   });
+
+  test('PlannerState serializes and deserializes fieldUpdatedAt', () {
+    final state = PlannerState( continuousBlocks: [], library: const [],
+      routines: const [],
+      planner: const {},
+      history: const [],
+      prs: const {},
+        exerciseNotes: const {},
+      medidas: const [],
+      settings: SettingsState(sound: true, vibration: true, prepSeconds: 5),
+      diet: DietState(
+        caloriesGoal: 2000,
+        proteinGoal: 150,
+        carbsGoal: 200,
+        fatGoal: 70,
+        waterGoalMl: 2000,
+        meals: const [],
+        waterIntakeMl: 0,
+        fasting: FastingState(history: const []),
+        abstinence: const [],
+      ),
+      fieldUpdatedAt: const {
+        'planner': '2024-06-01T10:00:00.000Z',
+        'continuousBlocks': '2024-06-02T10:00:00.000Z',
+      },
+    );
+
+    final restored = PlannerState.fromJson(state.toJson());
+    expect(restored.fieldUpdatedAt['planner'], '2024-06-01T10:00:00.000Z');
+    expect(restored.fieldUpdatedAt['continuousBlocks'],
+        '2024-06-02T10:00:00.000Z');
+  });
 }
