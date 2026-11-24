@@ -20,7 +20,9 @@ import '../services/badges_service.dart';
 
 class WorkoutProvider extends ChangeNotifier {
   final StatePersistenceService _persistence = StatePersistenceService();
-  final FirebaseSyncService _firebaseSync = FirebaseSyncService();
+  FirebaseSyncService? _firebaseSyncInstance;
+  FirebaseSyncService get _firebaseSync =>
+      _firebaseSyncInstance ??= FirebaseSyncService();
 
   List<LibraryExercise> library = [];
   List<Routine> routines = [];
