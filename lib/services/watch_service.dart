@@ -622,7 +622,7 @@ class WatchService {
       final state = _provider?.state;
       if (state == null) return;
 
-      final todayRoutines = _getTodayRoutines(state.settings, state.planner, state.routines, state.streak);
+      final todayRoutines = _getTodayRoutines(state.settings, state.planner, state.routines, state.streak, state.continuousBlocks);
 
       final String todayRoutineName = todayRoutines.isNotEmpty
           ? todayRoutines.first.name

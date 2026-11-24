@@ -75,6 +75,7 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
       routines: _workoutProvider!.routines,
       planner: _workoutProvider!.planner,
       continuousBlocks: _workoutProvider!.continuousBlocks,
+      weekTemplates: _workoutProvider!.weekTemplates,
       history: _workoutProvider!.history,
       prs: _workoutProvider!.prs,
       exerciseNotes: _workoutProvider!.exerciseNotes,
@@ -355,6 +356,8 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     _workoutProvider!.library = state.library;
     _workoutProvider!.routines = state.routines;
     _workoutProvider!.planner = state.planner;
+    _workoutProvider!.continuousBlocks = state.continuousBlocks;
+    _workoutProvider!.weekTemplates = state.weekTemplates;
     _workoutProvider!.history = state.history;
     _workoutProvider!.prs = state.prs;
     _workoutProvider!.exerciseNotes = state.exerciseNotes;
@@ -707,6 +710,10 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     _workoutProvider!.reorderPlannerItem(day, index, moveUp);
   }
 
+  void movePlannerItem(String day, int oldIndex, int newIndex) {
+    _workoutProvider?.movePlannerItem(day, oldIndex, newIndex);
+  }
+
   void removePlannerItem(String day, int index) {
     if (_workoutProvider == null) return;
     _workoutProvider!.removePlannerItem(day, index);
@@ -715,6 +722,22 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
   void copyPlannerDay(String fromDay, String toDay) {
     if (_workoutProvider == null) return;
     _workoutProvider!.copyPlannerDay(fromDay, toDay);
+  }
+
+  void saveCurrentWeekAsTemplate(String name) {
+    _workoutProvider?.saveCurrentWeekAsTemplate(name);
+  }
+
+  void renameWeekTemplate(String id, String name) {
+    _workoutProvider?.renameWeekTemplate(id, name);
+  }
+
+  void applyWeekTemplate(String id) {
+    _workoutProvider?.applyWeekTemplate(id);
+  }
+
+  void deleteWeekTemplate(String id) {
+    _workoutProvider?.deleteWeekTemplate(id);
   }
 
   void importFromFixedDay(String sourceDay, String targetKey) {
@@ -1154,5 +1177,9 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
   Map<String, int> getRecentMuscleSets([int days = 7]) {
     return _workoutProvider?.getRecentMuscleSets(days) ?? {};
+  }
+
+  int? suggestContinuousIndexByFatigue([int days = 7]) {
+    return _workoutProvider?.suggestContinuousIndexByFatigue(days);
   }
 }

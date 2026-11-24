@@ -1,6 +1,5 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gym_tracker_flutter/models/enums.dart';
 import 'package:gym_tracker_flutter/models/exercise.dart';
 import 'package:gym_tracker_flutter/models/planner_state.dart';
 import 'package:gym_tracker_flutter/models/routine.dart';
@@ -201,6 +200,56 @@ void main() {
       final updated = s.copyWith(workoutReminderEnabled: false);
       expect(updated.workoutReminderEnabled, isFalse);
       expect(updated.workoutReminderHour, 8);
+    });
+  });
+
+  group('Week templates', () {
+    late WorkoutProvider provider;
+
+    setUp(() {
+      provider = WorkoutProvider();
+    });
+
+    test('saveCurrentWeekAsTemplate captura dias com itens e apply restaura', () {
+      provider.planner['seg'] = ['routine:r1', 'exercise:e1:3'];
+      provider.planner['qua'] = ['routine:r2'];
+      // ter/qui/... vazios não entram no modelo
+
+      provider.saveCurrentWeekAsTemplate('Semana A');
+      expect(provider.weekTemplates, hasLength(1));
+      final t = provider.weekTemplates.values.first;
+      expect(t.name, 'Semana A');
+      expect(t.days['seg'], ['routine:r1', 'exercise:e1:3']);
+      expect(t.days.containsKey('ter'), isFalse);
+
+      // Altera a semana e reaplica
+      provider.planner['seg'] = ['routine:outro'];
+      provider.planner['sex'] = ['routine:r9'];
+      provider.applyWeekTemplate(t.id);
+      expect(provider.planner['seg'], ['routine:r1', 'exercise:e1:3']);
+      expect(provider.planner['qua'], ['routine:r2']);
+      expect(provider.planner['sex'], isEmpty);
+    });
+
+    test('deleteWeekTemplate remove o modelo', () {
+      provider.planner['seg'] = ['routine:r1'];
+      provider.saveCurrentWeekAsTemplate('Temp');
+      final id = provider.weekTemplates.keys.first;
+      provider.deleteWeekTemplate(id);
+      expect(provider.weekTemplates, isEmpty);
+    });
+  });
+
+  group('movePlannerItem (drag & drop)', () {
+    test('move de posição arbitrária funciona como ReorderableListView', () {
+      final provider = WorkoutProvider();
+      provider.planner['seg'] = ['a', 'b', 'c', 'd'];
+      // onReorder(0, 3): newIndex ajustado para 2 → ['b','c','a','d']
+      provider.movePlannerItem('seg', 0, 3);
+      expect(provider.planner['seg'], ['b', 'c', 'a', 'd']);
+      // onReorder(3, 1): sem ajuste → remove 'd' e insere no índice 1
+      provider.movePlannerItem('seg', 3, 1);
+      expect(provider.planner['seg'], ['b', 'd', 'c', 'a']);
     });
   });
 

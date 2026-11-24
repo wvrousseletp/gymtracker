@@ -362,10 +362,49 @@ class WorkoutBlock {
   }
 }
 
+class WeekTemplate {
+  final String id;
+  final String name;
+  final Map<String, List<String>> days; // 'seg'..'dom' -> itens do planner
+
+  WeekTemplate({
+    required this.id,
+    required this.name,
+    required this.days,
+  });
+
+  WeekTemplate copyWith({String? id, String? name, Map<String, List<String>>? days}) {
+    return WeekTemplate(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      days: days ?? this.days,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'days': days.map((k, v) => MapEntry(k, List<String>.from(v))),
+  };
+
+  factory WeekTemplate.fromJson(Map<String, dynamic> json) {
+    final daysMap = <String, List<String>>{};
+    (json['days'] as Map? ?? {}).forEach((k, v) {
+      daysMap[k.toString()] = List<String>.from(v as List? ?? []);
+    });
+    return WeekTemplate(
+      id: json['id'] ?? '',
+      name: json['name'] ?? 'Modelo',
+      days: daysMap,
+    );
+  }
+}
+
 class PlannerState {
   final List<LibraryExercise> library;
   final List<Routine> routines;
   final Map<String, List<String>> planner;
+  final Map<String, WeekTemplate> weekTemplates;
   final List<WorkoutBlock> continuousBlocks; // Dia -> lista de strings de ID/Prefixo
   final List<WorkoutLog> history;
   final Map<String, PersonalRecord> prs; // exerciseId -> record
@@ -384,6 +423,7 @@ class PlannerState {
     required this.library,
     required this.routines,
     required this.planner,
+    Map<String, WeekTemplate>? weekTemplates,
     required this.continuousBlocks,
     required this.history,
     required this.prs,
@@ -397,7 +437,8 @@ class PlannerState {
     WorkoutStreak? streak,
     List<String>? deletedHealthWorkoutIds,
     List<String>? unlockedBadgeIds,
-  }) : dietHistory = dietHistory ?? {},
+  }) : weekTemplates = weekTemplates ?? {},
+       dietHistory = dietHistory ?? {},
        deletedHealthWorkoutIds = deletedHealthWorkoutIds ?? [],
        unlockedBadgeIds = unlockedBadgeIds ?? [],
        postponedWorkouts = postponedWorkouts ?? [],
@@ -412,6 +453,7 @@ class PlannerState {
     List<LibraryExercise>? library,
     List<Routine>? routines,
     Map<String, List<String>>? planner,
+    Map<String, WeekTemplate>? weekTemplates,
     List<WorkoutBlock>? continuousBlocks,
     List<WorkoutLog>? history,
     Map<String, PersonalRecord>? prs,
@@ -431,6 +473,7 @@ class PlannerState {
       library: library ?? this.library,
       routines: routines ?? this.routines,
       planner: planner ?? this.planner,
+      weekTemplates: weekTemplates ?? this.weekTemplates,
       continuousBlocks: continuousBlocks ?? this.continuousBlocks,
       history: history ?? this.history,
       prs: prs ?? this.prs,
@@ -451,6 +494,7 @@ class PlannerState {
     'library': library.map((e) => e.toJson()).toList(),
     'routines': routines.map((r) => r.toJson()).toList(),
     'planner': planner,
+    'weekTemplates': weekTemplates.map((k, v) => MapEntry(k, v.toJson())),
     'continuousBlocks': continuousBlocks.map((b) => b.toJson()).toList(),
     'history': history.map((h) => h.toJson()).toList(),
     'prs': prs.map((k, v) => MapEntry(k, v.toJson())),
@@ -504,6 +548,14 @@ class PlannerState {
       });
     }
 
+    Map<String, WeekTemplate> weekTemplatesMap = {};
+    if (json['weekTemplates'] != null) {
+      (json['weekTemplates'] as Map).forEach((k, v) {
+        weekTemplatesMap[k.toString()] =
+            WeekTemplate.fromJson(Map<String, dynamic>.from(v as Map));
+      });
+    }
+
     final now = DateTime.now();
     final todayStr = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
 
@@ -515,6 +567,7 @@ class PlannerState {
           ? (json['routines'] as List).map((r) => Routine.fromJson(r)).toList()
           : [],
       planner: plannerMap,
+      weekTemplates: weekTemplatesMap,
       continuousBlocks: parsedBlocks,
       history: json['history'] != null
           ? (json['history'] as List).map((h) => WorkoutLog.fromJson(h)).toList()

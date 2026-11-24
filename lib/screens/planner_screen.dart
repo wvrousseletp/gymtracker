@@ -1447,6 +1447,25 @@ class _PlannerScreenState extends State<PlannerScreen> {
               ],
             ),
           ),
+          const SizedBox(width: 8),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.white.withOpacity(0.1)),
+            ),
+            child: IconButton(
+              icon: Icon(Icons.view_week_outlined,
+                  color: accentColor, size: 18),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              constraints: const BoxConstraints(),
+              tooltip: "Modelos de semana",
+              onPressed: () {
+                _showWeekTemplatesSheet(context, provider, accentColor);
+              },
+            ),
+          ),
         ],
       ),
       const SizedBox(height: 12),
@@ -1564,14 +1583,20 @@ class _PlannerScreenState extends State<PlannerScreen> {
                     ),
                   )
                 else
-                  ListView.builder(
+                  ReorderableListView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: items.length,
+                    onReorder: (oldIndex, newIndex) {
+                      provider.movePlannerItem(day, oldIndex, newIndex);
+                    },
                     itemBuilder: (context, idx) {
                       final rawItem = items[idx];
-                      return _buildPlannerItemRow(
-                          context, provider, day, idx, items.length, rawItem, accentColor);
+                      return KeyedSubtree(
+                        key: ValueKey('planner-$day-$idx-$rawItem'),
+                        child: _buildPlannerItemRow(
+                            context, provider, day, idx, items.length, rawItem, accentColor),
+                      );
                     },
                   ),
 
@@ -1760,6 +1785,29 @@ class _PlannerScreenState extends State<PlannerScreen> {
                 ? () => provider.setContinuousListIndex((idx + 1) % len)
                 : null,
           ),
+          if (!isRest && len > 1)
+            IconButton(
+              icon: Icon(Icons.spa_outlined,
+                  color: accentColor, size: 20),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              tooltip: "Sugerir treino menos fadigado",
+              onPressed: () {
+                final suggestion =
+                    provider.suggestContinuousIndexByFatigue();
+                if (suggestion != null && suggestion != idx) {
+                  provider.setContinuousListIndex(suggestion);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        "Próximo treino sugerido: ${_resolveContinuousItemName(state, flatList[suggestion])}",
+                      ),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                }
+              },
+            ),
           const SizedBox(width: 8),
           GestureDetector(
             onTap: () {
@@ -1937,47 +1985,56 @@ class _PlannerScreenState extends State<PlannerScreen> {
                   if (block.routineIds.isEmpty)
                     const Text("Nenhum treino neste bloco.", style: TextStyle(color: Colors.white30, fontSize: 12))
                   else
-                    ...block.routineIds.asMap().entries.map((rEntry) {
-                      final rIdx = rEntry.key;
-                      final rawItem = rEntry.value;
-                      
-                      // Find flat index to check if it's the current workout
-                      int flatIndex = 0;
-                      for (int i = 0; i < blockIdx; i++) {
-                        flatIndex += blocks[i].routineIds.length;
-                      }
-                      flatIndex += rIdx;
-                      
-                      final isCurrent = flatList.isNotEmpty && (flatIndex == (currentIndex % flatList.length));
-                      
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: isCurrent ? accentColor.withOpacity(0.1) : Colors.black12,
-                          borderRadius: BorderRadius.circular(12),
-                          border: isCurrent ? Border.all(color: accentColor.withOpacity(0.5)) : null,
-                        ),
-                        child: Column(
-                          children: [
-                            if (isCurrent)
-                              Align(
-                                alignment: Alignment.topRight,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  margin: const EdgeInsets.only(bottom: 4),
-                                  decoration: BoxDecoration(
-                                    color: accentColor,
-                                    borderRadius: BorderRadius.circular(4),
+                    ReorderableListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: block.routineIds.length,
+                      onReorder: (oldIndex, newIndex) {
+                        provider.reorderRoutinesInContinuousBlock(
+                            block.id, oldIndex, newIndex);
+                      },
+                      itemBuilder: (context, rIdx) {
+                        final rawItem = block.routineIds[rIdx];
+
+                        // Find flat index to check if it's the current workout
+                        int flatIndex = 0;
+                        for (int i = 0; i < blockIdx; i++) {
+                          flatIndex += blocks[i].routineIds.length;
+                        }
+                        flatIndex += rIdx;
+
+                        final isCurrent = flatList.isNotEmpty && (flatIndex == (currentIndex % flatList.length));
+
+                        return Container(
+                          key: ValueKey('block-${block.id}-$rIdx-$rawItem'),
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: isCurrent ? accentColor.withOpacity(0.1) : Colors.black12,
+                            borderRadius: BorderRadius.circular(12),
+                            border: isCurrent ? Border.all(color: accentColor.withOpacity(0.5)) : null,
+                          ),
+                          child: Column(
+                            children: [
+                              if (isCurrent)
+                                Align(
+                                  alignment: Alignment.topRight,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    margin: const EdgeInsets.only(bottom: 4),
+                                    decoration: BoxDecoration(
+                                      color: accentColor,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: const Text("PRÓXIMO", style: TextStyle(color: Colors.black, fontSize: 9, fontWeight: FontWeight.bold)),
                                   ),
-                                  child: const Text("PRÓXIMO", style: TextStyle(color: Colors.black, fontSize: 9, fontWeight: FontWeight.bold)),
                                 ),
-                              ),
-                            _buildBlockItemRow(context, provider, state, block.id, rIdx, rawItem, accentColor, flatIndex, block.routineIds.length),
-                          ],
-                        ),
-                      );
-                    }),
+                              _buildBlockItemRow(context, provider, state, block.id, rIdx, rawItem, accentColor, flatIndex, block.routineIds.length),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
                   const SizedBox(height: 12),
                   SizedBox(
                     width: double.infinity,
@@ -2084,6 +2141,346 @@ class _PlannerScreenState extends State<PlannerScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  void _showWeekTemplatesSheet(
+      BuildContext context, TrackerProvider provider, Color accentColor) {
+    final days = ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetCtx) {
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            final templates = provider.state?.weekTemplates ?? {};
+            final ordered = templates.values.toList()
+              ..sort((a, b) => a.name.compareTo(b.name));
+
+            return Container(
+              margin: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xff1c1c1e),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.white.withOpacity(0.08)),
+              ),
+              child: SafeArea(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 8, 8),
+                      child: Row(
+                        children: [
+                          Icon(Icons.view_week_outlined,
+                              color: accentColor, size: 20),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Text(
+                              "Modelos de Semana",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close,
+                                color: Colors.white54, size: 20),
+                            onPressed: () => Navigator.pop(sheetCtx),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 20),
+                      child: Text(
+                        "Salve a semana atual (seg–dom) como modelo e aplique em outras semanas — útil para alternar entre semanas de volume e intensidade.",
+                        style: TextStyle(color: Colors.white54, fontSize: 12),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          icon: Icon(Icons.save_outlined,
+                              color: Colors.black, size: 18),
+                          label: const Text("Salvar semana atual como modelo",
+                              style: TextStyle(color: Colors.black)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: accentColor,
+                            padding:
+                                const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onPressed: () {
+                            final controller = TextEditingController();
+                            showDialog(
+                              context: ctx,
+                              builder: (dCtx) => AlertDialog(
+                                backgroundColor: const Color(0xff1c1c1e),
+                                title: const Text("Nome do modelo",
+                                    style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold)),
+                                content: TextField(
+                                  controller: controller,
+                                  autofocus: true,
+                                  style: const TextStyle(color: Colors.white),
+                                  decoration: const InputDecoration(
+                                    hintText: "Ex.: Semana A - Volume",
+                                    hintStyle:
+                                        TextStyle(color: Colors.white30),
+                                  ),
+                                  onSubmitted: (val) {
+                                    if (val.trim().isNotEmpty) {
+                                      provider.saveCurrentWeekAsTemplate(
+                                          val.trim());
+                                      setSheetState(() {});
+                                    }
+                                    Navigator.pop(dCtx);
+                                  },
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(dCtx),
+                                    child: const Text("Cancelar",
+                                        style:
+                                            TextStyle(color: Colors.white54)),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      if (controller.text.trim().isNotEmpty) {
+                                        provider.saveCurrentWeekAsTemplate(
+                                            controller.text.trim());
+                                        setSheetState(() {});
+                                      }
+                                      Navigator.pop(dCtx);
+                                    },
+                                    child: Text("Salvar",
+                                        style: TextStyle(
+                                            color: accentColor,
+                                            fontWeight: FontWeight.bold)),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Flexible(
+                      child: ordered.isEmpty
+                          ? const Padding(
+                              padding: EdgeInsets.all(24),
+                              child: Text(
+                                "Nenhum modelo salvo ainda.",
+                                style: TextStyle(
+                                    color: Colors.white30,
+                                    fontSize: 13,
+                                    fontStyle: FontStyle.italic),
+                              ),
+                            )
+                          : ListView.separated(
+                              shrinkWrap: true,
+                              itemCount: ordered.length,
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: 8),
+                              itemBuilder: (ctx, i) {
+                                final t = ordered[i];
+                                final filledDays =
+                                    t.days.keys.where((d) => days.contains(d)).length;
+                                return Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.05),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                        color: Colors.white.withOpacity(0.08)),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              t.name,
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              "$filledDays dia(s) com treino",
+                                              style: const TextStyle(
+                                                color: Colors.white38,
+                                                fontSize: 11,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      IconButton(
+                                        icon: Icon(Icons.edit_outlined,
+                                            color: Colors.white54, size: 18),
+                                        tooltip: "Renomear",
+                                        onPressed: () {
+                                          final c = TextEditingController(
+                                              text: t.name);
+                                          showDialog(
+                                            context: ctx,
+                                            builder: (dCtx) => AlertDialog(
+                                              backgroundColor:
+                                                  const Color(0xff1c1c1e),
+                                              title: const Text("Renomear",
+                                                  style: TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 16,
+                                                      fontWeight:
+                                                          FontWeight.bold)),
+                                              content: TextField(
+                                                controller: c,
+                                                autofocus: true,
+                                                style: const TextStyle(
+                                                    color: Colors.white),
+                                                onSubmitted: (val) {
+                                                  provider.renameWeekTemplate(
+                                                      t.id, val);
+                                                  setSheetState(() {});
+                                                  Navigator.pop(dCtx);
+                                                },
+                                              ),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () =>
+                                                      Navigator.pop(dCtx),
+                                                  child: const Text(
+                                                      "Cancelar",
+                                                      style: TextStyle(
+                                                          color:
+                                                              Colors.white54)),
+                                                ),
+                                                TextButton(
+                                                  onPressed: () {
+                                                    provider
+                                                        .renameWeekTemplate(
+                                                            t.id, c.text);
+                                                    setSheetState(() {});
+                                                    Navigator.pop(dCtx);
+                                                  },
+                                                  child: Text("OK",
+                                                      style: TextStyle(
+                                                          color: accentColor,
+                                                          fontWeight:
+                                                              FontWeight
+                                                                  .bold)),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                      IconButton(
+                                        icon: Icon(Icons.delete_outline,
+                                            color: Colors.redAccent,
+                                            size: 18),
+                                        tooltip: "Excluir",
+                                        onPressed: () {
+                                          provider.deleteWeekTemplate(t.id);
+                                          setSheetState(() {});
+                                        },
+                                      ),
+                                      IconButton(
+                                        icon: Icon(Icons.play_arrow_rounded,
+                                            color: accentColor, size: 22),
+                                        tooltip: "Aplicar esta semana",
+                                        onPressed: () {
+                                          final state = provider.state;
+                                          final hasItems = days.any((d) =>
+                                              (state?.planner[d] ?? [])
+                                                  .any((i) => i.isNotEmpty));
+                                          void doApply() {
+                                            provider.applyWeekTemplate(t.id);
+                                            setSheetState(() {});
+                                          }
+
+                                          if (hasItems) {
+                                            showDialog(
+                                              context: ctx,
+                                              builder: (dCtx) => AlertDialog(
+                                                backgroundColor:
+                                                    const Color(0xff1c1c1e),
+                                                title: const Text(
+                                                    "Substituir semana?",
+                                                    style: TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                            FontWeight.bold)),
+                                                content: const Text(
+                                                  "A semana atual tem treinos agendados. Aplicar o modelo vai substituir todos os dias (seg–dom).",
+                                                  style: TextStyle(
+                                                      color: Colors.white70,
+                                                      fontSize: 13),
+                                                ),
+                                                actions: [
+                                                  TextButton(
+                                                    onPressed: () =>
+                                                        Navigator.pop(dCtx),
+                                                    child: const Text(
+                                                        "Cancelar",
+                                                        style: TextStyle(
+                                                            color:
+                                                                Colors.white54)),
+                                                  ),
+                                                  TextButton(
+                                                    onPressed: () {
+                                                      Navigator.pop(dCtx);
+                                                      doApply();
+                                                    },
+                                                    child: const Text(
+                                                        "Substituir",
+                                                        style: TextStyle(
+                                                            color: Colors
+                                                                .redAccent,
+                                                            fontWeight:
+                                                                FontWeight
+                                                                    .bold)),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                          } else {
+                                            doApply();
+                                          }
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

@@ -27,6 +27,7 @@ class WorkoutProvider extends ChangeNotifier {
   List<LibraryExercise> library = [];
   List<Routine> routines = [];
   Map<String, List<String>> planner = {};
+  Map<String, WeekTemplate> weekTemplates = {};
   List<WorkoutBlock> continuousBlocks = [];
   Map<String, List<String>>? _previousPlanner;
   String? _lastRestLogId;
@@ -1820,6 +1821,23 @@ class WorkoutProvider extends ChangeNotifier {
     _save();
   }
 
+  void movePlannerItem(String day, int oldIndex, int newIndex) {
+    // Mesma convenção do ReorderableListView.onReorder:
+    // newIndex é a posição de inserção antes da remoção.
+    if (newIndex > oldIndex) newIndex -= 1;
+    planner[day] = List<String>.from(planner[day] ?? []);
+    if (oldIndex < 0 ||
+        oldIndex >= planner[day]!.length ||
+        newIndex < 0 ||
+        newIndex >= planner[day]!.length ||
+        oldIndex == newIndex) {
+      return;
+    }
+    final item = planner[day]!.removeAt(oldIndex);
+    planner[day]!.insert(newIndex, item);
+    _save();
+  }
+
   void removePlannerItem(String day, int index) {
     planner[day] = List<String>.from(planner[day] ?? [])..removeAt(index);
     _save();
@@ -1827,6 +1845,50 @@ class WorkoutProvider extends ChangeNotifier {
 
   void copyPlannerDay(String fromDay, String toDay) {
     planner[toDay] = List<String>.from(planner[fromDay] ?? []);
+    _save();
+  }
+
+  // --- WEEK TEMPLATES ---
+
+  static const List<String> weekDays = ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'];
+
+  /// Salva a semana atual (seg–dom) como um modelo reutilizável.
+  void saveCurrentWeekAsTemplate(String name) {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return;
+    final days = <String, List<String>>{};
+    for (final day in weekDays) {
+      final items = (planner[day] ?? []).where((i) => i.isNotEmpty).toList();
+      if (items.isNotEmpty) days[day] = items;
+    }
+    if (days.isEmpty) return;
+    final id = DateTime.now().millisecondsSinceEpoch.toString();
+    weekTemplates = Map<String, WeekTemplate>.from(weekTemplates)
+      ..[id] = WeekTemplate(id: id, name: trimmed, days: days);
+    _save();
+  }
+
+  void renameWeekTemplate(String id, String name) {
+    final t = weekTemplates[id];
+    if (t == null || name.trim().isEmpty) return;
+    weekTemplates = Map<String, WeekTemplate>.from(weekTemplates)
+      ..[id] = t.copyWith(name: name.trim());
+    _save();
+  }
+
+  /// Substitui o cronograma seg–dom pelo modelo informado.
+  void applyWeekTemplate(String id) {
+    final t = weekTemplates[id];
+    if (t == null) return;
+    for (final day in weekDays) {
+      planner[day] = List<String>.from(t.days[day] ?? []);
+    }
+    _save();
+  }
+
+  void deleteWeekTemplate(String id) {
+    if (!weekTemplates.containsKey(id)) return;
+    weekTemplates = Map<String, WeekTemplate>.from(weekTemplates)..remove(id);
     _save();
   }
 
@@ -2354,6 +2416,43 @@ class WorkoutProvider extends ChangeNotifier {
     int totalSeconds = (totalSets * 45) + totalRestSeconds;
     int minutes = (totalSeconds / 60).round();
     return minutes > 0 ? minutes : 15;
+  }
+
+  /// Retorna o índice (na lista contínua plana) do treino cujos grupos
+  /// musculares foram menos trabalhados nos últimos [days] dias.
+  /// Retorna null se não houver itens válidos.
+  int? suggestContinuousIndexByFatigue([int days = 7]) {
+    final flat = flatContinuousList;
+    if (flat.isEmpty) return null;
+    final recent = getRecentMuscleSets(days);
+
+    int bestIdx = -1;
+    int bestScore = 1 << 30;
+    for (int i = 0; i < flat.length; i++) {
+      final raw = flat[i];
+      int score;
+      if (raw.startsWith('exercise:')) {
+        final parts = raw.split(':');
+        if (parts.length < 2) continue;
+        final ex =
+            library.where((e) => e.id == parts[1]).firstOrNull;
+        if (ex == null) continue;
+        score = recent[ex.muscle] ?? 0;
+      } else {
+        final routineId =
+            raw.startsWith('routine:') ? raw.substring(8) : raw;
+        if (routineId.isEmpty) continue;
+        final r = routines.where((x) => x.id == routineId).firstOrNull;
+        if (r == null) continue;
+        score = getRoutineMuscleTags(r)
+            .fold(0, (s, m) => s + (recent[m] ?? 0));
+      }
+      if (score < bestScore) {
+        bestScore = score;
+        bestIdx = i;
+      }
+    }
+    return bestIdx >= 0 ? bestIdx : null;
   }
 
   List<String> getRoutineMuscleTags(Routine routine) {
