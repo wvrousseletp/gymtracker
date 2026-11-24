@@ -253,6 +253,57 @@ void main() {
     });
   });
 
+  group('Engagement (relatório e desafios)', () {
+    late WorkoutProvider provider;
+
+    setUp(() {
+      provider = WorkoutProvider();
+    });
+
+    WorkoutLog logAt(DateTime date, {double weight = 1000, int duration = 3600}) {
+      return WorkoutLog(
+        id: 'log-${date.millisecondsSinceEpoch}',
+        name: 'Treino',
+        date: date.toUtc().toIso8601String(),
+        duration: duration,
+        completedSets: 10,
+        totalSets: 10,
+        totalWeight: weight,
+        rpe: 8,
+        notes: '',
+        exercises: const [],
+      );
+    }
+
+    test('getWeeklyReportData separa semana atual da anterior', () {
+      final now = DateTime.now();
+      provider.history = [
+        logAt(now.subtract(const Duration(days: 2)), weight: 2000),
+        logAt(now.subtract(const Duration(days: 10)), weight: 1000),
+      ];
+      final report = provider.getWeeklyReportData();
+      expect(report.workoutsThisWeek, 1);
+      expect(report.workoutsLastWeek, 1);
+      expect(report.volumeThisWeek, 2000);
+      expect(report.volumeLastWeek, 1000);
+      expect(report.volumeDeltaPercent, 100);
+    });
+
+    test('getMonthlyChallenges filtra apenas o mês corrente', () {
+      final now = DateTime.now();
+      provider.history = [
+        logAt(now, weight: 5000, duration: 7200), // 2h = 120min
+        logAt(DateTime(now.year, now.month - 1, 15), weight: 99999), // mês passado
+      ];
+      final challenges = provider.getMonthlyChallenges();
+      expect(challenges, hasLength(3));
+      expect(challenges[0].current, 1); // 1 treino no mês
+      expect(challenges[1].current, 5000); // só o volume do mês atual
+      expect(challenges[2].current, 120); // 120 min
+      expect(challenges[0].progress, 1 / 16);
+    });
+  });
+
   group('Offline watch workout sync', () {
     late WorkoutProvider provider;
 

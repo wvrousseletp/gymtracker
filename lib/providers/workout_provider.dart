@@ -13,6 +13,7 @@ import '../services/state_persistence_service.dart';
 import '../services/firebase_sync_service.dart';
 import '../services/health_service.dart';
 import '../models/profile.dart';
+import '../models/engagement.dart';
 import '../utils/date_utils.dart';
 import '../utils/default_exercises_data.dart';
 import 'profile_provider.dart';
@@ -2402,6 +2403,100 @@ class WorkoutProvider extends ChangeNotifier {
       }
     }
     return null;
+  }
+
+  // --- ENGAGEMENT: weekly report & monthly challenges ---
+
+  static bool _inDateRange(String isoDate, DateTime start, DateTime end) {
+    final dt = DateTime.tryParse(isoDate);
+    if (dt == null) return false;
+    return !dt.isBefore(start) && dt.isBefore(end);
+  }
+
+  /// Relatório da semana atual (últimos 7 dias) comparado com os 7 anteriores.
+  WeeklyReportData getWeeklyReportData() {
+    final now = DateTime.now();
+    final thisWeekStart = DateTime(now.year, now.month, now.day)
+        .subtract(const Duration(days: 7));
+    final lastWeekStart = thisWeekStart.subtract(const Duration(days: 7));
+
+    int wThis = 0, wLast = 0;
+    double vThis = 0, vLast = 0;
+    int dThis = 0, dLast = 0;
+
+    for (final log in history) {
+      if (_inDateRange(log.date, thisWeekStart, now)) {
+        wThis++;
+        vThis += log.totalWeight;
+        dThis += log.duration;
+      } else if (_inDateRange(log.date, lastWeekStart, thisWeekStart)) {
+        wLast++;
+        vLast += log.totalWeight;
+        dLast += log.duration;
+      }
+    }
+
+    return WeeklyReportData(
+      workoutsThisWeek: wThis,
+      workoutsLastWeek: wLast,
+      volumeThisWeek: vThis,
+      volumeLastWeek: vLast,
+      durationMinutesThisWeek: dThis ~/ 60,
+      durationMinutesLastWeek: dLast ~/ 60,
+      streakWeeks: streak.consecutiveWeeks,
+      weeklyGoal: streak.weeklyGoal,
+      workoutsThisWeekGoalProgress: streak.currentWeekCount,
+    );
+  }
+
+  /// Desafios do mês corrente calculados a partir do histórico.
+  List<MonthlyChallenge> getMonthlyChallenges() {
+    final now = DateTime.now();
+    final monthStart = DateTime(now.year, now.month, 1);
+    final monthEnd = DateTime(now.year, now.month + 1, 1);
+    final monthKey =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}';
+
+    int workouts = 0;
+    double volume = 0;
+    int durationMin = 0;
+
+    for (final log in history) {
+      if (!_inDateRange(log.date, monthStart, monthEnd)) continue;
+      workouts++;
+      volume += log.totalWeight;
+      durationMin += log.duration ~/ 60;
+    }
+
+    return [
+      MonthlyChallenge(
+        id: 'month-workouts',
+        title: 'Treinos no mês',
+        icon: '🏋️',
+        unit: 'treinos',
+        target: 16,
+        current: workouts.toDouble(),
+        monthKey: monthKey,
+      ),
+      MonthlyChallenge(
+        id: 'month-volume',
+        title: 'Volume no mês',
+        icon: '🏋️‍♂️',
+        unit: 'kg',
+        target: 50000,
+        current: volume,
+        monthKey: monthKey,
+      ),
+      MonthlyChallenge(
+        id: 'month-duration',
+        title: 'Tempo de treino',
+        icon: '⏱️',
+        unit: 'min',
+        target: 600,
+        current: durationMin.toDouble(),
+        monthKey: monthKey,
+      ),
+    ];
   }
 
   int estimateRoutineDurationMinutes(Routine routine) {

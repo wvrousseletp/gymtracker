@@ -5,6 +5,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import '../providers/tracker_provider.dart';
 import '../providers/workout_provider.dart';
@@ -12,6 +13,7 @@ import '../models/routine.dart';
 import '../models/exercise.dart';
 import '../models/workout_log.dart';
 import '../models/planner_state.dart';
+import '../models/engagement.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/speech_notes_dialog.dart';
 
@@ -35,6 +37,33 @@ class WorkoutScreen extends StatefulWidget {
 
 class _WorkoutScreenState extends State<WorkoutScreen> {
   String _quickRoutineFilter = 'Todos';
+  String? _weeklyReportDismissedWeek;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadWeeklyReportDismissal();
+  }
+
+  Future<void> _loadWeeklyReportDismissal() async {
+    final prefs = await SharedPreferences.getInstance();
+    final week = prefs.getString('weekly_report_dismissed_week');
+    if (mounted && week != _weeklyReportDismissedWeek) {
+      setState(() => _weeklyReportDismissedWeek = week);
+    }
+  }
+
+  static String _isoWeekKey(DateTime date) {
+    final dayOfYear = date.difference(DateTime(date.year, 1, 1)).inDays;
+    return '${date.year}-W${(dayOfYear / 7).floor()}';
+  }
+
+  Future<void> _dismissWeeklyReport() async {
+    final week = _isoWeekKey(DateTime.now());
+    setState(() => _weeklyReportDismissedWeek = week);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('weekly_report_dismissed_week', week);
+  }
 
   String _getGreeting() {
     final hour = DateTime.now().hour;
@@ -285,6 +314,254 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     );
   }
 
+  static const List<String> _monthNames = [
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+  ];
+
+  List<Widget> _buildEngagementCards(
+      WorkoutProvider provider, Color accentColor) {
+    final cards = <Widget>[];
+
+    final challenges = provider.getMonthlyChallenges();
+    if (challenges.isNotEmpty) {
+      cards.add(_buildMonthlyChallengesCard(challenges, accentColor));
+      cards.add(const SizedBox(height: 12));
+    }
+
+    final reportCard = _buildWeeklyReportCard(provider, accentColor);
+    if (reportCard != null) {
+      cards.add(reportCard);
+      cards.add(const SizedBox(height: 12));
+    }
+
+    return cards;
+  }
+
+  Widget _buildMonthlyChallengesCard(
+      List<MonthlyChallenge> challenges, Color accentColor) {
+    final monthName = _monthNames[DateTime.now().month - 1];
+    final completed = challenges.where((c) => c.isCompleted).length;
+
+    return GlassCard(
+      padding: const EdgeInsets.all(14),
+      borderColor: accentColor.withOpacity(0.25),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.emoji_events_outlined, color: accentColor, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  "Desafios de $monthName",
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              Text(
+                "$completed/${challenges.length}",
+                style: TextStyle(
+                  color: completed == challenges.length
+                      ? Colors.greenAccent
+                      : Colors.white38,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ...challenges.map((c) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(c.icon, style: const TextStyle(fontSize: 12)),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            c.title,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          "${c.currentLabel} / ${c.targetLabel}",
+                          style: TextStyle(
+                            color: c.isCompleted
+                                ? Colors.greenAccent
+                                : Colors.white38,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: c.progress,
+                        minHeight: 6,
+                        backgroundColor: Colors.white.withOpacity(0.08),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          c.isCompleted ? Colors.greenAccent : accentColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )),
+        ],
+      ),
+    );
+  }
+
+  Widget? _buildWeeklyReportCard(
+      WorkoutProvider provider, Color accentColor) {
+    final now = DateTime.now();
+    // Só aparece aos domingos e uma vez por semana
+    if (now.weekday != DateTime.sunday) return null;
+    if (_weeklyReportDismissedWeek == _isoWeekKey(now)) return null;
+
+    final report = provider.getWeeklyReportData();
+    if (report.workoutsThisWeek == 0 && report.workoutsLastWeek == 0) {
+      return null;
+    }
+
+    String deltaText(double percent) {
+      if (percent > 0) return '+${percent.toStringAsFixed(0)}%';
+      if (percent < 0) return '${percent.toStringAsFixed(0)}%';
+      return '0%';
+    }
+
+    Color deltaColor(double percent) {
+      if (percent > 0) return Colors.greenAccent;
+      if (percent < 0) return Colors.redAccent;
+      return Colors.white38;
+    }
+
+    Widget statTile(String label, String value, String delta,
+        Color deltaCol) {
+      return Expanded(
+        child: Column(
+          children: [
+            Text(
+              value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: const TextStyle(color: Colors.white38, fontSize: 9),
+              textAlign: TextAlign.center,
+            ),
+            Text(
+              delta,
+              style: TextStyle(
+                color: deltaCol,
+                fontSize: 9,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return GlassCard(
+      padding: const EdgeInsets.all(14),
+      borderColor: Colors.blueAccent.withOpacity(0.3),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.insights_outlined,
+                  color: Colors.blueAccent, size: 18),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  "Resumo da Semana",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close, color: Colors.white38, size: 16),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                onPressed: _dismissWeeklyReport,
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              statTile(
+                "treinos",
+                "${report.workoutsThisWeek}",
+                deltaText(report.workoutsDeltaPercent),
+                deltaColor(report.workoutsDeltaPercent),
+              ),
+              statTile(
+                "volume",
+                report.volumeThisWeek >= 1000
+                    ? "${(report.volumeThisWeek / 1000).toStringAsFixed(1)}t"
+                    : "${report.volumeThisWeek.toStringAsFixed(0)}kg",
+                deltaText(report.volumeDeltaPercent),
+                deltaColor(report.volumeDeltaPercent),
+              ),
+              statTile(
+                "tempo",
+                "${report.durationMinutesThisWeek}min",
+                "",
+                Colors.white38,
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Text("🔥", style: TextStyle(fontSize: 12)),
+              const SizedBox(width: 6),
+              Text(
+                "${report.streakWeeks} semana(s) consecutiva(s)",
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                "Meta: ${report.workoutsThisWeekGoalProgress}/${report.weeklyGoal} treinos",
+                style: const TextStyle(color: Colors.white38, fontSize: 10),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildIdleView(BuildContext context, WorkoutProvider provider) {
     final todayLabel = _getTodayLabel();
     final plannedRoutineIds = provider.todayPlannedItems;
@@ -443,8 +720,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                     ],
                                   ),
                                   const SizedBox(height: 16),
-                                  _buildTipRow(Icons.swipe_right, "Deslize para a Direita", "Marque a série instantaneamente como Falha.", accentColor),
-                                  _buildTipRow(Icons.swipe_left, "Deslize para a Esquerda", "Cria um Drop-Set automático cortando 20% do peso.", accentColor),
+                                  _buildTipRow(Icons.more_vert, "Menu do Exercício", "Toque nos 3 pontinhos para marcar Falha ou adicionar Drop-Set na série ativa.", accentColor),
                                   _buildTipRow(Icons.dialpad, "Teclado Rápido", "Toque no peso ou nas repetições para abrir o teclado numérico customizado.", accentColor),
                                   _buildTipRow(Icons.mic, "Notas por Voz", "No botão de notas do exercício, segure o microfone para ditar suas observações.", accentColor),
                                   const SizedBox(height: 24),
@@ -740,6 +1016,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                   );
                 }).toList(),
               ),
+
+            // 3b. Engajamento: desafios do mês + resumo da semana
+            ..._buildEngagementCards(provider, accentColor),
 
             const SizedBox(height: 24),
             

@@ -32,6 +32,8 @@ class WatchService {
     if (provider.state != null) {
       // Send only today's routines for selective sync
       sendTodayRoutines(provider.state!.settings, provider.state!.planner, provider.state!.routines, provider.state!.streak, provider.state!.continuousBlocks);
+      // Agenda o resumo semanal (domingo 20h) — idempotente
+      _channel.invokeMethod('scheduleWeeklyReport').catchError((_) => null);
       sendLibrary(provider.state!.library);
       sendPlanner(provider.state!.planner);
       if (provider.state!.activeWorkout != null) {

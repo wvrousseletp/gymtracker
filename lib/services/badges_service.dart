@@ -62,6 +62,38 @@ class BadgesService {
       category: 'milestone',
       tier: 'platinum',
     ),
+    AppBadge(
+      id: 'two_week_streak',
+      name: 'Embalou',
+      description: 'Manteve treinos por 2 semanas consecutivas.',
+      icon: '⚡',
+      category: 'consistency',
+      tier: 'bronze',
+    ),
+    AppBadge(
+      id: 'month_of_gains',
+      name: 'Mês Perfeito',
+      description: 'Manteve treinos por 4 semanas consecutivas.',
+      icon: '🏆',
+      category: 'consistency',
+      tier: 'gold',
+    ),
+    AppBadge(
+      id: 'week_machine',
+      name: 'Semana de Ferro',
+      description: 'Completou 6 ou mais treinos em uma única semana.',
+      icon: '🤖',
+      category: 'consistency',
+      tier: 'silver',
+    ),
+    AppBadge(
+      id: 'century_tonnage',
+      name: '100 Toneladas',
+      description: 'Acumulou mais de 100.000 kg de volume total.',
+      icon: '🗿',
+      category: 'volume',
+      tier: 'platinum',
+    ),
   ];
 
   static List<AppBadge> getUnlockedBadges(List<String> unlockedIds) {
@@ -125,6 +157,25 @@ class BadgesService {
     // 6. Semana Perfeita (from streak)
     if (streak.consecutiveWeeks > 0 && streak.currentWeekCount >= 3) {
       unlock('perfect_week');
+    }
+
+    // 6b. Sequências de semanas consecutivas
+    if (streak.consecutiveWeeks >= 2) {
+      unlock('two_week_streak');
+    }
+    if (streak.consecutiveWeeks >= 4) {
+      unlock('month_of_gains');
+    }
+
+    // 6c. Semana de Ferro
+    if (streak.currentWeekCount >= 6) {
+      unlock('week_machine');
+    }
+
+    // 6d. 100 Toneladas (volume acumulado)
+    final totalVolume = history.fold<double>(0, (sum, l) => sum + l.totalWeight);
+    if (totalVolume >= 100000) {
+      unlock('century_tonnage');
     }
 
     // 7. Mestre do Cardio (from current week)

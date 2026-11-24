@@ -417,6 +417,9 @@ func _force_load_swiftCompatibilityDynamicReplacements() {}
       } else {
         result(FlutterError(code: "INVALID_ARGUMENT", message: "Expected dictionary", details: nil))
       }
+    case "scheduleWeeklyReport":
+      self.scheduleWeeklyReport()
+      result(nil)
     case "updateWidgetData":
       if let args = call.arguments as? [String: Any] {
         let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles")
@@ -1066,6 +1069,34 @@ func _force_load_swiftCompatibilityDynamicReplacements() {}
     UNUserNotificationCenter.current().add(request) { error in
       if let error = error {
         print("[AppDelegate] Failed to schedule workout reminder: \(error.localizedDescription)")
+      }
+    }
+  }
+
+  /// Domingo às 20h — lembrete para abrir o app e ver o resumo da semana.
+  private func scheduleWeeklyReport() {
+    let reportId = "weekly_report_sunday"
+    UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [reportId])
+
+    let content = UNMutableNotificationContent()
+    content.title = "📊 Resumo da Semana"
+    content.body = "Sua semana de treinos está pronta! Abra o app para ver volume, tempo e desafios."
+    content.sound = UNNotificationSound.default
+
+    var dateComponents = DateComponents()
+    dateComponents.weekday = 1 // Domingo
+    dateComponents.hour = 20
+    dateComponents.minute = 0
+
+    let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
+    let request = UNNotificationRequest(
+      identifier: reportId,
+      content: content,
+      trigger: trigger
+    )
+    UNUserNotificationCenter.current().add(request) { error in
+      if let error = error {
+        print("[AppDelegate] Failed to schedule weekly report: \(error.localizedDescription)")
       }
     }
   }
