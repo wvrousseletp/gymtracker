@@ -143,6 +143,8 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
     // Don't init WatchService here - wait for update() to be called
   }
 
+  bool _initialized = false;
+
   void update(
       ProfileProvider profile, WorkoutProvider workout, DietProvider diet) {
     _profileProvider = profile;
@@ -159,8 +161,11 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
           .sendWaterData(waterIntake, _dietProvider!.diet.waterGoalMl);
     };
 
-    // Init WatchService after providers are set up
-    _init();
+    // Init WatchService after providers are set up (only once)
+    if (!_initialized) {
+      _initialized = true;
+      _init();
+    }
   }
 
   @override
@@ -737,47 +742,57 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   void addRoutineToContinuousBlock(String blockId, String routineId) {
     _workoutProvider?.addRoutineToContinuousBlock(blockId, routineId);
+    notifyListeners();
   }
 
   void updateRoutineInContinuousBlock(String blockId, int index, String newValue) {
     _workoutProvider?.updateRoutineInContinuousBlock(blockId, index, newValue);
+    notifyListeners();
   }
 
   void removeRoutineFromContinuousBlock(String blockId, int index) {
     _workoutProvider?.removeRoutineFromContinuousBlock(blockId, index);
+    notifyListeners();
   }
 
   void reorderRoutinesInContinuousBlock(String blockId, int oldIndex, int newIndex) {
     _workoutProvider?.reorderRoutinesInContinuousBlock(blockId, oldIndex, newIndex);
+    notifyListeners();
   }
 
   void addPlannerItem(String day) {
     if (_workoutProvider == null) return;
     _workoutProvider!.addPlannerItem(day);
+    notifyListeners();
   }
 
   void updatePlannerItem(String day, int index, String value) {
     if (_workoutProvider == null) return;
     _workoutProvider!.updatePlannerItem(day, index, value);
+    notifyListeners();
   }
 
   void reorderPlannerItem(String day, int index, bool moveUp) {
     if (_workoutProvider == null) return;
     _workoutProvider!.reorderPlannerItem(day, index, moveUp);
+    notifyListeners();
   }
 
   void movePlannerItem(String day, int oldIndex, int newIndex) {
     _workoutProvider?.movePlannerItem(day, oldIndex, newIndex);
+    notifyListeners();
   }
 
   void removePlannerItem(String day, int index) {
     if (_workoutProvider == null) return;
     _workoutProvider!.removePlannerItem(day, index);
+    notifyListeners();
   }
 
   void copyPlannerDay(String fromDay, String toDay) {
     if (_workoutProvider == null) return;
     _workoutProvider!.copyPlannerDay(fromDay, toDay);
+    notifyListeners();
   }
 
   void saveCurrentWeekAsTemplate(String name) {

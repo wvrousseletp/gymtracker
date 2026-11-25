@@ -27,7 +27,7 @@ class ModernPlannerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dismissible(
-      key: UniqueKey(),
+      key: key ?? ValueKey('planner_card_${title}_${subtitle}_${color.value}'),
       direction: DismissDirection.endToStart,
       onDismissed: (_) => onDelete?.call(),
       background: Container(
@@ -39,6 +39,7 @@ class ModernPlannerCard extends StatelessWidget {
         child: const Icon(Icons.delete, color: Colors.white),
       ),
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: Container(
           margin: const EdgeInsets.symmetric(vertical: 6),

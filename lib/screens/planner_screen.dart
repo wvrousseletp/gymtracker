@@ -1834,10 +1834,34 @@ class _PlannerScreenState extends State<PlannerScreen> {
                         IconButton(
                           icon: Icon(Icons.add_box_outlined,
                               color: accentColor, size: 22),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
+                          visualDensity: VisualDensity.compact,
+                          tooltip: "Adicionar treino",
                           onPressed: () {
-                            provider.addPlannerItem(day);
+                            _showItemSelectionSheet(
+                              context,
+                              provider,
+                              state,
+                              accentColor,
+                              onSelected: (val) {
+                                final newIdx =
+                                    (provider.state?.planner[day] ?? []).length;
+                                provider.addPlannerItem(day);
+                                if (val.startsWith('exercise:')) {
+                                  final exId = val.substring(9);
+                                  final libEx = state.library
+                                      .where((e) => e.id == exId)
+                                      .firstOrNull;
+                                  final isCardio = libEx != null &&
+                                      libEx.muscle
+                                          .toLowerCase()
+                                          .contains('cardio');
+                                  provider.updatePlannerItem(day, newIdx,
+                                      "$val:${isCardio ? 30 : 3}");
+                                } else {
+                                  provider.updatePlannerItem(day, newIdx, val);
+                                }
+                              },
+                            );
                           },
                         ),
                       ],
@@ -1847,14 +1871,49 @@ class _PlannerScreenState extends State<PlannerScreen> {
                 const SizedBox(height: 8),
 
                 if (items.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 12),
-                    child: Text(
-                      "Nenhum treino agendado",
-                      style: TextStyle(
-                        color: Colors.white30,
-                        fontSize: 13,
-                        fontStyle: FontStyle.italic,
+                  InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () {
+                      _showItemSelectionSheet(
+                        context,
+                        provider,
+                        state,
+                        accentColor,
+                        onSelected: (val) {
+                          final newIdx =
+                              (provider.state?.planner[day] ?? []).length;
+                          provider.addPlannerItem(day);
+                          if (val.startsWith('exercise:')) {
+                            final exId = val.substring(9);
+                            final libEx = state.library
+                                .where((e) => e.id == exId)
+                                .firstOrNull;
+                            final isCardio = libEx != null &&
+                                libEx.muscle.toLowerCase().contains('cardio');
+                            provider.updatePlannerItem(
+                                day, newIdx, "$val:${isCardio ? 30 : 3}");
+                          } else {
+                            provider.updatePlannerItem(day, newIdx, val);
+                          }
+                        },
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Row(
+                        children: [
+                          Icon(Icons.add_circle_outline,
+                              color: accentColor.withOpacity(0.6), size: 16),
+                          const SizedBox(width: 8),
+                          const Text(
+                            "Nenhum treino agendado — tocar para adicionar",
+                            style: TextStyle(
+                              color: Colors.white38,
+                              fontSize: 13,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   )

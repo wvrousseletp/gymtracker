@@ -2317,6 +2317,7 @@ class WorkoutProvider extends ChangeNotifier {
 
   void updatePlannerItem(String day, int index, String value) {
     planner[day] = List<String>.from(planner[day] ?? []);
+    if (index < 0 || index >= planner[day]!.length) return;
     planner[day]![index] = value;
     _save();
   }
