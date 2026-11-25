@@ -109,11 +109,19 @@ class WatchLocalWorkoutManager {
             var targetSets = re.sets
             var targetReps = re.reps
             var targetWeight = re.weight
+            var targetWeightsPerSet = re.weightsPerSet
+            var targetRepsPerSet = re.repsPerSet
             
             if let custom = customExercises?.first(where: { ($0["exerciseId"] as? String) == re.exerciseId }) {
                 targetSets = custom["sets"] as? Int ?? re.sets
                 targetReps = custom["reps"] as? Int ?? re.reps
                 targetWeight = custom["weight"] as? Double ?? re.weight
+                if let customWps = custom["weightsPerSet"] as? [Double] {
+                    targetWeightsPerSet = customWps
+                }
+                if let customRps = custom["repsPerSet"] as? [Int] {
+                    targetRepsPerSet = customRps
+                }
             }
             
             let activeEx = WatchActiveExercise(
@@ -128,7 +136,10 @@ class WatchLocalWorkoutManager {
                 executionType: executionType,
                 performedCardios: Array(repeating: nil, count: targetSets),
                 failureReport: Array(repeating: false, count: targetSets),
-                failureReps: Array(repeating: nil, count: targetSets)
+                failureReps: Array(repeating: nil, count: targetSets),
+                isStationary: libEx?.isStationary ?? false,
+                weightsPerSet: targetWeightsPerSet,
+                repsPerSet: targetRepsPerSet
             )
             activeExercises.append(activeEx)
         }
@@ -172,7 +183,8 @@ class WatchLocalWorkoutManager {
             executionType: libEx.executionType,
             performedCardios: [nil, nil, nil],
             failureReport: [false, false, false],
-            failureReps: [nil, nil, nil]
+            failureReps: [nil, nil, nil],
+            isStationary: libEx.isStationary
         )
         
         let state = WatchActiveWorkoutState(
@@ -229,10 +241,6 @@ class WatchLocalWorkoutManager {
             
             let isCardio = ex.isCardio
             
-            if !isCardio {
-                totalWeightVolume += Double(done) * ex.weight
-            }
-            
             var setsJson: [[String: Any]] = []
             for (idx, isDone) in ex.setsState.enumerated() {
                 var setDict: [String: Any] = [
@@ -244,14 +252,20 @@ class WatchLocalWorkoutManager {
                     setDict["distance"] = cardio.distanceKm
                     setDict["duration"] = cardio.durationSeconds
                 } else {
-                    setDict["weight"] = ex.weight
-                    setDict["reps"] = ex.reps
-                    
+                    let setW = ex.weightForSet(idx)
+                    let plannedR = ex.repsForSet(idx)
+                    var actualR = plannedR
                     if idx < ex.failureReport.count, ex.failureReport[idx] {
                         setDict["failure"] = true
-                        if idx < ex.failureReps.count, let failureRep = ex.failureReps[idx] {
+                        if idx < ex.failureReps.count, let failureRep = ex.failureReps[idx], failureRep > 0 {
                             setDict["failureReps"] = failureRep
+                            actualR = failureRep
                         }
+                    }
+                    setDict["weight"] = setW
+                    setDict["reps"] = actualR
+                    if isDone {
+                        totalWeightVolume += setW * Double(actualR)
                     }
                 }
                 setsJson.append(setDict)

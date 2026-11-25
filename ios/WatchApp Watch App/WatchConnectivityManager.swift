@@ -581,25 +581,33 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     func addDropSet(exerciseIndex: Int, setIndex: Int, dropWeight: Double, dropReps: Int) {
         if var workout = activeWorkout, exerciseIndex >= 0 && exerciseIndex < workout.exercises.count {
             var ex = workout.exercises[exerciseIndex]
-            
-            ex.sets += 1
+            let prevSetsCount = ex.sets
             let targetIdx = min(setIndex + 1, ex.setsState.count)
+
+            var wps = ex.weightsPerSet ?? Array(repeating: ex.weight, count: prevSetsCount)
+            while wps.count < prevSetsCount { wps.append(ex.weight) }
+            wps.insert(dropWeight, at: min(targetIdx, wps.count))
+
+            var rps = ex.repsPerSet ?? Array(repeating: ex.reps, count: prevSetsCount)
+            while rps.count < prevSetsCount { rps.append(ex.reps) }
+            rps.insert(dropReps, at: min(targetIdx, rps.count))
+
+            ex.sets = prevSetsCount + 1
             ex.setsState.insert(false, at: targetIdx)
             if targetIdx <= ex.failureReport.count {
                 ex.failureReport.insert(false, at: targetIdx)
             } else {
                 ex.failureReport.append(false)
             }
-            ex.weight = dropWeight
-            
+            ex.weightsPerSet = wps
+            ex.repsPerSet = rps
+
             workout.exercises[exerciseIndex] = ex
             self.activeWorkout = workout
             cache.setLocalWorkoutState(workout)
         }
 
-        if isLocalWorkout {
-            // Handled locally
-        } else {
+        if !isLocalWorkout {
             let msg: [String: Any] = [
                 "action": "addDropSet",
                 "exerciseIndex": exerciseIndex,
@@ -628,6 +636,23 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             }
         }
     }
+
+    func updateExerciseSetWeightReps(exerciseIndex: Int, setIndex: Int, weight: Double, reps: Int) {
+        updateExerciseSetWeightRepsLocal(exerciseIndex: exerciseIndex, setIndex: setIndex, weight: weight, reps: reps)
+
+        if !isLocalWorkout {
+            workoutUpdateDebounceTimer?.invalidate()
+            workoutUpdateDebounceTimer = Timer.scheduledTimer(withTimeInterval: 0.35, repeats: false) { [weak self] _ in
+                self?.sendToiPhone([
+                    "action": "updateExerciseSetWeightReps",
+                    "exerciseIndex": exerciseIndex,
+                    "setIndex": setIndex,
+                    "weight": weight,
+                    "reps": reps
+                ])
+            }
+        }
+    }
     
     func updateCardio(exerciseIndex: Int, setIndex: Int, distance: Double, duration: Int) {
         // Optimistic UI Update
@@ -648,10 +673,12 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         guard var active = activeWorkout else { return }
         guard exerciseIndex < active.exercises.count else { return }
         var exercises = active.exercises
-        var ex = exercises[exerciseIndex]
+        let ex = exercises[exerciseIndex]
         
         var performedCardios = ex.performedCardios
-        performedCardios[setIndex] = WatchPerformedCardio(distanceKm: distance, durationSeconds: duration)
+        if setIndex >= 0 && setIndex < performedCardios.count {
+            performedCardios[setIndex] = WatchPerformedCardio(distanceKm: distance, durationSeconds: duration)
+        }
         
         let updatedEx = WatchActiveExercise(
             name: ex.name,
@@ -665,7 +692,11 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             executionType: ex.executionType,
             performedCardios: performedCardios,
             failureReport: ex.failureReport,
-            failureReps: ex.failureReps
+            failureReps: ex.failureReps,
+            isStationary: ex.isStationary,
+            instanceId: ex.instanceId,
+            weightsPerSet: ex.weightsPerSet,
+            repsPerSet: ex.repsPerSet
         )
         exercises[exerciseIndex] = updatedEx
         
@@ -706,32 +737,39 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     }
     
     func adjustRestTimer(by seconds: Int) {
-        if isLocalWorkout {
-            // Implement local adjustment if needed later
-        } else {
-            // Optimistic update
-            if var active = activeWorkout, let timer = active.restTimer {
-                let newEndTime = timer.endTime + Int64(seconds * 1000)
-                let newTotalSeconds = max(1, timer.totalSeconds + seconds)
-                let newTimer = WatchRestTimer(
+        if let active = activeWorkout, let timer = active.restTimer {
+            let nowMs = Int64(Date().timeIntervalSince1970 * 1000)
+            let newEndTime = timer.endTime + Int64(seconds * 1000)
+            let newTimer: WatchRestTimer?
+            if newEndTime <= nowMs {
+                newTimer = nil
+            } else {
+                let remainingSec = Int((newEndTime - nowMs) / 1000)
+                let newTotalSeconds = max(max(1, remainingSec), timer.totalSeconds + seconds)
+                newTimer = WatchRestTimer(
                     endTime: newEndTime,
                     totalSeconds: newTotalSeconds,
                     nextExerciseName: timer.nextExerciseName,
                     nextSetNum: timer.nextSetNum,
-                    isPrep: timer.isPrep
-                )
-                
-                activeWorkout = WatchActiveWorkoutState(
-                    name: active.name,
-                    startTime: active.startTime,
-                    exercises: active.exercises,
-                    currentExerciseIndex: active.currentExerciseIndex,
-                    elapsedSeconds: active.elapsedSeconds,
-                    paused: active.paused,
-                    restTimer: newTimer,
-                    postponed: active.postponed
+                    isPrep: timer.isPrep,
+                    nextTargetReps: timer.nextTargetReps,
+                    nextTargetWeight: timer.nextTargetWeight
                 )
             }
+
+            activeWorkout = WatchActiveWorkoutState(
+                name: active.name,
+                startTime: active.startTime,
+                exercises: active.exercises,
+                currentExerciseIndex: active.currentExerciseIndex,
+                elapsedSeconds: active.elapsedSeconds,
+                paused: active.paused,
+                restTimer: newTimer,
+                postponed: active.postponed
+            )
+        }
+
+        if !isLocalWorkout {
             sendToiPhone(["action": "adjustRestTimer", "seconds": seconds])
         }
     }
@@ -908,7 +946,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         switch action {
         case "startWorkout", "completeWorkout", "cancelWorkout", "postponeWorkout", "resumeWorkout":
             return .critical
-        case "toggleSet", "updateCardio", "updateFailure", "updateActiveWorkout", "skipRest", "changeExercise":
+        case "toggleSet", "updateCardio", "updateFailure", "updateActiveWorkout", "skipRest", "adjustRestTimer", "changeExercise", "updateExerciseWeightReps", "updateExerciseSetWeightReps", "addDropSet":
             return .high
         case "updateHealthMetrics", "updateWaterIntake":
             return .normal
@@ -968,10 +1006,10 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     // MARK: - Local Workout Implementations (Delegated to WatchLocalWorkoutManager)
 
     private func toggleSetLocal(exerciseIndex: Int, setIndex: Int, isDone: Bool, isFailure: Bool, failureRep: Int?, distance: Double?, duration: Int?) {
-        guard var active = activeWorkout else { return }
+        guard let active = activeWorkout else { return }
         guard exerciseIndex < active.exercises.count else { return }
         var exercises = active.exercises
-        var ex = exercises[exerciseIndex]
+        let ex = exercises[exerciseIndex]
         
         var setsState = ex.setsState
         if setIndex < setsState.count {
@@ -1009,7 +1047,11 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             executionType: ex.executionType,
             performedCardios: performedCardios,
             failureReport: failureReport,
-            failureReps: failureReps
+            failureReps: failureReps,
+            isStationary: ex.isStationary,
+            instanceId: ex.instanceId,
+            weightsPerSet: ex.weightsPerSet,
+            repsPerSet: ex.repsPerSet
         )
         exercises[exerciseIndex] = updatedEx
         
@@ -1019,14 +1061,33 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         var restTimer = active.restTimer
         if isTransitionToDone {
             let nextSetNum = setIndex + 2
-            let restDuration = ex.rest
-            if nextSetNum <= ex.sets {
-                let endTime = Int64(Date().timeIntervalSince1970 * 1000) + Int64(restDuration * 1000)
-                restTimer = WatchRestTimer(endTime: endTime, totalSeconds: restDuration, nextExerciseName: ex.name, nextSetNum: nextSetNum, isPrep: false)
-            } else if exerciseIndex + 1 < exercises.count {
-                let nextEx = exercises[exerciseIndex + 1]
-                let endTime = Int64(Date().timeIntervalSince1970 * 1000) + Int64(restDuration * 1000)
-                restTimer = WatchRestTimer(endTime: endTime, totalSeconds: restDuration, nextExerciseName: nextEx.name, nextSetNum: 1, isPrep: false)
+            let restDuration = isFailure ? (ex.rest + 30) : ex.rest
+            if restDuration > 0 {
+                if nextSetNum <= ex.sets {
+                    let nextIdx = nextSetNum - 1
+                    let endTime = Int64(Date().timeIntervalSince1970 * 1000) + Int64(restDuration * 1000)
+                    restTimer = WatchRestTimer(
+                        endTime: endTime,
+                        totalSeconds: restDuration,
+                        nextExerciseName: ex.name,
+                        nextSetNum: nextSetNum,
+                        isPrep: false,
+                        nextTargetReps: updatedEx.repsForSet(nextIdx),
+                        nextTargetWeight: updatedEx.weightForSet(nextIdx)
+                    )
+                } else if exerciseIndex + 1 < exercises.count {
+                    let nextEx = exercises[exerciseIndex + 1]
+                    let endTime = Int64(Date().timeIntervalSince1970 * 1000) + Int64(restDuration * 1000)
+                    restTimer = WatchRestTimer(
+                        endTime: endTime,
+                        totalSeconds: restDuration,
+                        nextExerciseName: nextEx.name,
+                        nextSetNum: 1,
+                        isPrep: false,
+                        nextTargetReps: nextEx.repsForSet(0),
+                        nextTargetWeight: nextEx.weightForSet(0)
+                    )
+                }
             }
         } else if !isDone {
             restTimer = nil
@@ -1085,10 +1146,12 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         // Create a hash of the workout state excluding frequently changing fields
         let hashString = "\(workout.name)|\(workout.startTime)|\(workout.currentExerciseIndex)|\(workout.paused)|\(workout.postponed)"
         
-        // Include exercise states (setsState, weight, reps)
+        // Include exercise states (setsState, weight, reps, weightsPerSet, repsPerSet)
         var exerciseStates: [String] = []
         for ex in workout.exercises {
-            let exState = "\(ex.setsState.hashValue)|\(ex.weight)|\(ex.reps)|\(ex.failureReport.hashValue)"
+            let wpsStr = ex.weightsPerSet?.map { String(format: "%.1f", $0) }.joined(separator: ":") ?? ""
+            let rpsStr = ex.repsPerSet?.map { String($0) }.joined(separator: ":") ?? ""
+            let exState = "\(ex.setsState.hashValue)|\(ex.weight)|\(ex.reps)|\(wpsStr)|\(rpsStr)|\(ex.failureReport.hashValue)"
             exerciseStates.append(exState)
         }
         
@@ -1096,10 +1159,10 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     }
 
     private func updateExerciseWeightRepsLocal(exerciseIndex: Int, weight: Double, reps: Int) {
-        guard var active = activeWorkout else { return }
+        guard let active = activeWorkout else { return }
         guard exerciseIndex < active.exercises.count else { return }
         var exercises = active.exercises
-        var ex = exercises[exerciseIndex]
+        let ex = exercises[exerciseIndex]
         
         let updatedEx = WatchActiveExercise(
             name: ex.name,
@@ -1113,7 +1176,11 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             executionType: ex.executionType,
             performedCardios: ex.performedCardios,
             failureReport: ex.failureReport,
-            failureReps: ex.failureReps
+            failureReps: ex.failureReps,
+            isStationary: ex.isStationary,
+            instanceId: ex.instanceId,
+            weightsPerSet: ex.weightsPerSet != nil ? Array(repeating: weight, count: ex.sets) : nil,
+            repsPerSet: ex.repsPerSet != nil ? Array(repeating: reps, count: ex.sets) : nil
         )
         exercises[exerciseIndex] = updatedEx
         
@@ -1131,8 +1198,57 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         )
     }
 
+    private func updateExerciseSetWeightRepsLocal(exerciseIndex: Int, setIndex: Int, weight: Double, reps: Int) {
+        guard let active = activeWorkout else { return }
+        guard exerciseIndex >= 0 && exerciseIndex < active.exercises.count else { return }
+        var exercises = active.exercises
+        let ex = exercises[exerciseIndex]
+        guard setIndex >= 0 && setIndex < ex.sets else { return }
+
+        var wps = ex.weightsPerSet ?? Array(repeating: ex.weight, count: ex.sets)
+        while wps.count < ex.sets { wps.append(ex.weight) }
+        wps[setIndex] = weight
+
+        var rps = ex.repsPerSet ?? Array(repeating: ex.reps, count: ex.sets)
+        while rps.count < ex.sets { rps.append(ex.reps) }
+        rps[setIndex] = reps
+
+        let updatedEx = WatchActiveExercise(
+            name: ex.name,
+            muscle: ex.muscle,
+            sets: ex.sets,
+            reps: setIndex == 0 ? reps : ex.reps,
+            rest: ex.rest,
+            weight: setIndex == 0 ? weight : ex.weight,
+            setsState: ex.setsState,
+            measurementType: ex.measurementType,
+            executionType: ex.executionType,
+            performedCardios: ex.performedCardios,
+            failureReport: ex.failureReport,
+            failureReps: ex.failureReps,
+            isStationary: ex.isStationary,
+            instanceId: ex.instanceId,
+            weightsPerSet: wps,
+            repsPerSet: rps
+        )
+        exercises[exerciseIndex] = updatedEx
+
+        let elapsed = max(0, Int(clamping: Int64(Date().timeIntervalSince1970) - (active.startTime / 1000)))
+
+        activeWorkout = WatchActiveWorkoutState(
+            name: active.name,
+            startTime: active.startTime,
+            exercises: exercises,
+            currentExerciseIndex: active.currentExerciseIndex,
+            elapsedSeconds: elapsed,
+            paused: active.paused,
+            restTimer: active.restTimer,
+            postponed: active.postponed
+        )
+    }
+
     private func skipRestLocal() {
-        guard var active = activeWorkout else { return }
+        guard let active = activeWorkout else { return }
         
         let elapsed = max(0, Int(clamping: Int64(Date().timeIntervalSince1970) - (active.startTime / 1000)))
         
@@ -1168,6 +1284,8 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
             let isCardio = ex.isCardio
             var finalWeight = ex.weight
             var finalReps = ex.reps
+            var loggedWeights: [Double] = []
+            var loggedReps: [Int] = []
             
             var performedCardiosJson: [Any] = []
             for pc in ex.performedCardios {
@@ -1190,10 +1308,31 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                     finalReps = totalDurMin / completedList.count
                 }
             } else {
+                var bestW = -1.0
+                var bestR = 0
                 for i in 0..<ex.sets {
-                    if i < ex.setsState.count && ex.setsState[i] {
-                        totalWeightVolume += ex.weight * Double(ex.reps)
+                    let isSetDone = i < ex.setsState.count && ex.setsState[i]
+                    let w = ex.weightForSet(i)
+                    let plannedR = ex.repsForSet(i)
+                    let isFail = i < ex.failureReport.count && ex.failureReport[i]
+                    let failR = i < ex.failureReps.count ? ex.failureReps[i] : nil
+                    let actualR = (isFail && (failR ?? 0) > 0) ? failR! : plannedR
+                    if isSetDone {
+                        loggedWeights.append(w)
+                        loggedReps.append(actualR)
+                        totalWeightVolume += w * Double(actualR)
+                        if w > bestW || (w == bestW && actualR > bestR) {
+                            bestW = w
+                            bestR = actualR
+                        }
+                    } else {
+                        loggedWeights.append(0.0)
+                        loggedReps.append(0)
                     }
+                }
+                if bestW >= 0 {
+                    finalWeight = bestW
+                    finalReps = bestR
                 }
             }
             
@@ -1206,7 +1345,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                 }
             }
             
-            let exJson: [String: Any] = [
+            var exJson: [String: Any] = [
                 "name": ex.name,
                 "muscle": ex.muscle,
                 "sets": ex.sets,
@@ -1219,6 +1358,10 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                 "failureReps": failureRepsJson,
                 "executionType": ex.executionType ?? ""
             ]
+            if !isCardio {
+                exJson["weightsPerSet"] = loggedWeights
+                exJson["repsPerSet"] = loggedReps
+            }
             exercisesJson.append(exJson)
         }
         
@@ -1239,6 +1382,8 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         ]
         
         saveOfflineWorkoutToCache(workoutLogJson)
+        localWorkoutManager.addToOfflineQueue(workout: active)
+        localWorkoutManager.clearLocalWorkout()
         
         self.activeWorkout = nil
         isLocalWorkout = false

@@ -917,10 +917,14 @@ class FirebaseSyncService {
         completedSets: ex.completedSets.clamp(0, 100),
         reps: ex.reps.clamp(0, 1000),
         weight: ex.weight.clamp(0.0, 1000.0),
+        weightsPerSet: ex.weightsPerSet,
+        repsPerSet: ex.repsPerSet,
         performedCardios: ex.performedCardios,
         rpe: ex.rpe.clamp(0, 10),
         failureReport: ex.failureReport,
         failureReps: ex.failureReps,
+        setTypes: ex.setTypes,
+        rirPerSet: ex.rirPerSet,
         executionType: ex.executionType,
       );
     }).toList();

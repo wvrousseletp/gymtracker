@@ -9,6 +9,8 @@ class LogExercise {
   final int completedSets;
   final int reps;
   final double weight;
+  final List<double>? weightsPerSet;
+  final List<int>? repsPerSet;
   final List<PerformedCardio?>? performedCardios;
   final int rpe;
   final List<bool>? failureReport;
@@ -24,6 +26,8 @@ class LogExercise {
     required this.completedSets,
     required this.reps,
     required this.weight,
+    this.weightsPerSet,
+    this.repsPerSet,
     this.performedCardios,
     required this.rpe,
     this.failureReport,
@@ -40,10 +44,14 @@ class LogExercise {
     'completedSets': completedSets,
     'reps': reps,
     'weight': weight,
+    'weightsPerSet': weightsPerSet,
+    'repsPerSet': repsPerSet,
     'performedCardios': performedCardios?.map((c) => c?.toJson()).toList(),
     'rpe': rpe,
     'failureReport': failureReport,
     'failureReps': failureReps,
+    'setTypes': setTypes,
+    'rirPerSet': rirPerSet,
     'executionType': executionType,
   };
 
@@ -54,6 +62,12 @@ class LogExercise {
     completedSets: (json['completedSets'] as num?)?.toInt() ?? 0,
     reps: (json['reps'] as num?)?.toInt() ?? 0,
     weight: (json['weight'] as num?)?.toDouble() ?? 0.0,
+    weightsPerSet: json['weightsPerSet'] != null
+        ? (json['weightsPerSet'] as List).map<double>((w) => (w as num).toDouble()).toList()
+        : null,
+    repsPerSet: json['repsPerSet'] != null
+        ? (json['repsPerSet'] as List).map<int>((r) => (r as num).toInt()).toList()
+        : null,
     performedCardios: json['performedCardios'] != null
         ? (json['performedCardios'] as List).map((c) => c == null ? null : PerformedCardio.fromJson(c)).toList()
         : null,
@@ -62,6 +76,14 @@ class LogExercise {
     failureReps: json['failureReps'] != null 
         ? List<int?>.from(json['failureReps']) 
         : (json['failureReport'] != null ? List<int?>.filled((json['failureReport'] as List).length, null) : null),
+    setTypes: json['setTypes'] != null
+        ? (json['setTypes'] as List).map<String>((t) => t.toString()).toList()
+        : null,
+    rirPerSet: json['rirPerSet'] != null
+        ? (json['rirPerSet'] as List)
+            .map<int?>((r) => r == null ? null : (r as num).toInt())
+            .toList()
+        : null,
     executionType: json['executionType'],
   );
 }
@@ -122,6 +144,18 @@ class WorkoutLog {
     this.avgHeartRate,
     this.activeCalories,
   });
+
+  bool get isRestDayLog {
+    final trimmed = name.trim();
+    if (trimmed == 'Dia de Descanso' || trimmed.startsWith('Descanso:')) {
+      return true;
+    }
+    return duration == 0 &&
+        completedSets == 0 &&
+        totalSets == 0 &&
+        exercises.isEmpty &&
+        trimmed.toLowerCase().contains('descanso');
+  }
 
   Map<String, dynamic> toJson() => {
     'id': id,

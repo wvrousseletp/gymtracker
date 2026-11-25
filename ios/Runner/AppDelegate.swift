@@ -715,12 +715,34 @@ func _force_load_swiftCompatibilityDynamicReplacements() {}
         }
       case "skipRest":
         self.invokeOrQueue(method: "skipRest", arguments: nil)
+      case "adjustRestTimer":
+        if let seconds = data["seconds"] as? Int {
+          self.invokeOrQueue(method: "adjustRestTimer", arguments: ["seconds": seconds])
+        } else if let secondsNum = data["seconds"] as? NSNumber {
+          self.invokeOrQueue(method: "adjustRestTimer", arguments: ["seconds": secondsNum.intValue])
+        }
       case "updateExerciseWeightReps":
         if let exerciseIndex = data["exerciseIndex"] as? Int,
            let weight = data["weight"] as? Double,
            let reps = data["reps"] as? Int {
-          self.invokeOrQueue(method: "updateExerciseWeightReps", arguments: [
+          var args: [String: Any] = [
             "exerciseIndex": exerciseIndex,
+            "weight": weight,
+            "reps": reps
+          ]
+          if let setIndex = data["setIndex"] as? Int {
+            args["setIndex"] = setIndex
+          }
+          self.invokeOrQueue(method: "updateExerciseWeightReps", arguments: args)
+        }
+      case "updateExerciseSetWeightReps":
+        if let exerciseIndex = data["exerciseIndex"] as? Int,
+           let setIndex = data["setIndex"] as? Int,
+           let weight = data["weight"] as? Double,
+           let reps = data["reps"] as? Int {
+          self.invokeOrQueue(method: "updateExerciseSetWeightReps", arguments: [
+            "exerciseIndex": exerciseIndex,
+            "setIndex": setIndex,
             "weight": weight,
             "reps": reps
           ])

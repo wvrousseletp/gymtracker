@@ -17,12 +17,24 @@ struct AddWaterIntent: AppIntent {
     
     func perform() async throws -> some IntentResult {
         let sharedDefaults = UserDefaults(suiteName: "group.com.vicente.losmooscles")
-        let current = sharedDefaults?.integer(forKey: "waterIntakeCurrent") ?? 0
-        sharedDefaults?.set(current + amount, forKey: "waterIntakeCurrent")
-        
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let todayStr = formatter.string(from: Date())
+
+        let savedDate = sharedDefaults?.string(forKey: "waterIntakeDate") ?? ""
+        let baseWater = (savedDate == todayStr)
+            ? (sharedDefaults?.integer(forKey: "waterIntakeCurrent") ?? 0)
+            : 0
+        let updatedWater = max(0, baseWater + amount)
+
+        sharedDefaults?.set(updatedWater, forKey: "waterIntakeCurrent")
+        sharedDefaults?.set(updatedWater, forKey: "cached_water_intake")
+        sharedDefaults?.set(todayStr, forKey: "waterIntakeDate")
+        sharedDefaults?.synchronize()
+
         // Reload the widget timelines to reflect changes immediately
         WidgetCenter.shared.reloadTimelines(ofKind: "WaterIntakeWidget")
-        
+
         return .result()
     }
 }

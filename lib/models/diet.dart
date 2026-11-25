@@ -6,6 +6,14 @@ class Meal {
   final double carbs;
   final double fat;
   final String time;
+  final String? category;
+
+  static const List<String> categories = [
+    'Café da Manhã',
+    'Almoço',
+    'Lanche',
+    'Jantar',
+  ];
 
   Meal({
     required this.id,
@@ -15,7 +23,49 @@ class Meal {
     required this.carbs,
     required this.fat,
     required this.time,
+    this.category,
   });
+
+  static String inferCategoryFromTime(String time) {
+    final parts = time.split(':');
+    if (parts.isNotEmpty) {
+      final hour = int.tryParse(parts[0]) ?? 12;
+      final minute = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
+      final totalMinutes = hour * 60 + minute;
+      if (totalMinutes < 11 * 60) return 'Café da Manhã';
+      if (totalMinutes < 15 * 60) return 'Almoço';
+      if (totalMinutes < 18 * 60 + 30) return 'Lanche';
+      return 'Jantar';
+    }
+    return 'Almoço';
+  }
+
+  String get effectiveCategory =>
+      (category != null && category!.trim().isNotEmpty)
+          ? category!
+          : inferCategoryFromTime(time);
+
+  Meal copyWith({
+    String? id,
+    String? name,
+    int? calories,
+    double? protein,
+    double? carbs,
+    double? fat,
+    String? time,
+    String? category,
+  }) {
+    return Meal(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      calories: calories ?? this.calories,
+      protein: protein ?? this.protein,
+      carbs: carbs ?? this.carbs,
+      fat: fat ?? this.fat,
+      time: time ?? this.time,
+      category: category ?? this.category,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -25,6 +75,7 @@ class Meal {
     'carbs': carbs,
     'fat': fat,
     'time': time,
+    if (category != null) 'category': category,
   };
 
   factory Meal.fromJson(Map<String, dynamic> json) => Meal(
@@ -35,6 +86,7 @@ class Meal {
     carbs: (json['carbs'] as num?)?.toDouble() ?? 0.0,
     fat: (json['fat'] as num?)?.toDouble() ?? 0.0,
     time: json['time'] ?? '',
+    category: json['category']?.toString(),
   );
 }
 
@@ -120,6 +172,7 @@ class DietHistoryDay {
   final double fatIntake;
   final int waterGoalMl;
   final int waterIntakeMl;
+  final List<Meal> meals;
 
   DietHistoryDay({
     required this.date,
@@ -133,6 +186,7 @@ class DietHistoryDay {
     required this.fatIntake,
     required this.waterGoalMl,
     required this.waterIntakeMl,
+    this.meals = const [],
   });
 
   Map<String, dynamic> toJson() => {
@@ -147,6 +201,7 @@ class DietHistoryDay {
     'fatIntake': fatIntake,
     'waterGoalMl': waterGoalMl,
     'waterIntakeMl': waterIntakeMl,
+    if (meals.isNotEmpty) 'meals': meals.map((m) => m.toJson()).toList(),
   };
 
   factory DietHistoryDay.fromJson(Map<String, dynamic> json) => DietHistoryDay(
@@ -161,6 +216,9 @@ class DietHistoryDay {
     fatIntake: (json['fatIntake'] as num?)?.toDouble() ?? 0.0,
     waterGoalMl: (json['waterGoalMl'] as num?)?.toInt() ?? 2000,
     waterIntakeMl: (json['waterIntakeMl'] as num?)?.toInt() ?? 0,
+    meals: json['meals'] != null
+        ? (json['meals'] as List).map((m) => Meal.fromJson(m)).toList()
+        : const [],
   );
 }
 

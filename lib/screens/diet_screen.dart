@@ -14,6 +14,7 @@ import '../models/food_item.dart';
 import '../models/favorite_food.dart';
 import '../models/meal_preset.dart';
 import '../services/food_service.dart';
+import '../services/ai_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class DietScreen extends StatefulWidget {
@@ -360,12 +361,63 @@ class RefeicoesTab extends StatelessWidget {
                       ),
                     ],
                     const SizedBox(height: 20),
-                    const Text(
-                      "Refeições do Dia",
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Refeições do Dia",
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800),
+                        ),
+                        if (dietProvider.latestHistoryDayWithMeals != null)
+                          InkWell(
+                            borderRadius: BorderRadius.circular(10),
+                            onTap: () {
+                              final copied =
+                                  dietProvider.copyPreviousDayMeals();
+                              if (copied > 0) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                        '$copied refeição(ões) copiada(s) do último registro!'),
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(10)),
+                                  ),
+                                );
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: accentColor.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                    color: accentColor.withOpacity(0.35)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.history_rounded,
+                                      size: 14, color: accentColor),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    "Repetir Ontem",
+                                    style: TextStyle(
+                                      color: accentColor,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 10),
                     if (diet.meals.isEmpty)
@@ -384,91 +436,395 @@ class RefeicoesTab extends StatelessWidget {
                 ),
               ),
             ),
-            // Meals list with proper virtualization
+            // Meals grouped by category (Café da Manhã, Almoço, Lanche, Jantar)
             if (diet.meals.isNotEmpty)
               SliverPadding(
                 padding:
                     const EdgeInsets.only(left: 16, right: 16, bottom: 100),
-                sliver: SliverList.builder(
-                  itemCount: diet.meals.length,
-                  itemBuilder: (context, index) {
-                    final meal = diet.meals[index];
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      child: GlassCard(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
-                        borderColor: Colors.white.withOpacity(0.04),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        meal.name,
-                                        style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 13),
-                                      ),
-                                      Text(
-                                        meal.time,
-                                        style: const TextStyle(
-                                            color: Colors.white38,
-                                            fontSize: 11),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Row(
-                                    children: [
-                                      _buildMiniMacroLabel("P", meal.protein,
-                                          const Color(0xffff453a)),
-                                      const SizedBox(width: 8),
-                                      _buildMiniMacroLabel("C", meal.carbs,
-                                          const Color(0xffbf5af2)),
-                                      const SizedBox(width: 8),
-                                      _buildMiniMacroLabel("G", meal.fat,
-                                          const Color(0xffff9f0a)),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Row(
-                              children: [
-                                Text(
-                                  "${meal.calories} kcal",
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 13),
-                                ),
-                                const SizedBox(width: 8),
-                                GestureDetector(
-                                  onTap: () {
-                                    provider.deleteMeal(meal.id);
-                                  },
-                                  child: const Icon(Icons.delete_outline,
-                                      color: Colors.redAccent, size: 18),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate(
+                    _buildGroupedMealsWidgets(context, dietProvider, provider, diet.meals),
+                  ),
                 ),
               ),
           ],
+        ),
+      ),
+    );
+  }
+
+  IconData _categoryIcon(String category) {
+    switch (category) {
+      case 'Café da Manhã':
+        return Icons.wb_twilight_rounded;
+      case 'Almoço':
+        return Icons.wb_sunny_outlined;
+      case 'Lanche':
+        return Icons.apple_rounded;
+      case 'Jantar':
+        return Icons.nights_stay_outlined;
+      default:
+        return Icons.restaurant_outlined;
+    }
+  }
+
+  List<Widget> _buildGroupedMealsWidgets(
+    BuildContext context,
+    DietProvider dietProvider,
+    TrackerProvider provider,
+    List<Meal> meals,
+  ) {
+    final orderedCategories = <String>[
+      ...Meal.categories,
+      ...meals
+          .map((m) => m.effectiveCategory)
+          .where((c) => !Meal.categories.contains(c))
+          .toSet(),
+    ];
+
+    final List<Widget> widgets = [];
+    for (final cat in orderedCategories) {
+      final catMeals =
+          meals.where((m) => m.effectiveCategory == cat).toList();
+      if (catMeals.isEmpty) continue;
+
+      final catCals = catMeals.fold<int>(0, (s, m) => s + m.calories);
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 6, bottom: 6),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(_categoryIcon(cat),
+                      size: 14, color: accentColor.withOpacity(0.9)),
+                  const SizedBox(width: 6),
+                  Text(
+                    cat,
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                "$catCals kcal",
+                style: const TextStyle(
+                  color: Colors.white54,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      for (final meal in catMeals) {
+        widgets.add(
+          Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            child: GestureDetector(
+              onTap: () => _showEditMealDialog(context, dietProvider, meal),
+              child: GlassCard(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                borderColor: Colors.white.withOpacity(0.04),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  meal.name,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                meal.time,
+                                style: const TextStyle(
+                                    color: Colors.white38, fontSize: 11),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              _buildMiniMacroLabel(
+                                  "P", meal.protein, const Color(0xffff453a)),
+                              const SizedBox(width: 8),
+                              _buildMiniMacroLabel(
+                                  "C", meal.carbs, const Color(0xffbf5af2)),
+                              const SizedBox(width: 8),
+                              _buildMiniMacroLabel(
+                                  "G", meal.fat, const Color(0xffff9f0a)),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Row(
+                      children: [
+                        Text(
+                          "${meal.calories} kcal",
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 13),
+                        ),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: () =>
+                              _showEditMealDialog(context, dietProvider, meal),
+                          child: const Icon(Icons.edit_outlined,
+                              color: Colors.white38, size: 17),
+                        ),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: () {
+                            provider.deleteMeal(meal.id);
+                          },
+                          child: const Icon(Icons.delete_outline,
+                              color: Colors.redAccent, size: 18),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+    }
+    return widgets;
+  }
+
+  void _showEditMealDialog(
+      BuildContext context, DietProvider dietProvider, Meal meal) {
+    final nameCtrl = TextEditingController(text: meal.name);
+    final calsCtrl = TextEditingController(text: meal.calories.toString());
+    final protCtrl =
+        TextEditingController(text: meal.protein.toStringAsFixed(1));
+    final carbsCtrl =
+        TextEditingController(text: meal.carbs.toStringAsFixed(1));
+    final fatCtrl = TextEditingController(text: meal.fat.toStringAsFixed(1));
+    final timeCtrl = TextEditingController(text: meal.time);
+    String selectedCat = meal.effectiveCategory;
+
+    InputDecoration inputDeco(String label) => InputDecoration(
+          labelText: label,
+          labelStyle: const TextStyle(color: Colors.white54, fontSize: 11),
+          filled: true,
+          fillColor: Colors.white.withOpacity(0.05),
+          border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide.none),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          isDense: true,
+        );
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => Dialog(
+          backgroundColor: Colors.transparent,
+          child: GlassCard(
+            useBlur: true,
+            borderColor: Colors.white.withOpacity(0.08),
+            borderRadius: 20,
+            padding: const EdgeInsets.all(20),
+            child: SizedBox(
+              width: 320,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Editar Refeição",
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 16),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded,
+                              color: Colors.white70, size: 20),
+                          onPressed: () => Navigator.pop(dialogCtx),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: Meal.categories.map((cat) {
+                        final isSel = selectedCat == cat;
+                        return ChoiceChip(
+                          label: Text(cat),
+                          selected: isSel,
+                          onSelected: (v) {
+                            if (v) setDialogState(() => selectedCat = cat);
+                          },
+                          selectedColor: accentColor.withOpacity(0.25),
+                          backgroundColor: Colors.white.withOpacity(0.05),
+                          labelStyle: TextStyle(
+                            color: isSel ? accentColor : Colors.white70,
+                            fontSize: 11,
+                            fontWeight:
+                                isSel ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: nameCtrl,
+                      style: const TextStyle(color: Colors.white, fontSize: 13),
+                      decoration: inputDeco("Alimento / Refeição"),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: calsCtrl,
+                            keyboardType: TextInputType.number,
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 12),
+                            decoration: inputDeco("Calorias (kcal)"),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: timeCtrl,
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 12),
+                            decoration: inputDeco("Horário (HH:MM)"),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: protCtrl,
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 12),
+                            decoration: inputDeco("Prot (g)"),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: carbsCtrl,
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 12),
+                            decoration: inputDeco("Carbs (g)"),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: fatCtrl,
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 12),
+                            decoration: inputDeco("Gord (g)"),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogCtx),
+                          child: const Text("Cancelar",
+                              style: TextStyle(color: Colors.white54)),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: () {
+                            final newName = nameCtrl.text.trim();
+                            if (newName.isEmpty) return;
+                            final newCals =
+                                int.tryParse(calsCtrl.text.trim()) ??
+                                    meal.calories;
+                            final newProt = double.tryParse(protCtrl.text
+                                    .trim()
+                                    .replaceAll(',', '.')) ??
+                                meal.protein;
+                            final newCarbs = double.tryParse(carbsCtrl.text
+                                    .trim()
+                                    .replaceAll(',', '.')) ??
+                                meal.carbs;
+                            final newFat = double.tryParse(
+                                    fatCtrl.text.trim().replaceAll(',', '.')) ??
+                                meal.fat;
+                            final newTime = timeCtrl.text.trim().isNotEmpty
+                                ? timeCtrl.text.trim()
+                                : meal.time;
+
+                            dietProvider.updateMeal(
+                              meal.id,
+                              name: newName,
+                              calories: newCals,
+                              protein: newProt,
+                              carbs: newCarbs,
+                              fat: newFat,
+                              time: newTime,
+                              category: selectedCat,
+                            );
+                            Navigator.pop(dialogCtx);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: accentColor,
+                            foregroundColor: Colors.black,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10)),
+                          ),
+                          child: const Text("Salvar",
+                              style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -572,14 +928,23 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
 
   List<FoodItem> _searchResults = [];
   bool _isLoading = false;
+  bool _isEstimatingAI = false;
   String? _errorMessage;
 
   FoodItem? _selectedFood;
   bool _isManualMode = false;
 
+  Timer? _searchDebounce;
+  Timer? _comboSearchDebounce;
+  late String _selectedCategory;
+
   @override
   void initState() {
     super.initState();
+    final now = DateTime.now();
+    final nowStr =
+        "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
+    _selectedCategory = Meal.inferCategoryFromTime(nowStr);
     _loadFavoritesAndPresets();
   }
 
@@ -590,22 +955,26 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
     try {
       final favs = await _foodService.getFavorites(userId);
       final prets = await _foodService.getPresets(userId);
+      if (!mounted) return;
       setState(() {
         _favorites = favs;
         _presets = prets;
         _loadingFavsOrPresets = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() => _loadingFavsOrPresets = false);
     }
   }
 
-  void _onSearchChanged() async {
+  void _onSearchChanged() {
+    _searchDebounce?.cancel();
     final query = _searchCtrl.text.trim();
     if (query.isEmpty) {
       setState(() {
         _searchResults = [];
         _errorMessage = null;
+        _isLoading = false;
       });
       return;
     }
@@ -617,18 +986,59 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
       _isManualMode = false;
     });
 
-    try {
-      final results = await _foodService.searchFoods(query);
+    _searchDebounce = Timer(const Duration(milliseconds: 280), () async {
+      try {
+        final results = await _foodService.searchFoods(query);
+        if (!mounted || _searchCtrl.text.trim() != query) return;
+        setState(() {
+          _searchResults = results;
+          _isLoading = false;
+        });
+      } catch (e) {
+        if (!mounted) return;
+        setState(() {
+          _errorMessage = "Erro ao buscar alimentos.";
+          _isLoading = false;
+        });
+      }
+    });
+  }
+
+  Future<void> _estimateWithAI() async {
+    final query = _searchCtrl.text.trim();
+    if (query.isEmpty) {
       setState(() {
-        _searchResults = results;
-        _isLoading = false;
+        _errorMessage =
+            "Descreva o que você comeu acima (ex: 2 ovos mexidos com pão francês) e toque em Estimar com IA.";
       });
-    } catch (e) {
-      setState(() {
-        _errorMessage = "Erro ao buscar alimentos.";
-        _isLoading = false;
-      });
+      return;
     }
+
+    _searchDebounce?.cancel();
+    setState(() {
+      _isEstimatingAI = true;
+      _isLoading = false;
+      _errorMessage = null;
+      _searchResults = [];
+      _isManualMode = false;
+    });
+
+    final estimated = await AIService().estimateMealMacros(query);
+    if (!mounted) return;
+
+    if (estimated == null) {
+      setState(() {
+        _isEstimatingAI = false;
+        _errorMessage =
+            "Não foi possível estimar os macros com IA no momento. Tente novamente ou use o modo manual.";
+      });
+      return;
+    }
+
+    setState(() {
+      _isEstimatingAI = false;
+    });
+    _selectFood(estimated);
   }
 
   void _selectFood(FoodItem food) {
@@ -662,7 +1072,20 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
 
     // Se for um alimento retornado pela IA sem ID no banco global, cadastramos globalmente antes de favoritar
     if (_selectedFood!.id.isEmpty) {
-      await _foodService.addFood(_selectedFood!);
+      final assignedId = 'ai-${DateTime.now().millisecondsSinceEpoch}';
+      final persisted = FoodItem(
+        id: assignedId,
+        name: _selectedFood!.name,
+        searchName: _selectedFood!.searchName,
+        calories: _selectedFood!.calories,
+        protein: _selectedFood!.protein,
+        carbs: _selectedFood!.carbs,
+        fat: _selectedFood!.fat,
+        servingSize: _selectedFood!.servingSize,
+        servingUnit: _selectedFood!.servingUnit,
+      );
+      await _foodService.addFood(persisted);
+      _selectedFood = persisted;
     }
 
     final fav = FavoriteFood(
@@ -697,24 +1120,29 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
     final carbs = double.parse((fav.food.carbs * scale).toStringAsFixed(1));
     final fat = double.parse((fav.food.fat * scale).toStringAsFixed(1));
 
-    widget.provider.addMeal(name, calories, protein, carbs, fat, timeStr);
+    widget.provider.addMeal(name, calories, protein, carbs, fat, timeStr,
+        category: _selectedCategory);
     Navigator.pop(context);
   }
 
   // --- MÉTODOS DE REFEIÇÕES SALVAS/PRESETS ---
 
-  void _onComboSearchChanged() async {
+  void _onComboSearchChanged() {
+    _comboSearchDebounce?.cancel();
     final query = _comboSearchCtrl.text.trim();
     if (query.isEmpty) {
       setState(() => _comboSearchResults = []);
       return;
     }
-    try {
-      final results = await _foodService.searchFoods(query);
-      setState(() => _comboSearchResults = results);
-    } catch (e) {
-      debugPrint("Erro ao buscar alimento para a refeição: $e");
-    }
+    _comboSearchDebounce = Timer(const Duration(milliseconds: 280), () async {
+      try {
+        final results = await _foodService.searchFoods(query);
+        if (!mounted || _comboSearchCtrl.text.trim() != query) return;
+        setState(() => _comboSearchResults = results);
+      } catch (e) {
+        debugPrint("Erro ao buscar alimento para a refeição: $e");
+      }
+    });
   }
 
   void _addItemToNewCombo(FoodItem food) {
@@ -774,7 +1202,8 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
       final carbs = double.parse((item.food.carbs * scale).toStringAsFixed(1));
       final fat = double.parse((item.food.fat * scale).toStringAsFixed(1));
 
-      widget.provider.addMeal(name, calories, protein, carbs, fat, timeStr);
+      widget.provider.addMeal(name, calories, protein, carbs, fat, timeStr,
+          category: _selectedCategory);
     }
     Navigator.pop(context);
   }
@@ -789,16 +1218,36 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
       if (name.isEmpty) return;
 
       final calories = int.tryParse(_manualCalsCtrl.text.trim()) ?? 0;
-      final protein = double.tryParse(_manualProtCtrl.text.trim()) ?? 0.0;
-      final carbs = double.tryParse(_manualCarbsCtrl.text.trim()) ?? 0.0;
-      final fat = double.tryParse(_manualFatCtrl.text.trim()) ?? 0.0;
+      final protein =
+          double.tryParse(_manualProtCtrl.text.trim().replaceAll(',', '.')) ??
+              0.0;
+      final carbs =
+          double.tryParse(_manualCarbsCtrl.text.trim().replaceAll(',', '.')) ??
+              0.0;
+      final fat =
+          double.tryParse(_manualFatCtrl.text.trim().replaceAll(',', '.')) ??
+              0.0;
 
-      widget.provider.addMeal(name, calories, protein, carbs, fat, timeStr);
+      widget.provider.addMeal(name, calories, protein, carbs, fat, timeStr,
+          category: _selectedCategory);
       Navigator.pop(context);
     } else if (_selectedFood != null) {
       // Se for um alimento novo vindo da IA (ID vazio), salvamos no Firestore global
       if (_selectedFood!.id.isEmpty) {
-        await _foodService.addFood(_selectedFood!);
+        final assignedId = 'ai-${DateTime.now().millisecondsSinceEpoch}';
+        final persisted = FoodItem(
+          id: assignedId,
+          name: _selectedFood!.name,
+          searchName: _selectedFood!.searchName,
+          calories: _selectedFood!.calories,
+          protein: _selectedFood!.protein,
+          carbs: _selectedFood!.carbs,
+          fat: _selectedFood!.fat,
+          servingSize: _selectedFood!.servingSize,
+          servingUnit: _selectedFood!.servingUnit,
+        );
+        await _foodService.addFood(persisted);
+        _selectedFood = persisted;
       }
 
       final quantity = double.tryParse(_quantityCtrl.text.trim()) ??
@@ -813,7 +1262,8 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
           double.parse((_selectedFood!.carbs * scale).toStringAsFixed(1));
       final fat = double.parse((_selectedFood!.fat * scale).toStringAsFixed(1));
 
-      widget.provider.addMeal(name, calories, protein, carbs, fat, timeStr);
+      widget.provider.addMeal(name, calories, protein, carbs, fat, timeStr,
+          category: _selectedCategory);
       if (!mounted) return;
       Navigator.pop(context);
     }
@@ -821,6 +1271,8 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
+    _comboSearchDebounce?.cancel();
     _searchCtrl.dispose();
     _quantityCtrl.dispose();
     _manualNameCtrl.dispose();
@@ -856,7 +1308,7 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
       ),
       child: Row(
         children: [
-          _tabHeaderItem(0, "Busca", Icons.search),
+          _tabHeaderItem(0, "Busca / IA", Icons.search),
           _tabHeaderItem(1, "Favoritos", Icons.star),
           _tabHeaderItem(2, "Refeições Salvas", Icons.brunch_dining),
         ],
@@ -941,7 +1393,35 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: Meal.categories.map((cat) {
+                    final isSel = _selectedCategory == cat;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: ChoiceChip(
+                        label: Text(cat),
+                        selected: isSel,
+                        onSelected: (v) {
+                          if (v) setState(() => _selectedCategory = cat);
+                        },
+                        selectedColor: accentColor.withOpacity(0.25),
+                        backgroundColor: Colors.white.withOpacity(0.05),
+                        visualDensity: VisualDensity.compact,
+                        labelStyle: TextStyle(
+                          color: isSel ? accentColor : Colors.white70,
+                          fontSize: 10,
+                          fontWeight:
+                              isSel ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              const SizedBox(height: 12),
               Flexible(
                 child: SingleChildScrollView(
                   child: Column(
@@ -955,7 +1435,7 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                           style: const TextStyle(
                               color: Colors.white, fontSize: 14),
                           decoration: _dialogInputDeco(
-                              "Buscar alimento (ex: Banana, Ovo)..."),
+                              "Buscar ou descrever refeição p/ IA..."),
                           onChanged: (_) => _onSearchChanged(),
                         ),
                         const SizedBox(height: 10),
@@ -967,16 +1447,32 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                           ),
                           const SizedBox(height: 10),
                         ],
-                        if (_isLoading) ...[
-                          const Center(
+                        if (_isLoading || _isEstimatingAI) ...[
+                          Center(
                             child: Padding(
-                              padding: EdgeInsets.symmetric(vertical: 20),
-                              child: CircularProgressIndicator(
-                                  color: Colors.white),
+                              padding: const EdgeInsets.symmetric(vertical: 18),
+                              child: Column(
+                                children: [
+                                  CircularProgressIndicator(
+                                      color: _isEstimatingAI
+                                          ? accentColor
+                                          : Colors.white),
+                                  if (_isEstimatingAI) ...[
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      "Estimando macros com IA...",
+                                      style: TextStyle(
+                                          color: accentColor, fontSize: 11),
+                                    ),
+                                  ],
+                                ],
+                              ),
                             ),
                           ),
                         ],
-                        if (!_isLoading && _searchResults.isNotEmpty) ...[
+                        if (!_isLoading &&
+                            !_isEstimatingAI &&
+                            _searchResults.isNotEmpty) ...[
                           Container(
                             constraints: const BoxConstraints(maxHeight: 180),
                             decoration: BoxDecoration(
@@ -1013,28 +1509,78 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                           ),
                           const SizedBox(height: 10),
                         ],
-                        InkWell(
-                          onTap: _switchToManual,
-                          borderRadius: BorderRadius.circular(8),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 8, horizontal: 4),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.edit_note_rounded,
-                                    color: accentColor, size: 16),
-                                const SizedBox(width: 6),
-                                Text(
-                                  "Criar Alimento Manual",
-                                  style: TextStyle(
-                                      color: accentColor,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: InkWell(
+                                onTap: _isEstimatingAI ? null : _estimateWithAI,
+                                borderRadius: BorderRadius.circular(10),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 8, horizontal: 8),
+                                  decoration: BoxDecoration(
+                                    color: accentColor.withOpacity(0.14),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                        color: accentColor.withOpacity(0.35)),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.auto_awesome,
+                                          color: accentColor, size: 15),
+                                      const SizedBox(width: 5),
+                                      Flexible(
+                                        child: Text(
+                                          "Estimar com IA",
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                              color: accentColor,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w800),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ],
+                              ),
                             ),
-                          ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: InkWell(
+                                onTap: _switchToManual,
+                                borderRadius: BorderRadius.circular(10),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 8, horizontal: 8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.05),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                        color: Colors.white.withOpacity(0.1)),
+                                  ),
+                                  child: const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.edit_note_rounded,
+                                          color: Colors.white70, size: 16),
+                                      SizedBox(width: 5),
+                                      Flexible(
+                                        child: Text(
+                                          "Modo Manual",
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                              color: Colors.white70,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 8),
                         if (_selectedFood != null) ...[

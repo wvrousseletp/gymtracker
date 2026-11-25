@@ -154,7 +154,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                       onPressed: () {
                         Navigator.pop(dialogCtx);
                         HapticFeedback.lightImpact();
-                        provider.shiftPlannerForward();
+                        provider.shiftPlannerForward(selectedReason);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text('Descanso registrado ($selectedReason). Treinos adiados.'),
@@ -224,7 +224,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   bool _isRestDayToday(List<WorkoutLog> history) {
     final todayStr = DateTime.now().toLocal().toString().substring(0, 10);
     return history.any((log) {
-      if (log.name != 'Dia de Descanso') return false;
+      if (!log.isRestDayLog) return false;
       try {
         final logDate = DateTime.parse(log.date).toLocal();
         return logDate.toString().substring(0, 10) == todayStr;
@@ -2000,6 +2000,14 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
   }
 
 
+  int _groupIndexForExercise(int exIdx) {
+    final groups = _exerciseGroups;
+    for (int g = 0; g < groups.length; g++) {
+      if (groups[g].contains(exIdx)) return g;
+    }
+    return 0;
+  }
+
   GlobalKey _getOrCreateKey(int exIdx, int setIdx) {
     final keyStr = '${exIdx}_$setIdx';
     return _setCardKeys.putIfAbsent(keyStr, () => GlobalKey());
@@ -2015,8 +2023,9 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _currentExIdx = widget.activeWorkout.currentExerciseIndex;
+    final initialGroupIdx = _groupIndexForExercise(_currentExIdx);
     _pageController =
-        PageController(initialPage: _currentExIdx, viewportFraction: 0.95);
+        PageController(initialPage: initialGroupIdx, viewportFraction: 0.95);
     _scrollControllers = List.generate(
       widget.activeWorkout.exercises.length,
       (_) => ScrollController(),
@@ -2149,8 +2158,23 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
     }
 
     if (active.currentExerciseIndex != _currentExIdx) {
+      final newExIdx = active.currentExerciseIndex;
+      final targetGroupIdx = _groupIndexForExercise(newExIdx);
       setState(() {
-        _currentExIdx = active.currentExerciseIndex;
+        _currentExIdx = newExIdx;
+      });
+      if (_pageController.hasClients) {
+        final currentPage = _pageController.page?.round() ?? 0;
+        if (currentPage != targetGroupIdx) {
+          _pageController.animateToPage(
+            targetGroupIdx,
+            duration: const Duration(milliseconds: 280),
+            curve: Curves.easeOutCubic,
+          );
+        }
+      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _scrollToNextSet(newExIdx);
       });
     }
 
@@ -2322,9 +2346,11 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                                   child: Text(
                                     workout.executionType ==
                                                 RoutineExecutionType.circuit &&
-                                            workout.circuitCycles > 0
-                                        ? "Ex. ${(_currentExIdx % (_exerciseGroups.length ~/ workout.circuitCycles)) + 1}/${_exerciseGroups.length ~/ workout.circuitCycles}"
-                                        : "Ex. ${_currentExIdx + 1}/${_exerciseGroups.length}",
+                                            workout.circuitCycles > 0 &&
+                                            exercises.length >=
+                                                workout.circuitCycles
+                                        ? "Ex. ${(_currentExIdx % (exercises.length ~/ workout.circuitCycles)) + 1}/${exercises.length ~/ workout.circuitCycles}"
+                                        : "Ex. ${_currentExIdx + 1}/${exercises.length}",
                                     style: const TextStyle(
                                       color: Colors.white70,
                                       fontSize: 11,
@@ -2499,13 +2525,21 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                       child: PageView.builder(
                         controller: _pageController,
                         physics: const BouncingScrollPhysics(),
-                        onPageChanged: (index) {
+                        onPageChanged: (groupIndex) {
+                          final groups = _exerciseGroups;
+                          if (groupIndex < 0 || groupIndex >= groups.length) {
+                            return;
+                          }
+                          final group = groups[groupIndex];
+                          final targetExIdx = group.firstWhere(
+                            (i) => exercises[i].setsState.contains(false),
+                            orElse: () => group.first,
+                          );
                           setState(() {
-                            _currentExIdx = index;
-                            widget.provider
-                                .setCurrentExerciseIndex(_currentExIdx);
+                            _currentExIdx = targetExIdx;
                           });
-                          _scrollToNextSet(index, fromUserSwipe: true);
+                          widget.provider.setCurrentExerciseIndex(targetExIdx);
+                          _scrollToNextSet(targetExIdx, fromUserSwipe: true);
                         },
                         itemCount: _exerciseGroups.length,
                         itemBuilder: (context, groupIndex) {
@@ -3845,19 +3879,21 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
   void _scrollToNextExerciseAfterRpe(int exIdx) {
     final active = widget.provider.state?.activeWorkout;
     if (active == null) return;
-    if (exIdx < active.exercises.length - 1) {
+    final groups = _exerciseGroups;
+    final currentGroupIdx = _groupIndexForExercise(exIdx);
+    if (currentGroupIdx < groups.length - 1) {
       if (_pageController.hasClients) {
         _pageController.animateToPage(
-          exIdx + 1,
+          currentGroupIdx + 1,
           duration: const Duration(milliseconds: 400),
           curve: Curves.easeInOut,
         );
       }
     } else {
-      // Last exercise completed - scroll smoothly to the finish workout button
-      if (exIdx < _scrollControllers.length &&
-          _scrollControllers[exIdx].hasClients) {
-        final sc = _scrollControllers[exIdx];
+      // Last group completed - scroll smoothly to the finish workout button
+      if (currentGroupIdx < _scrollControllers.length &&
+          _scrollControllers[currentGroupIdx].hasClients) {
+        final sc = _scrollControllers[currentGroupIdx];
         sc.animateTo(
           sc.position.maxScrollExtent,
           duration: const Duration(milliseconds: 400),
@@ -4044,13 +4080,179 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
   }
 
   void _finishWorkoutDirectly(BuildContext context) {
+    final workoutProv = widget.provider.workoutProvider;
+    final active = workoutProv?.activeWorkout;
+    final modifiedIndices =
+        workoutProv?.getModifiedRoutineExerciseIndices() ?? const <int>[];
 
-    widget.provider.finishWorkout(
-      _workoutDurationNotifier.value,
-      8, // calculatedRpe is automatically resolved inside the provider
-      "",
-    );
+    if (active == null || modifiedIndices.isEmpty) {
+      widget.provider.finishWorkout(
+        _workoutDurationNotifier.value,
+        8, // calculatedRpe is automatically resolved inside the provider
+        "",
+      );
+      return;
+    }
 
+    final accentColor =
+        ThemeUtils.getColor(widget.provider.currentProfile.colorAccent);
+    final modifiedExercises = modifiedIndices
+        .where((i) => i >= 0 && i < active.exercises.length)
+        .map((i) => active.exercises[i])
+        .toList();
+
+    showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogCtx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: GlassCard(
+          useBlur: true,
+          borderColor: Colors.white.withOpacity(0.1),
+          borderRadius: 24,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: accentColor.withOpacity(0.18),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.trending_up_rounded,
+                        color: accentColor, size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      "Atualizar Rotina Base?",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                "Você alterou cargas, séries ou repetições em ${modifiedExercises.length} exercício(s) de \"${active.name}\". Deseja salvar essas novas metas para os próximos treinos?",
+                style: const TextStyle(
+                    color: Colors.white70, fontSize: 13, height: 1.35),
+              ),
+              const SizedBox(height: 12),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 160),
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: modifiedExercises.map((ex) {
+                      final wLabel = ex.weight == ex.weight.roundToDouble()
+                          ? ex.weight.toInt().toString()
+                          : ex.weight.toStringAsFixed(1);
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          children: [
+                            Icon(Icons.check_circle_outline,
+                                size: 15, color: accentColor),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                ex.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              "${ex.sets}×${ex.reps} • ${wLabel}kg",
+                              style: TextStyle(
+                                color: accentColor,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        Navigator.pop(dialogCtx, false);
+                        widget.provider.finishWorkout(
+                          _workoutDurationNotifier.value,
+                          8,
+                          "",
+                        );
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white70,
+                        side: BorderSide(color: Colors.white.withOpacity(0.18)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: const Text(
+                        "Só Hoje",
+                        style: TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        workoutProv?.applyAllModifiedExercisesToRoutine();
+                        Navigator.pop(dialogCtx, true);
+                        widget.provider.finishWorkout(
+                          _workoutDurationNotifier.value,
+                          8,
+                          "",
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: accentColor,
+                        foregroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: const Text(
+                        "Atualizar Rotina",
+                        style: TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    ).then((result) {
+      if (result == null && mounted) {
+        _autoFinishDialogShowing = false;
+      }
+    });
   }
 
   String _formatDuration(int totalSeconds) {

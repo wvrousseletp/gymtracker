@@ -901,9 +901,37 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void addMeal(String name, int cals, double prot, double carbs, double fat,
-      String time) {
+      String time,
+      {String? category}) {
     if (_dietProvider == null) return;
-    _dietProvider!.addMeal(name, cals, prot, carbs, fat, time);
+    _dietProvider!
+        .addMeal(name, cals, prot, carbs, fat, time, category: category);
+  }
+
+  void updateMeal(
+    String mealId, {
+    required String name,
+    required int calories,
+    required double protein,
+    required double carbs,
+    required double fat,
+    required String time,
+    String? category,
+  }) {
+    _dietProvider?.updateMeal(
+      mealId,
+      name: name,
+      calories: calories,
+      protein: protein,
+      carbs: carbs,
+      fat: fat,
+      time: time,
+      category: category,
+    );
+  }
+
+  int copyPreviousDayMeals() {
+    return _dietProvider?.copyPreviousDayMeals() ?? 0;
   }
 
   void deleteMeal(String mealId) {
@@ -1082,9 +1110,16 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
       if (finishPending) {
         final active = _workoutProvider?.activeWorkout;
         if (active != null) {
-          final elapsed = active.elapsedSeconds;
-          finishWorkout(elapsed ~/ 60, 5, 'Finalizado via Dynamic Island');
+          final nowMs = DateTime.now().millisecondsSinceEpoch;
+          final computedElapsed = (!active.paused && active.startTime > 0)
+              ? ((nowMs - active.startTime) / 1000).round()
+              : active.elapsedSeconds;
+          final durationSeconds = computedElapsed > active.elapsedSeconds
+              ? computedElapsed
+              : active.elapsedSeconds;
+          finishWorkout(durationSeconds, 8, 'Finalizado via Dynamic Island');
         }
+        WatchService.instance.sendActiveWorkoutCleared();
         return;
       }
 
@@ -1111,6 +1146,8 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
                 prep: rest.isPrep,
                 exName: rest.nextExerciseName,
                 setNum: rest.nextSetNum,
+                targetReps: rest.nextTargetReps,
+                targetWeight: rest.nextTargetWeight,
                 onCompleted: () => _workoutProvider!.clearRestTimer(),
               );
             } else {
@@ -1146,82 +1183,7 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<void> syncAppleWorkouts() async {
     if (currentUserId.isEmpty || _workoutProvider == null) return;
-    try {
-      final workouts = await HealthService.instance.getRecentWorkouts();
-      if (workouts.isEmpty) return;
-
-      bool addedAny = false;
-      for (final w in workouts) {
-        final id = w['id'] as String;
-        final name = w['name'] as String;
-        final duration = w['duration'] as int;
-        final calories = w['calories'] as int;
-        final date = w['date'] as String;
-
-        // Skip if already imported by ID
-        if (_workoutProvider!.history.any((log) => log.id == id)) continue;
-
-        // Skip if it was imported and then deleted by the user
-        if (_workoutProvider!.deletedHealthWorkoutIds.contains(id)) continue;
-
-        // Skip if there is a local log registered at the exact same or very close time (±3 minutes)
-        try {
-          final workoutDateTime = DateTime.parse(date);
-          final bool isDuplicateOfLocal = _workoutProvider!.history.any((log) {
-            try {
-              final logDateTime = DateTime.parse(log.date);
-              final diffMinutes =
-                  logDateTime.difference(workoutDateTime).inMinutes.abs();
-              return diffMinutes <= 3; // Within 3 minutes
-            } catch (_) {
-              return false;
-            }
-          });
-          if (isDuplicateOfLocal) continue;
-        } catch (_) {}
-
-        final newLog = WorkoutLog(
-          id: id,
-          name: name,
-          date: date,
-          duration: duration,
-          completedSets: 1,
-          totalSets: 1,
-          totalWeight: 0.0,
-          rpe: 8,
-          notes: "Importado do Apple Health",
-          avgHeartRate: null,
-          activeCalories: calories > 0 ? calories : null,
-          exercises: [
-            LogExercise(
-              name: name,
-              muscle: "Geral",
-              sets: 1,
-              completedSets: 1,
-              reps: duration ~/ 60,
-              weight: 0.0,
-              rpe: 8,
-              performedCardios: [],
-              failureReport: [false],
-              failureReps: [null],
-            )
-          ],
-        );
-
-        _workoutProvider!.history.insert(0, newLog);
-        unawaited(_firebaseSync.syncWorkoutLog(currentUserId, newLog));
-        addedAny = true;
-      }
-
-      if (addedAny) {
-        // Sort by date descending
-        _workoutProvider!.history.sort((a, b) => b.date.compareTo(a.date));
-        await saveState();
-      }
-    } catch (e) {
-      debugPrint(
-          '[TrackerProvider] Erro ao importar treinos do Apple Health: $e');
-    }
+    await _workoutProvider!.syncHealthKitWorkoutsManually();
   }
 
   Future<void> requestHealthAuthorization() async {

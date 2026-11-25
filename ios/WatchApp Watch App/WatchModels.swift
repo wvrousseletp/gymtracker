@@ -36,9 +36,11 @@ struct WatchRoutineExercise: Codable, Identifiable {
     let reps: Int
     let rest: Int
     let weight: Double
+    let weightsPerSet: [Double]?
+    let repsPerSet: [Int]?
 
     enum CodingKeys: String, CodingKey {
-        case exerciseId, sets, reps, rest, weight
+        case exerciseId, sets, reps, rest, weight, weightsPerSet, repsPerSet
     }
 
     init(from decoder: Decoder) throws {
@@ -75,6 +77,15 @@ struct WatchRoutineExercise: Codable, Identifiable {
             weight = Double(val)
         } else {
             weight = 0.0
+        }
+
+        weightsPerSet = try? container.decodeIfPresent([Double].self, forKey: .weightsPerSet)
+        if let intReps = try? container.decodeIfPresent([Int].self, forKey: .repsPerSet) {
+            repsPerSet = intReps
+        } else if let dblReps = try? container.decodeIfPresent([Double].self, forKey: .repsPerSet) {
+            repsPerSet = dblReps.map { Int($0) }
+        } else {
+            repsPerSet = nil
         }
     }
 }
@@ -132,14 +143,14 @@ struct WatchRestTimer: Codable {
         case endTime, totalSeconds, nextExerciseName, nextSetNum, nextTargetReps, nextTargetWeight, isPrep
     }
 
-    init(endTime: Int64, totalSeconds: Int, nextExerciseName: String, nextSetNum: Int, isPrep: Bool) {
+    init(endTime: Int64, totalSeconds: Int, nextExerciseName: String, nextSetNum: Int, isPrep: Bool, nextTargetReps: Int? = nil, nextTargetWeight: Double? = nil) {
         self.endTime = endTime
         self.totalSeconds = totalSeconds
         self.nextExerciseName = nextExerciseName
         self.nextSetNum = nextSetNum
         self.isPrep = isPrep
-        self.nextTargetReps = nil
-        self.nextTargetWeight = nil
+        self.nextTargetReps = nextTargetReps
+        self.nextTargetWeight = nextTargetWeight
     }
 
     init(from decoder: Decoder) throws {
@@ -364,9 +375,11 @@ struct WatchActiveExercise: Codable, Identifiable {
     let name: String
     let muscle: String
     var sets: Int
-    let reps: Int
+    var reps: Int
     let rest: Int
     var weight: Double
+    var weightsPerSet: [Double]?
+    var repsPerSet: [Int]?
     var setsState: [Bool]
     let measurementType: String
     let executionType: String?
@@ -374,6 +387,20 @@ struct WatchActiveExercise: Codable, Identifiable {
     var failureReport: [Bool]
     let failureReps: [Int?]
     let isStationary: Bool
+
+    func weightForSet(_ index: Int) -> Double {
+        if let list = weightsPerSet, index >= 0 && index < list.count {
+            return list[index]
+        }
+        return weight
+    }
+
+    func repsForSet(_ index: Int) -> Int {
+        if let list = repsPerSet, index >= 0 && index < list.count {
+            return list[index]
+        }
+        return reps
+    }
 
     var isCardio: Bool {
         let nameLower = name.lowercased()
@@ -393,14 +420,14 @@ struct WatchActiveExercise: Codable, Identifiable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case instanceId, name, muscle, sets, reps, rest, weight, setsState, measurementType, executionType, performedCardios, failureReport, failureReps, isStationary
+        case instanceId, name, muscle, sets, reps, rest, weight, weightsPerSet, repsPerSet, setsState, measurementType, executionType, performedCardios, failureReport, failureReps, isStationary
     }
 
     private enum ExtraKeys: String, CodingKey {
         case id
     }
 
-    init(name: String, muscle: String, sets: Int, reps: Int, rest: Int, weight: Double, setsState: [Bool], measurementType: String, executionType: String?, performedCardios: [WatchPerformedCardio?], failureReport: [Bool], failureReps: [Int?], isStationary: Bool = false, instanceId: String = UUID().uuidString) {
+    init(name: String, muscle: String, sets: Int, reps: Int, rest: Int, weight: Double, setsState: [Bool], measurementType: String, executionType: String?, performedCardios: [WatchPerformedCardio?], failureReport: [Bool], failureReps: [Int?], isStationary: Bool = false, instanceId: String = UUID().uuidString, weightsPerSet: [Double]? = nil, repsPerSet: [Int]? = nil) {
         self.instanceId = instanceId
         self.name = name
         self.muscle = muscle
@@ -408,6 +435,8 @@ struct WatchActiveExercise: Codable, Identifiable {
         self.reps = reps
         self.rest = rest
         self.weight = weight
+        self.weightsPerSet = weightsPerSet
+        self.repsPerSet = repsPerSet
         self.setsState = setsState
         self.measurementType = measurementType
         self.executionType = executionType
@@ -461,6 +490,15 @@ struct WatchActiveExercise: Codable, Identifiable {
             weight = 0.0
         }
 
+        weightsPerSet = try? container.decodeIfPresent([Double].self, forKey: .weightsPerSet)
+        if let intReps = try? container.decodeIfPresent([Int].self, forKey: .repsPerSet) {
+            repsPerSet = intReps
+        } else if let dblReps = try? container.decodeIfPresent([Double].self, forKey: .repsPerSet) {
+            repsPerSet = dblReps.map { Int($0) }
+        } else {
+            repsPerSet = nil
+        }
+
         if let cardiosArray = try? container.decode([WatchPerformedCardio?].self, forKey: .performedCardios) {
             performedCardios = cardiosArray
         } else {
@@ -477,7 +515,7 @@ struct WatchActiveExercise: Codable, Identifiable {
     }
     
     func toJSON() -> [String: Any] {
-        return [
+        var dict: [String: Any] = [
             "instanceId": instanceId,
             "name": name,
             "muscle": muscle,
@@ -493,6 +531,9 @@ struct WatchActiveExercise: Codable, Identifiable {
             "failureReps": failureReps.map { $0 ?? 0 },
             "isStationary": isStationary
         ]
+        if let wps = weightsPerSet { dict["weightsPerSet"] = wps }
+        if let rps = repsPerSet { dict["repsPerSet"] = rps }
+        return dict
     }
 }
 

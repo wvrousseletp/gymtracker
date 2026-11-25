@@ -1,7 +1,9 @@
 // ignore_for_file: prefer_const_constructors, use_build_context_synchronously, use_key_in_widget_constructors
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/planner/volume_history_sheet.dart';
 import '../widgets/planner/cardio_history_sheet.dart';
 import '../widgets/planner/modern_planner_card.dart';
@@ -26,6 +28,8 @@ class PlannerScreen extends StatefulWidget {
 }
 
 class _PlannerScreenState extends State<PlannerScreen> {
+  static const String _aiCachePrefsKey = 'planner_ai_suggestions_v1';
+
   final List<String> _daysOfWeek = [
     'seg',
     'ter',
@@ -41,9 +45,45 @@ class _PlannerScreenState extends State<PlannerScreen> {
   final Map<String, bool> _isLoadingAIByDay = {};
   final Map<String, bool> _showAIByDay = {};
 
+  @override
+  void initState() {
+    super.initState();
+    _loadCachedAISuggestions();
+  }
+
+  Future<void> _loadCachedAISuggestions() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_aiCachePrefsKey);
+      if (raw == null || raw.isEmpty) return;
+      final decoded = json.decode(raw);
+      if (decoded is! Map) return;
+      final Map<String, Map<String, String>> loaded = {};
+      decoded.forEach((day, val) {
+        if (val is Map) {
+          loaded[day.toString()] =
+              val.map((k, v) => MapEntry(k.toString(), v.toString()));
+        }
+      });
+      if (mounted && loaded.isNotEmpty) {
+        setState(() {
+          _aiSuggestionsByDay.addAll(loaded);
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _saveCachedAISuggestions() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_aiCachePrefsKey, json.encode(_aiSuggestionsByDay));
+    } catch (_) {}
+  }
+
   Future<void> _toggleOrFetchAI(String day, List<String> items,
-      List<WorkoutLog> history, PlannerState state) async {
-    if (_showAIByDay[day] == true) {
+      List<WorkoutLog> history, PlannerState state,
+      {bool forceRefresh = false}) async {
+    if (!forceRefresh && _showAIByDay[day] == true) {
       setState(() => _showAIByDay[day] = false);
       return;
     }
@@ -52,8 +92,9 @@ class _PlannerScreenState extends State<PlannerScreen> {
       _showAIByDay[day] = true;
     });
 
-    if (_aiSuggestionsByDay.containsKey(day)) {
-      return; // already fetched
+    if (!forceRefresh && _aiSuggestionsByDay.containsKey(day) &&
+        _aiSuggestionsByDay[day]!.isNotEmpty) {
+      return; // already fetched/cached
     }
 
     setState(() {
@@ -100,9 +141,14 @@ class _PlannerScreenState extends State<PlannerScreen> {
 
     if (mounted) {
       setState(() {
-        _aiSuggestionsByDay[day] = suggestions;
+        if (suggestions.isNotEmpty || !_aiSuggestionsByDay.containsKey(day)) {
+          _aiSuggestionsByDay[day] = suggestions;
+        }
         _isLoadingAIByDay[day] = false;
       });
+      if (suggestions.isNotEmpty) {
+        await _saveCachedAISuggestions();
+      }
     }
   }
 
@@ -1863,12 +1909,32 @@ class _PlannerScreenState extends State<PlannerScreen> {
                                   Icon(Icons.auto_awesome,
                                       color: accentColor, size: 16),
                                   const SizedBox(width: 8),
-                                  Text(
-                                    "Sugestões de Progressão (IA)",
-                                    style: TextStyle(
-                                      color: accentColor,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13,
+                                  Expanded(
+                                    child: Text(
+                                      "Sugestões de Progressão (IA)",
+                                      style: TextStyle(
+                                        color: accentColor,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                                  InkWell(
+                                    borderRadius: BorderRadius.circular(8),
+                                    onTap: () => _toggleOrFetchAI(
+                                      day,
+                                      items,
+                                      provider.state!.history,
+                                      state,
+                                      forceRefresh: true,
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(4.0),
+                                      child: Icon(
+                                        Icons.refresh_rounded,
+                                        color: accentColor.withOpacity(0.8),
+                                        size: 16,
+                                      ),
                                     ),
                                   ),
                                 ],

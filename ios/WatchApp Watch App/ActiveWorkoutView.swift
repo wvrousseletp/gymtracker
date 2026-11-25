@@ -338,6 +338,8 @@ struct ActiveWorkoutView: View {
     private func strengthControls(exercise: WatchActiveExercise, exIndex: Int, selectedSetIdx: Int) -> some View {
         let isFailure = (selectedSetIdx >= 0 && selectedSetIdx < exercise.failureReport.count) ? exercise.failureReport[selectedSetIdx] : false
         let failureRep = (selectedSetIdx >= 0 && selectedSetIdx < exercise.failureReps.count) ? exercise.failureReps[selectedSetIdx] : nil
+        let setWeight = exercise.weightForSet(selectedSetIdx)
+        let setReps = exercise.repsForSet(selectedSetIdx)
 
         return VStack(spacing: 6) {
             HStack {
@@ -354,7 +356,7 @@ struct ActiveWorkoutView: View {
                         Image(systemName: "dumbbell.fill")
                             .font(.system(size: 10))
                             .foregroundColor(.orange)
-                        Text(String(format: "%.1f kg", exercise.weight))
+                        Text(String(format: "%.1f kg", setWeight))
                             .font(.system(size: 12, weight: .bold, design: .rounded))
                             .foregroundColor(crownFeedbackColor)
                             .scaleEffect(crownFeedbackScale)
@@ -378,7 +380,7 @@ struct ActiveWorkoutView: View {
                     Image(systemName: "arrow.3.trianglepath")
                         .font(.system(size: 10))
                         .foregroundColor(.orange)
-                    Text(exercise.measurementType == "time" ? "\(exercise.reps)s" : "\(exercise.reps) reps")
+                    Text(exercise.measurementType == "time" ? "\(setReps)s" : "\(setReps) reps")
                         .font(.system(size: 12, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
                 }
@@ -396,8 +398,8 @@ struct ActiveWorkoutView: View {
                     // Weight Fast Increment/Decrement (-2.5, -1.0, +1.0, +2.5 kg)
                     HStack(spacing: 3) {
                         Button(action: {
-                            let newW = max(0.0, exercise.weight - 2.5)
-                            connectivityManager.updateExerciseWeightReps(exerciseIndex: exIndex, weight: newW, reps: exercise.reps)
+                            let newW = max(0.0, setWeight - 2.5)
+                            connectivityManager.updateExerciseSetWeightReps(exerciseIndex: exIndex, setIndex: selectedSetIdx, weight: newW, reps: setReps)
                             #if canImport(WatchKit)
                             hapticManager.play(.light)
                             #endif
@@ -413,8 +415,8 @@ struct ActiveWorkoutView: View {
                         .buttonStyle(PlainButtonStyle())
 
                         Button(action: {
-                            let newW = max(0.0, exercise.weight - 1.0)
-                            connectivityManager.updateExerciseWeightReps(exerciseIndex: exIndex, weight: newW, reps: exercise.reps)
+                            let newW = max(0.0, setWeight - 1.0)
+                            connectivityManager.updateExerciseSetWeightReps(exerciseIndex: exIndex, setIndex: selectedSetIdx, weight: newW, reps: setReps)
                             #if canImport(WatchKit)
                             hapticManager.play(.light)
                             #endif
@@ -430,8 +432,8 @@ struct ActiveWorkoutView: View {
                         .buttonStyle(PlainButtonStyle())
 
                         Button(action: {
-                            let newW = exercise.weight + 1.0
-                            connectivityManager.updateExerciseWeightReps(exerciseIndex: exIndex, weight: newW, reps: exercise.reps)
+                            let newW = setWeight + 1.0
+                            connectivityManager.updateExerciseSetWeightReps(exerciseIndex: exIndex, setIndex: selectedSetIdx, weight: newW, reps: setReps)
                             #if canImport(WatchKit)
                             hapticManager.play(.light)
                             #endif
@@ -447,8 +449,8 @@ struct ActiveWorkoutView: View {
                         .buttonStyle(PlainButtonStyle())
 
                         Button(action: {
-                            let newW = exercise.weight + 2.5
-                            connectivityManager.updateExerciseWeightReps(exerciseIndex: exIndex, weight: newW, reps: exercise.reps)
+                            let newW = setWeight + 2.5
+                            connectivityManager.updateExerciseSetWeightReps(exerciseIndex: exIndex, setIndex: selectedSetIdx, weight: newW, reps: setReps)
                             #if canImport(WatchKit)
                             hapticManager.play(.light)
                             #endif
@@ -467,8 +469,8 @@ struct ActiveWorkoutView: View {
                     // Reps Fast Increment/Decrement (-1, +1 rep)
                     HStack(spacing: 4) {
                         Button(action: {
-                            let newR = max(1, exercise.reps - 1)
-                            connectivityManager.updateExerciseWeightReps(exerciseIndex: exIndex, weight: exercise.weight, reps: newR)
+                            let newR = max(1, setReps - 1)
+                            connectivityManager.updateExerciseSetWeightReps(exerciseIndex: exIndex, setIndex: selectedSetIdx, weight: setWeight, reps: newR)
                             #if canImport(WatchKit)
                             hapticManager.play(.light)
                             #endif
@@ -488,8 +490,8 @@ struct ActiveWorkoutView: View {
                         .buttonStyle(PlainButtonStyle())
 
                         Button(action: {
-                            let newR = exercise.reps + 1
-                            connectivityManager.updateExerciseWeightReps(exerciseIndex: exIndex, weight: exercise.weight, reps: newR)
+                            let newR = setReps + 1
+                            connectivityManager.updateExerciseSetWeightReps(exerciseIndex: exIndex, setIndex: selectedSetIdx, weight: setWeight, reps: newR)
                             #if canImport(WatchKit)
                             hapticManager.play(.light)
                             #endif
@@ -513,18 +515,21 @@ struct ActiveWorkoutView: View {
 
             // Quick Copy Previous Set Button (when on set 2+)
             if selectedSetIdx > 0 && exercise.measurementType != "time" {
+                let prevWeight = exercise.weightForSet(selectedSetIdx - 1)
+                let prevReps = exercise.repsForSet(selectedSetIdx - 1)
                 Button(action: {
-                    connectivityManager.updateExerciseWeightReps(
+                    connectivityManager.updateExerciseSetWeightReps(
                         exerciseIndex: exIndex,
-                        weight: exercise.weight,
-                        reps: exercise.reps
+                        setIndex: selectedSetIdx,
+                        weight: prevWeight,
+                        reps: prevReps
                     )
                     hapticManager.play(.light)
                 }) {
                     HStack(spacing: 3) {
                         Image(systemName: "doc.on.doc.fill")
                             .font(.system(size: 8))
-                        Text("Repetir Carga/Reps (Série \(selectedSetIdx))")
+                        Text("Repetir S\(selectedSetIdx) (\(String(format: "%.1f", prevWeight))kg × \(prevReps))")
                             .font(.system(size: 8, weight: .bold))
                     }
                     .foregroundColor(.orange)
@@ -546,7 +551,7 @@ struct ActiveWorkoutView: View {
                                 .font(.system(size: 9, weight: .bold))
                                 .foregroundColor(isTimeTimerRunning ? .orange : .green)
                             
-                            let timeToShow = timeTimerElapsed > 0 ? timeTimerElapsed : exercise.reps
+                            let timeToShow = timeTimerElapsed > 0 ? timeTimerElapsed : setReps
                             Text(String(format: "%02d:%02d", timeToShow / 60, timeToShow % 60))
                                 .font(.system(size: 11, weight: .bold, design: .monospaced))
                                 .foregroundColor(.white)
@@ -573,7 +578,7 @@ struct ActiveWorkoutView: View {
                         
                         Button(action: {
                             // Record time
-                            connectivityManager.updateExerciseWeightReps(exerciseIndex: exIndex, weight: exercise.weight, reps: timeTimerElapsed)
+                            connectivityManager.updateExerciseSetWeightReps(exerciseIndex: exIndex, setIndex: selectedSetIdx, weight: setWeight, reps: timeTimerElapsed)
                             #if canImport(WatchKit)
                             hapticManager.playSetCompleted()
                             #endif
@@ -633,7 +638,7 @@ struct ActiveWorkoutView: View {
                         Spacer()
                         HStack(spacing: 8) {
                             Button(action: {
-                                let current = failureRep ?? exercise.reps
+                                let current = failureRep ?? setReps
                                 let newR = max(1, current - 1)
                                 connectivityManager.updateFailure(exerciseIndex: exIndex, setIndex: selectedSetIdx, isFailure: true, failureRep: newR)
                             }) {
@@ -646,13 +651,13 @@ struct ActiveWorkoutView: View {
                             }
                             .buttonStyle(PlainButtonStyle())
                             
-                            Text("\(failureRep ?? exercise.reps)")
+                            Text("\(failureRep ?? setReps)")
                                 .font(.system(size: 11, weight: .bold, design: .rounded))
                                 .foregroundColor(.white)
                                 .frame(minWidth: 48, alignment: .center)
                             
                             Button(action: {
-                                let current = failureRep ?? exercise.reps
+                                let current = failureRep ?? setReps
                                 let newR = current + 1
                                 connectivityManager.updateFailure(exerciseIndex: exIndex, setIndex: selectedSetIdx, isFailure: true, failureRep: newR)
                             }) {
@@ -1360,10 +1365,17 @@ struct ActiveWorkoutView: View {
                 connectivityManager.updateCardio(exerciseIndex: activeWorkout.currentExerciseIndex, setIndex: activeSetIdx, distance: currentDistance, duration: newDuration)
             }
         } else {
-            // Adjust weight by 0.5kg per step
-            let currentWeight = exercise.weight
+            // Adjust weight by 0.5kg per step for the selected set
+            let activeSetIdx = getSelectedSetIndex(for: exercise, index: activeWorkout.currentExerciseIndex)
+            let currentWeight = exercise.weightForSet(activeSetIdx)
+            let currentReps = exercise.repsForSet(activeSetIdx)
             let newWeight = max(0.0, (currentWeight + Double(steps) * 0.5 * 2.0).rounded() / 2.0)
-            connectivityManager.updateExerciseWeightReps(exerciseIndex: activeWorkout.currentExerciseIndex, weight: newWeight, reps: exercise.reps)
+            connectivityManager.updateExerciseSetWeightReps(
+                exerciseIndex: activeWorkout.currentExerciseIndex,
+                setIndex: activeSetIdx,
+                weight: newWeight,
+                reps: currentReps
+            )
         }
         
         withAnimation(.spring(response: 0.2, dampingFraction: 0.5)) {
@@ -1564,7 +1576,9 @@ struct ActiveWorkoutView: View {
         .sheet(isPresented: $showPlateCalculator) {
             if let activeWorkout = connectivityManager.activeWorkout,
                activeWorkout.currentExerciseIndex >= 0 && activeWorkout.currentExerciseIndex < activeWorkout.exercises.count {
-                let currentWeight = activeWorkout.exercises[activeWorkout.currentExerciseIndex].weight
+                let exercise = activeWorkout.exercises[activeWorkout.currentExerciseIndex]
+                let activeSetIdx = getSelectedSetIndex(for: exercise, index: activeWorkout.currentExerciseIndex)
+                let currentWeight = exercise.weightForSet(activeSetIdx)
                 WatchPlateCalculatorView(targetWeight: currentWeight)
             }
         }
@@ -2255,8 +2269,9 @@ struct SetOptionsSheet: View {
 
                 // Add Drop Set Button
                 Button(action: {
-                    let dropWeight = max(0.5, (exercise.weight * 0.8 * 2.0).rounded() / 2.0)
-                    let dropReps = exercise.reps
+                    let baseWeight = exercise.weightForSet(safeSetIndex)
+                    let dropWeight = max(0.5, (baseWeight * 0.8 * 2.0).rounded() / 2.0)
+                    let dropReps = exercise.repsForSet(safeSetIndex)
                     connectivityManager.addDropSet(
                         exerciseIndex: exerciseIndex,
                         setIndex: safeSetIndex,
@@ -2276,7 +2291,8 @@ struct SetOptionsSheet: View {
                             Text("Adicionar Drop Set")
                                 .font(.system(size: 11, weight: .bold))
                                 .foregroundColor(.white)
-                            let dropW = max(0.5, (exercise.weight * 0.8 * 2.0).rounded() / 2.0)
+                            let baseW = exercise.weightForSet(safeSetIndex)
+                            let dropW = max(0.5, (baseW * 0.8 * 2.0).rounded() / 2.0)
                             Text("Carga: \(String(format: "%.1f", dropW))kg (-20%)")
                                 .font(.system(size: 8))
                                 .foregroundColor(.purple.opacity(0.8))

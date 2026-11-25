@@ -105,6 +105,8 @@ class RoutineExercise {
     'weight': weight,
     'weightsPerSet': weightsPerSet,
     'repsPerSet': repsPerSet,
+    'setTypes': setTypes,
+    'rirPerSet': rirPerSet,
     'isCardio': isCardio,
     'allowCardioSets': allowCardioSets,
     'supersetId': supersetId,
@@ -125,9 +127,17 @@ class RoutineExercise {
       repsPerSet: json['repsPerSet'] != null
           ? (json['repsPerSet'] as List).map<int>((r) => (r as num).toInt()).toList()
           : null,
+      setTypes: json['setTypes'] != null
+          ? (json['setTypes'] as List).map<String>((t) => t.toString()).toList()
+          : null,
+      rirPerSet: json['rirPerSet'] != null
+          ? (json['rirPerSet'] as List)
+              .map<int?>((r) => r == null ? null : (r as num).toInt())
+              .toList()
+          : null,
       isCardio: json['isCardio'] ?? false,
       allowCardioSets: json['allowCardioSets'] ?? false,
-    supersetId: json['supersetId'],
+      supersetId: json['supersetId'],
       isUnilateral: json['isUnilateral'] ?? false,
     );
   }
@@ -222,6 +232,8 @@ class ActiveExercise {
     'weight': weight,
     'weightsPerSet': weightsPerSet,
     'repsPerSet': repsPerSet,
+    'setTypes': setTypes,
+    'rirPerSet': rirPerSet,
     'setsState': setsState,
     'performedCardios': performedCardios.map((c) => c?.toJson()).toList(),
     'failureReport': failureReport,
@@ -253,6 +265,14 @@ class ActiveExercise {
       repsPerSet: json['repsPerSet'] != null
           ? (json['repsPerSet'] as List).map<int>((r) => (r as num).toInt()).toList()
           : null,
+      setTypes: json['setTypes'] != null
+          ? (json['setTypes'] as List).map<String>((t) => t.toString()).toList()
+          : null,
+      rirPerSet: json['rirPerSet'] != null
+          ? (json['rirPerSet'] as List)
+              .map<int?>((r) => r == null ? null : (r as num).toInt())
+              .toList()
+          : null,
       setsState: List<bool>.from(json['setsState'] ?? List.filled(setsVal, false)),
       performedCardios: json['performedCardios'] != null
           ? (json['performedCardios'] as List).map((c) => c == null ? null : PerformedCardio.fromJson(c)).toList()
@@ -264,7 +284,7 @@ class ActiveExercise {
       isCardio: (json['isCardio'] ?? false) &&
           measurementTypeFromString(json['measurementType'] ?? 'reps') != MeasurementType.time,
       allowCardioSets: json['allowCardioSets'] ?? false,
-    supersetId: json['supersetId'],
+      supersetId: json['supersetId'],
       isStationary: json['isStationary'] ?? false,
       isUnilateral: json['isUnilateral'] ?? false,
       singleCardioSession: json['singleCardioSession'] != null

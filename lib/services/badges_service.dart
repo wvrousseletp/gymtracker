@@ -120,20 +120,21 @@ class BadgesService {
       }
     }
 
-    if (history.isEmpty) return newlyUnlocked;
+    final realWorkouts = history.where((l) => !l.isRestDayLog).toList();
+    if (realWorkouts.isEmpty) return newlyUnlocked;
 
     // 1. O Primeiro Passo
-    if (history.isNotEmpty) {
+    if (realWorkouts.isNotEmpty) {
       unlock('first_workout');
     }
 
     // 2. Clube dos 100
-    if (history.length >= 100) {
+    if (realWorkouts.length >= 100) {
       unlock('century_club');
     }
 
     // Iterate through history to find specific workout achievements
-    for (var log in history) {
+    for (var log in realWorkouts) {
       // 3. Hércules
       if (log.totalWeight >= 10000) {
         unlock('hercules');
@@ -173,27 +174,73 @@ class BadgesService {
     }
 
     // 6d. 100 Toneladas (volume acumulado)
-    final totalVolume = history.fold<double>(0, (sum, l) => sum + l.totalWeight);
+    final totalVolume =
+        realWorkouts.fold<double>(0, (sum, l) => sum + l.totalWeight);
     if (totalVolume >= 100000) {
       unlock('century_tonnage');
     }
 
-    // 7. Mestre do Cardio (from current week)
-    // We calculate cardio minutes in the last 7 days
+    // 7. Mestre do Cardio (soma minutos reais de cardio nos últimos 7 dias)
     final now = DateTime.now();
     final sevenDaysAgo = now.subtract(const Duration(days: 7));
     double cardioMinutesThisWeek = 0;
 
-    for (var log in history) {
+    bool isCardioName(String s) {
+      final lower = s.toLowerCase();
+      return lower.contains('cardio') ||
+          lower.contains('corrida') ||
+          lower.contains('esteira') ||
+          lower.contains('bicicleta') ||
+          lower.contains('bike') ||
+          lower.contains('ciclismo') ||
+          lower.contains('elíptico') ||
+          lower.contains('eliptico') ||
+          lower.contains('caminhada') ||
+          lower.contains('natação') ||
+          lower.contains('natacao') ||
+          lower.contains('remo') ||
+          lower.contains('escada') ||
+          lower.contains('hiit') ||
+          lower.contains('futebol');
+    }
+
+    for (var log in realWorkouts) {
       final dt = DateTime.tryParse(log.date);
       if (dt != null && dt.isAfter(sevenDaysAgo)) {
+        if (log.exercises.isEmpty) {
+          if (isCardioName(log.name) && log.duration > 0) {
+            cardioMinutesThisWeek += log.duration / 60.0;
+          }
+          continue;
+        }
+
+        double logCardioMinutes = 0;
         for (var ex in log.exercises) {
           final libEx = library.where((e) => e.name == ex.name).firstOrNull;
-          final muscle = libEx?.muscle ?? '';
-          if (muscle.toLowerCase().contains('cardio')) {
-            cardioMinutesThisWeek += ex.completedSets.toDouble();
+          final muscle = ex.muscle.isNotEmpty ? ex.muscle : (libEx?.muscle ?? '');
+          final isExCardio = muscle.toLowerCase().contains('cardio') ||
+              (libEx?.isCardio ?? false) ||
+              isCardioName(ex.name) ||
+              (ex.performedCardios != null &&
+                  ex.performedCardios!.any((c) => c != null && c.durationSeconds > 0));
+
+          if (!isExCardio) continue;
+
+          if (ex.performedCardios != null &&
+              ex.performedCardios!.any((c) => c != null && c.durationSeconds > 0)) {
+            for (final pc in ex.performedCardios!) {
+              if (pc != null && pc.durationSeconds > 0) {
+                logCardioMinutes += pc.durationSeconds / 60.0;
+              }
+            }
+          } else if (ex.reps > 0) {
+            // Em sessões únicas de cardio e HealthKit, ex.reps guarda a duração em minutos
+            logCardioMinutes += ex.reps.toDouble();
+          } else if (log.duration > 0) {
+            logCardioMinutes += log.duration / 60.0;
           }
         }
+        cardioMinutesThisWeek += logCardioMinutes;
       }
     }
 

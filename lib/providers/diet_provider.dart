@@ -56,48 +56,95 @@ class DietProvider extends ChangeNotifier {
     onWaterChanged?.call(quantityMl);
   }
 
-  void addMeal(String name, int cals, double prot, double carbs, double fat, String time) {
+  void addMeal(String name, int cals, double prot, double carbs, double fat,
+      String time,
+      {String? category}) {
     final meal = Meal(
-      id: "meal-${DateTime.now().millisecondsSinceEpoch}",
+      id: "meal-${DateTime.now().millisecondsSinceEpoch}-${diet.meals.length}",
       name: name,
       calories: cals,
       protein: prot,
       carbs: carbs,
       fat: fat,
       time: time,
+      category: category ?? Meal.inferCategoryFromTime(time),
     );
     final meals = List<Meal>.from(diet.meals)..add(meal);
-    
-    diet = DietState(
-      caloriesGoal: diet.caloriesGoal,
-      proteinGoal: diet.proteinGoal,
-      carbsGoal: diet.carbsGoal,
-      fatGoal: diet.fatGoal,
-      waterGoalMl: diet.waterGoalMl,
-      meals: meals,
-      waterIntakeMl: diet.waterIntakeMl,
-      fasting: diet.fasting,
-      abstinence: diet.abstinence,
-      lastDietDate: diet.lastDietDate,
-    );
+
+    diet = diet.copyWith(meals: meals);
     _save();
   }
 
-  void deleteMeal(String mealId) {
-    final meals = List<Meal>.from(diet.meals)..removeWhere((m) => m.id == mealId);
-    
-    diet = DietState(
-      caloriesGoal: diet.caloriesGoal,
-      proteinGoal: diet.proteinGoal,
-      carbsGoal: diet.carbsGoal,
-      fatGoal: diet.fatGoal,
-      waterGoalMl: diet.waterGoalMl,
-      meals: meals,
-      waterIntakeMl: diet.waterIntakeMl,
-      fasting: diet.fasting,
-      abstinence: diet.abstinence,
-      lastDietDate: diet.lastDietDate,
+  void updateMeal(
+    String mealId, {
+    required String name,
+    required int calories,
+    required double protein,
+    required double carbs,
+    required double fat,
+    required String time,
+    String? category,
+  }) {
+    final idx = diet.meals.indexWhere((m) => m.id == mealId);
+    if (idx == -1) return;
+    final updatedMeals = List<Meal>.from(diet.meals);
+    updatedMeals[idx] = updatedMeals[idx].copyWith(
+      name: name,
+      calories: calories,
+      protein: protein,
+      carbs: carbs,
+      fat: fat,
+      time: time,
+      category: category ?? updatedMeals[idx].effectiveCategory,
     );
+    diet = diet.copyWith(meals: updatedMeals);
+    _save();
+  }
+
+  DietHistoryDay? get latestHistoryDayWithMeals {
+    final now = DateTime.now();
+    final yesterday = now.subtract(const Duration(days: 1));
+    final yesterdayKey =
+        "${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}";
+    final yesterdayRecord = dietHistory[yesterdayKey];
+    if (yesterdayRecord != null && yesterdayRecord.meals.isNotEmpty) {
+      return yesterdayRecord;
+    }
+
+    final sortedKeys = dietHistory.keys.toList()
+      ..sort((a, b) => b.compareTo(a));
+    for (final k in sortedKeys) {
+      final day = dietHistory[k];
+      if (day != null && day.meals.isNotEmpty) {
+        return day;
+      }
+    }
+    return null;
+  }
+
+  /// Copia as refeições de ontem (ou do último dia com refeições registradas) para hoje.
+  int copyPreviousDayMeals() {
+    final source = latestHistoryDayWithMeals;
+    if (source == null || source.meals.isEmpty) return 0;
+
+    final baseTs = DateTime.now().millisecondsSinceEpoch;
+    final copied = <Meal>[];
+    for (int i = 0; i < source.meals.length; i++) {
+      final m = source.meals[i];
+      copied.add(m.copyWith(id: 'meal-$baseTs-$i'));
+    }
+
+    final merged = List<Meal>.from(diet.meals)..addAll(copied);
+    diet = diet.copyWith(meals: merged);
+    _save();
+    return copied.length;
+  }
+
+  void deleteMeal(String mealId) {
+    final meals = List<Meal>.from(diet.meals)
+      ..removeWhere((m) => m.id == mealId);
+
+    diet = diet.copyWith(meals: meals);
     _save();
   }
 
@@ -346,6 +393,7 @@ class DietProvider extends ChangeNotifier {
           fatIntake: totalFat,
           waterGoalMl: diet.waterGoalMl,
           waterIntakeMl: diet.waterIntakeMl,
+          meals: List<Meal>.from(diet.meals),
         );
         
         final newHistory = Map<String, DietHistoryDay>.from(dietHistory);

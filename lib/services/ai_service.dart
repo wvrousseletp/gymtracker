@@ -1,6 +1,9 @@
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../models/food_item.dart';
 import '../models/workout_log.dart';
 
 class AIService {
@@ -8,8 +11,149 @@ class AIService {
   factory AIService() => _instance;
   AIService._internal();
 
-  static String get _apiKey =>
-      utf8.decode(base64.decode('QVEuQWI4Uk42SmJIcjN3MUIySG0tOElyakJ4SGttZnRtVVFCUmI2V3hwYlQxOHFVeUd1OFE='));
+  static const String _cachedKeyPref = 'cached_gemini_api_key_v1';
+  static const String _cachedModelPref = 'cached_gemini_model_v1';
+  static const String _defaultModel = 'gemini-flash-latest';
+
+  String? _memoryApiKey;
+  String? _memoryModel;
+  bool _cloudConfigChecked = false;
+
+  static String get _fallbackApiKey => utf8.decode(base64.decode(
+      'QVEuQWI4Uk42SmJIcjN3MUIySG0tOElyakJ4SGttZnRtVVFCUmI2V3hwYlQxOHFVeUd1OFE='));
+
+  /// Obtém a chave e o modelo do Gemini priorizando `/config/gemini` no Firestore
+  /// (com cache em SharedPreferences e fallback local seguro).
+  Future<({String apiKey, String model})> _resolveConfig() async {
+    if (_memoryApiKey != null && _memoryApiKey!.isNotEmpty) {
+      return (apiKey: _memoryApiKey!, model: _memoryModel ?? _defaultModel);
+    }
+
+    SharedPreferences? prefs;
+    try {
+      prefs = await SharedPreferences.getInstance();
+      final savedKey = prefs.getString(_cachedKeyPref);
+      final savedModel = prefs.getString(_cachedModelPref);
+      if (savedKey != null && savedKey.trim().isNotEmpty) {
+        _memoryApiKey = savedKey.trim();
+        _memoryModel =
+            (savedModel != null && savedModel.trim().isNotEmpty)
+                ? savedModel.trim()
+                : _defaultModel;
+      }
+    } catch (_) {}
+
+    if (!_cloudConfigChecked) {
+      _cloudConfigChecked = true;
+      try {
+        final doc = await FirebaseFirestore.instance
+            .collection('config')
+            .doc('gemini')
+            .get()
+            .timeout(const Duration(seconds: 3));
+        if (doc.exists) {
+          final data = doc.data();
+          final remoteKey =
+              (data?['apiKey'] ?? data?['key'])?.toString().trim();
+          final remoteModel = data?['model']?.toString().trim();
+          if (remoteKey != null && remoteKey.isNotEmpty) {
+            _memoryApiKey = remoteKey;
+            await prefs?.setString(_cachedKeyPref, remoteKey);
+          }
+          if (remoteModel != null && remoteModel.isNotEmpty) {
+            _memoryModel = remoteModel;
+            await prefs?.setString(_cachedModelPref, remoteModel);
+          }
+        }
+      } catch (e) {
+        debugPrint('[AIService] Fallback para chave local (config/gemini): $e');
+      }
+    }
+
+    final resolvedKey = (_memoryApiKey != null && _memoryApiKey!.isNotEmpty)
+        ? _memoryApiKey!
+        : _fallbackApiKey;
+    final resolvedModel = (_memoryModel != null && _memoryModel!.isNotEmpty)
+        ? _memoryModel!
+        : _defaultModel;
+    return (apiKey: resolvedKey, model: resolvedModel);
+  }
+
+  /// Estima calorias e macronutrientes de uma refeição descrita em linguagem natural.
+  Future<FoodItem?> estimateMealMacros(String mealDescription) async {
+    final trimmed = mealDescription.trim();
+    if (trimmed.isEmpty) return null;
+
+    try {
+      final cfg = await _resolveConfig();
+      final model = GenerativeModel(
+        model: cfg.model,
+        apiKey: cfg.apiKey,
+        generationConfig: GenerationConfig(
+          temperature: 0.2,
+          responseMimeType: 'application/json',
+          maxOutputTokens: 1024,
+        ),
+      );
+
+      final prompt = '''
+Você é um nutricionista esportivo especialista em tabelas nutricionais brasileiras (TACO / IBGE / USDA).
+Analise a refeição ou alimento descrito pelo usuário em Português do Brasil: "$trimmed".
+Estime com precisão realista os valores nutricionais TOTAIS da porção descrita.
+Retorne ESTRITAMENTE um objeto JSON válido (sem markdown) no formato:
+{
+  "name": "Nome curto e claro da refeição/alimento em pt-BR",
+  "calories": 450,
+  "protein": 32.5,
+  "carbs": 40.0,
+  "fat": 14.0,
+  "servingSize": 300,
+  "servingUnit": "g"
+}
+Regras:
+- "calories" deve ser inteiro (kcal totais da porção descrita).
+- "protein", "carbs" e "fat" em gramas (números decimais).
+- "servingSize" deve ser o peso/volume aproximado total em gramas ou ml (inteiro > 0, ex: 100, 250, 350).
+- "servingUnit" deve ser "g", "ml" ou "porção".
+''';
+
+      final response = await model.generateContent([Content.text(prompt)]);
+      final text = response.text;
+      if (text == null || text.isEmpty) return null;
+
+      final jsonStart = text.indexOf('{');
+      final jsonEnd = text.lastIndexOf('}');
+      if (jsonStart == -1 || jsonEnd == -1) return null;
+
+      final parsed =
+          jsonDecode(text.substring(jsonStart, jsonEnd + 1)) as Map<String, dynamic>;
+      final name = (parsed['name']?.toString().trim().isNotEmpty ?? false)
+          ? parsed['name'].toString().trim()
+          : trimmed;
+      final calories = (parsed['calories'] as num?)?.round() ?? 0;
+      final protein = (parsed['protein'] as num?)?.toDouble() ?? 0.0;
+      final carbs = (parsed['carbs'] as num?)?.toDouble() ?? 0.0;
+      final fat = (parsed['fat'] as num?)?.toDouble() ?? 0.0;
+      final servingSize =
+          ((parsed['servingSize'] as num?)?.round() ?? 100).clamp(1, 5000);
+      final servingUnit = parsed['servingUnit']?.toString().trim() ?? 'g';
+
+      return FoodItem(
+        id: '', // ID vazio sinaliza alimento estimado pela IA
+        name: name,
+        searchName: name.toLowerCase(),
+        calories: calories,
+        protein: double.parse(protein.toStringAsFixed(1)),
+        carbs: double.parse(carbs.toStringAsFixed(1)),
+        fat: double.parse(fat.toStringAsFixed(1)),
+        servingSize: servingSize,
+        servingUnit: servingUnit,
+      );
+    } catch (e) {
+      debugPrint('AI Exception (estimateMealMacros): $e');
+      return null;
+    }
+  }
 
   /// Solicita sugestões personalizadas de treino para os exercícios planejados.
   Future<Map<String, String>> generateWorkoutSuggestions({
@@ -19,9 +163,10 @@ class AIService {
     if (plannedExercises.isEmpty) return {};
 
     try {
+      final cfg = await _resolveConfig();
       final model = GenerativeModel(
-        model: 'gemini-flash-latest',
-        apiKey: _apiKey,
+        model: cfg.model,
+        apiKey: cfg.apiKey,
         generationConfig: GenerationConfig(
           responseMimeType: 'application/json',
           maxOutputTokens: 4000,
@@ -36,6 +181,7 @@ class AIService {
 
       bool hasHistory = false;
       for (var log in recentHistory) {
+        if (log.isRestDayLog) continue;
         for (var ex in log.exercises) {
           if (plannedExercises.contains(ex.name) && ex.completedSets > 0) {
             hasHistory = true;
@@ -93,9 +239,10 @@ class AIService {
     if (exerciseHistory.isEmpty) return "Sem dados suficientes para análise.";
 
     try {
+      final cfg = await _resolveConfig();
       final model = GenerativeModel(
-        model: 'gemini-flash-latest',
-        apiKey: _apiKey,
+        model: cfg.model,
+        apiKey: cfg.apiKey,
         generationConfig: GenerationConfig(
           temperature: 0.5,
           maxOutputTokens: 4000,
@@ -109,7 +256,8 @@ class AIService {
       buffer.writeln("Exercício em análise: $exerciseName.");
       buffer.writeln("Histórico recente de treinos neste exercício (do mais recente para o mais antigo):");
 
-      final logsToAnalyze = exerciseHistory.take(15).toList();
+      final logsToAnalyze =
+          exerciseHistory.where((l) => !l.isRestDayLog).take(15).toList();
 
       for (var log in logsToAnalyze) {
         for (var ex in log.exercises) {

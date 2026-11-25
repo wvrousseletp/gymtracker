@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import '../models/exercise.dart';
 import '../models/routine.dart';
@@ -410,6 +410,15 @@ class WorkoutProvider extends ChangeNotifier {
                   ? ex.repsPerSet![cycle]
                   : ex.reps;
 
+          final cycleSetType =
+              (ex.setTypes != null && ex.setTypes!.length > cycle)
+                  ? [ex.setTypes![cycle]]
+                  : null;
+          final cycleRir =
+              (ex.rirPerSet != null && ex.rirPerSet!.length > cycle)
+                  ? [ex.rirPerSet![cycle]]
+                  : null;
+
           workoutExercises.add(ActiveExercise(
             id: '${ex.id}_cycle_$cycle',
             name: ref.name,
@@ -420,14 +429,18 @@ class WorkoutProvider extends ChangeNotifier {
             reps: cycleReps,
             rest: ex.rest,
             weight: cycleWeight,
-            weightsPerSet: null, // Achado, então usa o global
+            weightsPerSet: null, // Achatado, então usa o global
             repsPerSet: null, // Achatado
+            setTypes: cycleSetType,
+            rirPerSet: cycleRir,
             setsState: List<bool>.filled(effectiveSets, false),
             performedCardios:
                 List<PerformedCardio?>.filled(effectiveSets, null),
             failureReport: List<bool>.filled(effectiveSets, false),
             isCardio: isCardio,
             allowCardioSets: false,
+            isStationary: ref.isStationary,
+            isUnilateral: ex.isUnilateral || ref.isUnilateral,
           ));
         }
       }
@@ -460,13 +473,23 @@ class WorkoutProvider extends ChangeNotifier {
           reps: ex.reps,
           rest: ex.rest,
           weight: ex.weight,
-          weightsPerSet: ex.weightsPerSet,
-          repsPerSet: ex.repsPerSet,
+          weightsPerSet: ex.weightsPerSet != null
+              ? List<double>.from(ex.weightsPerSet!)
+              : null,
+          repsPerSet:
+              ex.repsPerSet != null ? List<int>.from(ex.repsPerSet!) : null,
+          setTypes:
+              ex.setTypes != null ? List<String>.from(ex.setTypes!) : null,
+          rirPerSet:
+              ex.rirPerSet != null ? List<int?>.from(ex.rirPerSet!) : null,
           setsState: List<bool>.filled(effectiveSets, false),
           performedCardios: List<PerformedCardio?>.filled(effectiveSets, null),
           failureReport: List<bool>.filled(effectiveSets, false),
           isCardio: isCardio,
           allowCardioSets: ex.allowCardioSets,
+          supersetId: ex.supersetId,
+          isStationary: ref.isStationary,
+          isUnilateral: ex.isUnilateral || ref.isUnilateral,
         );
       }).toList();
     }
@@ -512,6 +535,7 @@ class WorkoutProvider extends ChangeNotifier {
           weight: 0.0,
           isCardio: isCardio,
           allowCardioSets: false, // Single exercise defaults to no sets
+          isUnilateral: exercise.isUnilateral,
         )
       ],
     );
@@ -522,34 +546,131 @@ class WorkoutProvider extends ChangeNotifier {
         false);
   }
 
-  
-    void addDropSet(int exIdx, int sourceSetIdx, double dropWeight, int dropReps) {
+  void addDropSet(
+      int exIdx, int sourceSetIdx, double dropWeight, int dropReps) {
     if (activeWorkout == null) return;
-    final ex = activeWorkout!.exercises[exIdx];
-    
-    final newSetsState = List<bool>.from(ex.setsState)..insert(sourceSetIdx + 1, false);
-    final newWeights = ex.weightsPerSet != null 
-        ? (List<double>.from(ex.weightsPerSet!)..insert(sourceSetIdx + 1, dropWeight)) 
-        : (List<double>.filled(ex.sets, ex.weight, growable: true)..insert(sourceSetIdx + 1, dropWeight));
-    final newReps = ex.repsPerSet != null 
-        ? (List<int>.from(ex.repsPerSet!)..insert(sourceSetIdx + 1, dropReps)) 
-        : (List<int>.filled(ex.sets, ex.reps, growable: true)..insert(sourceSetIdx + 1, dropReps));
-    final newFailureReps = List<int?>.from(ex.failureReps);
-    if (newFailureReps.length < ex.sets + 1) {
-      while(newFailureReps.length < ex.sets) { newFailureReps.add(null); }
-      newFailureReps.insert(sourceSetIdx + 1, null);
+    final active = activeWorkout!;
+    if (exIdx < 0 || exIdx >= active.exercises.length) return;
+    final exercises = List<ActiveExercise>.from(active.exercises);
+    final ex = exercises[exIdx];
+    final insertAt = (sourceSetIdx + 1).clamp(0, ex.sets);
+
+    final newSetsState = List<bool>.from(ex.setsState)
+      ..insert(insertAt, false);
+    final newWeights = ex.weightsPerSet != null
+        ? (List<double>.from(ex.weightsPerSet!)..insert(insertAt, dropWeight))
+        : (List<double>.filled(ex.sets, ex.weight, growable: true)
+          ..insert(insertAt, dropWeight));
+    final newReps = ex.repsPerSet != null
+        ? (List<int>.from(ex.repsPerSet!)..insert(insertAt, dropReps))
+        : (List<int>.filled(ex.sets, ex.reps, growable: true)
+          ..insert(insertAt, dropReps));
+    final newFailure = List<bool>.from(ex.failureReport);
+    while (newFailure.length < ex.sets) {
+      newFailure.add(false);
     }
-    
-    final newEx = ex.copyWith(
+    newFailure.insert(insertAt, false);
+
+    final newFailureReps = List<int?>.from(ex.failureReps);
+    while (newFailureReps.length < ex.sets) {
+      newFailureReps.add(null);
+    }
+    newFailureReps.insert(insertAt, null);
+
+    final newCardios = List<PerformedCardio?>.from(ex.performedCardios);
+    while (newCardios.length < ex.sets) {
+      newCardios.add(null);
+    }
+    newCardios.insert(insertAt, null);
+
+    final newSetTypes = ex.setTypes != null
+        ? (List<String>.from(ex.setTypes!)..insert(insertAt, 'D'))
+        : (List<String>.filled(ex.sets, 'N', growable: true)
+          ..insert(insertAt, 'D'));
+
+    final newRirs = ex.rirPerSet != null
+        ? (List<int?>.from(ex.rirPerSet!)..insert(insertAt, null))
+        : null;
+
+    exercises[exIdx] = ex.copyWith(
       sets: ex.sets + 1,
       setsState: newSetsState,
       weightsPerSet: newWeights,
       repsPerSet: newReps,
+      failureReport: newFailure,
       failureReps: newFailureReps,
+      performedCardios: newCardios,
+      setTypes: newSetTypes,
+      rirPerSet: newRirs,
     );
-    
-    activeWorkout!.exercises[exIdx] = newEx;
-    notifyListeners();
+
+    activeWorkout = active.copyWith(exercises: exercises);
+    _save();
+  }
+
+  /// Calcula o tempo de descanso adaptativo considerando tipo de série (Aquecimento 'W'),
+  /// falha concêntrica, RIR 0 e RPE máximo.
+  int computeAdaptiveRestSeconds(
+    ActiveExercise ex,
+    int setIndex, {
+    required bool isFailure,
+  }) {
+    int base = ex.rest;
+    if (base <= 0) return 0;
+
+    final setType = (ex.setTypes != null && setIndex < ex.setTypes!.length)
+        ? ex.setTypes![setIndex].toUpperCase()
+        : 'N';
+    final setRir = (ex.rirPerSet != null && setIndex < ex.rirPerSet!.length)
+        ? ex.rirPerSet![setIndex]
+        : null;
+
+    if (setType == 'W') {
+      // Aquecimento: metade do descanso padrão (mínimo 15s)
+      return (base * 0.5).round().clamp(15, base);
+    }
+    if (isFailure || setRir == 0 || (ex.rpe != null && ex.rpe! >= 10)) {
+      // Falha ou esforço máximo: +30s de recuperação neural/ATP
+      return base + 30;
+    }
+    return base;
+  }
+
+  /// Retorna os índices contíguos que pertencem ao mesmo Bi-set / Superset de [exIndex].
+  List<int> _getSupersetGroupIndices(
+      List<ActiveExercise> exercises, int exIndex) {
+    if (exIndex < 0 || exIndex >= exercises.length) return [exIndex];
+    final supId = exercises[exIndex].supersetId;
+    if (supId == null || supId.isEmpty) return [exIndex];
+
+    int start = exIndex;
+    while (start > 0 && exercises[start - 1].supersetId == supId) {
+      start--;
+    }
+    int end = exIndex;
+    while (
+        end + 1 < exercises.length && exercises[end + 1].supersetId == supId) {
+      end++;
+    }
+    return [for (int i = start; i <= end; i++) i];
+  }
+
+  int _findNextUncompletedExerciseOutside(
+    List<ActiveExercise> exercises,
+    int afterIndex, {
+    Set<int> exclude = const {},
+  }) {
+    for (int i = afterIndex + 1; i < exercises.length; i++) {
+      if (!exclude.contains(i) && exercises[i].setsState.contains(false)) {
+        return i;
+      }
+    }
+    for (int i = 0; i <= afterIndex && i < exercises.length; i++) {
+      if (!exclude.contains(i) && exercises[i].setsState.contains(false)) {
+        return i;
+      }
+    }
+    return -1;
   }
 
   void completeSet(int exIndex, int setIndex, bool isDone,
@@ -599,12 +720,13 @@ class WorkoutProvider extends ChangeNotifier {
     final newFailureReps = List<int?>.from(ex.failureReps);
     newFailureReps[setIndex] = isFailure ? failureRep : null;
 
-    exercises[exIndex] = ex.copyWith(
+    final updatedEx = ex.copyWith(
       setsState: newSetsState,
       performedCardios: newCardios,
       failureReport: newFailure,
       failureReps: newFailureReps,
     );
+    exercises[exIndex] = updatedEx;
 
     WatchRestTimer? computedRestTimer = active.restTimer;
     int computedExIndex = active.currentExerciseIndex;
@@ -614,8 +736,12 @@ class WorkoutProvider extends ChangeNotifier {
     final bool isTransitionToDone = !wasDone && isDone;
     final bool isStateChanged = wasDone != isDone;
 
-    bool shouldRest = ex.rest > 0;
-    if (shouldRest && active.executionType == RoutineExecutionType.circuit && active.circuitCycles > 0) {
+    final int effectiveRest =
+        computeAdaptiveRestSeconds(updatedEx, setIndex, isFailure: isFailure);
+    bool shouldRest = effectiveRest > 0;
+    if (shouldRest &&
+        active.executionType == RoutineExecutionType.circuit &&
+        active.circuitCycles > 0) {
       final exercisesPerCycle = exercises.length ~/ active.circuitCycles;
       if (exercisesPerCycle > 0) {
         final isCycleEnd = (exIndex + 1) % exercisesPerCycle == 0;
@@ -625,51 +751,159 @@ class WorkoutProvider extends ChangeNotifier {
       }
     }
 
-    if (isTransitionToDone && shouldRest) {
+    final supersetIndices = active.executionType == RoutineExecutionType.circuit
+        ? <int>[exIndex]
+        : _getSupersetGroupIndices(exercises, exIndex);
+    final bool isInSuperset = supersetIndices.length > 1;
+
+    if (isTransitionToDone && isInSuperset) {
+      // 1. Procura próximo exercício parceiro do Bi-set/Superset na mesma rodada (setIndex)
+      int partnerIdx = -1;
+      for (final idx in supersetIndices) {
+        if (idx > exIndex &&
+            setIndex < exercises[idx].setsState.length &&
+            !exercises[idx].setsState[setIndex]) {
+          partnerIdx = idx;
+          break;
+        }
+      }
+      if (partnerIdx == -1) {
+        for (final idx in supersetIndices) {
+          if (idx < exIndex &&
+              setIndex < exercises[idx].setsState.length &&
+              !exercises[idx].setsState[setIndex]) {
+            partnerIdx = idx;
+            break;
+          }
+        }
+      }
+
+      if (partnerIdx != -1) {
+        // Transição intra-Bi-set: sem descanso, avança direto para o parceiro!
+        computedRestTimer = null;
+        computedExIndex = partnerIdx;
+      } else {
+        // Fechou a rodada do Bi-set: verifica se ainda há séries pendentes no grupo
+        int nextRoundExIdx = -1;
+        for (final idx in supersetIndices) {
+          if (exercises[idx].setsState.contains(false)) {
+            nextRoundExIdx = idx;
+            break;
+          }
+        }
+
+        if (nextRoundExIdx != -1) {
+          final nextEx = exercises[nextRoundExIdx];
+          int nextSetIdx = nextEx.setsState.indexWhere((done) => !done);
+          if (nextSetIdx == -1) nextSetIdx = 0;
+          computedExIndex = nextRoundExIdx;
+          if (shouldRest) {
+            final endTime =
+                DateTime.now().millisecondsSinceEpoch + (effectiveRest * 1000);
+            computedRestTimer = WatchRestTimer(
+              endTime: endTime,
+              totalSeconds: effectiveRest,
+              nextExerciseName: nextEx.name,
+              nextSetNum: nextSetIdx + 1,
+              nextTargetReps: nextEx.repsPerSet != null &&
+                      nextSetIdx < nextEx.repsPerSet!.length
+                  ? nextEx.repsPerSet![nextSetIdx]
+                  : nextEx.reps,
+              nextTargetWeight: nextEx.weightsPerSet != null &&
+                      nextSetIdx < nextEx.weightsPerSet!.length
+                  ? nextEx.weightsPerSet![nextSetIdx]
+                  : nextEx.weight,
+              isPrep: false,
+            );
+          } else {
+            computedRestTimer = null;
+          }
+        } else {
+          // Todo o Bi-set foi concluído -> avança para o próximo exercício fora do grupo
+          final nextExIndex = _findNextUncompletedExerciseOutside(
+            exercises,
+            supersetIndices.last,
+            exclude: supersetIndices.toSet(),
+          );
+          if (nextExIndex != -1) {
+            final nextEx = exercises[nextExIndex];
+            int nextSetIdx = nextEx.setsState.indexWhere((done) => !done);
+            if (nextSetIdx == -1) nextSetIdx = 0;
+            computedExIndex = nextExIndex;
+            if (shouldRest) {
+              final endTime = DateTime.now().millisecondsSinceEpoch +
+                  (effectiveRest * 1000);
+              computedRestTimer = WatchRestTimer(
+                endTime: endTime,
+                totalSeconds: effectiveRest,
+                nextExerciseName: nextEx.name,
+                nextSetNum: nextSetIdx + 1,
+                nextTargetReps: nextEx.repsPerSet != null &&
+                        nextSetIdx < nextEx.repsPerSet!.length
+                    ? nextEx.repsPerSet![nextSetIdx]
+                    : nextEx.reps,
+                nextTargetWeight: nextEx.weightsPerSet != null &&
+                        nextSetIdx < nextEx.weightsPerSet!.length
+                    ? nextEx.weightsPerSet![nextSetIdx]
+                    : nextEx.weight,
+                isPrep: false,
+              );
+            } else {
+              computedRestTimer = null;
+            }
+          } else {
+            computedRestTimer = null;
+          }
+        }
+      }
+    } else if (isTransitionToDone && shouldRest) {
       if (setIndex < ex.sets - 1) {
+        final nextSetIdx = setIndex + 1;
         final endTime =
-            DateTime.now().millisecondsSinceEpoch + (ex.rest * 1000);
+            DateTime.now().millisecondsSinceEpoch + (effectiveRest * 1000);
         computedRestTimer = WatchRestTimer(
           endTime: endTime,
-          totalSeconds: ex.rest,
+          totalSeconds: effectiveRest,
           nextExerciseName: ex.name,
           nextSetNum: setIndex + 2,
-          nextTargetReps: ex.repsPerSet?[setIndex + 1] ?? ex.reps,
-          nextTargetWeight: ex.weightsPerSet?[setIndex + 1] ?? ex.weight,
+          nextTargetReps:
+              ex.repsPerSet != null && nextSetIdx < ex.repsPerSet!.length
+                  ? ex.repsPerSet![nextSetIdx]
+                  : ex.reps,
+          nextTargetWeight:
+              ex.weightsPerSet != null && nextSetIdx < ex.weightsPerSet!.length
+                  ? ex.weightsPerSet![nextSetIdx]
+                  : ex.weight,
           isPrep: false,
         );
       } else {
         // Find next uncompleted exercise (wrapping around if needed)
-        int nextExIndex = -1;
-        for (int i = exIndex + 1; i < exercises.length; i++) {
-          if (exercises[i].setsState.contains(false)) {
-            nextExIndex = i;
-            break;
-          }
-        }
-        if (nextExIndex == -1) {
-          for (int i = 0; i < exIndex; i++) {
-            if (exercises[i].setsState.contains(false)) {
-              nextExIndex = i;
-              break;
-            }
-          }
-        }
-        
+        final nextExIndex = _findNextUncompletedExerciseOutside(
+          exercises,
+          exIndex,
+          exclude: {exIndex},
+        );
+
         if (nextExIndex != -1) {
           final nextEx = exercises[nextExIndex];
           int nextSetIndex = nextEx.setsState.indexWhere((done) => !done);
           if (nextSetIndex == -1) nextSetIndex = 0;
-          
+
           final endTime =
-              DateTime.now().millisecondsSinceEpoch + (ex.rest * 1000);
+              DateTime.now().millisecondsSinceEpoch + (effectiveRest * 1000);
           computedRestTimer = WatchRestTimer(
             endTime: endTime,
-            totalSeconds: ex.rest,
+            totalSeconds: effectiveRest,
             nextExerciseName: nextEx.name,
             nextSetNum: nextSetIndex + 1,
-            nextTargetReps: nextEx.repsPerSet?[nextSetIndex] ?? nextEx.reps,
-            nextTargetWeight: nextEx.weightsPerSet?[nextSetIndex] ?? nextEx.weight,
+            nextTargetReps: nextEx.repsPerSet != null &&
+                    nextSetIndex < nextEx.repsPerSet!.length
+                ? nextEx.repsPerSet![nextSetIndex]
+                : nextEx.reps,
+            nextTargetWeight: nextEx.weightsPerSet != null &&
+                    nextSetIndex < nextEx.weightsPerSet!.length
+                ? nextEx.weightsPerSet![nextSetIndex]
+                : nextEx.weight,
             isPrep: false,
           );
           computedExIndex = nextExIndex;
@@ -680,26 +914,16 @@ class WorkoutProvider extends ChangeNotifier {
     } else {
       computedRestTimer = null;
       if (isTransitionToDone && setIndex >= ex.sets - 1) {
-        int nextExIndex = -1;
-        for (int i = exIndex + 1; i < exercises.length; i++) {
-          if (exercises[i].setsState.contains(false)) {
-            nextExIndex = i;
-            break;
-          }
-        }
-        if (nextExIndex == -1) {
-          for (int i = 0; i < exIndex; i++) {
-            if (exercises[i].setsState.contains(false)) {
-              nextExIndex = i;
-              break;
-            }
-          }
-        }
-        
+        final nextExIndex = _findNextUncompletedExerciseOutside(
+          exercises,
+          exIndex,
+          exclude: {exIndex},
+        );
+
         if (nextExIndex != -1) {
-           computedExIndex = nextExIndex;
+          computedExIndex = nextExIndex;
         } else if (exIndex < exercises.length - 1) {
-           computedExIndex = exIndex + 1;
+          computedExIndex = exIndex + 1;
         }
       }
     }
@@ -990,6 +1214,80 @@ class WorkoutProvider extends ChangeNotifier {
     return null;
   }
 
+  /// Retorna os índices dos exercícios do treino ativo cujas cargas, repetições
+  /// ou séries foram alteradas em relação à rotina original.
+  List<int> getModifiedRoutineExerciseIndices() {
+    final active = _activeWorkout;
+    if (active == null ||
+        active.executionType == RoutineExecutionType.circuit) {
+      return [];
+    }
+    final modified = <int>[];
+    for (int i = 0; i < active.exercises.length; i++) {
+      final ex = active.exercises[i];
+      if (ex.isCardio) continue;
+      final found = findActiveExerciseSourceRoutine(i);
+      if (found == null || found.routine.isDynamicExercise) continue;
+      final re = found.routine.exercises[found.exerciseIndex];
+
+      bool changed = ex.sets != re.sets ||
+          (ex.weight - re.weight).abs() > 0.001 ||
+          ex.reps != re.reps;
+
+      if (!changed && (ex.weightsPerSet != null || re.weightsPerSet != null)) {
+        final aWeights =
+            ex.weightsPerSet ?? List<double>.filled(ex.sets, ex.weight);
+        final rWeights =
+            re.weightsPerSet ?? List<double>.filled(re.sets, re.weight);
+        if (aWeights.length != rWeights.length) {
+          changed = true;
+        } else {
+          for (int k = 0; k < aWeights.length; k++) {
+            if ((aWeights[k] - rWeights[k]).abs() > 0.001) {
+              changed = true;
+              break;
+            }
+          }
+        }
+      }
+
+      if (!changed && (ex.repsPerSet != null || re.repsPerSet != null)) {
+        final aReps = ex.repsPerSet ?? List<int>.filled(ex.sets, ex.reps);
+        final rReps = re.repsPerSet ?? List<int>.filled(re.sets, re.reps);
+        if (!listEquals(aReps, rReps)) {
+          changed = true;
+        }
+      }
+
+      if (changed) {
+        modified.add(i);
+      }
+    }
+    return modified;
+  }
+
+  /// Aplica em lote todas as progressões de carga/reps/séries do treino ativo
+  /// de volta às rotinas originais e sincroniza com o Firebase.
+  int applyAllModifiedExercisesToRoutine() {
+    final indices = getModifiedRoutineExerciseIndices();
+    int count = 0;
+    final touchedRoutineIds = <String>{};
+    for (final idx in indices) {
+      final found = findActiveExerciseSourceRoutine(idx);
+      if (applyActiveExerciseToRoutine(idx)) {
+        count++;
+        if (found != null) touchedRoutineIds.add(found.routine.id);
+      }
+    }
+    for (final rId in touchedRoutineIds) {
+      final updated = routines.where((r) => r.id == rId).firstOrNull;
+      if (updated != null && currentUserId.isNotEmpty) {
+        unawaited(_firebaseSync.syncRoutine(currentUserId, updated));
+      }
+    }
+    return count;
+  }
+
   /// Copia peso/reps/séries atuais do exercício ativo de volta para a
   /// rotina que o originou. Retorna false se não houver rotina de origem.
   bool applyActiveExerciseToRoutine(int exIndex) {
@@ -1010,12 +1308,12 @@ class WorkoutProvider extends ChangeNotifier {
       weight: activeEx.weight,
       weightsPerSet: activeEx.weightsPerSet,
       repsPerSet: activeEx.repsPerSet,
-      setTypes: re.setTypes,
-      rirPerSet: re.rirPerSet,
+      setTypes: activeEx.setTypes ?? re.setTypes,
+      rirPerSet: activeEx.rirPerSet ?? re.rirPerSet,
       isCardio: re.isCardio,
       allowCardioSets: re.allowCardioSets,
       supersetId: re.supersetId,
-      isUnilateral: re.isUnilateral,
+      isUnilateral: activeEx.isUnilateral,
     );
 
     final newExercises = List<RoutineExercise>.from(found.routine.exercises);
@@ -1265,6 +1563,8 @@ class WorkoutProvider extends ChangeNotifier {
       final isCardio = ex.isCardio;
 
       List<PerformedCardio?>? logCardios = ex.performedCardios;
+      List<double>? loggedWeightsPerSet;
+      List<int>? loggedRepsPerSet;
 
       if (isCardio) {
         // For single cardio sessions, use singleCardioSession
@@ -1287,10 +1587,67 @@ class WorkoutProvider extends ChangeNotifier {
           }
         }
       } else {
+        loggedWeightsPerSet = [];
+        loggedRepsPerSet = [];
+        double bestWorkingWeight = -1;
+        int bestWorkingReps = 0;
+        double bestWarmupWeight = -1;
+        int bestWarmupReps = 0;
+
         for (int i = 0; i < ex.sets; i++) {
-          if (ex.setsState[i]) {
-            totalWeightVolume += ex.weight * ex.reps;
+          final bool isSetDone = i < ex.setsState.length && ex.setsState[i];
+          final String setType =
+              (ex.setTypes != null && i < ex.setTypes!.length)
+                  ? ex.setTypes![i].toUpperCase()
+                  : 'N';
+          final double setWeight =
+              (ex.weightsPerSet != null && i < ex.weightsPerSet!.length)
+                  ? ex.weightsPerSet![i]
+                  : ex.weight;
+          final int plannedReps =
+              (ex.repsPerSet != null && i < ex.repsPerSet!.length)
+                  ? ex.repsPerSet![i]
+                  : ex.reps;
+          final bool isFail =
+              i < ex.failureReport.length && ex.failureReport[i];
+          final int? failRepsVal =
+              i < ex.failureReps.length ? ex.failureReps[i] : null;
+          final int actualReps =
+              (isFail && failRepsVal != null && failRepsVal > 0)
+                  ? failRepsVal
+                  : plannedReps;
+
+          if (isSetDone) {
+            loggedWeightsPerSet.add(setWeight);
+            loggedRepsPerSet.add(actualReps);
+            if (setType != 'W') {
+              totalWeightVolume += setWeight * actualReps;
+              if (setWeight > bestWorkingWeight ||
+                  (setWeight == bestWorkingWeight &&
+                      actualReps > bestWorkingReps)) {
+                bestWorkingWeight = setWeight;
+                bestWorkingReps = actualReps;
+              }
+            } else {
+              if (setWeight > bestWarmupWeight ||
+                  (setWeight == bestWarmupWeight &&
+                      actualReps > bestWarmupReps)) {
+                bestWarmupWeight = setWeight;
+                bestWarmupReps = actualReps;
+              }
+            }
+          } else {
+            loggedWeightsPerSet.add(0.0);
+            loggedRepsPerSet.add(0);
           }
+        }
+
+        if (bestWorkingWeight >= 0) {
+          finalWeight = bestWorkingWeight;
+          finalReps = bestWorkingReps;
+        } else if (bestWarmupWeight >= 0) {
+          finalWeight = bestWarmupWeight;
+          finalReps = bestWarmupReps;
         }
       }
 
@@ -1301,11 +1658,15 @@ class WorkoutProvider extends ChangeNotifier {
         completedSets: done,
         reps: finalReps,
         weight: finalWeight,
+        weightsPerSet: loggedWeightsPerSet,
+        repsPerSet: loggedRepsPerSet,
         performedCardios: logCardios,
         rpe: ex.rpe ?? rpeValue,
         failureReport: ex.failureReport,
         failureReps: ex.failureReps,
         executionType: ex.executionType,
+        setTypes: ex.setTypes != null ? List<String>.from(ex.setTypes!) : null,
+        rirPerSet: ex.rirPerSet != null ? List<int?>.from(ex.rirPerSet!) : null,
       );
     }).toList();
 
@@ -1379,7 +1740,9 @@ class WorkoutProvider extends ChangeNotifier {
 
     _save();
 
-    unawaited(_firebaseSync.syncWorkoutLog(currentUserId, log));
+    if (currentUserId.isNotEmpty) {
+      unawaited(_firebaseSync.syncWorkoutLog(currentUserId, log));
+    }
 
     // Save to HealthKit
     unawaited(HealthService.instance.saveWorkoutToHealthKit(
@@ -1394,28 +1757,34 @@ class WorkoutProvider extends ChangeNotifier {
     if (history.any((l) => l.id == log.id)) return;
     history = List.from(history)..insert(0, log);
 
-    // Update PRs
-    _updatePersonalRecordsForLog(log, null);
+    if (!log.isRestDayLog) {
+      // Update PRs
+      _updatePersonalRecordsForLog(log, null);
+    }
 
     _updateStreak();
 
-    // Evaluate new badges
-    final newlyUnlocked = BadgesService.evaluateNewBadges(
-      history: history,
-      currentUnlocked: unlockedBadgeIds,
-      streak: streak,
-      library: library,
-    );
-    if (newlyUnlocked.isNotEmpty) {
-      unlockedBadgeIds = List.from(unlockedBadgeIds)..addAll(newlyUnlocked);
+    if (!log.isRestDayLog) {
+      // Evaluate new badges
+      final newlyUnlocked = BadgesService.evaluateNewBadges(
+        history: history,
+        currentUnlocked: unlockedBadgeIds,
+        streak: streak,
+        library: library,
+      );
+      if (newlyUnlocked.isNotEmpty) {
+        unlockedBadgeIds = List.from(unlockedBadgeIds)..addAll(newlyUnlocked);
+      }
     }
 
     _save();
     notifyListeners();
-    unawaited(_firebaseSync.syncWorkoutLog(currentUserId, log));
+    if (currentUserId.isNotEmpty) {
+      unawaited(_firebaseSync.syncWorkoutLog(currentUserId, log));
+    }
 
-    // Save to HealthKit (skip if it's already from HealthKit)
-    if (!log.id.startsWith("healthkit-")) {
+    // Save to HealthKit (skip if it's already from HealthKit or a rest day)
+    if (!log.id.startsWith("healthkit-") && !log.isRestDayLog) {
       unawaited(HealthService.instance.saveWorkoutToHealthKit(
         name: log.name,
         duration: log.duration,
@@ -1498,6 +1867,7 @@ class WorkoutProvider extends ChangeNotifier {
       debugPrint(
           '[WorkoutProvider] Found ${healthWorkouts.length} workouts from HealthKit');
 
+      int addedCount = 0;
       for (final hw in healthWorkouts) {
         final id = hw['id'] as String;
         final name = hw['name'] as String;
@@ -1507,37 +1877,71 @@ class WorkoutProvider extends ChangeNotifier {
 
         // Skip if already in history or deleted
         if (history.any((h) => h.id == id)) {
-          debugPrint(
-              '[WorkoutProvider] Skipping duplicate HealthKit workout: $id');
           continue;
         }
         if (deletedHealthWorkoutIds.contains(id)) {
-          debugPrint(
-              '[WorkoutProvider] Skipping deleted HealthKit workout: $id');
           continue;
         }
 
-        // Create WorkoutLog from HealthKit data
+        // Deduplicate against local Los Mooscles workouts within ±3 minutes
+        final hwDate = DateTime.tryParse(dateStr);
+        if (hwDate != null) {
+          final isDuplicateLocal = history.any((h) {
+            if (h.id.startsWith('healthkit-') || h.isRestDayLog) return false;
+            final localDate = DateTime.tryParse(h.date);
+            if (localDate == null) return false;
+            return hwDate.difference(localDate).abs().inMinutes <= 3;
+          });
+          if (isDuplicateLocal) {
+            debugPrint(
+                '[WorkoutProvider] Skipping HealthKit workout near local workout: $id');
+            continue;
+          }
+        }
+
+        final durationMin = (duration / 60).round().clamp(1, 1440);
         final healthLog = WorkoutLog(
           id: id,
           name: name,
           date: dateStr,
           duration: duration,
-          completedSets: 0, // HealthKit workouts don't have sets
-          totalSets: 0,
+          completedSets: 1,
+          totalSets: 1,
           totalWeight: 0,
-          rpe: 0,
-          notes: '',
-          exercises: [], // HealthKit workouts don't have exercise details
+          rpe: 5,
+          notes: 'Sincronizado via Apple Saúde',
+          exercises: [
+            LogExercise(
+              name: name,
+              muscle: 'Cardio',
+              sets: 1,
+              completedSets: 1,
+              reps: durationMin,
+              weight: 0,
+              rpe: 5,
+              performedCardios: [
+                PerformedCardio(distanceKm: 0, durationSeconds: duration),
+              ],
+            ),
+          ],
           activeCalories: calories,
         );
 
         history.insert(0, healthLog);
+        addedCount++;
+        unawaited(_firebaseSync.syncWorkoutLog(currentUserId, healthLog));
         debugPrint(
             '[WorkoutProvider] Added HealthKit workout to history: $name');
       }
 
-      if (healthWorkouts.isNotEmpty) {
+      if (addedCount > 0) {
+        history.sort((a, b) {
+          final da = DateTime.tryParse(a.date) ??
+              DateTime.fromMillisecondsSinceEpoch(0);
+          final db = DateTime.tryParse(b.date) ??
+              DateTime.fromMillisecondsSinceEpoch(0);
+          return db.compareTo(da);
+        });
         _updateStreak();
         _save();
       }
@@ -1590,6 +1994,8 @@ class WorkoutProvider extends ChangeNotifier {
   // --- PERSONAL RECORDS HELPER ---
   void _updatePersonalRecordsForLog(
       WorkoutLog log, List<String>? prExerciseNamesToNotify) {
+    if (log.isRestDayLog) return;
+
     for (final ex in log.exercises) {
       if (ex.completedSets == 0) continue;
 
@@ -1635,16 +2041,18 @@ class WorkoutProvider extends ChangeNotifier {
             // Maior Distancia PR
             double prWeight = maxDistanceCardio.distanceKm;
             int prReps = maxDistanceCardio.durationSeconds ~/ 60;
-            final currentPr = prs[libEx.id];
-            if (currentPr == null ||
-                prWeight > currentPr.weight ||
-                (prWeight == currentPr.weight && prReps > currentPr.reps)) {
-              prs[libEx.id] = PersonalRecord(
-                  weight: prWeight,
-                  reps: prReps,
-                  date: log.date,
-                  routineName: log.name);
-              prExerciseNamesToNotify?.add(ex.name);
+            if (prWeight > 0) {
+              final currentPr = prs[libEx.id];
+              if (currentPr == null ||
+                  prWeight > currentPr.weight ||
+                  (prWeight == currentPr.weight && prReps > currentPr.reps)) {
+                prs[libEx.id] = PersonalRecord(
+                    weight: prWeight,
+                    reps: prReps,
+                    date: log.date,
+                    routineName: log.name);
+                prExerciseNamesToNotify?.add(ex.name);
+              }
             }
 
             // Melhor Pace/Velocidade PR (Usando o ID com sufixo -pace)
@@ -1668,9 +2076,39 @@ class WorkoutProvider extends ChangeNotifier {
           }
         }
       } else {
-        // Strength PR
-        double prWeight = ex.weight;
-        int prReps = ex.reps;
+        // Strength PR (evaluate per-set working sets, skipping 'W' warm-up sets)
+        double prWeight = -1;
+        int prReps = 0;
+
+        if (ex.weightsPerSet != null && ex.weightsPerSet!.isNotEmpty) {
+          for (int i = 0; i < ex.weightsPerSet!.length; i++) {
+            final setType =
+                (ex.setTypes != null && i < ex.setTypes!.length)
+                    ? ex.setTypes![i].toUpperCase()
+                    : 'N';
+            if (setType == 'W') continue;
+
+            final double w = ex.weightsPerSet![i];
+            final int r =
+                (ex.repsPerSet != null && i < ex.repsPerSet!.length)
+                    ? ex.repsPerSet![i]
+                    : ex.reps;
+            if (w <= 0 && r <= 0) continue; // uncompleted set
+
+            if (w > prWeight || (w == prWeight && r > prReps)) {
+              prWeight = w;
+              prReps = r;
+            }
+          }
+          if (prWeight < 0) {
+            // Only warm-up or uncompleted sets were logged
+            continue;
+          }
+        } else {
+          prWeight = ex.weight;
+          prReps = ex.reps;
+        }
+
         final currentPr = prs[libEx.id];
         if (currentPr == null ||
             prWeight > currentPr.weight ||
@@ -1704,6 +2142,7 @@ class WorkoutProvider extends ChangeNotifier {
     _save();
     notifyListeners();
   }
+
   void _updateStreak() {
     final now = DateTime.now();
 
@@ -1713,22 +2152,25 @@ class WorkoutProvider extends ChangeNotifier {
     }
 
     final thisWeekStart = startOfWeek(now);
-    
+
     // Maintain current preferences
     final int currentWeeklyGoal = streak.weeklyGoal;
     final List<int> currentPlannedRestDays = streak.plannedRestDays;
 
+    final realLogs = history.where((l) => !l.isRestDayLog).toList();
+
     final Set<int> weekdaysTrainedSet = {};
     final Map<int, Map<String, dynamic>> weekdaysData = {};
-    
-    for (final log in history) {
+
+    for (final log in realLogs) {
       try {
         final logDate = parseUtcDate(log.date);
         if (!logDate.isBefore(thisWeekStart)) {
           final weekday = logDate.weekday;
           weekdaysTrainedSet.add(weekday);
-          
-          final isLogCardio = log.name.toLowerCase().contains('cardio') || log.totalWeight == 0;
+
+          final isLogCardio =
+              log.name.toLowerCase().contains('cardio') || log.totalWeight == 0;
 
           if (!weekdaysData.containsKey(weekday)) {
             weekdaysData[weekday] = {
@@ -1743,16 +2185,21 @@ class WorkoutProvider extends ChangeNotifier {
           } else {
             // Treino Duplo! Aggregate the values
             final currentData = weekdaysData[weekday]!;
-            currentData['duration'] = (currentData['duration'] ?? 0) + log.duration;
-            currentData['tonnage'] = (currentData['tonnage'] ?? 0.0) + log.totalWeight;
-            currentData['activeCalories'] = (currentData['activeCalories'] ?? 0) + (log.activeCalories ?? 0);
-            currentData['workoutCount'] = (currentData['workoutCount'] ?? 1) + 1;
-            
+            currentData['duration'] =
+                (currentData['duration'] ?? 0) + log.duration;
+            currentData['tonnage'] =
+                (currentData['tonnage'] ?? 0.0) + log.totalWeight;
+            currentData['activeCalories'] =
+                (currentData['activeCalories'] ?? 0) +
+                    (log.activeCalories ?? 0);
+            currentData['workoutCount'] =
+                (currentData['workoutCount'] ?? 1) + 1;
+
             // Check if it's mixed (Cardio + Strength)
             if (currentData['isCardio'] != isLogCardio) {
               currentData['isMixed'] = true;
             }
-            
+
             // Change name to Treino Duplo
             currentData['name'] = "Treino Duplo";
           }
@@ -1768,12 +2215,12 @@ class WorkoutProvider extends ChangeNotifier {
     int consecutiveWeeks = 0;
     int availableFreezes = 1;
 
-    if (history.isNotEmpty) {
+    if (realLogs.isNotEmpty) {
       try {
-        DateTime oldestWeek = startOfWeek(parseUtcDate(history.last.date));
-        
+        DateTime oldestWeek = startOfWeek(parseUtcDate(realLogs.last.date));
+
         Map<String, int> weekCounts = {};
-        for (final log in history) {
+        for (final log in realLogs) {
           final logDate = parseUtcDate(log.date);
           final ws = startOfWeek(logDate);
           final weekKey = '${ws.year}-${ws.month}-${ws.day}';
@@ -1784,9 +2231,11 @@ class WorkoutProvider extends ChangeNotifier {
         while (!current.isAfter(thisWeekStart)) {
           final key = '${current.year}-${current.month}-${current.day}';
           final count = weekCounts[key] ?? 0;
-          
+
           // Don't penalize the CURRENT week if it's 0 so far, because the week isn't over yet!
-          bool isCurrentWeek = current.year == thisWeekStart.year && current.month == thisWeekStart.month && current.day == thisWeekStart.day;
+          bool isCurrentWeek = current.year == thisWeekStart.year &&
+              current.month == thisWeekStart.month &&
+              current.day == thisWeekStart.day;
 
           if (count >= currentWeeklyGoal) {
             // Perfect week! Only award if it's a past week, or if they already hit it this week.
@@ -1797,7 +2246,7 @@ class WorkoutProvider extends ChangeNotifier {
           } else {
             // 0 workouts
             if (isCurrentWeek) {
-               // week is not over, so we don't break the streak yet, but it's 0 so far.
+              // week is not over, so we don't break the streak yet, but it's 0 so far.
             } else {
               if (availableFreezes > 0) {
                 availableFreezes--;
@@ -1815,7 +2264,7 @@ class WorkoutProvider extends ChangeNotifier {
     final Set<String> completedTodayRoutinesSet = {};
     final Set<String> completedThisWeekRoutinesSet = {};
     final nowLocal = DateTime.now();
-    for (final log in history) {
+    for (final log in realLogs) {
       try {
         final logDate = parseUtcDate(log.date);
 
@@ -1825,7 +2274,7 @@ class WorkoutProvider extends ChangeNotifier {
             completedThisWeekRoutinesSet.add(log.name);
           }
         } else {
-           break; // Optimization
+          break; // Optimization
         }
 
         // Today routines
@@ -1843,7 +2292,7 @@ class WorkoutProvider extends ChangeNotifier {
     final List<String> completedThisWeekRoutines =
         completedThisWeekRoutinesSet.toList();
 
-    final lastDate = history.isNotEmpty ? history.first.date : '';
+    final lastDate = realLogs.isNotEmpty ? realLogs.first.date : '';
     streak = WorkoutStreak(
       currentWeekCount: currentWeekCount,
       consecutiveWeeks: consecutiveWeeks,
@@ -2138,6 +2587,24 @@ class WorkoutProvider extends ChangeNotifier {
             }
           }
 
+          List<String>? newSetTypes = ex.setTypes;
+          if (newSetTypes != null) {
+            final resized = List<String>.filled(s, 'N');
+            for (int i = 0; i < s && i < newSetTypes.length; i++) {
+              resized[i] = newSetTypes[i];
+            }
+            newSetTypes = resized;
+          }
+
+          List<int?>? newRirs = ex.rirPerSet;
+          if (newRirs != null) {
+            final resized = List<int?>.filled(s, null);
+            for (int i = 0; i < s && i < newRirs.length; i++) {
+              resized[i] = newRirs[i];
+            }
+            newRirs = resized;
+          }
+
           return RoutineExercise(
             id: ex.id,
             exerciseId: ex.exerciseId,
@@ -2147,8 +2614,12 @@ class WorkoutProvider extends ChangeNotifier {
             weight: weight ?? ex.weight,
             weightsPerSet: newWeights,
             repsPerSet: newRepsList,
+            setTypes: newSetTypes,
+            rirPerSet: newRirs,
             isCardio: ex.isCardio,
             allowCardioSets: ex.allowCardioSets,
+            supersetId: ex.supersetId,
+            isUnilateral: ex.isUnilateral,
           );
         }
         return ex;
@@ -2205,21 +2676,8 @@ class WorkoutProvider extends ChangeNotifier {
   // --- SETTINGS OPERATIONS ---
   void updateWorkoutElapsedTime(int newElapsedSeconds) {
     if (activeWorkout != null) {
-      activeWorkout = ActiveWorkoutState(
-        name: activeWorkout!.name,
-        startTime: activeWorkout!.startTime,
-        exercises: activeWorkout!.exercises,
-        currentExerciseIndex: activeWorkout!.currentExerciseIndex,
-        elapsedSeconds: newElapsedSeconds,
-        paused: activeWorkout!.paused,
-        restTimer: activeWorkout!.restTimer,
-        warmupDurationSeconds: activeWorkout!.warmupDurationSeconds,
-        heartRate: activeWorkout!.heartRate,
-        activeCalories: activeWorkout!.activeCalories,
-        postponed: activeWorkout!.postponed,
-        recovery: activeWorkout!.recovery,
-        isWarmup: activeWorkout!.isWarmup,
-      );
+      activeWorkout =
+          activeWorkout!.copyWith(elapsedSeconds: newElapsedSeconds);
       _save();
     }
   }
@@ -2344,16 +2802,21 @@ class WorkoutProvider extends ChangeNotifier {
     _previousPlanner = Map.from(planner);
     planner = newPlanner;
 
+    final cleanReason = reason?.trim();
+    final hasReason = cleanReason != null && cleanReason.isNotEmpty;
+
     final restLog = WorkoutLog(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-      name: reason != null ? 'Descanso: $reason' : 'Dia de Descanso',
-      date: DateTime.now().toIso8601String(),
+      name: hasReason ? 'Descanso: $cleanReason' : 'Dia de Descanso',
+      date: DateTime.now().toUtc().toIso8601String(),
       duration: 0,
       completedSets: 0,
       totalSets: 0,
       totalWeight: 0,
       rpe: 0,
-      notes: reason != null ? 'Motivo: $reason' : 'Descanso registrado manualmente.',
+      notes: hasReason
+          ? 'Motivo: $cleanReason'
+          : 'Descanso registrado manualmente.',
       exercises: [],
     );
     _lastRestLogId = restLog.id;
@@ -2437,8 +2900,9 @@ class WorkoutProvider extends ChangeNotifier {
         startDate = now.subtract(Duration(days: days));
         startDate = DateTime(startDate.year, startDate.month, startDate.day);
       }
-      
+
       for (final workout in history) {
+        if (workout.isRestDayLog) continue;
         final workoutDate = DateTime.tryParse(workout.date);
         if (workoutDate != null) {
           if (workoutDate.isBefore(startDate)) {
@@ -2461,6 +2925,7 @@ class WorkoutProvider extends ChangeNotifier {
 
   WorkoutLog? getLastRoutineExecution(String routineName) {
     for (final log in history) {
+      if (log.isRestDayLog) continue;
       if (log.name.trim().toLowerCase() == routineName.trim().toLowerCase()) {
         return log;
       }
@@ -2488,6 +2953,7 @@ class WorkoutProvider extends ChangeNotifier {
     int dThis = 0, dLast = 0;
 
     for (final log in history) {
+      if (log.isRestDayLog) continue;
       if (_inDateRange(log.date, thisWeekStart, now)) {
         wThis++;
         vThis += log.totalWeight;
@@ -2525,6 +2991,7 @@ class WorkoutProvider extends ChangeNotifier {
     int durationMin = 0;
 
     for (final log in history) {
+      if (log.isRestDayLog) continue;
       if (!_inDateRange(log.date, monthStart, monthEnd)) continue;
       workouts++;
       volume += log.totalWeight;
