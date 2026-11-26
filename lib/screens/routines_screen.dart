@@ -727,6 +727,7 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
   final _scrollController = ScrollController();
 
   List<RoutineExercise> _exercises = [];
+  final Set<String> _expandedExerciseIds = {};
   RoutineExecutionType _executionType = RoutineExecutionType.standard;
   int _circuitCycles = 3;
 
@@ -752,11 +753,13 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final library = widget.provider.library;
-    final accentColor = ThemeUtils.getColor(
+    final accentColor = ThemeUtils.getAdaptiveColor(
         Provider.of<ProfileProvider>(context, listen: false)
             .currentProfile
-            .colorAccent);
+            .colorAccent,
+        isDark: isDark);
 
     // Ordena biblioteca de exercícios para seleção
     final sortedLibrary = List<LibraryExercise>.from(library)
@@ -773,11 +776,15 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
             curve: Curves.easeOut,
             height: MediaQuery.of(context).size.height * 0.88,
             decoration: BoxDecoration(
-              color: const Color(0xff0d0d0f).withOpacity(0.92),
+              color: isDark
+                  ? const Color(0xff0d0d0f).withOpacity(0.92)
+                  : Colors.white.withOpacity(0.96),
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(24)),
-              border:
-                  Border.all(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08), width: 1.5),
+              border: Border.all(
+                  color: (isDark ? Colors.white : Colors.black)
+                      .withOpacity(0.08),
+                  width: 1.5),
             ),
             padding: EdgeInsets.only(
               left: 20,
@@ -1166,10 +1173,20 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
                             ),
                           )
                         else
-                          Column(
-                            children: _exercises.asMap().entries.map((entry) {
-                              final idx = entry.key;
-                              final ex = entry.value;
+                          ReorderableListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            buildDefaultDragHandles: false,
+                            itemCount: _exercises.length,
+                            onReorder: (oldIndex, newIndex) {
+                              setState(() {
+                                if (newIndex > oldIndex) newIndex -= 1;
+                                final item = _exercises.removeAt(oldIndex);
+                                _exercises.insert(newIndex, item);
+                              });
+                            },
+                            itemBuilder: (context, idx) {
+                              final ex = _exercises[idx];
                               final ref = library.firstWhere(
                                 (l) => l.id == ex.exerciseId,
                                 orElse: () => LibraryExercise(
@@ -1182,342 +1199,623 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
                                       MeasurementType.cardio ||
                                   ref.measurementType ==
                                       MeasurementType.distance;
+                              final isExpanded =
+                                  _expandedExerciseIds.contains(ex.id);
+                              final hasSuperset = ex.supersetId != null &&
+                                  ex.supersetId!.isNotEmpty;
+                              final textPrimary = isDark
+                                  ? Colors.white
+                                  : const Color(0xFF1C1C1E);
+                              final textMuted = isDark
+                                  ? Colors.white54
+                                  : const Color(0xFF6E6E73);
+
+                              final weightStr = ex.weight > 0
+                                  ? ' • ${ex.weight % 1 == 0 ? ex.weight.toInt() : ex.weight} kg'
+                                  : '';
+                              final summaryText = isCardio
+                                  ? (ex.allowCardioSets
+                                      ? '${ex.sets} × ${ex.reps} min • ${ex.rest}s'
+                                      : '${ex.reps > 0 ? ex.reps : 30} min')
+                                  : (ref.measurementType == MeasurementType.time
+                                      ? '${ex.sets} × ${ex.reps}s • ${ex.rest}s'
+                                      : '${ex.sets} × ${ex.reps}$weightStr • ${ex.rest}s');
+
                               final cardWidget = Container(
-                                key: ValueKey(ex.id),
-                                margin: const EdgeInsets.only(bottom: 12),
-                                padding: const EdgeInsets.all(16),
+                                margin: const EdgeInsets.only(bottom: 8),
                                 decoration: BoxDecoration(
-                                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.02),
-                                  borderRadius: BorderRadius.circular(20),
+                                  color: isDark
+                                      ? Colors.white.withOpacity(0.03)
+                                      : Colors.black.withOpacity(0.025),
+                                  borderRadius: BorderRadius.circular(18),
                                   border: Border.all(
-                                      color: accentColor.withOpacity(0.1),
-                                      width: 1.5),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: accentColor.withOpacity(0.02),
-                                      blurRadius: 10,
-                                      spreadRadius: 1,
-                                    )
-                                  ],
+                                    color: hasSuperset
+                                        ? accentColor.withOpacity(0.45)
+                                        : accentColor.withOpacity(0.12),
+                                    width: hasSuperset ? 1.5 : 1.0,
+                                  ),
                                 ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            ref.name,
-                                            style: TextStyle(
-                                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)),
-                                                fontWeight: FontWeight.w800,
-                                                fontSize: 14,
-                                                letterSpacing: -0.1),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
+                                child: IntrinsicHeight(
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      if (hasSuperset)
+                                        Container(
+                                          width: 4,
+                                          decoration: BoxDecoration(
+                                            color: accentColor,
+                                            borderRadius:
+                                                const BorderRadius.horizontal(
+                                              left: Radius.circular(18),
+                                            ),
                                           ),
                                         ),
-                                        Row(
-                                          children: [
-                                            Container(
-                                              decoration: BoxDecoration(
-                                                color: Colors.white
-                                                    .withOpacity(0.04),
+                                      Expanded(
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(14),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              InkWell(
                                                 borderRadius:
-                                                    BorderRadius.circular(8),
+                                                    BorderRadius.circular(10),
+                                                onTap: () {
+                                                  setState(() {
+                                                    if (isExpanded) {
+                                                      _expandedExerciseIds
+                                                          .remove(ex.id);
+                                                    } else {
+                                                      _expandedExerciseIds
+                                                          .add(ex.id);
+                                                    }
+                                                  });
+                                                },
+                                                child: Row(
+                                                  children: [
+                                                    ReorderableDragStartListener(
+                                                      index: idx,
+                                                      child: Padding(
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .only(right: 8),
+                                                        child: Icon(
+                                                          Icons
+                                                              .drag_indicator_rounded,
+                                                          color: textMuted,
+                                                          size: 20,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    Expanded(
+                                                      child: Column(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        children: [
+                                                          Row(
+                                                            children: [
+                                                              Flexible(
+                                                                child: Text(
+                                                                  ref.name,
+                                                                  style:
+                                                                      TextStyle(
+                                                                    color:
+                                                                        textPrimary,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w800,
+                                                                    fontSize:
+                                                                        14,
+                                                                    letterSpacing:
+                                                                        -0.1,
+                                                                  ),
+                                                                  maxLines: 1,
+                                                                  overflow:
+                                                                      TextOverflow
+                                                                          .ellipsis,
+                                                                ),
+                                                              ),
+                                                              if (hasSuperset) ...[
+                                                                const SizedBox(
+                                                                    width: 6),
+                                                                Container(
+                                                                  padding: const EdgeInsets
+                                                                      .symmetric(
+                                                                      horizontal:
+                                                                          6,
+                                                                      vertical:
+                                                                          2),
+                                                                  decoration:
+                                                                      BoxDecoration(
+                                                                    color: accentColor
+                                                                        .withOpacity(
+                                                                            0.16),
+                                                                    borderRadius:
+                                                                        BorderRadius.circular(
+                                                                            6),
+                                                                  ),
+                                                                  child: Text(
+                                                                    "SUPERSET",
+                                                                    style:
+                                                                        TextStyle(
+                                                                      color:
+                                                                          accentColor,
+                                                                      fontSize:
+                                                                          9,
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .w900,
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ],
+                                                          ),
+                                                          const SizedBox(
+                                                              height: 3),
+                                                          Text(
+                                                            "${ref.muscle} • $summaryText",
+                                                            style: TextStyle(
+                                                              color: textMuted,
+                                                              fontSize: 11.5,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w500,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    if ((!isCardio ||
+                                                            ex.allowCardioSets) &&
+                                                        _executionType !=
+                                                            RoutineExecutionType
+                                                                .circuit) ...[
+                                                      Container(
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color: isDark
+                                                              ? Colors.white
+                                                                  .withOpacity(
+                                                                      0.05)
+                                                              : Colors.black
+                                                                  .withOpacity(
+                                                                      0.05),
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                        ),
+                                                        child: Row(
+                                                          mainAxisSize:
+                                                              MainAxisSize.min,
+                                                          children: [
+                                                            InkWell(
+                                                              onTap: ex.sets > 1
+                                                                  ? () => _updateExerciseField(
+                                                                      idx,
+                                                                      sets: ex.sets -
+                                                                          1)
+                                                                  : null,
+                                                              child: Padding(
+                                                                padding:
+                                                                    const EdgeInsets
+                                                                        .all(6),
+                                                                child: Icon(
+                                                                  Icons.remove,
+                                                                  size: 14,
+                                                                  color: ex.sets >
+                                                                          1
+                                                                      ? textPrimary
+                                                                      : textMuted
+                                                                          .withOpacity(
+                                                                              0.4),
+                                                                ),
+                                                              ),
+                                                            ),
+                                                            Text(
+                                                              "${ex.sets}s",
+                                                              style: TextStyle(
+                                                                color:
+                                                                    textPrimary,
+                                                                fontSize: 11,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w800,
+                                                              ),
+                                                            ),
+                                                            InkWell(
+                                                              onTap: () =>
+                                                                  _updateExerciseField(
+                                                                      idx,
+                                                                      sets: ex.sets +
+                                                                          1),
+                                                              child: Padding(
+                                                                padding:
+                                                                    const EdgeInsets
+                                                                        .all(6),
+                                                                child: Icon(
+                                                                  Icons.add,
+                                                                  size: 14,
+                                                                  color:
+                                                                      textPrimary,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 6),
+                                                    ],
+                                                    Icon(
+                                                      isExpanded
+                                                          ? Icons.expand_less
+                                                          : Icons.expand_more,
+                                                      color: textMuted,
+                                                      size: 20,
+                                                    ),
+                                                    const SizedBox(width: 6),
+                                                    GestureDetector(
+                                                      onTap: () {
+                                                        setState(() {
+                                                          _exercises
+                                                              .removeAt(idx);
+                                                        });
+                                                      },
+                                                      child: Container(
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .all(5),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color: Colors
+                                                              .redAccent
+                                                              .withOpacity(0.1),
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                        ),
+                                                        child: const Icon(
+                                                          Icons.close_rounded,
+                                                          color:
+                                                              Colors.redAccent,
+                                                          size: 16,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
                                               ),
-                                              child: Row(
-                                                children: [
-                                                  IconButton(
-                                                    icon: Icon(
-                                                        Icons
-                                                            .arrow_upward_rounded,
-                                                        color: idx == 0
-                                                            ? (Theme.of(context).brightness == Brightness.dark ? Colors.white10 : const Color(0x0F000000))
-                                                            : (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
-                                                        size: 16),
-                                                    padding:
-                                                        const EdgeInsets.all(4),
-                                                    constraints:
-                                                        const BoxConstraints(),
-                                                    onPressed: idx == 0
-                                                        ? null
-                                                        : () => _moveExercise(
-                                                            idx, true),
+                                              if (isExpanded) ...[
+                                                const SizedBox(height: 12),
+                                                // Cardio mode toggle
+                                                if (isCardio) ...[
+                                                  Row(
+                                                    children: [
+                                                      Expanded(
+                                                        child: GestureDetector(
+                                                          onTap: () {
+                                                            setState(() {
+                                                              _updateExerciseField(
+                                                                  idx,
+                                                                  sets: 1);
+                                                              _exercises[idx] =
+                                                                  RoutineExercise(
+                                                                id: ex.id,
+                                                                exerciseId: ex
+                                                                    .exerciseId,
+                                                                sets: 1,
+                                                                reps: ex.reps,
+                                                                rest: ex.rest,
+                                                                weight:
+                                                                    ex.weight,
+                                                                weightsPerSet: ex
+                                                                    .weightsPerSet,
+                                                                repsPerSet: ex
+                                                                    .repsPerSet,
+                                                                isCardio: true,
+                                                                allowCardioSets:
+                                                                    false,
+                                                              );
+                                                            });
+                                                          },
+                                                          child: Container(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .symmetric(
+                                                                    vertical:
+                                                                        10),
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              color: !ex
+                                                                      .allowCardioSets
+                                                                  ? accentColor
+                                                                      .withOpacity(
+                                                                          0.15)
+                                                                  : (isDark
+                                                                          ? Colors.white
+                                                                          : Colors.black)
+                                                                      .withOpacity(
+                                                                          0.04),
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          8),
+                                                              border:
+                                                                  Border.all(
+                                                                color: !ex
+                                                                        .allowCardioSets
+                                                                    ? accentColor
+                                                                        .withOpacity(
+                                                                            0.5)
+                                                                    : (isDark
+                                                                            ? Colors.white
+                                                                            : Colors.black)
+                                                                        .withOpacity(
+                                                                            0.08),
+                                                              ),
+                                                            ),
+                                                            child: Text(
+                                                              "Sessão Única",
+                                                              textAlign:
+                                                                  TextAlign
+                                                                      .center,
+                                                              style: TextStyle(
+                                                                color: !ex
+                                                                        .allowCardioSets
+                                                                    ? accentColor
+                                                                    : textMuted,
+                                                                fontSize: 11,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 8),
+                                                      Expanded(
+                                                        child: GestureDetector(
+                                                          onTap: () {
+                                                            setState(() {
+                                                              _updateExerciseField(
+                                                                  idx,
+                                                                  sets: ex.sets >
+                                                                          0
+                                                                      ? ex.sets
+                                                                      : 3);
+                                                              _exercises[idx] =
+                                                                  RoutineExercise(
+                                                                id: ex.id,
+                                                                exerciseId: ex
+                                                                    .exerciseId,
+                                                                sets:
+                                                                    ex.sets > 0
+                                                                        ? ex
+                                                                            .sets
+                                                                        : 3,
+                                                                reps: ex.reps,
+                                                                rest: ex.rest,
+                                                                weight:
+                                                                    ex.weight,
+                                                                weightsPerSet: ex
+                                                                    .weightsPerSet,
+                                                                repsPerSet: ex
+                                                                    .repsPerSet,
+                                                                isCardio: true,
+                                                                allowCardioSets:
+                                                                    true,
+                                                              );
+                                                            });
+                                                          },
+                                                          child: Container(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .symmetric(
+                                                                    vertical:
+                                                                        10),
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              color: ex
+                                                                      .allowCardioSets
+                                                                  ? accentColor
+                                                                      .withOpacity(
+                                                                          0.15)
+                                                                  : (isDark
+                                                                          ? Colors.white
+                                                                          : Colors.black)
+                                                                      .withOpacity(
+                                                                          0.04),
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          8),
+                                                              border:
+                                                                  Border.all(
+                                                                color: ex
+                                                                        .allowCardioSets
+                                                                    ? accentColor
+                                                                        .withOpacity(
+                                                                            0.5)
+                                                                    : (isDark
+                                                                            ? Colors.white
+                                                                            : Colors.black)
+                                                                        .withOpacity(
+                                                                            0.08),
+                                                              ),
+                                                            ),
+                                                            child: Text(
+                                                              "Múltiplas Séries (HIIT)",
+                                                              textAlign:
+                                                                  TextAlign
+                                                                      .center,
+                                                              style: TextStyle(
+                                                                color: ex
+                                                                        .allowCardioSets
+                                                                    ? accentColor
+                                                                    : textMuted,
+                                                                fontSize: 11,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
-                                                  Container(
-                                                      width: 1,
-                                                      height: 16,
-                                                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white10 : const Color(0x0F000000))),
-                                                  IconButton(
-                                                    icon: Icon(
-                                                        Icons
-                                                            .arrow_downward_rounded,
-                                                        color: idx ==
-                                                                _exercises
-                                                                        .length -
-                                                                    1
-                                                            ? (Theme.of(context).brightness == Brightness.dark ? Colors.white10 : const Color(0x0F000000))
-                                                            : (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
-                                                        size: 16),
-                                                    padding:
-                                                        const EdgeInsets.all(4),
-                                                    constraints:
-                                                        const BoxConstraints(),
-                                                    onPressed: idx ==
-                                                            _exercises.length -
-                                                                1
-                                                        ? null
-                                                        : () => _moveExercise(
-                                                            idx, false),
-                                                  ),
+                                                  const SizedBox(height: 8),
                                                 ],
-                                              ),
-                                            ),
-                                            const SizedBox(width: 12),
-                                            GestureDetector(
-                                              onTap: () {
-                                                setState(() {
-                                                  _exercises.removeAt(idx);
-                                                });
-                                              },
-                                              child: Container(
-                                                padding:
-                                                    const EdgeInsets.all(6),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.redAccent
-                                                      .withOpacity(0.1),
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
+                                                Row(
+                                                  children: [
+                                                    if ((!isCardio ||
+                                                            ex
+                                                                .allowCardioSets) &&
+                                                        _executionType !=
+                                                            RoutineExecutionType
+                                                                .circuit)
+                                                      Expanded(
+                                                        child: _buildInputRow(
+                                                          label: "Séries",
+                                                          value: ex.sets
+                                                              .toString(),
+                                                          onChanged: (val) {
+                                                            _updateExerciseField(
+                                                                idx,
+                                                                sets: int.tryParse(
+                                                                        val) ??
+                                                                    0);
+                                                          },
+                                                        ),
+                                                      ),
+                                                    if ((!isCardio ||
+                                                            ex
+                                                                .allowCardioSets) &&
+                                                        _executionType !=
+                                                            RoutineExecutionType
+                                                                .circuit)
+                                                      const SizedBox(width: 8),
+                                                    Expanded(
+                                                      child: _buildInputRow(
+                                                        label: isCardio
+                                                            ? "Minutos"
+                                                            : (ref.measurementType ==
+                                                                    MeasurementType
+                                                                        .time
+                                                                ? "Segundos"
+                                                                : "Reps"),
+                                                        value:
+                                                            ex.reps.toString(),
+                                                        onChanged: (val) {
+                                                          _updateExerciseField(
+                                                              idx,
+                                                              reps: int.tryParse(
+                                                                      val) ??
+                                                                  0);
+                                                        },
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    if (!isCardio) ...[
+                                                      Expanded(
+                                                        child: _buildInputRow(
+                                                          label: "Carga (kg)",
+                                                          value: ex.weight
+                                                              .toString(),
+                                                          onChanged: (val) {
+                                                            _updateExerciseField(
+                                                                idx,
+                                                                weight: double
+                                                                        .tryParse(
+                                                                            val) ??
+                                                                    0.0);
+                                                          },
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 8),
+                                                    ],
+                                                    Expanded(
+                                                      child: _buildInputRow(
+                                                        label: "Desc. (s)",
+                                                        value:
+                                                            ex.rest.toString(),
+                                                        onChanged: (val) {
+                                                          _updateExerciseField(
+                                                              idx,
+                                                              rest: int.tryParse(
+                                                                      val) ??
+                                                                  0);
+                                                        },
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
-                                                child: const Icon(
-                                                  Icons.close_rounded,
-                                                  color: Colors.redAccent,
-                                                  size: 18,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
+                                              ],
+                                            ],
+                                          ),
                                         ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 12),
-                                    // Cardio mode toggle
-                                    if (isCardio) ...[
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: GestureDetector(
-                                              onTap: () {
-                                                setState(() {
-                                                  _updateExerciseField(idx,
-                                                      sets: 1);
-                                                  _exercises[idx] =
-                                                      RoutineExercise(
-                                                    id: ex.id,
-                                                    exerciseId: ex.exerciseId,
-                                                    sets: 1,
-                                                    reps: ex.reps,
-                                                    rest: ex.rest,
-                                                    weight: ex.weight,
-                                                    weightsPerSet:
-                                                        ex.weightsPerSet,
-                                                    repsPerSet: ex.repsPerSet,
-                                                    isCardio: true,
-                                                    allowCardioSets: false,
-                                                  );
-                                                });
-                                              },
-                                              child: Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        vertical: 10),
-                                                decoration: BoxDecoration(
-                                                  color: !ex.allowCardioSets
-                                                      ? accentColor
-                                                          .withOpacity(0.15)
-                                                      : Colors.white
-                                                          .withOpacity(0.04),
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
-                                                  border: Border.all(
-                                                    color: !ex.allowCardioSets
-                                                        ? accentColor
-                                                            .withOpacity(0.5)
-                                                        : Colors.white
-                                                            .withOpacity(0.08),
-                                                  ),
-                                                ),
-                                                child: Text(
-                                                  "Sessão Única",
-                                                  textAlign: TextAlign.center,
-                                                  style: TextStyle(
-                                                    color: !ex.allowCardioSets
-                                                        ? accentColor
-                                                        : (Theme.of(context).brightness == Brightness.dark ? Colors.white60 : const Color(0xFF48484A)),
-                                                    fontSize: 11,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: GestureDetector(
-                                              onTap: () {
-                                                setState(() {
-                                                  _updateExerciseField(idx,
-                                                      sets: ex.sets > 0
-                                                          ? ex.sets
-                                                          : 3);
-                                                  _exercises[idx] =
-                                                      RoutineExercise(
-                                                    id: ex.id,
-                                                    exerciseId: ex.exerciseId,
-                                                    sets: ex.sets > 0
-                                                        ? ex.sets
-                                                        : 3,
-                                                    reps: ex.reps,
-                                                    rest: ex.rest,
-                                                    weight: ex.weight,
-                                                    weightsPerSet:
-                                                        ex.weightsPerSet,
-                                                    repsPerSet: ex.repsPerSet,
-                                                    isCardio: true,
-                                                    allowCardioSets: true,
-                                                  );
-                                                });
-                                              },
-                                              child: Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        vertical: 10),
-                                                decoration: BoxDecoration(
-                                                  color: ex.allowCardioSets
-                                                      ? accentColor
-                                                          .withOpacity(0.15)
-                                                      : Colors.white
-                                                          .withOpacity(0.04),
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
-                                                  border: Border.all(
-                                                    color: ex.allowCardioSets
-                                                        ? accentColor
-                                                            .withOpacity(0.5)
-                                                        : Colors.white
-                                                            .withOpacity(0.08),
-                                                  ),
-                                                ),
-                                                child: Text(
-                                                  "Múltiplas Séries (HIIT)",
-                                                  textAlign: TextAlign.center,
-                                                  style: TextStyle(
-                                                    color: ex.allowCardioSets
-                                                        ? accentColor
-                                                        : (Theme.of(context).brightness == Brightness.dark ? Colors.white60 : const Color(0xFF48484A)),
-                                                    fontSize: 11,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
                                       ),
-                                      const SizedBox(height: 8),
                                     ],
-                                    Row(
-                                      children: [
-                                        if ((!isCardio || ex.allowCardioSets) && _executionType != RoutineExecutionType.circuit)
-                                          Expanded(
-                                            child: _buildInputRow(
-                                              label: isCardio
-                                                  ? "Séries"
-                                                  : "Séries",
-                                              value: ex.sets.toString(),
-                                              onChanged: (val) {
-                                                _updateExerciseField(idx,
-                                                    sets:
-                                                        int.tryParse(val) ?? 0);
-                                              },
-                                            ),
-                                          ),
-                                        if ((!isCardio || ex.allowCardioSets) && _executionType != RoutineExecutionType.circuit)
-                                          const SizedBox(width: 8),
-                                        Expanded(
-                                          child: _buildInputRow(
-                                            label: isCardio
-                                                ? "Minutos"
-                                                : (ref.measurementType ==
-                                                        MeasurementType.time
-                                                    ? "Segundos"
-                                                    : "Reps"),
-                                            value: ex.reps.toString(),
-                                            onChanged: (val) {
-                                              _updateExerciseField(idx,
-                                                  reps: int.tryParse(val) ?? 0);
-                                            },
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        if (!isCardio) ...[
-                                          Expanded(
-                                            child: _buildInputRow(
-                                              label: "Carga (kg)",
-                                              value: ex.weight.toString(),
-                                              onChanged: (val) {
-                                                _updateExerciseField(idx,
-                                                    weight:
-                                                        double.tryParse(val) ??
-                                                            0.0);
-                                              },
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                        ],
-                                        Expanded(
-                                          child: _buildInputRow(
-                                            label: "Desc. (s)",
-                                            value: ex.rest.toString(),
-                                            onChanged: (val) {
-                                              _updateExerciseField(idx,
-                                                  rest: int.tryParse(val) ?? 0);
-                                            },
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
+                                  ),
                                 ),
                               );
 
                               Widget linkButton = const SizedBox.shrink();
                               if (idx < _exercises.length - 1) {
-                                final isLinked = ex.supersetId != null && ex.supersetId == _exercises[idx + 1].supersetId;
+                                final isLinked = ex.supersetId != null &&
+                                    ex.supersetId ==
+                                        _exercises[idx + 1].supersetId;
                                 linkButton = GestureDetector(
                                   onTap: () {
                                     setState(() {
                                       if (isLinked) {
-                                        _exercises[idx] = _cloneEx(_exercises[idx], null);
-                                        _exercises[idx + 1] = _cloneEx(_exercises[idx + 1], null);
+                                        _exercises[idx] =
+                                            _cloneEx(_exercises[idx], null);
+                                        _exercises[idx + 1] =
+                                            _cloneEx(_exercises[idx + 1], null);
                                       } else {
-                                        final newId = ex.supersetId ?? "super-${DateTime.now().millisecondsSinceEpoch}";
-                                        _exercises[idx] = _cloneEx(_exercises[idx], newId);
-                                        _exercises[idx + 1] = _cloneEx(_exercises[idx + 1], newId);
+                                        final newId = ex.supersetId ??
+                                            "super-${DateTime.now().millisecondsSinceEpoch}";
+                                        _exercises[idx] =
+                                            _cloneEx(_exercises[idx], newId);
+                                        _exercises[idx + 1] = _cloneEx(
+                                            _exercises[idx + 1], newId);
                                       }
                                     });
                                   },
-                                  child: Container(
-                                    margin: const EdgeInsets.only(bottom: 12),
-                                    padding: const EdgeInsets.symmetric(vertical: 4),
+                                  child: Padding(
+                                    padding:
+                                        const EdgeInsets.only(bottom: 8),
                                     child: Center(
-                                      child: Icon(
-                                        isLinked ? Icons.link : Icons.link_off,
-                                        color: isLinked ? accentColor : (Theme.of(context).brightness == Brightness.dark ? Colors.white24 : const Color(0xFFC7C7CC)),
-                                        size: 24,
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            isLinked
+                                                ? Icons.link
+                                                : Icons.link_off,
+                                            color: isLinked
+                                                ? accentColor
+                                                : (isDark
+                                                    ? Colors.white24
+                                                    : const Color(0xFFC7C7CC)),
+                                            size: 18,
+                                          ),
+                                          if (isLinked) ...[
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              "Bi-set conectado",
+                                              style: TextStyle(
+                                                color: accentColor,
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                          ],
+                                        ],
                                       ),
                                     ),
                                   ),
@@ -1525,24 +1823,26 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
                               }
 
                               return Column(
+                                key: ValueKey(ex.id),
                                 children: [
                                   cardWidget,
                                   linkButton,
                                 ],
                               );
-                            }).toList(),
+                            },
                           ),
                         const SizedBox(height: 16),
                         SizedBox(
                           width: double.infinity,
                           height: 46,
                           child: ElevatedButton.icon(
-                            icon: const Icon(Icons.add_circle_outline,
-                                color: Colors.black, size: 18),
-                            label: const Text(
-                              "ADICIONAR EXERCÍCIO",
+                            icon: Icon(Icons.add_circle_outline,
+                                color: isDark ? Colors.black : Colors.white,
+                                size: 18),
+                            label: Text(
+                              "ADICIONAR EXERCÍCIOS",
                               style: TextStyle(
-                                  color: Colors.black,
+                                  color: isDark ? Colors.black : Colors.white,
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: 0.5,
                                   fontSize: 12),
@@ -1750,8 +2050,10 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
                       widget.existing == null
                           ? "Criar Rotina"
                           : "Salvar Alterações",
-                      style: const TextStyle(
-                          color: Colors.black,
+                      style: TextStyle(
+                          color: accentColor.computeLuminance() > 0.5
+                              ? Colors.black
+                              : Colors.white,
                           fontWeight: FontWeight.w900,
                           fontSize: 14),
                     ),
@@ -1804,15 +2106,6 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
     );
   }
 
-  void _moveExercise(int index, bool moveUp) {
-    setState(() {
-      final targetIndex = moveUp ? index - 1 : index + 1;
-      final temp = _exercises[index];
-      _exercises[index] = _exercises[targetIndex];
-      _exercises[targetIndex] = temp;
-    });
-  }
-
   void _updateExerciseField(int index,
       {int? sets, int? reps, double? weight, int? rest}) {
     final cur = _exercises[index];
@@ -1829,8 +2122,10 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
   }
 
   void _addExercisePicker(List<LibraryExercise> library) {
-    final accentColor = ThemeUtils.getColor(
-        widget.provider.currentProfile?.colorAccent ?? 'Peito');
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accentColor = ThemeUtils.getAdaptiveColor(
+        widget.provider.currentProfile?.colorAccent ?? 'Peito',
+        isDark: isDark);
 
     showModalBottomSheet(
       context: context,
@@ -1844,15 +2139,25 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
             for (final ex in selectedExercises) {
               final isCardioEx = ex.measurementType == MeasurementType.cardio ||
                   ex.measurementType == MeasurementType.distance;
+              final perf = !isCardioEx
+                  ? widget.provider.getLastPerformance(ex.name)
+                  : null;
+              final defaultReps = isCardioEx
+                  ? 0
+                  : (perf != null && perf.reps > 0
+                      ? perf.reps
+                      : (ex.measurementType == MeasurementType.time ? 45 : 10));
+              final defaultWeight =
+                  (!isCardioEx && perf != null && perf.weight > 0)
+                      ? perf.weight
+                      : 0.0;
               _exercises.add(RoutineExercise(
                 id: "e-${const Uuid().v4()}",
                 exerciseId: ex.id,
                 sets: isCardioEx ? 1 : 3,
-                reps: isCardioEx
-                    ? 0
-                    : (ex.measurementType == MeasurementType.time ? 45 : 10),
+                reps: defaultReps,
                 rest: int.tryParse(_restController.text.trim()) ?? 60,
-                weight: 0,
+                weight: defaultWeight,
                 isCardio: isCardioEx,
                 allowCardioSets: false,
               ));
@@ -1901,13 +2206,30 @@ class ExerciseSelectionSheetState extends State<ExerciseSelectionSheet> {
     super.dispose();
   }
 
+  String _normalizeSearch(String input) {
+    const withDiacritics = 'áàâãäéèêëíìîïóòôõöúùûüçñ';
+    const withoutDiacritics = 'aaaaaeeeeiiiiooooouuuucn';
+    var res = input.toLowerCase();
+    for (int i = 0; i < withDiacritics.length; i++) {
+      res = res.replaceAll(withDiacritics[i], withoutDiacritics[i]);
+    }
+    return res;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final normalizedQuery = _normalizeSearch(_searchQuery);
+    final checkIconColor = widget.accentColor.computeLuminance() > 0.5
+        ? Colors.black
+        : Colors.white;
+
     // Agrupar por músculo e filtrar
     final Map<String, List<LibraryExercise>> grouped = {};
     for (final ex in widget.library) {
-      if (_searchQuery.isNotEmpty &&
-          !ex.name.toLowerCase().contains(_searchQuery.toLowerCase())) {
+      if (normalizedQuery.isNotEmpty &&
+          !_normalizeSearch(ex.name).contains(normalizedQuery) &&
+          !_normalizeSearch(ex.muscle).contains(normalizedQuery)) {
         continue;
       }
       grouped.putIfAbsent(ex.muscle, () => []).add(ex);
@@ -1925,9 +2247,10 @@ class ExerciseSelectionSheetState extends State<ExerciseSelectionSheet> {
     return Container(
       height: MediaQuery.of(context).size.height * 0.9,
       decoration: BoxDecoration(
-        color: const Color(0xFF141414),
+        color: isDark ? const Color(0xFF141414) : Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        border: Border.all(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05)),
+        border: Border.all(
+            color: (isDark ? Colors.white : Colors.black).withOpacity(0.05)),
       ),
       child: Column(
         children: [
@@ -1938,7 +2261,7 @@ class ExerciseSelectionSheetState extends State<ExerciseSelectionSheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color: (isDark ? Colors.white : Colors.black).withOpacity(0.2),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -1953,7 +2276,7 @@ class ExerciseSelectionSheetState extends State<ExerciseSelectionSheet> {
                 Text(
                   "Selecionar Exercícios",
                   style: TextStyle(
-                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)),
+                    color: isDark ? Colors.white : const Color(0xFF1C1C1E),
                     fontSize: 20,
                     fontWeight: FontWeight.w900,
                     letterSpacing: -0.5,
@@ -1961,10 +2284,12 @@ class ExerciseSelectionSheetState extends State<ExerciseSelectionSheet> {
                 ),
                 IconButton(
                   icon: Icon(Icons.close_rounded,
-                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)), size: 22),
+                      color: isDark ? Colors.white : const Color(0xFF1C1C1E),
+                      size: 22),
                   onPressed: () => Navigator.pop(context),
                   style: IconButton.styleFrom(
-                    backgroundColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
+                    backgroundColor: (isDark ? Colors.white : Colors.black)
+                        .withOpacity(0.08),
                     padding: const EdgeInsets.all(6),
                     minimumSize: const Size(36, 36),
                   ),
@@ -1980,20 +2305,43 @@ class ExerciseSelectionSheetState extends State<ExerciseSelectionSheet> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
+                color:
+                    (isDark ? Colors.white : Colors.black).withOpacity(0.05),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08)),
+                border: Border.all(
+                    color: (isDark ? Colors.white : Colors.black)
+                        .withOpacity(0.08)),
               ),
               child: TextField(
                 controller: _searchController,
                 onChanged: (val) => setState(() => _searchQuery = val.trim()),
-                style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 16),
+                style: TextStyle(
+                    color: isDark ? Colors.white : const Color(0xFF1C1C1E),
+                    fontSize: 16),
                 decoration: InputDecoration(
-                  hintText: "Buscar exercício...",
-                  hintStyle: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.3)),
+                  hintText: "Buscar exercício ou músculo...",
+                  hintStyle: TextStyle(
+                      color: (isDark ? Colors.white : const Color(0xFF1C1C1E))
+                          .withOpacity(0.35)),
                   border: InputBorder.none,
                   icon: Icon(Icons.search,
-                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.3), size: 20),
+                      color: (isDark ? Colors.white : const Color(0xFF1C1C1E))
+                          .withOpacity(0.35),
+                      size: 20),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: Icon(Icons.close_rounded,
+                              color: (isDark
+                                      ? Colors.white
+                                      : const Color(0xFF1C1C1E))
+                                  .withOpacity(0.5),
+                              size: 18),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _searchQuery = '');
+                          },
+                        )
+                      : null,
                 ),
               ),
             ),
@@ -2001,63 +2349,68 @@ class ExerciseSelectionSheetState extends State<ExerciseSelectionSheet> {
           const SizedBox(height: 16),
 
           // Muscle filters
-          if (_searchQuery.isEmpty)
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              physics: const BouncingScrollPhysics(),
-              child: Row(
-                children: allMusclesForChips.map((muscle) {
-                  final isSelected = _activeFilters.contains(muscle);
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          if (isSelected) {
-                            _activeFilters.remove(muscle);
-                          } else {
-                            _activeFilters.add(muscle);
-                          }
-                        });
-                      },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 10),
-                        decoration: BoxDecoration(
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            physics: const BouncingScrollPhysics(),
+            child: Row(
+              children: allMusclesForChips.map((muscle) {
+                final isSelected = _activeFilters.contains(muscle);
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        if (isSelected) {
+                          _activeFilters.remove(muscle);
+                        } else {
+                          _activeFilters.add(muscle);
+                        }
+                      });
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? widget.accentColor.withOpacity(0.15)
+                            : (isDark ? Colors.white : Colors.black)
+                                .withOpacity(0.04),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
                           color: isSelected
-                              ? widget.accentColor.withOpacity(0.15)
-                              : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.04),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: isSelected
-                                ? widget.accentColor.withOpacity(0.5)
-                                : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
-                            width: 1.2,
-                          ),
+                              ? widget.accentColor.withOpacity(0.5)
+                              : (isDark ? Colors.white : Colors.black)
+                                  .withOpacity(0.08),
+                          width: 1.2,
                         ),
-                        child: Text(
-                          muscle.toUpperCase(),
-                          style: TextStyle(
-                            color: isSelected
-                                ? widget.accentColor
-                                : (Theme.of(context).brightness == Brightness.dark ? Colors.white60 : const Color(0xFF48484A)),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0.5,
-                          ),
+                      ),
+                      child: Text(
+                        muscle.toUpperCase(),
+                        style: TextStyle(
+                          color: isSelected
+                              ? widget.accentColor
+                              : (isDark
+                                  ? Colors.white60
+                                  : const Color(0xFF48484A)),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
                         ),
                       ),
                     ),
-                  );
-                }).toList(),
-              ),
+                  ),
+                );
+              }).toList(),
             ),
+          ),
 
-          if (_searchQuery.isEmpty) const SizedBox(height: 16),
+          const SizedBox(height: 16),
 
-          Divider(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white10 : const Color(0x0F000000)), height: 1),
+          Divider(
+              color: isDark ? Colors.white10 : const Color(0x0F000000),
+              height: 1),
 
           // List
           Expanded(
@@ -2084,7 +2437,7 @@ class ExerciseSelectionSheetState extends State<ExerciseSelectionSheet> {
                       child: Text(
                         muscle.toUpperCase(),
                         style: TextStyle(
-                          color: widget.accentColor.withOpacity(0.8),
+                          color: widget.accentColor.withOpacity(0.85),
                           fontSize: 12,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 1.2,
@@ -2109,12 +2462,14 @@ class ExerciseSelectionSheetState extends State<ExerciseSelectionSheet> {
                           decoration: BoxDecoration(
                             color: isSelected
                                 ? widget.accentColor.withOpacity(0.08)
-                                : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.02),
+                                : (isDark ? Colors.white : Colors.black)
+                                    .withOpacity(0.02),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                               color: isSelected
                                   ? widget.accentColor.withOpacity(0.4)
-                                  : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
+                                  : (isDark ? Colors.white : Colors.black)
+                                      .withOpacity(0.05),
                             ),
                           ),
                           child: Row(
@@ -2130,13 +2485,15 @@ class ExerciseSelectionSheetState extends State<ExerciseSelectionSheet> {
                                   border: Border.all(
                                     color: isSelected
                                         ? widget.accentColor
-                                        : (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)),
+                                        : (isDark
+                                            ? Colors.white38
+                                            : const Color(0xFF8E8E93)),
                                     width: 2,
                                   ),
                                 ),
                                 child: isSelected
-                                    ? const Icon(Icons.check,
-                                        color: Colors.black, size: 16)
+                                    ? Icon(Icons.check,
+                                        color: checkIconColor, size: 16)
                                     : null,
                               ),
                               const SizedBox(width: 16),
@@ -2145,8 +2502,12 @@ class ExerciseSelectionSheetState extends State<ExerciseSelectionSheet> {
                                   ex.name,
                                   style: TextStyle(
                                     color: isSelected
-                                        ? Colors.white
-                                        : (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
+                                        ? (isDark
+                                            ? Colors.white
+                                            : const Color(0xFF1C1C1E))
+                                        : (isDark
+                                            ? Colors.white70
+                                            : const Color(0xFF3C3C43)),
                                     fontSize: 16,
                                     fontWeight: isSelected
                                         ? FontWeight.w800
@@ -2171,12 +2532,14 @@ class ExerciseSelectionSheetState extends State<ExerciseSelectionSheet> {
             Container(
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
               decoration: BoxDecoration(
-                color: const Color(0xFF141414),
+                color: isDark ? const Color(0xFF141414) : Colors.white,
                 border: Border(
-                    top: BorderSide(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05))),
+                    top: BorderSide(
+                        color: (isDark ? Colors.white : Colors.black)
+                            .withOpacity(0.05))),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.5),
+                    color: Colors.black.withOpacity(isDark ? 0.5 : 0.08),
                     blurRadius: 20,
                     offset: const Offset(0, -10),
                   ),
@@ -2201,8 +2564,8 @@ class ExerciseSelectionSheetState extends State<ExerciseSelectionSheet> {
                     ),
                     child: Text(
                       "ADICIONAR ${_selectedExercises.length} EXERCÍCIO${_selectedExercises.length > 1 ? 'S' : ''}",
-                      style: const TextStyle(
-                        color: Colors.black,
+                      style: TextStyle(
+                        color: checkIconColor,
                         fontSize: 16,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 0.5,
