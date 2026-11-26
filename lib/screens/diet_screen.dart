@@ -186,12 +186,34 @@ class RefeicoesTab extends StatelessWidget {
                                   ),
                                 ],
                               ),
-                              Text(
-                                "${(netProgress * 100).toStringAsFixed(0)}%",
-                                style: TextStyle(
-                                    color: accentColor,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w900),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    "${(netProgress * 100).toStringAsFixed(0)}%",
+                                    style: TextStyle(
+                                        color: accentColor,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w900),
+                                  ),
+                                  Builder(builder: (context) {
+                                    final remCals = diet.caloriesGoal - netCals;
+                                    final isDark = Theme.of(context).brightness == Brightness.dark;
+                                    final remColor = remCals >= 0
+                                        ? (isDark ? Colors.white60 : const Color(0xFF48484A))
+                                        : Colors.redAccent;
+                                    return Text(
+                                      remCals >= 0
+                                          ? "Faltam $remCals kcal"
+                                          : "Excedeu +${-remCals} kcal",
+                                      style: TextStyle(
+                                        color: remColor,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    );
+                                  }),
+                                ],
                               ),
                             ],
                           ),
@@ -424,6 +446,75 @@ class RefeicoesTab extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 10),
+                    Builder(builder: (context) {
+                      final prevDay = dietProvider.latestHistoryDayWithMeals;
+                      if (prevDay == null) return const SizedBox.shrink();
+                      final todayCats = diet.meals.map((m) => m.effectiveCategory).toSet();
+                      final missingCats = Meal.categories
+                          .where((c) => !todayCats.contains(c) && prevDay.meals.any((m) => m.effectiveCategory == c))
+                          .toList();
+                      if (missingCats.isEmpty) return const SizedBox.shrink();
+                      final isDark = Theme.of(context).brightness == Brightness.dark;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: missingCats.map((cat) {
+                              final catMeals = prevDay.meals.where((m) => m.effectiveCategory == cat).toList();
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 8),
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(12),
+                                  onTap: () {
+                                    for (final m in catMeals) {
+                                      dietProvider.addMeal(
+                                        m.name,
+                                        m.calories,
+                                        m.protein,
+                                        m.carbs,
+                                        m.fat,
+                                        m.time,
+                                        category: cat,
+                                      );
+                                    }
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('$cat de ontem repetido (${catMeals.length} item${catMeals.length > 1 ? 's' : ''})!'),
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: (isDark ? Colors.white : Colors.black).withOpacity(0.04),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: accentColor.withOpacity(0.28)),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.replay_rounded, size: 13, color: accentColor),
+                                        const SizedBox(width: 5),
+                                        Text(
+                                          "Repetir $cat",
+                                          style: TextStyle(
+                                            color: isDark ? Colors.white70 : const Color(0xFF3C3C43),
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      );
+                    }),
                     if (diet.meals.isEmpty)
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 24),
@@ -855,6 +946,22 @@ class RefeicoesTab extends StatelessWidget {
                   fontSize: 11,
                   fontWeight: FontWeight.bold),
             ),
+            const SizedBox(height: 2),
+            Builder(builder: (_) {
+              final rem = goal - val;
+              return Text(
+                rem >= 0
+                    ? "Falta ${rem.toStringAsFixed(0)}g"
+                    : "+${(-rem).toStringAsFixed(0)}g",
+                style: TextStyle(
+                  color: rem >= 0
+                      ? (isDark ? Colors.white54 : const Color(0xFF6E6E73))
+                      : Colors.redAccent,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w700,
+                ),
+              );
+            }),
             const SizedBox(height: 4),
             LinearProgressIndicator(
               value: progress,
@@ -1459,6 +1566,132 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                           onChanged: (_) => _onSearchChanged(),
                         ),
                         const SizedBox(height: 10),
+                        if (_searchCtrl.text.trim().isEmpty &&
+                            !_isLoading &&
+                            !_isEstimatingAI)
+                          Builder(builder: (context) {
+                            final dietProvider = Provider.of<DietProvider>(
+                                context,
+                                listen: false);
+                            final Map<String, int> counts = {};
+                            final Map<String, Meal> latestMealByName = {};
+                            final allMeals = <Meal>[
+                              ...dietProvider.dietHistory.values
+                                  .expand((d) => d.meals),
+                              ...dietProvider.diet.meals,
+                            ];
+                            for (final m in allMeals) {
+                              final key = m.name.trim().toLowerCase();
+                              if (key.isEmpty) continue;
+                              counts[key] = (counts[key] ?? 0) + 1;
+                              latestMealByName[key] = m;
+                            }
+                            if (latestMealByName.isEmpty) {
+                              return const SizedBox.shrink();
+                            }
+                            final topKeys = counts.keys.toList()
+                              ..sort((a, b) => counts[b]!.compareTo(counts[a]!));
+                            final topMeals = topKeys
+                                .take(8)
+                                .map((k) => latestMealByName[k]!)
+                                .toList();
+                            final isDark =
+                                Theme.of(context).brightness == Brightness.dark;
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "MAIS USADOS & RECENTES (1 TOQUE)",
+                                    style: TextStyle(
+                                      color: (isDark
+                                              ? Colors.white
+                                              : const Color(0xFF1C1C1E))
+                                          .withOpacity(0.5),
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.7,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  SizedBox(
+                                    height: 36,
+                                    child: ListView.separated(
+                                      scrollDirection: Axis.horizontal,
+                                      itemCount: topMeals.length,
+                                      separatorBuilder: (_, __) =>
+                                          const SizedBox(width: 6),
+                                      itemBuilder: (context, idx) {
+                                        final m = topMeals[idx];
+                                        return InkWell(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          onTap: () {
+                                            final now = DateTime.now();
+                                            final timeStr =
+                                                "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
+                                            dietProvider.addMeal(
+                                              m.name,
+                                              m.calories,
+                                              m.protein,
+                                              m.carbs,
+                                              m.fat,
+                                              timeStr,
+                                              category: _selectedCategory,
+                                            );
+                                            Navigator.pop(context);
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                    '${m.name} (${m.calories} kcal) adicionado!'),
+                                                behavior:
+                                                    SnackBarBehavior.floating,
+                                              ),
+                                            );
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 10, vertical: 6),
+                                            decoration: BoxDecoration(
+                                              color: accentColor
+                                                  .withOpacity(0.10),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              border: Border.all(
+                                                  color: accentColor
+                                                      .withOpacity(0.3)),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(Icons.bolt_rounded,
+                                                    size: 13,
+                                                    color: accentColor),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  "${m.name} (${m.calories})",
+                                                  style: TextStyle(
+                                                    color: isDark
+                                                        ? Colors.white
+                                                        : const Color(
+                                                            0xFF1C1C1E),
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
                         if (_errorMessage != null) ...[
                           Text(
                             _errorMessage!,

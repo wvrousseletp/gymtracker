@@ -386,6 +386,40 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
                         ),
                       ],
                     ),
+                    if (widget.ghostSet != null &&
+                        weight > 0 &&
+                        reps > 0 &&
+                        (weight > widget.ghostSet!.weight ||
+                            (weight * (1.0 + reps / 30.0)) >
+                                (widget.ghostSet!.weight *
+                                    (1.0 + widget.ghostSet!.reps / 30.0))))
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.withOpacity(0.18),
+                          border: Border.all(
+                              color: Colors.amber.withOpacity(0.65)),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.emoji_events_rounded,
+                                color: Colors.amber, size: 13),
+                            SizedBox(width: 4),
+                            Text(
+                              "NOVO PR",
+                              style: TextStyle(
+                                color: Colors.amber,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 10,
+                                letterSpacing: 0.6,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     if (widget.isFailure)
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -499,6 +533,137 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
                     ),
                   ),
                 ),
+                if (widget.onSaveValues != null) ...[
+                  const SizedBox(height: 10),
+                  Builder(builder: (context) {
+                    final isDark =
+                        Theme.of(context).brightness == Brightness.dark;
+                    final chipBg =
+                        (isDark ? Colors.white : Colors.black).withOpacity(0.06);
+                    final chipText =
+                        isDark ? Colors.white70 : const Color(0xFF3C3C43);
+
+                    final double? prevWeight = widget.setIndex > 0
+                        ? ((widget.ex.weightsPerSet != null &&
+                                widget.setIndex - 1 <
+                                    widget.ex.weightsPerSet!.length)
+                            ? widget.ex.weightsPerSet![widget.setIndex - 1]
+                            : widget.ex.weight)
+                        : widget.ghostSet?.weight;
+                    final int? prevReps = widget.setIndex > 0
+                        ? ((widget.ex.repsPerSet != null &&
+                                widget.setIndex - 1 <
+                                    widget.ex.repsPerSet!.length)
+                            ? widget.ex.repsPerSet![widget.setIndex - 1]
+                            : widget.ex.reps)
+                        : widget.ghostSet?.reps;
+
+                    Widget stepBtn(String label, VoidCallback onTap) {
+                      return InkWell(
+                        borderRadius: BorderRadius.circular(8),
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          onTap();
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 9, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: chipBg,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            label,
+                            style: TextStyle(
+                              color: chipText,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+
+                    return Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            stepBtn(isTime ? "-5s" : "-1 rep", () {
+                              final delta = isTime ? 5 : 1;
+                              widget.onSaveValues!(
+                                  weight, (reps - delta).clamp(1, 999));
+                            }),
+                            const SizedBox(width: 4),
+                            stepBtn(isTime ? "+5s" : "+1 rep", () {
+                              final delta = isTime ? 5 : 1;
+                              widget.onSaveValues!(
+                                  weight, (reps + delta).clamp(1, 999));
+                            }),
+                          ],
+                        ),
+                        if (!isTime || weight > 0)
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              stepBtn("-2.5kg", () {
+                                widget.onSaveValues!(
+                                    (weight - 2.5).clamp(0.0, 999.0), reps);
+                              }),
+                              const SizedBox(width: 4),
+                              stepBtn("+2.5kg", () {
+                                widget.onSaveValues!(
+                                    (weight + 2.5).clamp(0.0, 999.0), reps);
+                              }),
+                            ],
+                          ),
+                        if (prevWeight != null &&
+                            prevReps != null &&
+                            (prevWeight > 0 || prevReps > 0))
+                          InkWell(
+                            borderRadius: BorderRadius.circular(8),
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              widget.onSaveValues!(prevWeight, prevReps);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 9, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: widget.accentColor.withOpacity(0.14),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                    color:
+                                        widget.accentColor.withOpacity(0.35)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.content_copy_rounded,
+                                      size: 11, color: widget.accentColor),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    widget.setIndex > 0
+                                        ? "Copiar ant."
+                                        : "Último",
+                                    style: TextStyle(
+                                      color: widget.accentColor,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
+                  }),
+                ],
                 // ─── CRONÔMETRO INLINE PARA ISOMETRIA ───
                 if (isTime) ...[
                   const SizedBox(height: 14),

@@ -31,6 +31,9 @@ class _ExerciseHubScreenState extends State<ExerciseHubScreen> {
   double _maxVolume = 0;
   int _totalSets = 0;
   double _estimated1RM = 0;
+  double _lastWeight = 0;
+  int _lastReps = 0;
+  String? _lastDate;
 
   @override
   void initState() {
@@ -64,6 +67,15 @@ class _ExerciseHubScreenState extends State<ExerciseHubScreen> {
       final dateB = DateTime.tryParse(b.date) ?? DateTime.now();
       return dateB.compareTo(dateA);
     });
+
+    if (_exerciseLogs.isNotEmpty) {
+      final latestLog = _exerciseLogs.first;
+      final latestEx = latestLog.exercises.firstWhere((ex) => ex.name == widget.exercise.name);
+      _lastWeight = latestEx.weight;
+      _lastReps = latestEx.reps;
+      final dt = DateTime.tryParse(latestLog.date);
+      _lastDate = dt != null ? DateFormat('dd/MM/yyyy').format(dt) : latestLog.date;
+    }
 
     for (var log in _exerciseLogs) {
       for (var ex in log.exercises) {
@@ -123,23 +135,25 @@ class _ExerciseHubScreenState extends State<ExerciseHubScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<WorkoutProvider>(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : const Color(0xFF1C1C1E);
     final accentColor = context.select<ProfileProvider, Color>(
-      (p) => ThemeUtils.getColor(p.currentProfile.colorAccent),
+      (p) => ThemeUtils.getAdaptiveColor(p.currentProfile.colorAccent, isDark: isDark),
     );
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F13), // Deep dark bg
+      backgroundColor: isDark ? const Color(0xFF0F0F13) : const Color(0xFFF2F2F7),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: Colors.white,
+        foregroundColor: textColor,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: textColor, size: 20),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           widget.exercise.name,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: textColor),
         ),
         centerTitle: true,
       ),
@@ -169,7 +183,60 @@ class _ExerciseHubScreenState extends State<ExerciseHubScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            if (_exerciseLogs.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              GlassCard(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: accentColor.withOpacity(0.14),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(Icons.history_rounded, color: accentColor, size: 18),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "ÚLTIMA EXECUÇÃO",
+                            style: TextStyle(
+                              color: textColor.withOpacity(0.5),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            "${_lastWeight.toStringAsFixed(_lastWeight.truncateToDouble() == _lastWeight ? 0 : 1)} kg × $_lastReps reps",
+                            style: TextStyle(
+                              color: textColor,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_lastDate != null)
+                      Text(
+                        _lastDate!,
+                        style: TextStyle(
+                          color: textColor.withOpacity(0.5),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 20),
 
             // AI Insight Section
             _buildAISection(accentColor),

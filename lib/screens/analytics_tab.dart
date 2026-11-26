@@ -12,6 +12,7 @@ import '../widgets/analytics/kpi_cards.dart';
 import '../widgets/analytics/activity_rings.dart';
 import '../widgets/analytics/macros_donut_chart.dart';
 import '../widgets/analytics/human_body_heatmap.dart';
+import '../widgets/analytics/exercise_progression_chart.dart';
 
 class AnalyticsTab extends StatefulWidget {
   final Color accentColor;
@@ -25,12 +26,15 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
   bool _isLoading = false;
   int _selectedPeriod = 7; // 7, 30, 365
   bool _isEditing = false;
+  String? _selectedExerciseName;
 
   final List<String> _defaultOrder = [
+    "week_comparison",
     "kpi_cards",
     "activity_rings",
     "cardio_stats",
     "volume_chart",
+    "exercise_progression",
     "muscle_heatmap",
     "macros_donut",
     "diet_analytics",
@@ -226,6 +230,9 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
     List<String> filteredDateStrings,
   ) {
     switch (key) {
+      case "week_comparison":
+        final allHistory = Provider.of<TrackerProvider>(context, listen: false).state?.history ?? [];
+        return _buildWeekComparisonCard(allHistory);
       case "kpi_cards":
         return KPICards(history: filteredHistory, accentColor: widget.accentColor);
       case "activity_rings":
@@ -245,6 +252,9 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
 
       case "volume_chart":
         return _buildVolumeChart(filteredHistory);
+      case "exercise_progression":
+        final allHistory = Provider.of<TrackerProvider>(context, listen: false).state?.history ?? [];
+        return _buildExerciseQuickProgression(allHistory);
       case "muscle_heatmap":
         return _buildMuscleHeatmap(filteredHistory);
       case "macros_donut":
@@ -690,6 +700,240 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildWeekComparisonCard(List<WorkoutLog> allHistory) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : const Color(0xFF1C1C1E);
+    final now = DateTime.now();
+    final startCurrentWeek = DateTime(now.year, now.month, now.day).subtract(const Duration(days: 6));
+    final startPrevWeek = startCurrentWeek.subtract(const Duration(days: 7));
+
+    double currVol = 0, prevVol = 0;
+    int currWorkouts = 0, prevWorkouts = 0;
+    int currSets = 0, prevSets = 0;
+
+    for (final log in allHistory) {
+      if (log.isRestDayLog) continue;
+      final dt = DateTime.tryParse(log.date);
+      if (dt == null) continue;
+      final d = DateTime(dt.year, dt.month, dt.day);
+
+      double logVol = 0;
+      int logSets = 0;
+      for (final ex in log.exercises) {
+        final isCardioEx = ex.muscle.toLowerCase().contains('cardio') ||
+            (ex.performedCardios?.isNotEmpty ?? false);
+        if (ex.completedSets > 0 && !isCardioEx) {
+          logVol += ex.weight * ex.reps * ex.completedSets;
+          logSets += ex.completedSets;
+        } else if (ex.completedSets > 0) {
+          logSets += ex.completedSets;
+        }
+      }
+
+      if (!d.isBefore(startCurrentWeek)) {
+        currVol += logVol;
+        currWorkouts++;
+        currSets += logSets;
+      } else if (!d.isBefore(startPrevWeek) && d.isBefore(startCurrentWeek)) {
+        prevVol += logVol;
+        prevWorkouts++;
+        prevSets += logSets;
+      }
+    }
+
+    Widget deltaBadge(double curr, double prev) {
+      if (prev <= 0 && curr <= 0) {
+        return Text("=", style: TextStyle(color: textColor.withOpacity(0.4), fontSize: 11, fontWeight: FontWeight.bold));
+      }
+      if (prev <= 0) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(color: Colors.green.withOpacity(0.15), borderRadius: BorderRadius.circular(6)),
+          child: Text("Novo", style: TextStyle(color: isDark ? Colors.greenAccent : const Color(0xFF1E8E3E), fontSize: 10, fontWeight: FontWeight.w800)),
+        );
+      }
+      final pct = ((curr - prev) / prev * 100).round();
+      final isUp = pct >= 0;
+      final badgeColor = pct == 0
+          ? textColor.withOpacity(0.5)
+          : (isUp ? (isDark ? Colors.greenAccent : const Color(0xFF1E8E3E)) : Colors.redAccent);
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(color: badgeColor.withOpacity(0.14), borderRadius: BorderRadius.circular(6)),
+        child: Text(
+          "${pct > 0 ? '+' : ''}$pct%",
+          style: TextStyle(color: badgeColor, fontSize: 10, fontWeight: FontWeight.w800),
+        ),
+      );
+    }
+
+    String formatVol(double v) => v >= 1000 ? "${(v / 1000).toStringAsFixed(1)}t" : "${v.toStringAsFixed(0)} kg";
+
+    return GlassCard(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.compare_arrows_rounded, color: widget.accentColor, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                "ESTA SEMANA VS. PASSADA",
+                style: TextStyle(
+                  color: textColor.withOpacity(0.65),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("Volume", style: TextStyle(color: textColor.withOpacity(0.5), fontSize: 11, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 4),
+                    Text(formatVol(currVol), style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.w900)),
+                    const SizedBox(height: 4),
+                    deltaBadge(currVol, prevVol),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("Treinos", style: TextStyle(color: textColor.withOpacity(0.5), fontSize: 11, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 4),
+                    Text("$currWorkouts", style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.w900)),
+                    const SizedBox(height: 4),
+                    deltaBadge(currWorkouts.toDouble(), prevWorkouts.toDouble()),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("Séries", style: TextStyle(color: textColor.withOpacity(0.5), fontSize: 11, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 4),
+                    Text("$currSets", style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.w900)),
+                    const SizedBox(height: 4),
+                    deltaBadge(currSets.toDouble(), prevSets.toDouble()),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExerciseQuickProgression(List<WorkoutLog> allHistory) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : const Color(0xFF1C1C1E);
+    final Map<String, int> freq = {};
+    for (final log in allHistory) {
+      if (log.isRestDayLog) continue;
+      for (final ex in log.exercises) {
+        final isCardioEx = ex.muscle.toLowerCase().contains('cardio') ||
+            (ex.performedCardios?.isNotEmpty ?? false);
+        if (!isCardioEx && ex.completedSets > 0 && ex.weight > 0) {
+          freq[ex.name] = (freq[ex.name] ?? 0) + 1;
+        }
+      }
+    }
+    if (freq.isEmpty) return const SizedBox.shrink();
+
+    final sortedExercises = freq.keys.toList()
+      ..sort((a, b) => freq[b]!.compareTo(freq[a]!));
+    final selected = (_selectedExerciseName != null && freq.containsKey(_selectedExerciseName))
+        ? _selectedExerciseName!
+        : sortedExercises.first;
+
+    return GlassCard(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.show_chart_rounded, color: widget.accentColor, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  "EVOLUÇÃO POR EXERCÍCIO",
+                  style: TextStyle(
+                    color: textColor.withOpacity(0.65),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 34,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: sortedExercises.take(15).length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, idx) {
+                final name = sortedExercises[idx];
+                final isSel = name == selected;
+                return GestureDetector(
+                  onTap: () => setState(() => _selectedExerciseName = name),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: isSel
+                          ? widget.accentColor.withOpacity(0.18)
+                          : (isDark ? Colors.white : Colors.black).withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isSel
+                            ? widget.accentColor.withOpacity(0.6)
+                            : (isDark ? Colors.white : Colors.black).withOpacity(0.08),
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        name,
+                        style: TextStyle(
+                          color: isSel ? widget.accentColor : textColor.withOpacity(0.75),
+                          fontSize: 12,
+                          fontWeight: isSel ? FontWeight.w800 : FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 200,
+            child: ExerciseProgressionChart(
+              exerciseName: selected,
+              history: allHistory,
+              accentColor: widget.accentColor,
+              showWeight: true,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

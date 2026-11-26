@@ -353,7 +353,7 @@ class RoutinesTab extends StatelessWidget {
                           onPressed: () {
                             HapticFeedback.selectionClick();
                             final clonedExercises = routine.exercises.map((e) => RoutineExercise(
-                              id: const Uuid().v4(),
+                              id: "e-${const Uuid().v4()}",
                               exerciseId: e.exerciseId,
                               sets: e.sets,
                               reps: e.reps,
@@ -365,18 +365,26 @@ class RoutinesTab extends StatelessWidget {
                               rirPerSet: e.rirPerSet != null ? List.from(e.rirPerSet!) : null,
                               isCardio: e.isCardio,
                               allowCardioSets: e.allowCardioSets,
+                              supersetId: e.supersetId,
+                              isUnilateral: e.isUnilateral,
                             )).toList();
 
                             provider.addRoutine(
                               "${routine.name} (Cópia)",
                               routine.defaultRest,
                               clonedExercises,
+                              executionType: routine.executionType,
+                              circuitCycles: routine.circuitCycles,
                             );
 
+                            final isDark = Theme.of(context).brightness == Brightness.dark;
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text("Rotina '${routine.name} (Cópia)' criada com sucesso!"),
-                                backgroundColor: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
+                                content: Text(
+                                  "Rotina '${routine.name} (Cópia)' criada com sucesso!",
+                                  style: TextStyle(color: isDark ? Colors.white : const Color(0xFF1C1C1E)),
+                                ),
+                                backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
                                 duration: const Duration(seconds: 2),
                               ),
                             );
