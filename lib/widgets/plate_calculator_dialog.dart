@@ -209,8 +209,8 @@ class _PlateCalculatorDialogState extends State<PlateCalculatorDialog> {
                 runSpacing: 8,
                 children: platesNeededPerSide.map((p) => Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-                  child: Text("${p.toString().replaceAll('.0', '')} kg", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  decoration: BoxDecoration(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08), borderRadius: BorderRadius.circular(8)),
+                  child: Text("${p.toString().replaceAll('.0', '')} kg", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontWeight: FontWeight.bold)),
                 )).toList(),
               )
             ] else

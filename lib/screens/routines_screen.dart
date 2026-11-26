@@ -1987,7 +1987,7 @@ class ExerciseSelectionSheetState extends State<ExerciseSelectionSheet> {
               child: TextField(
                 controller: _searchController,
                 onChanged: (val) => setState(() => _searchQuery = val.trim()),
-                style: const TextStyle(color: Colors.white, fontSize: 16),
+                style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 16),
                 decoration: InputDecoration(
                   hintText: "Buscar exercício...",
                   hintStyle: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.3)),

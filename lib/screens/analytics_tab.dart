@@ -638,7 +638,7 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
           Row(
             children: [
               Expanded(
-                child: _buildSubMetric("Distância Total", "${totalDistance.toStringAsFixed(1)} km", Colors.greenAccent),
+                child: _buildSubMetric("Distância Total", "${totalDistance.toStringAsFixed(1)} km", (Theme.of(context).brightness == Brightness.dark ? Colors.greenAccent : const Color(0xFF1E8E3E))),
               ),
               Expanded(
                 child: _buildSubMetric("Tempo Total", durationStr, Colors.blueAccent),

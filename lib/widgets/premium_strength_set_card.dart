@@ -185,7 +185,7 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
                   strokeWidth: 3.5,
                   backgroundColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                   valueColor: AlwaysStoppedAnimation(
-                    elapsed >= targetSeconds ? Colors.greenAccent : widget.accentColor,
+                    elapsed >= targetSeconds ? (Theme.of(context).brightness == Brightness.dark ? Colors.greenAccent : const Color(0xFF1E8E3E)) : widget.accentColor,
                   ),
                 ),
               ),
@@ -610,7 +610,7 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
           border: Border.all(
             color: widget.isFailure
                 ? Colors.redAccent.withOpacity(0.3)
-                : Colors.greenAccent.withOpacity(0.2),
+                : (Theme.of(context).brightness == Brightness.dark ? Colors.greenAccent : const Color(0xFF1E8E3E)).withOpacity(0.2),
             width: 1,
           ),
         ),
@@ -619,7 +619,7 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
             // Checkmark Icon
             currentType == 'N' ? Icon(
               widget.isFailure ? Icons.whatshot : Icons.check_circle_rounded,
-              color: widget.isFailure ? Colors.redAccent : Colors.greenAccent,
+              color: widget.isFailure ? Colors.redAccent : (Theme.of(context).brightness == Brightness.dark ? Colors.greenAccent : const Color(0xFF1E8E3E)),
               size: 20,
             ) : Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),

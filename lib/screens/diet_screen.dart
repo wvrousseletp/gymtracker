@@ -2390,7 +2390,7 @@ class _JejumTabState extends State<JejumTab> {
                   "Jejuns Completados",
                   completedFasts.toString(),
                   Icons.check_circle,
-                  Colors.greenAccent,
+                  (Theme.of(context).brightness == Brightness.dark ? Colors.greenAccent : const Color(0xFF1E8E3E)),
                 ),
               ),
               const SizedBox(width: 12),
@@ -2668,7 +2668,7 @@ class _JejumTabState extends State<JejumTab> {
       stageTitle = "Autofagia";
       stageDesc =
           "O corpo inicia a reciclagem de células velhas ou danificadas.";
-      stageColor = Colors.greenAccent;
+      stageColor = (Theme.of(context).brightness == Brightness.dark ? Colors.greenAccent : const Color(0xFF1E8E3E));
       stageIcon = Icons.autorenew;
     }
 

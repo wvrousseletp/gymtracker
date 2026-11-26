@@ -46,10 +46,12 @@ class ActivityRings extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             "Conclusão Diária (Hoje)",
             style: TextStyle(
-              color: Colors.white,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white
+                  : const Color(0xFF1C1C1E),
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
@@ -90,22 +92,27 @@ class ActivityRings extends StatelessWidget {
   }
 
   Widget _buildRingLegend(String title, Color color, String value) {
-    return Row(
-      children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return Builder(
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return Row(
           children: [
-            Text(title, style: const TextStyle(color: Colors.white54, fontSize: 11)),
-            Text(value, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+            Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: TextStyle(color: isDark ? Colors.white54 : const Color(0xFF6E6E73), fontSize: 11)),
+                Text(value, style: TextStyle(color: isDark ? Colors.white : const Color(0xFF1C1C1E), fontSize: 13, fontWeight: FontWeight.bold)),
+              ],
+            ),
           ],
-        ),
-      ],
+        );
+      },
     );
   }
 }

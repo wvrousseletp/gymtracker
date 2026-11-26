@@ -616,7 +616,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 "$completed/${challenges.length}",
                 style: TextStyle(
                   color: completed == challenges.length
-                      ? Colors.greenAccent
+                      ? (Theme.of(context).brightness == Brightness.dark ? Colors.greenAccent : const Color(0xFF1E8E3E))
                       : (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)),
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
@@ -648,7 +648,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                           "${c.currentLabel} / ${c.targetLabel}",
                           style: TextStyle(
                             color: c.isCompleted
-                                ? Colors.greenAccent
+                                ? (Theme.of(context).brightness == Brightness.dark ? Colors.greenAccent : const Color(0xFF1E8E3E))
                                 : (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)),
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
@@ -664,7 +664,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                         minHeight: 6,
                         backgroundColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          c.isCompleted ? Colors.greenAccent : accentColor,
+                          c.isCompleted ? (Theme.of(context).brightness == Brightness.dark ? Colors.greenAccent : const Color(0xFF1E8E3E)) : accentColor,
                         ),
                       ),
                     ),
@@ -695,7 +695,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     }
 
     Color deltaColor(double percent) {
-      if (percent > 0) return Colors.greenAccent;
+      if (percent > 0) return (Theme.of(context).brightness == Brightness.dark ? Colors.greenAccent : const Color(0xFF1E8E3E));
       if (percent < 0) return Colors.redAccent;
       return (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93));
     }
@@ -1271,7 +1271,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                 Row(
                                   children: [
                                     Icon(isCompleted ? Icons.check_circle : Icons.fitness_center, 
-                                         color: isCompleted ? Colors.greenAccent : accentColor, size: 24),
+                                         color: isCompleted ? (Theme.of(context).brightness == Brightness.dark ? Colors.greenAccent : const Color(0xFF1E8E3E)) : accentColor, size: 24),
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
@@ -1666,8 +1666,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                     TextField(
                                       controller: durCtrl,
                                       keyboardType: TextInputType.number,
-                                      style:
-                                          const TextStyle(color: Colors.white),
+                                      style: TextStyle(
+                                          color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E))),
                                       decoration: InputDecoration(
                                         labelText: "Duração (minutos)",
                                         labelStyle: TextStyle(
@@ -2886,8 +2886,8 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                                   value: 'postpone',
                                   child: Row(
                                     children: [
-                                      const Icon(Icons.snooze,
-                                          color: Colors.amberAccent, size: 20),
+                                      Icon(Icons.snooze,
+                                          color: (Theme.of(context).brightness == Brightness.dark ? Colors.amberAccent : const Color(0xFFB45309)), size: 20),
                                       const SizedBox(width: 12),
                                       Text("Adiar Treino",
                                           style:
@@ -3072,12 +3072,12 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                                     horizontal: 12, vertical: 6),
                                 decoration: BoxDecoration(
                                   color: workout.paused
-                                      ? Colors.amberAccent.withOpacity(0.2)
+                                      ? (Theme.of(context).brightness == Brightness.dark ? Colors.amberAccent : const Color(0xFFB45309)).withOpacity(0.2)
                                       : accentColor.withOpacity(0.15),
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
                                     color: workout.paused
-                                        ? Colors.amberAccent.withOpacity(0.5)
+                                        ? (Theme.of(context).brightness == Brightness.dark ? Colors.amberAccent : const Color(0xFFB45309)).withOpacity(0.5)
                                         : accentColor.withOpacity(0.4),
                                   ),
                                 ),
@@ -3089,7 +3089,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                                           ? Icons.play_arrow_rounded
                                           : Icons.pause_rounded,
                                       color: workout.paused
-                                          ? Colors.amberAccent
+                                          ? (Theme.of(context).brightness == Brightness.dark ? Colors.amberAccent : const Color(0xFFB45309))
                                           : accentColor,
                                       size: 18,
                                     ),
@@ -3098,7 +3098,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                                       workout.paused ? "PAUSADO" : "PAUSAR",
                                       style: TextStyle(
                                         color: workout.paused
-                                            ? Colors.amberAccent
+                                            ? (Theme.of(context).brightness == Brightness.dark ? Colors.amberAccent : const Color(0xFFB45309))
                                             : accentColor,
                                         fontSize: 11,
                                         fontWeight: FontWeight.w900,

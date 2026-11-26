@@ -332,7 +332,7 @@ class _VolumeHistorySheetState extends State<VolumeHistorySheet> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.circle, color: Colors.greenAccent, size: 10),
+                  Icon(Icons.circle, color: (Theme.of(context).brightness == Brightness.dark ? Colors.greenAccent : const Color(0xFF1E8E3E)), size: 10),
                   const SizedBox(width: 6),
                   Text(
                     "Alvo (10-20 séries)",
@@ -363,7 +363,7 @@ class _VolumeHistorySheetState extends State<VolumeHistorySheet> {
 
                   Color statusColor = Colors.orangeAccent;
                   if (currentVal >= 10 && currentVal <= 20) {
-                    statusColor = Colors.greenAccent;
+                    statusColor = (Theme.of(context).brightness == Brightness.dark ? Colors.greenAccent : const Color(0xFF1E8E3E));
                   } else if (currentVal > 20) {
                     statusColor = Colors.redAccent;
                   }
@@ -431,8 +431,8 @@ class _VolumeHistorySheetState extends State<VolumeHistorySheet> {
                             Color badgeBg = (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.03);
 
                             if (sets >= 10 && sets <= 20) {
-                              badgeColor = Colors.greenAccent;
-                              badgeBg = Colors.greenAccent.withOpacity(0.12);
+                              badgeColor = (Theme.of(context).brightness == Brightness.dark ? Colors.greenAccent : const Color(0xFF1E8E3E));
+                              badgeBg = (Theme.of(context).brightness == Brightness.dark ? Colors.greenAccent : const Color(0xFF1E8E3E)).withOpacity(0.12);
                             } else if (sets > 20) {
                               badgeColor = Colors.redAccent;
                               badgeBg = Colors.redAccent.withOpacity(0.12);

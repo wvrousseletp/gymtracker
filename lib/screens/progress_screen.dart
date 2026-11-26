@@ -1753,7 +1753,7 @@ class _ManualWorkoutLogSheetState extends State<ManualWorkoutLogSheet> {
                                   initialValue: _setsFailureReps[idx]?.toString() ?? "",
                                   keyboardType: TextInputType.number,
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                                  style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 11, fontWeight: FontWeight.bold),
                                   decoration: InputDecoration(
                                     border: InputBorder.none,
                                     contentPadding: EdgeInsets.zero,
@@ -1806,7 +1806,7 @@ class _ManualWorkoutLogSheetState extends State<ManualWorkoutLogSheet> {
                               child: DropdownButton<int>(
                                 value: _rpe,
                                 dropdownColor: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
-                                style: const TextStyle(color: Colors.white, fontSize: 14),
+                                style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 14),
                                 isExpanded: true,
                                 onChanged: (val) {
                                   if (val != null) setState(() => _rpe = val);

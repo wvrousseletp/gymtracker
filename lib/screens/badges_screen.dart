@@ -39,7 +39,7 @@ class BadgesScreen extends StatelessWidget {
         elevation: 0,
         foregroundColor: Colors.white,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), size: 20),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),

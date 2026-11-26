@@ -284,7 +284,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
                       Text(
                         "$currentCount / $goal dias",
                         style: TextStyle(
-                            color: goalMet ? Colors.amber : Colors.greenAccent,
+                            color: goalMet ? Colors.amber : (Theme.of(context).brightness == Brightness.dark ? Colors.greenAccent : const Color(0xFF1E8E3E)),
                             fontSize: 13,
                             fontWeight: FontWeight.bold),
                       ),
@@ -297,7 +297,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
                       value: progress,
                       backgroundColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                       valueColor: AlwaysStoppedAnimation<Color>(
-                          goalMet ? Colors.amber : Colors.greenAccent),
+                          goalMet ? Colors.amber : (Theme.of(context).brightness == Brightness.dark ? Colors.greenAccent : const Color(0xFF1E8E3E))),
                       minHeight: 6,
                     ),
                   ),
@@ -320,13 +320,13 @@ class _PlannerScreenState extends State<PlannerScreen> {
               final isCardio = dayData != null && (dayData['isCardio'] == true);
               final isMixed = dayData != null && (dayData['isMixed'] == true);
               
-              Color primaryColor = Colors.greenAccent;
+              Color primaryColor = (Theme.of(context).brightness == Brightness.dark ? Colors.greenAccent : const Color(0xFF1E8E3E));
               Color secondaryColor = Colors.green;
               if (isMixed) {
                 primaryColor = Colors.purpleAccent;
                 secondaryColor = Colors.deepPurple;
               } else if (isCardio) {
-                primaryColor = Colors.lightBlueAccent;
+                primaryColor = (Theme.of(context).brightness == Brightness.dark ? Colors.lightBlueAccent : const Color(0xFF0369A1));
                 secondaryColor = Colors.blue;
               }
               
@@ -411,13 +411,13 @@ class _PlannerScreenState extends State<PlannerScreen> {
     final String dayName = _daysOfWeek[weekday - 1];
     
     IconData iconType = Icons.fitness_center;
-    Color iconColor = Colors.greenAccent;
+    Color iconColor = (Theme.of(context).brightness == Brightness.dark ? Colors.greenAccent : const Color(0xFF1E8E3E));
     if (isMixed) {
       iconType = Icons.all_inclusive;
       iconColor = Colors.purpleAccent;
     } else if (isCardio) {
       iconType = Icons.directions_run;
-      iconColor = Colors.lightBlueAccent;
+      iconColor = (Theme.of(context).brightness == Brightness.dark ? Colors.lightBlueAccent : const Color(0xFF0369A1));
     }
 
     showModalBottomSheet(
@@ -680,7 +680,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
 
     Color getVolumeColor(int sets) {
       if (sets < 10) return Colors.orangeAccent;
-      if (sets <= 20) return Colors.greenAccent;
+      if (sets <= 20) return (Theme.of(context).brightness == Brightness.dark ? Colors.greenAccent : const Color(0xFF1E8E3E));
       return Colors.redAccent;
     }
 

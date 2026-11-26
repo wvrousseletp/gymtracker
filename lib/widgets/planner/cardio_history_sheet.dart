@@ -208,15 +208,15 @@ class _CardioHistorySheetState extends State<CardioHistorySheet> {
                     horizontalLines: [
                       HorizontalLine(
                         y: 300,
-                        color: Colors.greenAccent,
+                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.greenAccent : const Color(0xFF1E8E3E)),
                         strokeWidth: 2,
                         dashArray: const [5, 5],
                         label: HorizontalLineLabel(
                           show: true,
                           alignment: Alignment.topRight,
                           padding: const EdgeInsets.only(right: 5, bottom: 5),
-                          style: const TextStyle(
-                            color: Colors.greenAccent,
+                          style: TextStyle(
+                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.greenAccent : const Color(0xFF1E8E3E)),
                             fontWeight: FontWeight.bold,
                             fontSize: 12,
                           ),
@@ -287,7 +287,7 @@ class _CardioHistorySheetState extends State<CardioHistorySheet> {
                         BarChartRodData(
                           toY: w.totalMinutes,
                           color: isGoalReached
-                              ? Colors.greenAccent
+                              ? (Theme.of(context).brightness == Brightness.dark ? Colors.greenAccent : const Color(0xFF1E8E3E))
                               : (w.totalMinutes > 0
                                   ? Colors.blueAccent
                                   : (Theme.of(context).brightness == Brightness.dark ? Colors.white12 : Colors.black12)),
@@ -320,7 +320,7 @@ class _CardioHistorySheetState extends State<CardioHistorySheet> {
                         "Média Mensal",
                         "${avgMonthMinutes.toStringAsFixed(0)} min/sem",
                         avgMonthMinutes >= 300
-                            ? Colors.greenAccent
+                            ? (Theme.of(context).brightness == Brightness.dark ? Colors.greenAccent : const Color(0xFF1E8E3E))
                             : Colors.blueAccent,
                       ),
                     ),
@@ -330,7 +330,7 @@ class _CardioHistorySheetState extends State<CardioHistorySheet> {
                         "Semanas na Meta",
                         "$weeksOnGoal / 4",
                         weeksOnGoal >= 2
-                            ? Colors.greenAccent
+                            ? (Theme.of(context).brightness == Brightness.dark ? Colors.greenAccent : const Color(0xFF1E8E3E))
                             : Colors.orangeAccent,
                       ),
                     ),
@@ -344,7 +344,7 @@ class _CardioHistorySheetState extends State<CardioHistorySheet> {
                   final pct = (w.totalMinutes / 300.0 * 100).clamp(0, 999).toInt();
                   final isReached = w.totalMinutes >= 300;
                   final Color c = isReached
-                      ? Colors.greenAccent
+                      ? (Theme.of(context).brightness == Brightness.dark ? Colors.greenAccent : const Color(0xFF1E8E3E))
                       : (w.totalMinutes > 0
                           ? Colors.blueAccent
                           : (Theme.of(context).brightness == Brightness.dark ? Colors.white30 : const Color(0xFFAEAEB2)));
@@ -402,7 +402,7 @@ class _CardioHistorySheetState extends State<CardioHistorySheet> {
                               "$pct% da meta",
                               style: TextStyle(
                                 color: isReached
-                                    ? Colors.greenAccent
+                                    ? (Theme.of(context).brightness == Brightness.dark ? Colors.greenAccent : const Color(0xFF1E8E3E))
                                     : (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                                 fontSize: 11,
                               ),
