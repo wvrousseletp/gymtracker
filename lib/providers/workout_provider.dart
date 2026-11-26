@@ -56,6 +56,110 @@ class WorkoutProvider extends ChangeNotifier {
     return continuousBlocks.map((b) => b.routineIds).expand((x) => x).toList();
   }
 
+  /// Retorna todos os itens do planejamento ativo conforme o modo selecionado
+  /// (`OrganizationMode.fixedDays` -> dias `seg`..`dom`; `OrganizationMode.continuousList` -> blocos contínuos).
+  List<String> get activePlannedItems {
+    if (settings.organizationMode == OrganizationMode.continuousList) {
+      return flatContinuousList;
+    }
+    const days = ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'];
+    return days.expand((d) => planner[d] ?? const <String>[]).toList();
+  }
+
+  /// Calcula séries planejadas por músculo e minutos de cardio planejados
+  /// considerando estritamente o modo de planejamento selecionado em [state.settings.organizationMode].
+  static ({
+    Map<String, int> strengthByMuscle,
+    Map<String, int> cardioByMuscle,
+    int totalCardioMinutes,
+  }) computePlannedVolume(PlannerState state) {
+    final Map<String, int> strengthMap = {};
+    final Map<String, int> cardioMap = {};
+
+    final List<String> plannedItems;
+    if (state.settings.organizationMode == OrganizationMode.continuousList) {
+      plannedItems = state.continuousBlocks
+          .map((b) => b.routineIds)
+          .expand((x) => x)
+          .toList();
+    } else {
+      const days = ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'];
+      plannedItems =
+          days.expand((d) => state.planner[d] ?? const <String>[]).toList();
+    }
+
+    for (final rawItem in plannedItems) {
+      if (rawItem.isEmpty) continue;
+      if (rawItem.startsWith('routine:')) {
+        final routineId = rawItem.substring(8);
+        final routine =
+            state.routines.where((r) => r.id == routineId).firstOrNull;
+        if (routine != null) {
+          for (final re in routine.exercises) {
+            final libEx =
+                state.library.where((e) => e.id == re.exerciseId).firstOrNull;
+            if (libEx != null) {
+              final muscle = libEx.muscle;
+              final isCardio = muscle.toLowerCase().contains('cardio');
+              if (isCardio) {
+                int durationMinutes = (re.reps > 0) ? (re.reps ~/ 60) : 30;
+                if (re.sets > 1) durationMinutes *= re.sets;
+                cardioMap[muscle] = (cardioMap[muscle] ?? 0) + durationMinutes;
+              } else {
+                strengthMap[muscle] =
+                    (strengthMap[muscle] ?? 0) + re.sets.toInt();
+              }
+            }
+          }
+        }
+      } else if (rawItem.startsWith('exercise:')) {
+        final parts = rawItem.split(':');
+        if (parts.length >= 3) {
+          final exId = parts[1];
+          final quantity = int.tryParse(parts[2]) ?? 3;
+          final libEx = state.library.where((e) => e.id == exId).firstOrNull;
+          if (libEx != null) {
+            final muscle = libEx.muscle;
+            final isCardio = muscle.toLowerCase().contains('cardio');
+            if (isCardio) {
+              cardioMap[muscle] = (cardioMap[muscle] ?? 0) + quantity;
+            } else {
+              strengthMap[muscle] = (strengthMap[muscle] ?? 0) + quantity;
+            }
+          }
+        }
+      } else {
+        final routine =
+            state.routines.where((r) => r.id == rawItem).firstOrNull;
+        if (routine != null) {
+          for (final re in routine.exercises) {
+            final libEx =
+                state.library.where((e) => e.id == re.exerciseId).firstOrNull;
+            if (libEx != null) {
+              final muscle = libEx.muscle;
+              final isCardio = muscle.toLowerCase().contains('cardio');
+              if (isCardio) {
+                int durationMinutes = (re.reps > 0) ? (re.reps ~/ 60) : 30;
+                if (re.sets > 1) durationMinutes *= re.sets;
+                cardioMap[muscle] = (cardioMap[muscle] ?? 0) + durationMinutes;
+              } else {
+                strengthMap[muscle] =
+                    (strengthMap[muscle] ?? 0) + re.sets.toInt();
+              }
+            }
+          }
+        }
+      }
+    }
+
+    final totalCardio = cardioMap.values.fold(0, (sum, val) => sum + val);
+    return (
+      strengthByMuscle: strengthMap,
+      cardioByMuscle: cardioMap,
+      totalCardioMinutes: totalCardio,
+    );
+  }
+
   int _blockIdSeq = 0;
 
   void addContinuousBlock({String? name}) {
@@ -1991,7 +2095,9 @@ class WorkoutProvider extends ChangeNotifier {
     _updateStreak();
     _save();
     notifyListeners();
-    unawaited(_firebaseSync.deleteWorkoutLog(currentUserId, id));
+    if (currentUserId.isNotEmpty) {
+      unawaited(_firebaseSync.deleteWorkoutLog(currentUserId, id));
+    }
   }
 
   // --- PERSONAL RECORDS HELPER ---
@@ -2771,20 +2877,27 @@ class WorkoutProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  String? _previousContinuousRestDate;
+
   void shiftPlannerForward([String? reason]) {
-    final List<String> days = ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'];
-    final Map<String, List<String>> newPlanner = {};
+    if (settings.organizationMode == OrganizationMode.continuousList) {
+      _previousContinuousRestDate = settings.continuousListRestDate;
+      settings = settings.copyWith(continuousListRestDate: _todayDateKey());
+    } else {
+      final List<String> days = ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'];
+      final Map<String, List<String>> newPlanner = {};
 
-    // Shift every day 1 day backward
-    for (int i = 0; i < days.length; i++) {
-      String currentDay = days[i];
-      String nextDay = days[(i - 1 + days.length) % days.length];
-      newPlanner[nextDay] = planner[currentDay] ?? [];
+      // Shift every day 1 day backward
+      for (int i = 0; i < days.length; i++) {
+        String currentDay = days[i];
+        String nextDay = days[(i - 1 + days.length) % days.length];
+        newPlanner[nextDay] = planner[currentDay] ?? [];
+      }
+
+      // Save state for undo
+      _previousPlanner = Map.from(planner);
+      planner = newPlanner;
     }
-
-    // Save state for undo
-    _previousPlanner = Map.from(planner);
-    planner = newPlanner;
 
     final cleanReason = reason?.trim();
     final hasReason = cleanReason != null && cleanReason.isNotEmpty;
@@ -2805,10 +2918,18 @@ class WorkoutProvider extends ChangeNotifier {
     );
     _lastRestLogId = restLog.id;
     addManualWorkoutLog(restLog);
+    WatchService.instance
+        .sendTodayRoutines(settings, planner, routines, streak, continuousBlocks);
+    WatchService.instance.syncWidgetData();
   }
 
   void undoShiftPlannerForward() {
-    if (_previousPlanner != null) {
+    if (settings.organizationMode == OrganizationMode.continuousList) {
+      settings = settings.copyWith(
+        continuousListRestDate: _previousContinuousRestDate ?? '',
+      );
+      _previousContinuousRestDate = null;
+    } else if (_previousPlanner != null) {
       planner = _previousPlanner!;
       _previousPlanner = null;
     }
@@ -2833,6 +2954,9 @@ class WorkoutProvider extends ChangeNotifier {
         notifyListeners();
       }
     }
+    WatchService.instance
+        .sendTodayRoutines(settings, planner, routines, streak, continuousBlocks);
+    WatchService.instance.syncWidgetData();
   }
 
   void shiftPlannerForwardWithoutLog() {

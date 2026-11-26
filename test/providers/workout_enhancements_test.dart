@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gym_tracker_flutter/models/diet.dart';
 import 'package:gym_tracker_flutter/models/exercise.dart';
 import 'package:gym_tracker_flutter/models/planner_state.dart';
 import 'package:gym_tracker_flutter/models/routine.dart';
@@ -295,6 +296,135 @@ void main() {
       provider.applyAllModifiedExercisesToRoutine();
       expect(provider.routines.first.exercises.first.weight, 110);
       expect(provider.routines.first.exercises.first.reps, 8);
+    });
+  });
+
+  group('Active planning mode consistency', () {
+    test('computePlannedVolume considera apenas o modo selecionado (Dias Fixos vs Contínuo)', () {
+      final lib = [
+        LibraryExercise(
+            id: 'supino',
+            name: 'Supino',
+            muscle: 'Peito',
+            measurementType: MeasurementType.reps),
+        LibraryExercise(
+            id: 'agach',
+            name: 'Agachamento',
+            muscle: 'Pernas',
+            measurementType: MeasurementType.reps),
+        LibraryExercise(
+            id: 'corrida',
+            name: 'Corrida',
+            muscle: 'Cardio',
+            measurementType: MeasurementType.cardio),
+      ];
+      final routines = [
+        Routine(
+          id: 'r-peito',
+          name: 'Peito',
+          defaultRest: 60,
+          exercises: [
+            RoutineExercise(
+              id: 're1',
+              exerciseId: 'supino',
+              sets: 4,
+              reps: 10,
+              rest: 60,
+              weight: 60,
+            ),
+          ],
+        ),
+        Routine(
+          id: 'r-perna',
+          name: 'Pernas',
+          defaultRest: 90,
+          exercises: [
+            RoutineExercise(
+              id: 're2',
+              exerciseId: 'agach',
+              sets: 5,
+              reps: 10,
+              rest: 90,
+              weight: 100,
+            ),
+          ],
+        ),
+      ];
+      final baseDiet = DietState(
+        caloriesGoal: 2000,
+        proteinGoal: 150,
+        carbsGoal: 200,
+        fatGoal: 70,
+        waterGoalMl: 2000,
+        meals: const [],
+        waterIntakeMl: 0,
+        fasting: FastingState(history: const []),
+        abstinence: const [],
+      );
+
+      final fixedState = PlannerState(
+        library: lib,
+        routines: routines,
+        planner: const {'seg': ['routine:r-peito', 'exercise:corrida:25']},
+        continuousBlocks: [
+          WorkoutBlock(id: 'b1', name: 'Bloco', routineIds: ['routine:r-perna', 'exercise:corrida:40']),
+        ],
+        history: const [],
+        prs: const {},
+        exerciseNotes: const {},
+        medidas: const [],
+        settings: SettingsState(
+          sound: true,
+          vibration: true,
+          prepSeconds: 5,
+          organizationMode: OrganizationMode.fixedDays,
+        ),
+        diet: baseDiet,
+        dietHistory: const {},
+      );
+
+      final fixedVol = WorkoutProvider.computePlannedVolume(fixedState);
+      expect(fixedVol.strengthByMuscle['Peito'], 4);
+      expect(fixedVol.strengthByMuscle['Pernas'], isNull);
+      expect(fixedVol.totalCardioMinutes, 25);
+
+      final continuousState = fixedState.copyWith(
+        settings: fixedState.settings.copyWith(
+          organizationMode: OrganizationMode.continuousList,
+        ),
+      );
+
+      final contVol = WorkoutProvider.computePlannedVolume(continuousState);
+      expect(contVol.strengthByMuscle['Pernas'], 5);
+      expect(contVol.strengthByMuscle['Peito'], isNull);
+      expect(contVol.totalCardioMinutes, 40);
+    });
+
+    test('shiftPlannerForward no modo Contínuo marca descanso hoje sem alterar planner semanal e undo restaura', () {
+      final provider = WorkoutProvider();
+      provider.planner = {
+        'seg': ['routine:r1'],
+        'ter': ['routine:r2'],
+      };
+      provider.settings = provider.settings.copyWith(
+        organizationMode: OrganizationMode.continuousList,
+        themeMode: 'dark',
+      );
+
+      provider.shiftPlannerForward('Recuperação Muscular');
+
+      expect(provider.isContinuousRestToday, isTrue);
+      expect(provider.planner['seg'], ['routine:r1']);
+      expect(provider.planner['ter'], ['routine:r2']);
+      expect(provider.history.length, 1);
+      expect(provider.history.first.isRestDayLog, isTrue);
+      expect(provider.settings.themeMode, 'dark');
+
+      provider.undoShiftPlannerForward();
+
+      expect(provider.isContinuousRestToday, isFalse);
+      expect(provider.history, isEmpty);
+      expect(provider.settings.themeMode, 'dark');
     });
   });
 }

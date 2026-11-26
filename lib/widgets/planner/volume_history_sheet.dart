@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
+import '../../models/enums.dart';
 import '../../providers/tracker_provider.dart';
 
 class WeekData {
@@ -83,6 +84,7 @@ class _VolumeHistorySheetState extends State<VolumeHistorySheet> {
     final Map<String, int> totalSets4Weeks = {};
 
     for (var log in history) {
+      if (log.isRestDayLog) continue;
       final logDate = DateTime.tryParse(log.date);
       if (logDate == null) continue;
 
@@ -181,7 +183,13 @@ class _VolumeHistorySheetState extends State<VolumeHistorySheet> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      currentSubtitle,
+                      () {
+                        final st = Provider.of<TrackerProvider>(context, listen: false).state;
+                        final modeLabel = st?.settings.organizationMode == OrganizationMode.continuousList
+                            ? "Ciclo Contínuo"
+                            : "Semana Fixa";
+                        return "$currentSubtitle • $modeLabel";
+                      }(),
                       style: TextStyle(
                         color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                         fontSize: 12,

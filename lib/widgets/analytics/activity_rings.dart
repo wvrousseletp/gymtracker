@@ -8,12 +8,14 @@ class ActivityRings extends StatelessWidget {
   final DietState currentDiet;
   final List<WorkoutLog> history;
   final Color accentColor;
+  final bool isRestDayToday;
 
   const ActivityRings({
     super.key,
     required this.currentDiet,
     required this.history,
     required this.accentColor,
+    this.isRestDayToday = false,
   });
 
   @override
@@ -33,13 +35,20 @@ class ActivityRings extends StatelessWidget {
 
     // Workout
     bool workedOutToday = false;
+    bool restLogToday = isRestDayToday;
     for (var log in history) {
       if (log.date.startsWith(todayStr)) {
-        workedOutToday = true;
-        break;
+        if (log.isRestDayLog) {
+          restLogToday = true;
+        } else {
+          workedOutToday = true;
+        }
       }
     }
-    double workoutPercent = workedOutToday ? 1.0 : 0.0;
+    double workoutPercent = (workedOutToday || restLogToday) ? 1.0 : 0.0;
+    final workoutStatus = workedOutToday
+        ? "Concluído"
+        : (restLogToday ? "Descanso" : "Pendente");
 
     return GlassCard(
       padding: const EdgeInsets.all(20),
@@ -77,7 +86,7 @@ class ActivityRings extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildRingLegend("Treino", accentColor, workedOutToday ? "Concluído" : "Pendente"),
+                  _buildRingLegend("Treino", accentColor, workoutStatus),
                   const SizedBox(height: 12),
                   _buildRingLegend("Calorias", Colors.redAccent, "${calIntake.toInt()} / ${calGoal.toInt()}"),
                   const SizedBox(height: 12),

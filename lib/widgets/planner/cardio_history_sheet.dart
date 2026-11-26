@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
+import '../../models/enums.dart';
 import '../../providers/tracker_provider.dart';
+import '../../providers/workout_provider.dart';
 
 class CardioWeekData {
   final String title;
@@ -75,6 +77,7 @@ class _CardioHistorySheetState extends State<CardioHistorySheet> {
     }
 
     for (var log in history) {
+      if (log.isRestDayLog) continue;
       final logDate = DateTime.tryParse(log.date);
       if (logDate == null) continue;
 
@@ -102,23 +105,33 @@ class _CardioHistorySheetState extends State<CardioHistorySheet> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final trackerState = Provider.of<TrackerProvider>(context, listen: false).state;
+    final isContinuousMode =
+        trackerState?.settings.organizationMode == OrganizationMode.continuousList;
+    final plannedCardio = trackerState != null
+        ? WorkoutProvider.computePlannedVolume(trackerState).totalCardioMinutes
+        : 0;
+    final double targetMinutes =
+        plannedCardio > 0 ? plannedCardio.toDouble() : 300.0;
+
     // Chronological order for the chart (from Sem -3 to Atual)
     final chronWeeks = _weeks.reversed.toList();
     final double maxVal = chronWeeks
         .map((w) => w.totalMinutes)
-        .fold(300.0, (prev, val) => val > prev ? val : prev);
+        .fold(targetMinutes, (prev, val) => val > prev ? val : prev);
     final double maxY = ((maxVal + 60) / 50).ceil() * 50.0;
 
     final double totalMonthMinutes =
         _weeks.fold(0.0, (sum, w) => sum + w.totalMinutes);
     final double avgMonthMinutes = totalMonthMinutes / 4.0;
-    final int weeksOnGoal = _weeks.where((w) => w.totalMinutes >= 300).length;
+    final int weeksOnGoal = _weeks.where((w) => w.totalMinutes >= targetMinutes).length;
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
-      decoration: const BoxDecoration(
-        color: Color(0xFF141414),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF141414) : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         children: [
@@ -128,7 +141,7 @@ class _CardioHistorySheetState extends State<CardioHistorySheet> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white24 : const Color(0xFFC7C7CC)),
+              color: (isDark ? Colors.white24 : const Color(0xFFC7C7CC)),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -145,16 +158,16 @@ class _CardioHistorySheetState extends State<CardioHistorySheet> {
                     Text(
                       "Histórico de Cardio",
                       style: TextStyle(
-                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
+                        color: (isDark ? Colors.white : const Color(0xFF1C1C1E)),
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      "Minutos executados por semana (Meta: 300m)",
+                      "${isContinuousMode ? 'Ciclo Contínuo' : 'Semana Fixa'} • Meta: ${targetMinutes.toInt()}m",
                       style: TextStyle(
-                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
+                        color: (isDark ? Colors.white54 : const Color(0xFF6E6E73)),
                         fontSize: 12,
                       ),
                     ),
@@ -170,9 +183,9 @@ class _CardioHistorySheetState extends State<CardioHistorySheet> {
                       color: Colors.blueAccent.withOpacity(0.3),
                     ),
                   ),
-                  child: const Text(
-                    "Meta: 300 min",
-                    style: TextStyle(
+                  child: Text(
+                    "Meta: ${targetMinutes.toInt()} min",
+                    style: const TextStyle(
                       color: Colors.blueAccent,
                       fontSize: 11,
                       fontWeight: FontWeight.w700,

@@ -590,75 +590,12 @@ class _PlannerScreenState extends State<PlannerScreen> {
     PlannerState state,
     Color accentColor,
   ) {
-    // Calcular volume planejado por grupo muscular
-    final Map<String, int> strengthMap = {};
-    final Map<String, int> cardioMap = {};
-
-    for (final day in state.planner.keys) {
-      final items = state.planner[day] ?? [];
-      for (final rawItem in items) {
-        if (rawItem.startsWith('routine:')) {
-          final routineId = rawItem.substring(8);
-          final routine =
-              state.routines.where((r) => r.id == routineId).firstOrNull;
-          if (routine != null) {
-            for (final re in routine.exercises) {
-              final libEx =
-                  state.library.where((e) => e.id == re.exerciseId).firstOrNull;
-              if (libEx != null) {
-                final muscle = libEx.muscle;
-                final isCardio = muscle.toLowerCase().contains('cardio');
-                if (isCardio) {
-                  int durationMinutes = (re.reps > 0) ? (re.reps ~/ 60) : 30; // Default 30 min if no duration set
-                  if (re.sets > 1) durationMinutes *= re.sets;
-                  cardioMap[muscle] = (cardioMap[muscle] ?? 0) + durationMinutes;
-                } else {
-                  strengthMap[muscle] =
-                      (strengthMap[muscle] ?? 0) + re.sets.toInt();
-                }
-              }
-            }
-          }
-        } else if (rawItem.startsWith('exercise:')) {
-          final parts = rawItem.split(':');
-          if (parts.length >= 3) {
-            final exId = parts[1];
-            final quantity = int.tryParse(parts[2]) ?? 3;
-            final libEx = state.library.where((e) => e.id == exId).firstOrNull;
-            if (libEx != null) {
-              final muscle = libEx.muscle;
-              final isCardio = muscle.toLowerCase().contains('cardio');
-              if (isCardio) {
-                cardioMap[muscle] = (cardioMap[muscle] ?? 0) + quantity;
-              } else {
-                strengthMap[muscle] = (strengthMap[muscle] ?? 0) + quantity;
-              }
-            }
-          }
-        } else if (rawItem.isNotEmpty) {
-          final routine =
-              state.routines.where((r) => r.id == rawItem).firstOrNull;
-          if (routine != null) {
-            for (final re in routine.exercises) {
-              final libEx =
-                  state.library.where((e) => e.id == re.exerciseId).firstOrNull;
-              if (libEx != null) {
-                final muscle = libEx.muscle;
-                final isCardio = muscle.toLowerCase().contains('cardio');
-                if (isCardio) {
-                  int durationMinutes = (re.reps > 0) ? (re.reps ~/ 60) : 30;
-                  if (re.sets > 1) durationMinutes *= re.sets;
-                  cardioMap[muscle] = (cardioMap[muscle] ?? 0) + durationMinutes;
-                } else {
-                  strengthMap[muscle] =
-                      (strengthMap[muscle] ?? 0) + re.sets.toInt();
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+    // Calcular volume planejado por grupo muscular considerando o planejamento ativo
+    final isContinuousMode =
+        state.settings.organizationMode == OrganizationMode.continuousList;
+    final planned = WorkoutProvider.computePlannedVolume(state);
+    final Map<String, int> strengthMap = Map<String, int>.from(planned.strengthByMuscle);
+    final Map<String, int> cardioMap = Map<String, int>.from(planned.cardioByMuscle);
 
     // Filter "Outros"
     int outrosVolume = 0;
@@ -697,16 +634,38 @@ class _PlannerScreenState extends State<PlannerScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Icon(Icons.fitness_center_rounded, color: accentColor, size: 22),
-                      const SizedBox(width: 8),
-                      Text(
-                        "Volume de Treino Planejado",
-                        style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)), fontSize: 15, fontWeight: FontWeight.w800),
-                      ),
-                    ],
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Icon(Icons.fitness_center_rounded, color: accentColor, size: 22),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            "Volume de Treino Planejado",
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 15, fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: accentColor.withOpacity(0.14),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            isContinuousMode ? "Ciclo Contínuo" : "Semana Fixa",
+                            style: TextStyle(
+                              color: accentColor,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+                  const SizedBox(width: 8),
                   InkWell(
                     onTap: () {
                       showModalBottomSheet(
@@ -727,11 +686,13 @@ class _PlannerScreenState extends State<PlannerScreen> {
               const SizedBox(height: 12),
               if (sortedStrength.isEmpty)
                 Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                   child: Center(
                     child: Text(
-                      "Nenhum treino de musculação planejado.",
-                      style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : Color(0xFF8E8E93)), fontStyle: FontStyle.italic, fontSize: 13),
+                      isContinuousMode
+                          ? "Nenhum treino de musculação na lista contínua."
+                          : "Nenhum treino de musculação planejado.",
+                      style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)), fontStyle: FontStyle.italic, fontSize: 13),
                     ),
                   ),
                 )

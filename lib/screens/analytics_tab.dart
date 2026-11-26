@@ -106,6 +106,7 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
     final cutoffDate = now.subtract(Duration(days: _selectedPeriod));
     
     final filteredHistory = history.where((log) {
+      if (log.isRestDayLog) return false;
       final dt = DateTime.tryParse(log.date);
       if (dt == null) return false;
       return dt.isAfter(cutoffDate) || dt.isAtSameMomentAs(cutoffDate);
@@ -228,10 +229,16 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
       case "kpi_cards":
         return KPICards(history: filteredHistory, accentColor: widget.accentColor);
       case "activity_rings":
+        final tracker = Provider.of<TrackerProvider>(context, listen: false);
+        final todayStr =
+            "${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}";
+        final hasRestLog = (tracker.state?.history ?? [])
+            .any((l) => l.isRestDayLog && l.date.startsWith(todayStr));
         return ActivityRings(
           currentDiet: dietProvider.diet,
-          history: filteredHistory, // passed only for today's check
+          history: filteredHistory,
           accentColor: widget.accentColor,
+          isRestDayToday: tracker.isContinuousRestToday || hasRestLog,
         );
       case "cardio_stats":
         return _buildCardioStatsCard(filteredHistory);
