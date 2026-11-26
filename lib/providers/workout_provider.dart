@@ -2833,8 +2833,22 @@ class WorkoutProvider extends ChangeNotifier {
       deleteWorkoutLog(_lastRestLogId!);
       _lastRestLogId = null;
     } else {
-      _save();
-      notifyListeners();
+      final todayStr = DateTime.now().toLocal().toString().substring(0, 10);
+      final todayRestLog = history.where((log) {
+        if (!log.isRestDayLog) return false;
+        try {
+          final logDate = DateTime.parse(log.date).toLocal();
+          return logDate.toString().substring(0, 10) == todayStr;
+        } catch (_) {
+          return false;
+        }
+      }).firstOrNull;
+      if (todayRestLog != null) {
+        deleteWorkoutLog(todayRestLog.id);
+      } else {
+        _save();
+        notifyListeners();
+      }
     }
   }
 

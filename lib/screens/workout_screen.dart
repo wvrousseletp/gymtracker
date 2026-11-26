@@ -78,111 +78,347 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
   
 
-  void _showRestDayModal(BuildContext context, WorkoutProvider provider, Color accentColor) {
+  void _showRestDayModal(
+      BuildContext context, WorkoutProvider provider, Color accentColor) {
     String selectedReason = 'Recuperação Muscular';
+    String customReasonText = '';
+    final TextEditingController customController = TextEditingController();
+
     final reasons = [
-      'Recuperação Muscular',
-      'Falta de Tempo',
-      'Lesão ou Dor',
-      'Viagem ou Lazer',
+      (
+        label: 'Recuperação Muscular',
+        desc: 'Descanso fisiológico e prevenção de fadiga',
+        icon: Icons.battery_charging_full_rounded,
+      ),
+      (
+        label: 'Falta de Tempo',
+        desc: 'Compromissos, rotina corrida ou imprevistos',
+        icon: Icons.schedule_rounded,
+      ),
+      (
+        label: 'Lesão ou Dor',
+        desc: 'Descanso terapêutico para recuperação articular',
+        icon: Icons.healing_rounded,
+      ),
+      (
+        label: 'Viagem ou Lazer',
+        desc: 'Viagem, descanso programado ou feriado',
+        icon: Icons.flight_takeoff_rounded,
+      ),
+      (
+        label: 'Outro Motivo',
+        desc: 'Especificar outro motivo personalizado',
+        icon: Icons.edit_note_rounded,
+      ),
     ];
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (dialogCtx) => StatefulBuilder(
-        builder: (context, setDialogState) => Dialog(
-          backgroundColor: Colors.transparent,
-          child: GlassCard(
-            padding: const EdgeInsets.all(20),
-            borderRadius: 24,
-            borderColor: accentColor.withOpacity(0.3),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.nightlight_round, color: accentColor, size: 22),
-                    const SizedBox(width: 8),
-                    const Text(
-                      "Registrar Dia de Descanso",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 16,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withOpacity(0.75),
+      builder: (sheetCtx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          final isDark = Theme.of(ctx).brightness == Brightness.dark;
+          final backgroundColor =
+              isDark ? const Color(0xFF1C1C1E) : const Color(0xFF242426);
+          final cardBg =
+              isDark ? const Color(0xFF2C2C2E) : const Color(0xFF323236);
+
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(ctx).viewInsets.bottom,
+            ),
+            child: Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(ctx).size.height * 0.85,
+              ),
+              decoration: BoxDecoration(
+                color: backgroundColor,
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(28)),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.12),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.6),
+                    blurRadius: 30,
+                    offset: const Offset(0, -6),
+                  ),
+                ],
+              ),
+              child: SafeArea(
+                top: false,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Handle pill
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4.5,
+                          margin: const EdgeInsets.only(bottom: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.white30,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  "Selecione o motivo do descanso de hoje para manter seu histórico organizado:",
-                  style: TextStyle(color: Colors.white60, fontSize: 12),
-                ),
-                const SizedBox(height: 14),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: reasons.map((reason) {
-                    final isSelected = selectedReason == reason;
-                    return ChoiceChip(
-                      label: Text(reason),
-                      selected: isSelected,
-                      onSelected: (val) {
-                        if (val) setDialogState(() => selectedReason = reason);
-                      },
-                      selectedColor: accentColor.withOpacity(0.25),
-                      backgroundColor: Colors.white.withOpacity(0.06),
-                      labelStyle: TextStyle(
-                        color: isSelected ? accentColor : Colors.white70,
-                        fontSize: 11,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      ),
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(dialogCtx),
-                      child: const Text("Cancelar", style: TextStyle(color: Colors.white54)),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(dialogCtx);
-                        HapticFeedback.lightImpact();
-                        provider.shiftPlannerForward(selectedReason);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Descanso registrado ($selectedReason). Treinos adiados.'),
-                            action: SnackBarAction(
-                              label: 'Desfazer',
-                              onPressed: () {
-                                provider.undoShiftPlannerForward();
-                              },
+                      // Header
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: accentColor.withOpacity(0.18),
+                              shape: BoxShape.circle,
                             ),
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            duration: const Duration(seconds: 4),
+                            child: Icon(Icons.nightlight_round,
+                                color: accentColor, size: 22),
+                          ),
+                          const SizedBox(width: 12),
+                          const Expanded(
+                            child: Text(
+                              "Registrar Dia de Descanso",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 18,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close_rounded,
+                                color: Colors.white60, size: 22),
+                            onPressed: () => Navigator.pop(sheetCtx),
+                            splashRadius: 20,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        "Selecione o motivo do descanso de hoje para manter seu histórico organizado:",
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13,
+                          height: 1.35,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // Motivos list
+                      ...reasons.map((r) {
+                        final isSelected = selectedReason == r.label;
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(14),
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              setSheetState(() => selectedReason = r.label);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? accentColor.withOpacity(0.18)
+                                    : cardBg,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? accentColor
+                                      : Colors.white.withOpacity(0.08),
+                                  width: isSelected ? 1.5 : 1.0,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? accentColor.withOpacity(0.25)
+                                          : Colors.white.withOpacity(0.06),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      r.icon,
+                                      color: isSelected
+                                          ? accentColor
+                                          : Colors.white70,
+                                      size: 18,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          r.label,
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: isSelected
+                                                ? FontWeight.w800
+                                                : FontWeight.w600,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          r.desc,
+                                          style: TextStyle(
+                                            color: isSelected
+                                                ? Colors.white.withOpacity(0.85)
+                                                : Colors.white54,
+                                            fontSize: 11.5,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Icon(
+                                    isSelected
+                                        ? Icons.check_circle_rounded
+                                        : Icons.radio_button_unchecked_rounded,
+                                    color: isSelected
+                                        ? accentColor
+                                        : Colors.white30,
+                                    size: 20,
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: accentColor,
-                        foregroundColor: Colors.black,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      }),
+                      if (selectedReason == 'Outro Motivo') ...[
+                        const SizedBox(height: 4),
+                        TextField(
+                          controller: customController,
+                          autofocus: true,
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 14),
+                          decoration: InputDecoration(
+                            hintText: "Digite o motivo do descanso...",
+                            hintStyle: const TextStyle(
+                                color: Colors.white38, fontSize: 13),
+                            filled: true,
+                            fillColor: cardBg,
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 12),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                  color: accentColor.withOpacity(0.5)),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide:
+                                  BorderSide(color: accentColor, width: 1.5),
+                            ),
+                          ),
+                          onChanged: (val) {
+                            customReasonText = val;
+                          },
+                        ),
+                      ],
+                      const SizedBox(height: 14),
+                      // Info callout
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.blueAccent.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                              color: Colors.blueAccent.withOpacity(0.25)),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.info_outline_rounded,
+                                color: Colors.blueAccent, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                "Os treinos planejados para hoje serão automaticamente adiados para o próximo dia sem quebrar sua sequência.",
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.85),
+                                  fontSize: 11.5,
+                                  height: 1.35,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      child: const Text("Confirmar", style: TextStyle(fontWeight: FontWeight.bold)),
-                    ),
-                  ],
+                      const SizedBox(height: 18),
+                      // Confirm button
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(sheetCtx);
+                          HapticFeedback.lightImpact();
+                          final finalReason = (selectedReason == 'Outro Motivo' &&
+                                  customReasonText.trim().isNotEmpty)
+                              ? customReasonText.trim()
+                              : selectedReason;
+                          provider.shiftPlannerForward(finalReason);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                  'Descanso registrado ($finalReason). Treinos adiados.'),
+                              action: SnackBarAction(
+                                label: 'Desfazer',
+                                onPressed: () {
+                                  provider.undoShiftPlannerForward();
+                                },
+                              ),
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10)),
+                              duration: const Duration(seconds: 4),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: accentColor,
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14)),
+                          elevation: 0,
+                        ),
+                        child: const Text(
+                          "Confirmar Descanso",
+                          style: TextStyle(
+                              fontSize: 15, fontWeight: FontWeight.w900),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      TextButton(
+                        onPressed: () => Navigator.pop(sheetCtx),
+                        child: const Text(
+                          "Cancelar",
+                          style:
+                              TextStyle(color: Colors.white60, fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
@@ -569,6 +805,18 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     final accentColor = ThemeUtils.getColor(trackerProvider.currentProfile.colorAccent);
 
     final isRestDay = _isRestDayToday(provider.history);
+    final todayRestLog = isRestDay
+        ? provider.history.where((log) {
+            if (!log.isRestDayLog) return false;
+            try {
+              final logDate = DateTime.parse(log.date).toLocal();
+              return logDate.toString().substring(0, 10) ==
+                  DateTime.now().toLocal().toString().substring(0, 10);
+            } catch (_) {
+              return false;
+            }
+          }).firstOrNull
+        : null;
 
     // Mapear IDs do planejador para as rotinas reais do usuário
     final List<Routine> plannedRoutines = isRestDay
@@ -883,7 +1131,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             if (isRestDay)
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+                padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
                   gradient: const LinearGradient(
@@ -892,21 +1140,55 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                     end: Alignment.bottomRight,
                   ),
                   boxShadow: [
-                    BoxShadow(color: const Color(0xff1a1a2e).withOpacity(0.5), blurRadius: 20, offset: const Offset(0, 10))
+                    BoxShadow(
+                        color: const Color(0xff1a1a2e).withOpacity(0.5),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10))
                   ],
                 ),
-                child: const Column(
+                child: Column(
                   children: [
-                    Icon(Icons.nightlight_round, color: Colors.blueAccent, size: 40),
-                    SizedBox(height: 12),
-                    Text(
+                    const Icon(Icons.nightlight_round,
+                        color: Colors.blueAccent, size: 40),
+                    const SizedBox(height: 12),
+                    const Text(
                       "Dia de Descanso",
-                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     Text(
-                      "Aproveite para se recuperar.",
-                      style: TextStyle(color: Colors.white54, fontSize: 13),
+                      (todayRestLog != null && todayRestLog.name.isNotEmpty)
+                          ? todayRestLog.name
+                          : "Aproveite para se recuperar.",
+                      textAlign: TextAlign.center,
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 13),
+                    ),
+                    const SizedBox(height: 16),
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        provider.undoShiftPlannerForward();
+                      },
+                      icon: const Icon(Icons.undo_rounded,
+                          size: 16, color: Colors.white70),
+                      label: const Text(
+                        "Desfazer descanso e voltar a treinar",
+                        style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: Colors.white.withOpacity(0.2)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 8),
+                      ),
                     ),
                   ],
                 ),
