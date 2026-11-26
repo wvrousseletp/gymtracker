@@ -171,10 +171,10 @@ class _VolumeHistorySheetState extends State<VolumeHistorySheet> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       "Histórico de Volume",
                       style: TextStyle(
-                        color: Colors.white,
+                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -269,16 +269,18 @@ class _VolumeHistorySheetState extends State<VolumeHistorySheet> {
                     ),
                     ticksTextStyle: const TextStyle(color: Colors.transparent),
                     tickCount: 3,
-                    titleTextStyle: const TextStyle(
-                      color: Colors.white,
+                    titleTextStyle: TextStyle(
+                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
-                      shadows: [
-                        Shadow(
-                          color: Colors.black,
-                          blurRadius: 4,
-                        ),
-                      ],
+                      shadows: Theme.of(context).brightness == Brightness.dark
+                          ? const [
+                              Shadow(
+                                color: Colors.black,
+                                blurRadius: 4,
+                              ),
+                            ]
+                          : null,
                     ),
                     titlePositionPercentageOffset: 0.22,
                     getTitle: (index, angle) {
@@ -387,8 +389,8 @@ class _VolumeHistorySheetState extends State<VolumeHistorySheet> {
                           children: [
                             Text(
                               m,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                                 fontSize: 15,
                                 fontWeight: FontWeight.bold,
                               ),

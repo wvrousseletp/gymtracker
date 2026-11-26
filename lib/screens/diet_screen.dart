@@ -836,47 +836,63 @@ class RefeicoesTab extends StatelessWidget {
 
   Widget _buildMacroBar(
       String name, double val, double goal, double progress, Color color) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(name,
-            style: const TextStyle(
-                color: Colors.white54,
-                fontSize: 10,
-                fontWeight: FontWeight.bold)),
-        const SizedBox(height: 2),
-        Text(
-          "${val.toStringAsFixed(1)}/${goal.toStringAsFixed(0)}g",
-          style: const TextStyle(
-              color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 4),
-        LinearProgressIndicator(
-          value: progress,
-          backgroundColor: Colors.white.withOpacity(0.05),
-          valueColor: AlwaysStoppedAnimation<Color>(color),
-          borderRadius: BorderRadius.circular(2),
-          minHeight: 4,
-        ),
-      ],
+    return Builder(
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(name,
+                style: TextStyle(
+                    color: isDark ? Colors.white54 : const Color(0xFF6E6E73),
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold)),
+            const SizedBox(height: 2),
+            Text(
+              "${val.toStringAsFixed(1)}/${goal.toStringAsFixed(0)}g",
+              style: TextStyle(
+                  color: isDark ? Colors.white : const Color(0xFF1C1C1E),
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            LinearProgressIndicator(
+              value: progress,
+              backgroundColor: isDark
+                  ? Colors.white.withOpacity(0.05)
+                  : Colors.black.withOpacity(0.06),
+              valueColor: AlwaysStoppedAnimation<Color>(color),
+              borderRadius: BorderRadius.circular(2),
+              minHeight: 4,
+            ),
+          ],
+        );
+      },
     );
   }
 
   Widget _buildMiniMacroLabel(String letter, double val, Color color) {
-    return Row(
-      children: [
-        Text(
-          letter,
-          style: TextStyle(
-              color: color, fontSize: 10, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(width: 2),
-        Text(
-          "${val.toStringAsFixed(1)}g",
-          style: const TextStyle(
-              color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w600),
-        ),
-      ],
+    return Builder(
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return Row(
+          children: [
+            Text(
+              letter,
+              style: TextStyle(
+                  color: color, fontSize: 10, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(width: 2),
+            Text(
+              "${val.toStringAsFixed(1)}g",
+              style: TextStyle(
+                  color: isDark ? Colors.white70 : const Color(0xFF3C3C43),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600),
+            ),
+          ],
+        );
+      },
     );
   }
 

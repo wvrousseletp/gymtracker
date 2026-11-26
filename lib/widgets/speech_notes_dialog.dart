@@ -59,11 +59,11 @@ class _SpeechNotesDialogState extends State<SpeechNotesDialog> {
       backgroundColor: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.white.withOpacity(0.1)),
+        side: BorderSide(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.1)),
       ),
       title: Text(
         "Anotações: ${widget.exerciseName}",
-        style: const TextStyle(color: Colors.white, fontSize: 16),
+        style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 16),
       ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -71,7 +71,7 @@ class _SpeechNotesDialogState extends State<SpeechNotesDialog> {
           TextField(
             controller: _controller,
             maxLines: 4,
-            style: const TextStyle(color: Colors.white),
+            style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E))),
             decoration: InputDecoration(
               hintText: "Senti o ombro, banco inclinado no nível 3...",
               hintStyle: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93))),
@@ -124,7 +124,7 @@ class _SpeechNotesDialogState extends State<SpeechNotesDialog> {
             widget.onSave(_controller.text);
             Navigator.pop(context);
           },
-          child: const Text("Salvar", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          child: Text("Salvar", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontWeight: FontWeight.bold)),
         ),
       ],
     );

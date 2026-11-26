@@ -142,10 +142,10 @@ class _CardioHistorySheetState extends State<CardioHistorySheet> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       "Histórico de Cardio",
                       style: TextStyle(
-                        color: Colors.white,
+                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -370,8 +370,8 @@ class _CardioHistorySheetState extends State<CardioHistorySheet> {
                           children: [
                             Text(
                               w.title,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
                               ),

@@ -449,7 +449,7 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
                                 isTime 
                                   ? "Último: ${widget.ghostSet!.reps}s"
                                   : "Último: ${widget.ghostSet!.reps}",
-                                style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 10, fontWeight: FontWeight.bold),
+                                style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.4), fontSize: 10, fontWeight: FontWeight.bold),
                               ),
                             ]
                           ],
@@ -474,7 +474,7 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
                                 const SizedBox(height: 4),
                                 Text(
                                   "Último: ${widget.ghostSet!.weight.toStringAsFixed(1).replaceAll('.0', '')}kg",
-                                  style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 10, fontWeight: FontWeight.bold),
+                                  style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.4), fontSize: 10, fontWeight: FontWeight.bold),
                                 ),
                               ]
                             ],
@@ -492,7 +492,7 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
                         ),
                         Icon(
                           Icons.edit_outlined,
-                          color: Colors.white.withOpacity(0.3),
+                          color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.3),
                           size: 18,
                         ),
                       ],
@@ -795,7 +795,7 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
         Text(
           unit.toUpperCase(),
           style: TextStyle(
-            color: Colors.white.withOpacity(0.45),
+            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.45),
             fontSize: 10,
             fontWeight: FontWeight.w800,
             letterSpacing: 1.2,

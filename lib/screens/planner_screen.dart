@@ -973,11 +973,13 @@ class _PlannerScreenState extends State<PlannerScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        final sheetText = isDark ? Colors.white : const Color(0xFF1C1C1E);
         return Container(
           height: MediaQuery.of(ctx).size.height * 0.75,
-          decoration: const BoxDecoration(
-            color: Color(0xFF141414),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF141414) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
             children: [
@@ -986,7 +988,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
                 width: 40, height: 4,
                 decoration: BoxDecoration(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white24 : const Color(0xFFC7C7CC)), borderRadius: BorderRadius.circular(2)),
               ),
-              const Text("Selecionar", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              Text("Selecionar", style: TextStyle(color: sheetText, fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
               Expanded(
                 child: ListView(
@@ -1001,7 +1003,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
                         decoration: BoxDecoration(color: accentColor.withOpacity(0.1), shape: BoxShape.circle),
                         child: Icon(Icons.fitness_center, color: accentColor, size: 20),
                       ),
-                      title: Text(r.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                      title: Text(r.name, style: TextStyle(color: sheetText, fontWeight: FontWeight.w600)),
                       subtitle: Text("${r.exercises.length} exercícios", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontSize: 12)),
                       onTap: () { Navigator.pop(ctx); onSelected("routine:${r.id}"); },
                     )),
@@ -1019,7 +1021,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
                             decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
                             child: Icon(isCardio ? Icons.directions_run : Icons.accessibility_new, color: color, size: 20),
                           ),
-                          title: Text(ex.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                          title: Text(ex.name, style: TextStyle(color: sheetText, fontWeight: FontWeight.w600)),
                           subtitle: Text(ex.muscle, style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontSize: 12)),
                           onTap: () { Navigator.pop(ctx); onSelected("exercise:${ex.id}"); },
                         );

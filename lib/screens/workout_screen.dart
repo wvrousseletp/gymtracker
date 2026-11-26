@@ -516,7 +516,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                Text(title, style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontWeight: FontWeight.bold, fontSize: 13)),
                 const SizedBox(height: 2),
                 Text(desc, style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontSize: 11, height: 1.3)),
               ],
@@ -1276,7 +1276,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                     Expanded(
                                       child: Text(
                                         routine.name,
-                                        style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900),
+                                        style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 18, fontWeight: FontWeight.w900),
                                       ),
                                     ),
                                   ],
@@ -1288,7 +1288,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                   children: provider.getRoutineMuscleTags(routine).take(4).map((tag) => Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.4),
+                                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.black.withOpacity(0.4) : Colors.black.withOpacity(0.08)),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Text(tag, style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 10, fontWeight: FontWeight.bold)),
@@ -1308,13 +1308,13 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                         WorkoutStarter.startWithCountdown(context, provider, routine, WorkoutRecovery(sleepOk: SleepQuality.okay, pain: [], warmUpDone: false), false);
                                       }
                                     },
-                                    icon: Icon(isCompleted ? Icons.replay : Icons.play_arrow, color: isCompleted ? Colors.white : Colors.black),
+                                    icon: Icon(isCompleted ? Icons.replay : Icons.play_arrow, color: isCompleted ? (isDark ? Colors.white : const Color(0xFF1C1C1E)) : (isDark ? Colors.black : Colors.white)),
                                     label: Text(
                                       isCompleted ? "TREINAR NOVAMENTE" : "INICIAR TREINO",
-                                      style: TextStyle(color: isCompleted ? Colors.white : Colors.black, fontWeight: FontWeight.bold, fontSize: 14),
+                                      style: TextStyle(color: isCompleted ? (isDark ? Colors.white : const Color(0xFF1C1C1E)) : (isDark ? Colors.black : Colors.white), fontWeight: FontWeight.bold, fontSize: 14),
                                     ),
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: isCompleted ? Colors.white.withOpacity(0.2) : accentColor,
+                                      backgroundColor: isCompleted ? (isDark ? Colors.white.withOpacity(0.2) : Colors.black.withOpacity(0.08)) : accentColor,
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                                       elevation: 0,
                                     ),
@@ -1354,9 +1354,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                     );
                     WorkoutStarter.startWithCountdown(context, provider, emptyRoutine, WorkoutRecovery(sleepOk: SleepQuality.okay, pain: [], warmUpDone: false), false);
                   },
-                  icon: const Icon(Icons.add, color: Colors.white, size: 16),
-                  label: const Text("Treino Livre", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
-                  style: TextButton.styleFrom(backgroundColor: Colors.white.withOpacity(0.1), padding: const EdgeInsets.symmetric(horizontal: 12)),
+                  icon: Icon(Icons.add, color: context.textPrimary, size: 16),
+                  label: Text("Treino Livre", style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.bold, fontSize: 12)),
+                  style: TextButton.styleFrom(backgroundColor: context.subtleBg, padding: const EdgeInsets.symmetric(horizontal: 12)),
                 )
               ],
             ),

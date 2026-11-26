@@ -57,10 +57,10 @@ class _CircularProgressTimerState extends State<CircularProgressTimer> with Sing
       children: [
         Text(
           widget.title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,
-            color: Colors.white,
+            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
             letterSpacing: 0.5,
           ),
         ),
@@ -101,10 +101,10 @@ class _CircularProgressTimerState extends State<CircularProgressTimer> with Sing
                   children: [
                     Text(
                       "$remaining",
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 44,
                         fontWeight: FontWeight.w800,
-                        color: Colors.white,
+                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                         letterSpacing: -1,
                       ),
                     ),
@@ -141,7 +141,7 @@ class _CircularProgressTimerState extends State<CircularProgressTimer> with Sing
               backgroundColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.06),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
-                side: BorderSide(color: Colors.white.withOpacity(0.12)),
+                side: BorderSide(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.12)),
               ),
             ),
             child: Text(

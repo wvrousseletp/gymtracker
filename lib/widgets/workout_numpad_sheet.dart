@@ -116,11 +116,11 @@ class _WorkoutNumpadSheetState extends State<WorkoutNumpadSheet> {
         onTap: onTap ?? () => _onKeyPress(label),
         child: Center(
           child: icon != null
-              ? Icon(icon, color: Colors.white, size: 22)
+              ? Icon(icon, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), size: 22)
               : Text(
                   label,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
                   ),
@@ -146,7 +146,7 @@ class _WorkoutNumpadSheetState extends State<WorkoutNumpadSheet> {
               child: Text(
                 label,
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.9),
+                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.9),
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                 ),
@@ -193,8 +193,8 @@ class _WorkoutNumpadSheetState extends State<WorkoutNumpadSheet> {
           // Title
           Text(
             widget.title,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
               fontSize: 18,
               fontWeight: FontWeight.w800,
             ),
@@ -204,7 +204,7 @@ class _WorkoutNumpadSheetState extends State<WorkoutNumpadSheet> {
             Text(
               widget.ghostText!,
               style: TextStyle(
-                color: Colors.white.withOpacity(0.5),
+                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.5),
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),

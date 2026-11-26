@@ -78,9 +78,9 @@ class _PlateCalculatorDialogState extends State<PlateCalculatorDialog> {
         borderRadius: BorderRadius.circular(20),
         side: BorderSide(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08)),
       ),
-      title: const Text("Calculadora de Anilhas",
+      title: Text("Calculadora de Anilhas",
           style: TextStyle(
-              color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 18, fontWeight: FontWeight.bold)),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -97,7 +97,7 @@ class _PlateCalculatorDialogState extends State<PlateCalculatorDialog> {
                       TextField(
                         controller: _targetWeightController,
                         keyboardType: TextInputType.number,
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontWeight: FontWeight.bold),
                         decoration: InputDecoration(
                           filled: true,
                           fillColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
@@ -120,7 +120,7 @@ class _PlateCalculatorDialogState extends State<PlateCalculatorDialog> {
                       TextField(
                         controller: _barWeightController,
                         keyboardType: TextInputType.number,
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E))),
                         decoration: InputDecoration(
                           filled: true,
                           fillColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),

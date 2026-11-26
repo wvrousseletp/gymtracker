@@ -53,12 +53,12 @@ class _ExerciseProgressionCardState extends State<ExerciseProgressionCard> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 "Evolução por Exercício",
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                 ),
               ),
               Icon(Icons.show_chart, color: widget.accentColor.withOpacity(0.8), size: 20),
@@ -79,7 +79,7 @@ class _ExerciseProgressionCardState extends State<ExerciseProgressionCard> {
                 isExpanded: true,
                 dropdownColor: const Color(0xFF1E1E1E),
                 icon: Icon(Icons.arrow_drop_down, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73))),
-                style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 14, fontWeight: FontWeight.w600),
                 onChanged: (String? newValue) {
                   if (newValue != null) {
                     setState(() {

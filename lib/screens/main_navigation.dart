@@ -306,7 +306,7 @@ class _MainNavigationState extends State<MainNavigation> {
                     children: [
                       const Icon(Icons.emoji_events, color: Colors.amber, size: 28),
                       const SizedBox(width: 8),
-                      Expanded(child: Text(title, style: const TextStyle(color: Colors.white, fontSize: 18))),
+                      Expanded(child: Text(title, style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)), fontSize: 18))),
                     ],
                   ),
                   content: Column(
@@ -347,7 +347,7 @@ class _MainNavigationState extends State<MainNavigation> {
       children: [
         Icon(icon, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), size: 28),
         const SizedBox(height: 8),
-        Text(value, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+        Text(value, style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)), fontSize: 16, fontWeight: FontWeight.bold)),
         Text(label, style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontSize: 12)),
       ],
     );
@@ -392,14 +392,14 @@ class _MainNavigationState extends State<MainNavigation> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Row(
+                  Row(
                     children: [
                       Icon(Icons.auto_awesome, color: Colors.amber, size: 24),
                       SizedBox(width: 8),
                       Text(
                         "O que há de novo! 🌟",
                         style: TextStyle(
-                            color: Colors.white,
+                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)),
                             fontWeight: FontWeight.w800,
                             fontSize: 18),
                       ),
@@ -476,8 +476,8 @@ class _MainNavigationState extends State<MainNavigation> {
             children: [
               Text(
                 title,
-                style: const TextStyle(
-                    color: Colors.white,
+                style: TextStyle(
+                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)),
                     fontWeight: FontWeight.bold,
                     fontSize: 13),
               ),

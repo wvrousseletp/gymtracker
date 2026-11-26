@@ -374,8 +374,8 @@ class _PremiumCardioSessionViewState extends State<PremiumCardioSessionView>
                   controller: controller,
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
-                  style: const TextStyle(
-                      color: Colors.white,
+                  style: TextStyle(
+                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                       fontSize: 24,
                       fontWeight: FontWeight.w600),
                   decoration: const InputDecoration(
