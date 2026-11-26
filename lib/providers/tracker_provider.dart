@@ -900,10 +900,12 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
   void setOrganizationMode(OrganizationMode mode) {
     if (_workoutProvider == null) return;
     _workoutProvider!.setOrganizationMode(mode);
+    notifyListeners();
   }
 
   void setContinuousListIndex(int index) {
     _workoutProvider?.setContinuousListIndex(index);
+    notifyListeners();
   }
 
   bool get isContinuousRestToday =>
@@ -911,6 +913,7 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   void setContinuousListRestToday(bool isRest) {
     _workoutProvider?.setContinuousListRestToday(isRest);
+    notifyListeners();
   }
 
   void updateWorkoutReminder(bool enabled, int hour, int minute) {

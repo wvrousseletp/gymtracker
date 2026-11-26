@@ -51,8 +51,16 @@ void main() async {
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  late final Stream<User?> _authStream =
+      FirebaseAuth.instance.authStateChanges();
 
   ThemeMode _resolveThemeMode(String mode) {
     switch (mode) {
@@ -149,7 +157,7 @@ class MyApp extends StatelessWidget {
       ),
       themeMode: _resolveThemeMode(themeModeStr),
       home: StreamBuilder<User?>(
-        stream: FirebaseAuth.instance.authStateChanges(),
+        stream: _authStream,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const SplashScreen();

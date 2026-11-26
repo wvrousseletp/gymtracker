@@ -2703,17 +2703,7 @@ class WorkoutProvider extends ChangeNotifier {
 
   void setOrganizationMode(OrganizationMode mode) {
     if (settings.organizationMode != mode) {
-      settings = SettingsState(
-        sound: settings.sound,
-        vibration: settings.vibration,
-        prepSeconds: settings.prepSeconds,
-        organizationMode: mode,
-        continuousListCurrentIndex: settings.continuousListCurrentIndex,
-        continuousListRestDate: settings.continuousListRestDate,
-        workoutReminderEnabled: settings.workoutReminderEnabled,
-        workoutReminderHour: settings.workoutReminderHour,
-        workoutReminderMinute: settings.workoutReminderMinute,
-      );
+      settings = settings.copyWith(organizationMode: mode);
       _save();
       WatchService.instance
           .sendTodayRoutines(settings, planner, routines, streak, continuousBlocks);
@@ -2722,17 +2712,7 @@ class WorkoutProvider extends ChangeNotifier {
   }
 
   void setContinuousListIndex(int index) {
-    settings = SettingsState(
-      sound: settings.sound,
-      vibration: settings.vibration,
-      prepSeconds: settings.prepSeconds,
-      organizationMode: settings.organizationMode,
-      continuousListCurrentIndex: index,
-      continuousListRestDate: settings.continuousListRestDate,
-      workoutReminderEnabled: settings.workoutReminderEnabled,
-      workoutReminderHour: settings.workoutReminderHour,
-      workoutReminderMinute: settings.workoutReminderMinute,
-    );
+    settings = settings.copyWith(continuousListCurrentIndex: index);
     _save();
     WatchService.instance
         .sendTodayRoutines(settings, planner, routines, streak, continuousBlocks);
