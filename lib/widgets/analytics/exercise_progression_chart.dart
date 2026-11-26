@@ -63,7 +63,7 @@ class ExerciseProgressionChart extends StatelessWidget {
       return Center(
         child: Text(
           "Sem dados suficientes para '$exerciseName'.",
-          style: const TextStyle(color: Colors.white54, fontStyle: FontStyle.italic),
+          style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontStyle: FontStyle.italic),
         ),
       );
     }
@@ -94,7 +94,7 @@ class ExerciseProgressionChart extends StatelessWidget {
             horizontalInterval: (maxVal - minVal) / 4 == 0 ? 1 : (maxVal - minVal) / 4,
             getDrawingHorizontalLine: (value) {
               return FlLine(
-                color: Colors.white.withOpacity(0.05),
+                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                 strokeWidth: 1,
               );
             },
@@ -119,7 +119,7 @@ class ExerciseProgressionChart extends StatelessWidget {
                     padding: const EdgeInsets.only(top: 8.0),
                     child: Text(
                       dates[i],
-                      style: const TextStyle(color: Colors.white54, fontSize: 10),
+                      style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontSize: 10),
                     ),
                   );
                 },
@@ -133,7 +133,7 @@ class ExerciseProgressionChart extends StatelessWidget {
                 getTitlesWidget: (value, meta) {
                   return Text(
                     value.toStringAsFixed(0),
-                    style: const TextStyle(color: Colors.white54, fontSize: 10),
+                    style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontSize: 10),
                     textAlign: TextAlign.right,
                   );
                 },

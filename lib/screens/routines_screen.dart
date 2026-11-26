@@ -80,13 +80,23 @@ class _RoutinesScreenState extends State<RoutinesScreen>
               Icon(
                 icon,
                 size: 15,
-                color: isSelected ? accentColor : Colors.white54,
+                color: isSelected
+                    ? accentColor
+                    : (Theme.of(context).brightness == Brightness.dark
+                        ? (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73))
+                        : const Color(0xFF6E6E73)),
               ),
               const SizedBox(width: 6),
               Text(
                 title,
                 style: TextStyle(
-                  color: isSelected ? Colors.white : Colors.white54,
+                  color: isSelected
+                      ? (Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white))
+                      : (Theme.of(context).brightness == Brightness.dark
+                          ? (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73))
+                          : const Color(0xFF6E6E73)),
                   fontSize: 13,
                   fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                 ),
@@ -100,8 +110,12 @@ class _RoutinesScreenState extends State<RoutinesScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final accentColor = context.select<ProfileProvider, Color>(
-      (p) => ThemeUtils.getColor(p.currentProfile.colorAccent),
+      (p) => ThemeUtils.getAdaptiveColor(
+        p.currentProfile.colorAccent,
+        isDark: isDark,
+      ),
     );
 
     return Scaffold(
@@ -114,9 +128,15 @@ class _RoutinesScreenState extends State<RoutinesScreen>
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: isDark
+                    ? (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05)
+                    : Colors.black.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withOpacity(0.08)),
+                border: Border.all(
+                  color: isDark
+                      ? (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08)
+                      : Colors.black.withOpacity(0.08),
+                ),
               ),
               child: Row(
                 children: [
@@ -166,7 +186,7 @@ class RoutinesTab extends StatelessWidget {
             FloatingActionButton(
               heroTag: "importRoutineFAB",
               onPressed: () => _showImportRoutineDialog(context, provider, accentColor),
-              backgroundColor: Colors.white12,
+              backgroundColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white12 : Colors.black12),
               mini: true,
               child: const Icon(Icons.download_rounded, color: Colors.white),
             ),
@@ -184,12 +204,12 @@ class RoutinesTab extends StatelessWidget {
         ),
       ),
       body: routines.isEmpty
-          ? const Center(
+          ? Center(
               child: Text(
                 "Nenhuma rotina criada.\nToque no botão + para adicionar.",
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                    color: Colors.white38, fontStyle: FontStyle.italic),
+                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : Color(0xFF8E8E93)), fontStyle: FontStyle.italic),
               ),
             )
           : ListView.builder(
@@ -265,8 +285,8 @@ class RoutinesTab extends StatelessWidget {
                         children: [
                           Text(
                             routine.name.toUpperCase(),
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)),
                               fontSize: 22,
                               fontWeight: FontWeight.w900,
                               letterSpacing: -0.5,
@@ -283,12 +303,12 @@ class RoutinesTab extends StatelessWidget {
                                 children: [
                                   Icon(Icons.timer_outlined,
                                       size: 14,
-                                      color: Colors.white.withOpacity(0.5)),
+                                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.5)),
                                   const SizedBox(width: 4),
                                   Text(
                                     "Descanso: ${routine.defaultRest}s",
                                     style: TextStyle(
-                                      color: Colors.white.withOpacity(0.6),
+                                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.6),
                                       fontSize: 12,
                                       fontWeight: FontWeight.w700,
                                     ),
@@ -326,7 +346,7 @@ class RoutinesTab extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.copy_rounded, color: Colors.white54, size: 20),
+                          icon: Icon(Icons.copy_rounded, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), size: 20),
                           tooltip: "Duplicar Rotina",
                           padding: const EdgeInsets.all(4),
                           constraints: const BoxConstraints(),
@@ -356,7 +376,7 @@ class RoutinesTab extends StatelessWidget {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text("Rotina '${routine.name} (Cópia)' criada com sucesso!"),
-                                backgroundColor: const Color(0xff1c1c1e),
+                                backgroundColor: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
                                 duration: const Duration(seconds: 2),
                               ),
                             );
@@ -365,7 +385,7 @@ class RoutinesTab extends StatelessWidget {
                         const SizedBox(width: 8),
                         Icon(
                           Icons.chevron_right_rounded,
-                          color: Colors.white.withOpacity(0.3),
+                          color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.3),
                           size: 28,
                         ),
                       ],
@@ -373,9 +393,9 @@ class RoutinesTab extends StatelessWidget {
                   ],
                 ),
 
-                const Padding(
+                Padding(
                   padding: EdgeInsets.symmetric(vertical: 20),
-                  child: Divider(color: Colors.white10, height: 1),
+                  child: Divider(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white10 : Color(0x0F000000)), height: 1),
                 ),
 
                 // RESUMO DE EXERCÍCIOS
@@ -387,7 +407,7 @@ class RoutinesTab extends StatelessWidget {
                         child: Text(
                           "Nenhum exercício adicionado.",
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.5),
+                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.5),
                             fontSize: 14,
                             fontStyle: FontStyle.italic,
                           ),
@@ -430,7 +450,7 @@ class RoutinesTab extends StatelessWidget {
                                 child: Text(
                                   ref.name,
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.9),
+                                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.9),
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -439,7 +459,7 @@ class RoutinesTab extends StatelessWidget {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.06),
+                                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.06),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
@@ -537,29 +557,29 @@ class RoutinesTab extends StatelessWidget {
         backgroundColor: Colors.transparent,
         child: GlassCard(
           useBlur: true,
-          borderColor: Colors.white.withOpacity(0.08),
+          borderColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
           borderRadius: 20,
           padding: const EdgeInsets.all(20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
+              Text(
                 "Importar Rotina",
                 style: TextStyle(
-                    color: Colors.white,
+                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)),
                     fontWeight: FontWeight.w800,
                     fontSize: 18),
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: controller,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E))),
                 decoration: InputDecoration(
                   hintText: "Cole o código da rotina aqui",
-                  hintStyle: const TextStyle(color: Colors.white30),
+                  hintStyle: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white30 : const Color(0xFFAEAEB2))),
                   filled: true,
-                  fillColor: Colors.white.withOpacity(0.05),
+                  fillColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -572,9 +592,9 @@ class RoutinesTab extends StatelessWidget {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(dialogCtx),
-                    child: const Text("Cancelar",
+                    child: Text("Cancelar",
                         style: TextStyle(
-                            color: Colors.white54,
+                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : Color(0xFF6E6E73)),
                             fontWeight: FontWeight.bold)),
                   ),
                   const SizedBox(width: 8),
@@ -757,7 +777,7 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(24)),
               border:
-                  Border.all(color: Colors.white.withOpacity(0.08), width: 1.5),
+                  Border.all(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08), width: 1.5),
             ),
             padding: EdgeInsets.only(
               left: 20,
@@ -777,10 +797,10 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
                   children: [
                     Text(
                       widget.existing == null ? "Nova Rotina" : "Editar Rotina",
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w900,
-                          color: Colors.white,
+                          color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)),
                           letterSpacing: -0.3),
                     ),
                     Row(
@@ -816,7 +836,7 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
                                   backgroundColor: Colors.transparent,
                                   child: GlassCard(
                                     useBlur: true,
-                                    borderColor: Colors.white.withOpacity(0.08),
+                                    borderColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
                                     borderRadius: 20,
                                     padding: const EdgeInsets.all(20),
                                     child: Column(
@@ -824,18 +844,18 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.stretch,
                                       children: [
-                                        const Text(
+                                        Text(
                                           "Excluir Rotina?",
                                           style: TextStyle(
-                                              color: Colors.white,
+                                              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)),
                                               fontWeight: FontWeight.w800,
                                               fontSize: 16),
                                         ),
                                         const SizedBox(height: 12),
                                         Text(
                                           "Tem certeza que deseja excluir '${widget.existing!.name}'?",
-                                          style: const TextStyle(
-                                              color: Colors.white70,
+                                          style: TextStyle(
+                                              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Color(0xFF3C3C43)),
                                               fontSize: 13,
                                               height: 1.4),
                                         ),
@@ -847,9 +867,9 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
                                             TextButton(
                                               onPressed: () =>
                                                   Navigator.pop(dialogCtx),
-                                              child: const Text("Cancelar",
+                                              child: Text("Cancelar",
                                                   style: TextStyle(
-                                                      color: Colors.white54,
+                                                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : Color(0xFF6E6E73)),
                                                       fontWeight:
                                                           FontWeight.bold)),
                                             ),
@@ -896,7 +916,7 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
                               color: Colors.white, size: 22),
                           onPressed: () => Navigator.pop(context),
                           style: IconButton.styleFrom(
-                            backgroundColor: Colors.white.withOpacity(0.08),
+                            backgroundColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
                             padding: const EdgeInsets.all(6),
                             minimumSize: const Size(36, 36),
                           ),
@@ -922,16 +942,16 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
                                 flex: 3,
                                 child: TextFormField(
                                   controller: _nameController,
-                                  style: const TextStyle(
-                                      color: Colors.white,
+                                  style: TextStyle(
+                                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)),
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600),
                                   decoration: InputDecoration(
                                     filled: true,
-                                    fillColor: Colors.white.withOpacity(0.06),
+                                    fillColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.06),
                                     labelText: "Nome da Rotina",
                                     labelStyle: TextStyle(
-                                        color: Colors.white.withOpacity(0.4),
+                                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.4),
                                         fontSize: 12),
                                     floatingLabelStyle: TextStyle(
                                         color: accentColor,
@@ -960,16 +980,16 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
                                 child: TextFormField(
                                   controller: _restController,
                                   keyboardType: TextInputType.number,
-                                  style: const TextStyle(
-                                      color: Colors.white,
+                                  style: TextStyle(
+                                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)),
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600),
                                   decoration: InputDecoration(
                                     filled: true,
-                                    fillColor: Colors.white.withOpacity(0.06),
+                                    fillColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.06),
                                     labelText: "Descanso (s)",
                                     labelStyle: TextStyle(
-                                        color: Colors.white.withOpacity(0.4),
+                                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.4),
                                         fontSize: 12),
                                     floatingLabelStyle: TextStyle(
                                         color: accentColor,
@@ -1006,7 +1026,7 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
                                   duration: const Duration(milliseconds: 200),
                                   padding: const EdgeInsets.symmetric(vertical: 12),
                                   decoration: BoxDecoration(
-                                    color: _executionType == RoutineExecutionType.standard ? accentColor.withOpacity(0.2) : Colors.white.withOpacity(0.05),
+                                    color: _executionType == RoutineExecutionType.standard ? accentColor.withOpacity(0.2) : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
                                       color: _executionType == RoutineExecutionType.standard ? accentColor : Colors.transparent,
@@ -1017,7 +1037,7 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
                                     child: Text(
                                       "Padrão",
                                       style: TextStyle(
-                                        color: _executionType == RoutineExecutionType.standard ? accentColor : Colors.white54,
+                                        color: _executionType == RoutineExecutionType.standard ? accentColor : (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -1033,7 +1053,7 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
                                   duration: const Duration(milliseconds: 200),
                                   padding: const EdgeInsets.symmetric(vertical: 12),
                                   decoration: BoxDecoration(
-                                    color: _executionType == RoutineExecutionType.circuit ? accentColor.withOpacity(0.2) : Colors.white.withOpacity(0.05),
+                                    color: _executionType == RoutineExecutionType.circuit ? accentColor.withOpacity(0.2) : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
                                       color: _executionType == RoutineExecutionType.circuit ? accentColor : Colors.transparent,
@@ -1044,7 +1064,7 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
                                     child: Text(
                                       "Ciclo",
                                       style: TextStyle(
-                                        color: _executionType == RoutineExecutionType.circuit ? accentColor : Colors.white54,
+                                        color: _executionType == RoutineExecutionType.circuit ? accentColor : (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -1059,10 +1079,10 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text(
+                              Text(
                                 "Quantidade de Ciclos",
                                 style: TextStyle(
-                                    color: Colors.white70,
+                                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Color(0xFF3C3C43)),
                                     fontSize: 13,
                                     fontWeight: FontWeight.w800,
                                     letterSpacing: -0.2),
@@ -1075,12 +1095,12 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
                                         setState(() => _circuitCycles--);
                                       }
                                     },
-                                    icon: const Icon(Icons.remove_circle_outline, color: Colors.white54),
+                                    icon: Icon(Icons.remove_circle_outline, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73))),
                                   ),
                                   Text(
                                     _circuitCycles.toString(),
-                                    style: const TextStyle(
-                                      color: Colors.white,
+                                    style: TextStyle(
+                                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)),
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -1089,7 +1109,7 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
                                     onPressed: () {
                                       setState(() => _circuitCycles++);
                                     },
-                                    icon: const Icon(Icons.add_circle_outline, color: Colors.white54),
+                                    icon: Icon(Icons.add_circle_outline, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73))),
                                   ),
                                 ],
                               ),
@@ -1100,10 +1120,10 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
+                            Text(
                               "Exercícios",
                               style: TextStyle(
-                                  color: Colors.white70,
+                                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Color(0xFF3C3C43)),
                                   fontSize: 13,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: -0.2),
@@ -1112,7 +1132,7 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
                               Text(
                                 "${_exercises.length} ${_exercises.length == 1 ? 'exercício' : 'exercícios'}",
                                 style: TextStyle(
-                                    color: Colors.white.withOpacity(0.4),
+                                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.4),
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600),
                               ),
@@ -1130,13 +1150,13 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
                                 children: [
                                   Icon(Icons.fitness_center,
                                       size: 36,
-                                      color: Colors.white.withOpacity(0.15)),
+                                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.15)),
                                   const SizedBox(height: 8),
                                   Text(
                                     "Nenhum exercício adicionado ainda.\nToque no botão abaixo para adicionar.",
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
-                                        color: Colors.white.withOpacity(0.35),
+                                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.35),
                                         fontSize: 12,
                                         height: 1.4,
                                         fontStyle: FontStyle.italic),
@@ -1167,7 +1187,7 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
                                 margin: const EdgeInsets.only(bottom: 12),
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.02),
+                                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.02),
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
                                       color: accentColor.withOpacity(0.1),
@@ -1190,8 +1210,8 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
                                         Expanded(
                                           child: Text(
                                             ref.name,
-                                            style: const TextStyle(
-                                                color: Colors.white,
+                                            style: TextStyle(
+                                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)),
                                                 fontWeight: FontWeight.w800,
                                                 fontSize: 14,
                                                 letterSpacing: -0.1),
@@ -1215,8 +1235,8 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
                                                         Icons
                                                             .arrow_upward_rounded,
                                                         color: idx == 0
-                                                            ? Colors.white10
-                                                            : Colors.white70,
+                                                            ? (Theme.of(context).brightness == Brightness.dark ? Colors.white10 : const Color(0x0F000000))
+                                                            : (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
                                                         size: 16),
                                                     padding:
                                                         const EdgeInsets.all(4),
@@ -1230,7 +1250,7 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
                                                   Container(
                                                       width: 1,
                                                       height: 16,
-                                                      color: Colors.white10),
+                                                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white10 : const Color(0x0F000000))),
                                                   IconButton(
                                                     icon: Icon(
                                                         Icons
@@ -1239,8 +1259,8 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
                                                                 _exercises
                                                                         .length -
                                                                     1
-                                                            ? Colors.white10
-                                                            : Colors.white70,
+                                                            ? (Theme.of(context).brightness == Brightness.dark ? Colors.white10 : const Color(0x0F000000))
+                                                            : (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
                                                         size: 16),
                                                     padding:
                                                         const EdgeInsets.all(4),
@@ -1336,7 +1356,7 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
                                                   style: TextStyle(
                                                     color: !ex.allowCardioSets
                                                         ? accentColor
-                                                        : Colors.white60,
+                                                        : (Theme.of(context).brightness == Brightness.dark ? Colors.white60 : const Color(0xFF48484A)),
                                                     fontSize: 11,
                                                     fontWeight: FontWeight.bold,
                                                   ),
@@ -1397,7 +1417,7 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
                                                   style: TextStyle(
                                                     color: ex.allowCardioSets
                                                         ? accentColor
-                                                        : Colors.white60,
+                                                        : (Theme.of(context).brightness == Brightness.dark ? Colors.white60 : const Color(0xFF48484A)),
                                                     fontSize: 11,
                                                     fontWeight: FontWeight.bold,
                                                   ),
@@ -1496,7 +1516,7 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
                                     child: Center(
                                       child: Icon(
                                         isLinked ? Icons.link : Icons.link_off,
-                                        color: isLinked ? accentColor : Colors.white24,
+                                        color: isLinked ? accentColor : (Theme.of(context).brightness == Brightness.dark ? Colors.white24 : const Color(0xFFC7C7CC)),
                                         size: 24,
                                       ),
                                     ),
@@ -1635,21 +1655,21 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
                           final useLast = await showDialog<bool>(
                             context: context,
                             builder: (dctx) => AlertDialog(
-                              backgroundColor: const Color(0xFF1c1c1e),
-                              title: const Text("Exercícios sem peso",
-                                  style: TextStyle(color: Colors.white)),
+                              backgroundColor: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
+                              title: Text("Exercícios sem peso",
+                                  style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)))),
                               content: Text(
                                 "$shown$extra está(ão) sem peso definido. "
                                 "Quer usar o último peso realizado?",
-                                style: const TextStyle(
-                                    color: Colors.white70, fontSize: 13),
+                                style: TextStyle(
+                                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Color(0xFF3C3C43)), fontSize: 13),
                               ),
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.pop(dctx),
-                                  child: const Text("Cancelar",
+                                  child: Text("Cancelar",
                                       style:
-                                          TextStyle(color: Colors.white54)),
+                                          TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : Color(0xFF6E6E73)))),
                                 ),
                                 TextButton(
                                   onPressed: () =>
@@ -1753,8 +1773,8 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label,
-            style: const TextStyle(
-                color: Colors.white38,
+            style: TextStyle(
+                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : Color(0xFF8E8E93)),
                 fontSize: 10,
                 fontWeight: FontWeight.bold)),
         const SizedBox(height: 4),
@@ -1762,16 +1782,16 @@ RoutineExercise _cloneEx(RoutineExercise ex, String? newSupersetId) {
           height: 32,
           padding: const EdgeInsets.symmetric(horizontal: 4),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.04),
+            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.04),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.white.withOpacity(0.08)),
+            border: Border.all(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08)),
           ),
           child: TextFormField(
             initialValue: value == "0" || value == "0.0" ? "" : value,
             keyboardType: TextInputType.number,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-                color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+            style: TextStyle(
+                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)), fontSize: 12, fontWeight: FontWeight.bold),
             decoration: const InputDecoration(
               border: InputBorder.none,
               contentPadding: EdgeInsets.zero,
@@ -1907,7 +1927,7 @@ class ExerciseSelectionSheetState extends State<ExerciseSelectionSheet> {
       decoration: BoxDecoration(
         color: const Color(0xFF141414),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05)),
       ),
       child: Column(
         children: [
@@ -1930,21 +1950,21 @@ class ExerciseSelectionSheetState extends State<ExerciseSelectionSheet> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   "Selecionar Exercícios",
                   style: TextStyle(
-                    color: Colors.white,
+                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)),
                     fontSize: 20,
                     fontWeight: FontWeight.w900,
                     letterSpacing: -0.5,
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close_rounded,
-                      color: Colors.white, size: 22),
+                  icon: Icon(Icons.close_rounded,
+                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)), size: 22),
                   onPressed: () => Navigator.pop(context),
                   style: IconButton.styleFrom(
-                    backgroundColor: Colors.white.withOpacity(0.08),
+                    backgroundColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
                     padding: const EdgeInsets.all(6),
                     minimumSize: const Size(36, 36),
                   ),
@@ -1960,9 +1980,9 @@ class ExerciseSelectionSheetState extends State<ExerciseSelectionSheet> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withOpacity(0.08)),
+                border: Border.all(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08)),
               ),
               child: TextField(
                 controller: _searchController,
@@ -1970,10 +1990,10 @@ class ExerciseSelectionSheetState extends State<ExerciseSelectionSheet> {
                 style: const TextStyle(color: Colors.white, fontSize: 16),
                 decoration: InputDecoration(
                   hintText: "Buscar exercício...",
-                  hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+                  hintStyle: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.3)),
                   border: InputBorder.none,
                   icon: Icon(Icons.search,
-                      color: Colors.white.withOpacity(0.3), size: 20),
+                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.3), size: 20),
                 ),
               ),
             ),
@@ -2008,12 +2028,12 @@ class ExerciseSelectionSheetState extends State<ExerciseSelectionSheet> {
                         decoration: BoxDecoration(
                           color: isSelected
                               ? widget.accentColor.withOpacity(0.15)
-                              : Colors.white.withOpacity(0.04),
+                              : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.04),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: isSelected
                                 ? widget.accentColor.withOpacity(0.5)
-                                : Colors.white.withOpacity(0.08),
+                                : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
                             width: 1.2,
                           ),
                         ),
@@ -2022,7 +2042,7 @@ class ExerciseSelectionSheetState extends State<ExerciseSelectionSheet> {
                           style: TextStyle(
                             color: isSelected
                                 ? widget.accentColor
-                                : Colors.white60,
+                                : (Theme.of(context).brightness == Brightness.dark ? Colors.white60 : const Color(0xFF48484A)),
                             fontSize: 12,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 0.5,
@@ -2037,7 +2057,7 @@ class ExerciseSelectionSheetState extends State<ExerciseSelectionSheet> {
 
           if (_searchQuery.isEmpty) const SizedBox(height: 16),
 
-          const Divider(color: Colors.white10, height: 1),
+          Divider(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white10 : const Color(0x0F000000)), height: 1),
 
           // List
           Expanded(
@@ -2089,12 +2109,12 @@ class ExerciseSelectionSheetState extends State<ExerciseSelectionSheet> {
                           decoration: BoxDecoration(
                             color: isSelected
                                 ? widget.accentColor.withOpacity(0.08)
-                                : Colors.white.withOpacity(0.02),
+                                : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.02),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                               color: isSelected
                                   ? widget.accentColor.withOpacity(0.4)
-                                  : Colors.white.withOpacity(0.05),
+                                  : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                             ),
                           ),
                           child: Row(
@@ -2110,7 +2130,7 @@ class ExerciseSelectionSheetState extends State<ExerciseSelectionSheet> {
                                   border: Border.all(
                                     color: isSelected
                                         ? widget.accentColor
-                                        : Colors.white38,
+                                        : (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)),
                                     width: 2,
                                   ),
                                 ),
@@ -2126,7 +2146,7 @@ class ExerciseSelectionSheetState extends State<ExerciseSelectionSheet> {
                                   style: TextStyle(
                                     color: isSelected
                                         ? Colors.white
-                                        : Colors.white70,
+                                        : (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
                                     fontSize: 16,
                                     fontWeight: isSelected
                                         ? FontWeight.w800
@@ -2153,7 +2173,7 @@ class ExerciseSelectionSheetState extends State<ExerciseSelectionSheet> {
               decoration: BoxDecoration(
                 color: const Color(0xFF141414),
                 border: Border(
-                    top: BorderSide(color: Colors.white.withOpacity(0.05))),
+                    top: BorderSide(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05))),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.5),
@@ -2298,9 +2318,9 @@ class _LibraryTabState extends State<LibraryTab> {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.04),
+                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.04),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withOpacity(0.08)),
+                border: Border.all(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08)),
               ),
               child: TextField(
                 controller: _searchController,
@@ -2309,14 +2329,14 @@ class _LibraryTabState extends State<LibraryTab> {
                     _searchQuery = val;
                   });
                 },
-                style: const TextStyle(color: Colors.white, fontSize: 13),
+                style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)), fontSize: 13),
                 decoration: InputDecoration(
                   hintText: "Buscar exercício por nome...",
-                  hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
-                  prefixIcon: const Icon(Icons.search, color: Colors.white54, size: 18),
+                  hintStyle: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)), fontSize: 13),
+                  prefixIcon: Icon(Icons.search, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), size: 18),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(Icons.close, color: Colors.white54, size: 16),
+                          icon: Icon(Icons.close, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), size: 16),
                           onPressed: () {
                             _searchController.clear();
                             setState(() {
@@ -2355,12 +2375,12 @@ class _LibraryTabState extends State<LibraryTab> {
                     decoration: BoxDecoration(
                       color: isSelected
                           ? widget.accentColor.withOpacity(0.15)
-                          : Colors.white.withOpacity(0.03),
+                          : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.03),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: isSelected
                             ? widget.accentColor
-                            : Colors.white.withOpacity(0.08),
+                            : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
                         width: 1.2,
                       ),
                     ),
@@ -2368,7 +2388,7 @@ class _LibraryTabState extends State<LibraryTab> {
                     child: Text(
                       m.toUpperCase(),
                       style: TextStyle(
-                        color: isSelected ? widget.accentColor : Colors.white70,
+                        color: isSelected ? widget.accentColor : (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
                       ),
@@ -2382,11 +2402,11 @@ class _LibraryTabState extends State<LibraryTab> {
           // Lista de Exercícios
           Expanded(
             child: sortedExs.isEmpty
-                ? const Center(
+                ? Center(
                     child: Text(
                       "Nenhum exercício encontrado.",
                       style: TextStyle(
-                          color: Colors.white38, fontStyle: FontStyle.italic),
+                          color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : Color(0xFF8E8E93)), fontStyle: FontStyle.italic),
                     ),
                   )
                 : ListView.builder(
@@ -2431,7 +2451,7 @@ class _LibraryTabState extends State<LibraryTab> {
                                 child: GlassCard(
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 16, vertical: 10),
-                                  borderColor: Colors.white.withOpacity(0.04),
+                                  borderColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.04),
                                   child: Row(
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceBetween,
@@ -2445,8 +2465,8 @@ class _LibraryTabState extends State<LibraryTab> {
                                             children: [
                                               Text(
                                                 ex.name,
-                                                style: const TextStyle(
-                                                    color: Colors.white,
+                                                style: TextStyle(
+                                                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)),
                                                     fontSize: 13,
                                                     fontWeight:
                                                         FontWeight.w700),
@@ -2549,8 +2569,8 @@ class _LibraryTabState extends State<LibraryTab> {
                                           const SizedBox(height: 2),
                                           Text(
                                             "${ex.muscle} • ${_getMeasurementTypeLabelStatic(ex.measurementType)}",
-                                            style: const TextStyle(
-                                                color: Colors.white38,
+                                            style: TextStyle(
+                                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : Color(0xFF8E8E93)),
                                                 fontSize: 11),
                                           ),
                                           if (ex.notes != null &&
@@ -2558,8 +2578,8 @@ class _LibraryTabState extends State<LibraryTab> {
                                             const SizedBox(height: 4),
                                             Text(
                                               ex.notes!,
-                                              style: const TextStyle(
-                                                  color: Colors.white24,
+                                              style: TextStyle(
+                                                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white24 : Color(0xFFC7C7CC)),
                                                   fontSize: 10,
                                                   fontStyle: FontStyle.italic),
                                             ),
@@ -2571,8 +2591,8 @@ class _LibraryTabState extends State<LibraryTab> {
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         IconButton(
-                                          icon: const Icon(Icons.edit_outlined,
-                                              color: Colors.white70, size: 18),
+                                          icon: Icon(Icons.edit_outlined,
+                                              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Color(0xFF3C3C43)), size: 18),
                                           onPressed: () {
                                             _openAddExerciseDialog(
                                                 context, provider,
@@ -2614,25 +2634,25 @@ class _LibraryTabState extends State<LibraryTab> {
         backgroundColor: Colors.transparent,
         child: GlassCard(
           useBlur: true,
-          borderColor: Colors.white.withOpacity(0.08),
+          borderColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
           borderRadius: 20,
           padding: const EdgeInsets.all(20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
+              Text(
                 "Excluir Exercício?",
                 style: TextStyle(
-                    color: Colors.white,
+                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)),
                     fontWeight: FontWeight.w800,
                     fontSize: 16),
               ),
               const SizedBox(height: 12),
               Text(
                 "Deseja realmente deletar '${ex.name}' da biblioteca?",
-                style: const TextStyle(
-                    color: Colors.white70, fontSize: 13, height: 1.4),
+                style: TextStyle(
+                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Color(0xFF3C3C43)), fontSize: 13, height: 1.4),
               ),
               const SizedBox(height: 20),
               Row(
@@ -2640,9 +2660,9 @@ class _LibraryTabState extends State<LibraryTab> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(dialogCtx),
-                    child: const Text("Cancelar",
+                    child: Text("Cancelar",
                         style: TextStyle(
-                            color: Colors.white54,
+                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : Color(0xFF6E6E73)),
                             fontWeight: FontWeight.bold)),
                   ),
                   const SizedBox(width: 8),
@@ -2701,7 +2721,7 @@ class _LibraryTabState extends State<LibraryTab> {
             backgroundColor: Colors.transparent,
             child: GlassCard(
               useBlur: true,
-              borderColor: Colors.white.withOpacity(0.08),
+              borderColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
               borderRadius: 24,
               padding: const EdgeInsets.all(20),
               child: SizedBox(
@@ -2724,8 +2744,8 @@ class _LibraryTabState extends State<LibraryTab> {
                             existing == null
                                 ? "Novo Exercício"
                                 : "Editar Exercício",
-                            style: const TextStyle(
-                                color: Colors.white,
+                            style: TextStyle(
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)),
                                 fontWeight: FontWeight.w800,
                                 fontSize: 16),
                           ),
@@ -2737,19 +2757,19 @@ class _LibraryTabState extends State<LibraryTab> {
                       TextField(
                         controller: nameCtrl,
                         style:
-                            const TextStyle(color: Colors.white, fontSize: 14),
+                            TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)), fontSize: 14),
                         decoration: InputDecoration(
                           filled: true,
-                          fillColor: Colors.white.withOpacity(0.03),
+                          fillColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.03),
                           hintText: "Nome do Exercício",
-                          hintStyle: const TextStyle(
-                              color: Colors.white30, fontSize: 13),
+                          hintStyle: TextStyle(
+                              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white30 : Color(0xFFAEAEB2)), fontSize: 13),
                           contentPadding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 14),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide(
-                                color: Colors.white.withOpacity(0.08)),
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08)),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -2757,16 +2777,16 @@ class _LibraryTabState extends State<LibraryTab> {
                                 color: widget.accentColor.withOpacity(0.5),
                                 width: 1.5),
                           ),
-                          prefixIcon: const Icon(Icons.edit_note_rounded,
-                              color: Colors.white30, size: 20),
+                          prefixIcon: Icon(Icons.edit_note_rounded,
+                              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white30 : Color(0xFFAEAEB2)), size: 20),
                         ),
                       ),
                       const SizedBox(height: 16),
 
                       // Tipo de Exercício
-                      const Text("Tipo de Exercício",
+                      Text("Tipo de Exercício",
                           style: TextStyle(
-                              color: Colors.white54,
+                              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : Color(0xFF6E6E73)),
                               fontSize: 11,
                               fontWeight: FontWeight.bold)),
                       const SizedBox(height: 8),
@@ -2788,12 +2808,12 @@ class _LibraryTabState extends State<LibraryTab> {
                                 decoration: BoxDecoration(
                                   color: category == "Musculação"
                                       ? widget.accentColor.withOpacity(0.12)
-                                      : Colors.white.withOpacity(0.03),
+                                      : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.03),
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
                                     color: category == "Musculação"
                                         ? widget.accentColor.withOpacity(0.4)
-                                        : Colors.white.withOpacity(0.08),
+                                        : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
                                   ),
                                 ),
                                 child: Center(
@@ -2802,7 +2822,7 @@ class _LibraryTabState extends State<LibraryTab> {
                                     style: TextStyle(
                                       color: category == "Musculação"
                                           ? Colors.white
-                                          : Colors.white60,
+                                          : (Theme.of(context).brightness == Brightness.dark ? Colors.white60 : const Color(0xFF48484A)),
                                       fontWeight: FontWeight.bold,
                                       fontSize: 13,
                                     ),
@@ -2826,12 +2846,12 @@ class _LibraryTabState extends State<LibraryTab> {
                                 decoration: BoxDecoration(
                                   color: category == "Cardio"
                                       ? widget.accentColor.withOpacity(0.12)
-                                      : Colors.white.withOpacity(0.03),
+                                      : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.03),
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
                                     color: category == "Cardio"
                                         ? widget.accentColor.withOpacity(0.4)
-                                        : Colors.white.withOpacity(0.08),
+                                        : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
                                   ),
                                 ),
                                 child: Center(
@@ -2840,7 +2860,7 @@ class _LibraryTabState extends State<LibraryTab> {
                                     style: TextStyle(
                                       color: category == "Cardio"
                                           ? Colors.white
-                                          : Colors.white60,
+                                          : (Theme.of(context).brightness == Brightness.dark ? Colors.white60 : const Color(0xFF48484A)),
                                       fontWeight: FontWeight.bold,
                                       fontSize: 13,
                                     ),
@@ -2855,9 +2875,9 @@ class _LibraryTabState extends State<LibraryTab> {
 
                       // Agrupamento Muscular (se Musculação)
                       if (category == "Musculação") ...[
-                        const Text("Agrupamento Muscular",
+                        Text("Agrupamento Muscular",
                             style: TextStyle(
-                                color: Colors.white54,
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : Color(0xFF6E6E73)),
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold)),
                         const SizedBox(height: 8),
@@ -2865,23 +2885,23 @@ class _LibraryTabState extends State<LibraryTab> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 14, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.03),
+                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.03),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                                color: Colors.white.withOpacity(0.08)),
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08)),
                           ),
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<String>(
                               value: muscle,
-                              dropdownColor: const Color(0xff1c1c1e),
-                              style: const TextStyle(
-                                  color: Colors.white,
+                              dropdownColor: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
+                              style: TextStyle(
+                                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)),
                                   fontSize: 13,
                                   fontWeight: FontWeight.bold),
                               isExpanded: true,
-                              icon: const Icon(
+                              icon: Icon(
                                   Icons.keyboard_arrow_down_rounded,
-                                  color: Colors.white54),
+                                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : Color(0xFF6E6E73))),
                               onChanged: (val) {
                                 if (val != null) setState(() => muscle = val);
                               },
@@ -2906,9 +2926,9 @@ class _LibraryTabState extends State<LibraryTab> {
 
                       // Tipo de Equipamento (se Musculação)
                       if (category == "Musculação") ...[
-                        const Text("Tipo de Equipamento",
+                        Text("Tipo de Equipamento",
                             style: TextStyle(
-                                color: Colors.white54,
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : Color(0xFF6E6E73)),
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold)),
                         const SizedBox(height: 8),
@@ -2916,23 +2936,23 @@ class _LibraryTabState extends State<LibraryTab> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 14, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.03),
+                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.03),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                                color: Colors.white.withOpacity(0.08)),
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08)),
                           ),
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<String>(
                               value: equipment,
-                              dropdownColor: const Color(0xff1c1c1e),
-                              style: const TextStyle(
-                                  color: Colors.white,
+                              dropdownColor: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
+                              style: TextStyle(
+                                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)),
                                   fontSize: 13,
                                   fontWeight: FontWeight.bold),
                               isExpanded: true,
-                              icon: const Icon(
+                              icon: Icon(
                                   Icons.keyboard_arrow_down_rounded,
-                                  color: Colors.white54),
+                                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : Color(0xFF6E6E73))),
                               onChanged: (val) {
                                 if (val != null) {
                                   setState(() => equipment = val);
@@ -2950,9 +2970,9 @@ class _LibraryTabState extends State<LibraryTab> {
 
                       // Tipo de Medição (se Musculação)
                       if (category == "Musculação") ...[
-                        const Text("Tipo de Medição",
+                        Text("Tipo de Medição",
                             style: TextStyle(
-                                color: Colors.white54,
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : Color(0xFF6E6E73)),
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold)),
                         const SizedBox(height: 8),
@@ -2968,12 +2988,12 @@ class _LibraryTabState extends State<LibraryTab> {
                                   decoration: BoxDecoration(
                                     color: measurement == "Repetições"
                                         ? widget.accentColor.withOpacity(0.12)
-                                        : Colors.white.withOpacity(0.03),
+                                        : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.03),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
                                       color: measurement == "Repetições"
                                           ? widget.accentColor.withOpacity(0.4)
-                                          : Colors.white.withOpacity(0.08),
+                                          : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
                                     ),
                                   ),
                                   child: Center(
@@ -2982,7 +3002,7 @@ class _LibraryTabState extends State<LibraryTab> {
                                       style: TextStyle(
                                         color: measurement == "Repetições"
                                             ? Colors.white
-                                            : Colors.white60,
+                                            : (Theme.of(context).brightness == Brightness.dark ? Colors.white60 : const Color(0xFF48484A)),
                                         fontWeight: FontWeight.bold,
                                         fontSize: 12,
                                       ),
@@ -3002,12 +3022,12 @@ class _LibraryTabState extends State<LibraryTab> {
                                   decoration: BoxDecoration(
                                     color: measurement == "Tempo de Isometria"
                                         ? widget.accentColor.withOpacity(0.12)
-                                        : Colors.white.withOpacity(0.03),
+                                        : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.03),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
                                       color: measurement == "Tempo de Isometria"
                                           ? widget.accentColor.withOpacity(0.4)
-                                          : Colors.white.withOpacity(0.08),
+                                          : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
                                     ),
                                   ),
                                   child: Center(
@@ -3017,7 +3037,7 @@ class _LibraryTabState extends State<LibraryTab> {
                                         color:
                                             measurement == "Tempo de Isometria"
                                                 ? Colors.white
-                                                : Colors.white60,
+                                                : (Theme.of(context).brightness == Brightness.dark ? Colors.white60 : const Color(0xFF48484A)),
                                         fontWeight: FontWeight.bold,
                                         fontSize: 12,
                                       ),
@@ -3033,9 +3053,9 @@ class _LibraryTabState extends State<LibraryTab> {
 
                       // Tipo de Medição (se Cardio)
                       if (category == "Cardio") ...[
-                        const Text("Tipo de Medição",
+                        Text("Tipo de Medição",
                             style: TextStyle(
-                                color: Colors.white54,
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : Color(0xFF6E6E73)),
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold)),
                         const SizedBox(height: 8),
@@ -3052,13 +3072,13 @@ class _LibraryTabState extends State<LibraryTab> {
                                     color: measurement ==
                                             "Cardio (distância + tempo)"
                                         ? widget.accentColor.withOpacity(0.12)
-                                        : Colors.white.withOpacity(0.03),
+                                        : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.03),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
                                       color: measurement ==
                                               "Cardio (distância + tempo)"
                                           ? widget.accentColor.withOpacity(0.4)
-                                          : Colors.white.withOpacity(0.08),
+                                          : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
                                     ),
                                   ),
                                   child: Center(
@@ -3068,7 +3088,7 @@ class _LibraryTabState extends State<LibraryTab> {
                                         color: measurement ==
                                                 "Cardio (distância + tempo)"
                                             ? Colors.white
-                                            : Colors.white60,
+                                            : (Theme.of(context).brightness == Brightness.dark ? Colors.white60 : const Color(0xFF48484A)),
                                         fontWeight: FontWeight.bold,
                                         fontSize: 11,
                                       ),
@@ -3088,12 +3108,12 @@ class _LibraryTabState extends State<LibraryTab> {
                                   decoration: BoxDecoration(
                                     color: measurement == "Distância"
                                         ? widget.accentColor.withOpacity(0.12)
-                                        : Colors.white.withOpacity(0.03),
+                                        : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.03),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
                                       color: measurement == "Distância"
                                           ? widget.accentColor.withOpacity(0.4)
-                                          : Colors.white.withOpacity(0.08),
+                                          : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
                                     ),
                                   ),
                                   child: Center(
@@ -3102,7 +3122,7 @@ class _LibraryTabState extends State<LibraryTab> {
                                       style: TextStyle(
                                         color: measurement == "Distância"
                                             ? Colors.white
-                                            : Colors.white60,
+                                            : (Theme.of(context).brightness == Brightness.dark ? Colors.white60 : const Color(0xFF48484A)),
                                         fontWeight: FontWeight.bold,
                                         fontSize: 11,
                                       ),
@@ -3122,12 +3142,12 @@ class _LibraryTabState extends State<LibraryTab> {
                                   decoration: BoxDecoration(
                                     color: measurement == "Tempo"
                                         ? widget.accentColor.withOpacity(0.12)
-                                        : Colors.white.withOpacity(0.03),
+                                        : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.03),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
                                       color: measurement == "Tempo"
                                           ? widget.accentColor.withOpacity(0.4)
-                                          : Colors.white.withOpacity(0.08),
+                                          : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
                                     ),
                                   ),
                                   child: Center(
@@ -3136,7 +3156,7 @@ class _LibraryTabState extends State<LibraryTab> {
                                       style: TextStyle(
                                         color: measurement == "Tempo"
                                             ? Colors.white
-                                            : Colors.white60,
+                                            : (Theme.of(context).brightness == Brightness.dark ? Colors.white60 : const Color(0xFF48484A)),
                                         fontWeight: FontWeight.bold,
                                         fontSize: 11,
                                       ),
@@ -3155,22 +3175,22 @@ class _LibraryTabState extends State<LibraryTab> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Expanded(
+                            Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     "Estacionário / Indoor",
                                     style: TextStyle(
-                                        color: Colors.white,
+                                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)),
                                         fontSize: 13,
                                         fontWeight: FontWeight.bold),
                                   ),
-                                  SizedBox(height: 2),
+                                  const SizedBox(height: 2),
                                   Text(
                                     "Para bike ergométrica, esteira, etc.",
                                     style: TextStyle(
-                                        color: Colors.white30,
+                                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white30 : Color(0xFFAEAEB2)),
                                         fontSize: 10),
                                   ),
                                 ],
@@ -3195,22 +3215,22 @@ class _LibraryTabState extends State<LibraryTab> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Expanded(
+                            Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     "Unilateral",
                                     style: TextStyle(
-                                        color: Colors.white,
+                                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)),
                                         fontSize: 13,
                                         fontWeight: FontWeight.bold),
                                   ),
-                                  SizedBox(height: 2),
+                                  const SizedBox(height: 2),
                                   Text(
                                     "Execução separada para cada lado do corpo.",
                                     style: TextStyle(
-                                        color: Colors.white30,
+                                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white30 : Color(0xFFAEAEB2)),
                                         fontSize: 10),
                                   ),
                                 ],
@@ -3235,19 +3255,19 @@ class _LibraryTabState extends State<LibraryTab> {
                         controller: notesCtrl,
                         maxLines: 2,
                         style:
-                            const TextStyle(color: Colors.white, fontSize: 13),
+                            TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)), fontSize: 13),
                         decoration: InputDecoration(
                            filled: true,
-                           fillColor: Colors.white.withOpacity(0.03),
+                           fillColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.03),
                            hintText: "Observação (Opcional)",
-                           hintStyle: const TextStyle(
-                               color: Colors.white30, fontSize: 12),
+                           hintStyle: TextStyle(
+                               color: (Theme.of(context).brightness == Brightness.dark ? Colors.white30 : Color(0xFFAEAEB2)), fontSize: 12),
                            contentPadding: const EdgeInsets.symmetric(
                                horizontal: 16, vertical: 12),
                            enabledBorder: OutlineInputBorder(
                              borderRadius: BorderRadius.circular(12),
                              borderSide: BorderSide(
-                                 color: Colors.white.withOpacity(0.08)),
+                                 color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08)),
                            ),
                            focusedBorder: OutlineInputBorder(
                              borderRadius: BorderRadius.circular(12),
@@ -3270,9 +3290,9 @@ class _LibraryTabState extends State<LibraryTab> {
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12)),
                               ),
-                              child: const Text("Cancelar",
+                              child: Text("Cancelar",
                                   style: TextStyle(
-                                      color: Colors.white54,
+                                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : Color(0xFF6E6E73)),
                                       fontWeight: FontWeight.bold)),
                             ),
                           ),

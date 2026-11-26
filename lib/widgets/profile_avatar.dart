@@ -21,6 +21,13 @@ class ThemeUtils {
     }
   }
 
+  static Color getAdaptiveColor(String name, {required bool isDark}) {
+    if (!isDark && name.toLowerCase() == 'branco') {
+      return const Color(0xFF1C1C1E);
+    }
+    return getColor(name);
+  }
+
   static List<String> getColorNames() {
     return ["Branco", "Azul", "Verde", "Laranja", "Vermelho", "Roxo", "Rosa"];
   }
@@ -62,7 +69,8 @@ class ProfileAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeColor = ThemeUtils.getColor(colorName);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final themeColor = ThemeUtils.getAdaptiveColor(colorName, isDark: isDark);
     return RepaintBoundary(
       child: Container(
         width: size,

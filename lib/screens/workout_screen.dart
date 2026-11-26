@@ -18,6 +18,7 @@ import '../widgets/glass_card.dart';
 import '../widgets/speech_notes_dialog.dart';
 
 import '../widgets/profile_avatar.dart';
+import '../utils/app_theme.dart';
 import '../utils/workout_starter.dart';
 import '../services/rest_timer_service.dart';
 import '../widgets/premium_strength_set_card.dart';
@@ -120,10 +121,23 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       builder: (sheetCtx) => StatefulBuilder(
         builder: (ctx, setSheetState) {
           final isDark = Theme.of(ctx).brightness == Brightness.dark;
+          final effectiveAccent = ThemeUtils.getAdaptiveColor(
+            Provider.of<TrackerProvider>(ctx, listen: false)
+                .currentProfile
+                .colorAccent,
+            isDark: isDark,
+          );
           final backgroundColor =
-              isDark ? const Color(0xFF1C1C1E) : const Color(0xFF242426);
+              isDark ? (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white) : Colors.white;
           final cardBg =
-              isDark ? const Color(0xFF2C2C2E) : const Color(0xFF323236);
+              isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF2F2F7);
+          final textPrimary = isDark ? Colors.white : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white);
+          final textSecondary =
+              isDark ? (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)) : const Color(0xFF3C3C43);
+          final textMuted = isDark ? (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)) : const Color(0xFF6E6E73);
+          final borderSubtle = isDark
+              ? Colors.white.withOpacity(0.12)
+              : Colors.black.withOpacity(0.08);
 
           return Padding(
             padding: EdgeInsets.only(
@@ -138,12 +152,12 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 borderRadius:
                     const BorderRadius.vertical(top: Radius.circular(28)),
                 border: Border.all(
-                  color: Colors.white.withOpacity(0.12),
+                  color: borderSubtle,
                   width: 1,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.6),
+                    color: Colors.black.withOpacity(isDark ? 0.6 : 0.15),
                     blurRadius: 30,
                     offset: const Offset(0, -6),
                   ),
@@ -164,7 +178,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                           height: 4.5,
                           margin: const EdgeInsets.only(bottom: 16),
                           decoration: BoxDecoration(
-                            color: Colors.white30,
+                            color: isDark ? (Theme.of(context).brightness == Brightness.dark ? Colors.white30 : const Color(0xFFAEAEB2)) : Colors.black26,
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
@@ -175,18 +189,18 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: accentColor.withOpacity(0.18),
+                              color: effectiveAccent.withOpacity(0.18),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(Icons.nightlight_round,
-                                color: accentColor, size: 22),
+                                color: effectiveAccent, size: 22),
                           ),
                           const SizedBox(width: 12),
-                          const Expanded(
+                          Expanded(
                             child: Text(
                               "Registrar Dia de Descanso",
                               style: TextStyle(
-                                color: Colors.white,
+                                color: textPrimary,
                                 fontWeight: FontWeight.w800,
                                 fontSize: 18,
                                 letterSpacing: 0.2,
@@ -194,8 +208,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                             ),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.close_rounded,
-                                color: Colors.white60, size: 22),
+                            icon: Icon(Icons.close_rounded,
+                                color: textMuted, size: 22),
                             onPressed: () => Navigator.pop(sheetCtx),
                             splashRadius: 20,
                             padding: EdgeInsets.zero,
@@ -204,10 +218,10 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      const Text(
+                      Text(
                         "Selecione o motivo do descanso de hoje para manter seu histórico organizado:",
                         style: TextStyle(
-                          color: Colors.white70,
+                          color: textSecondary,
                           fontSize: 13,
                           height: 1.35,
                         ),
@@ -229,13 +243,13 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                   horizontal: 14, vertical: 12),
                               decoration: BoxDecoration(
                                 color: isSelected
-                                    ? accentColor.withOpacity(0.18)
+                                    ? effectiveAccent.withOpacity(isDark ? 0.18 : 0.10)
                                     : cardBg,
                                 borderRadius: BorderRadius.circular(14),
                                 border: Border.all(
                                   color: isSelected
-                                      ? accentColor
-                                      : Colors.white.withOpacity(0.08),
+                                      ? effectiveAccent
+                                      : borderSubtle,
                                   width: isSelected ? 1.5 : 1.0,
                                 ),
                               ),
@@ -245,15 +259,17 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
                                       color: isSelected
-                                          ? accentColor.withOpacity(0.25)
-                                          : Colors.white.withOpacity(0.06),
+                                          ? effectiveAccent.withOpacity(0.22)
+                                          : (isDark
+                                              ? (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.06)
+                                              : Colors.black.withOpacity(0.05)),
                                       shape: BoxShape.circle,
                                     ),
                                     child: Icon(
                                       r.icon,
                                       color: isSelected
-                                          ? accentColor
-                                          : Colors.white70,
+                                          ? effectiveAccent
+                                          : textSecondary,
                                       size: 18,
                                     ),
                                   ),
@@ -266,7 +282,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                         Text(
                                           r.label,
                                           style: TextStyle(
-                                            color: Colors.white,
+                                            color: textPrimary,
                                             fontWeight: isSelected
                                                 ? FontWeight.w800
                                                 : FontWeight.w600,
@@ -278,8 +294,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                           r.desc,
                                           style: TextStyle(
                                             color: isSelected
-                                                ? Colors.white.withOpacity(0.85)
-                                                : Colors.white54,
+                                                ? textSecondary
+                                                : textMuted,
                                             fontSize: 11.5,
                                           ),
                                         ),
@@ -291,8 +307,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                         ? Icons.check_circle_rounded
                                         : Icons.radio_button_unchecked_rounded,
                                     color: isSelected
-                                        ? accentColor
-                                        : Colors.white30,
+                                        ? effectiveAccent
+                                        : (isDark ? (Theme.of(context).brightness == Brightness.dark ? Colors.white30 : const Color(0xFFAEAEB2)) : Colors.black26),
                                     size: 20,
                                   ),
                                 ],
@@ -306,12 +322,10 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                         TextField(
                           controller: customController,
                           autofocus: true,
-                          style: const TextStyle(
-                              color: Colors.white, fontSize: 14),
+                          style: TextStyle(color: textPrimary, fontSize: 14),
                           decoration: InputDecoration(
                             hintText: "Digite o motivo do descanso...",
-                            hintStyle: const TextStyle(
-                                color: Colors.white38, fontSize: 13),
+                            hintStyle: TextStyle(color: textMuted, fontSize: 13),
                             filled: true,
                             fillColor: cardBg,
                             contentPadding: const EdgeInsets.symmetric(
@@ -319,12 +333,12 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide(
-                                  color: accentColor.withOpacity(0.5)),
+                                  color: effectiveAccent.withOpacity(0.5)),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide:
-                                  BorderSide(color: accentColor, width: 1.5),
+                              borderSide: BorderSide(
+                                  color: effectiveAccent, width: 1.5),
                             ),
                           ),
                           onChanged: (val) {
@@ -337,7 +351,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.blueAccent.withOpacity(0.12),
+                          color: Colors.blueAccent.withOpacity(isDark ? 0.12 : 0.08),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                               color: Colors.blueAccent.withOpacity(0.25)),
@@ -352,7 +366,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                               child: Text(
                                 "Os treinos planejados para hoje serão automaticamente adiados para o próximo dia sem quebrar sua sequência.",
                                 style: TextStyle(
-                                  color: Colors.white.withOpacity(0.85),
+                                  color: textSecondary,
                                   fontSize: 11.5,
                                   height: 1.35,
                                 ),
@@ -390,8 +404,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                           );
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: accentColor,
-                          foregroundColor: Colors.black,
+                          backgroundColor: effectiveAccent,
+                          foregroundColor: isDark ? Colors.black : Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14)),
@@ -406,10 +420,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                       const SizedBox(height: 6),
                       TextButton(
                         onPressed: () => Navigator.pop(sheetCtx),
-                        child: const Text(
+                        child: Text(
                           "Cancelar",
-                          style:
-                              TextStyle(color: Colors.white60, fontSize: 13),
+                          style: TextStyle(color: textMuted, fontSize: 13),
                         ),
                       ),
                     ],
@@ -505,7 +518,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               children: [
                 Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
                 const SizedBox(height: 2),
-                Text(desc, style: const TextStyle(color: Colors.white54, fontSize: 11, height: 1.3)),
+                Text(desc, style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontSize: 11, height: 1.3)),
               ],
             ),
           )
@@ -526,7 +539,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? accentColor : Colors.white.withOpacity(0.05),
+          color: isSelected ? accentColor : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? accentColor : Colors.white.withOpacity(0.1),
@@ -534,12 +547,12 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
         ),
         child: Row(
           children: [
-            Icon(icon, color: isSelected ? Colors.black : Colors.white54, size: 16),
+            Icon(icon, color: isSelected ? Colors.black : (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), size: 16),
             const SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? Colors.black : Colors.white70,
+                color: isSelected ? Colors.black : (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
                 fontSize: 13,
                 fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
               ),
@@ -592,8 +605,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               Expanded(
                 child: Text(
                   "Desafios de $monthName",
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
                   ),
@@ -604,7 +617,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 style: TextStyle(
                   color: completed == challenges.length
                       ? Colors.greenAccent
-                      : Colors.white38,
+                      : (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)),
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
                 ),
@@ -624,8 +637,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                         Expanded(
                           child: Text(
                             c.title,
-                            style: const TextStyle(
-                              color: Colors.white70,
+                            style: TextStyle(
+                              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
                             ),
@@ -636,7 +649,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                           style: TextStyle(
                             color: c.isCompleted
                                 ? Colors.greenAccent
-                                : Colors.white38,
+                                : (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)),
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
                           ),
@@ -649,7 +662,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                       child: LinearProgressIndicator(
                         value: c.progress,
                         minHeight: 6,
-                        backgroundColor: Colors.white.withOpacity(0.08),
+                        backgroundColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
                         valueColor: AlwaysStoppedAnimation<Color>(
                           c.isCompleted ? Colors.greenAccent : accentColor,
                         ),
@@ -684,7 +697,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     Color deltaColor(double percent) {
       if (percent > 0) return Colors.greenAccent;
       if (percent < 0) return Colors.redAccent;
-      return Colors.white38;
+      return (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93));
     }
 
     Widget statTile(String label, String value, String delta,
@@ -694,8 +707,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
           children: [
             Text(
               value,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                 fontSize: 15,
                 fontWeight: FontWeight.w900,
               ),
@@ -703,7 +716,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             const SizedBox(height: 2),
             Text(
               label,
-              style: const TextStyle(color: Colors.white38, fontSize: 9),
+              style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)), fontSize: 9),
               textAlign: TextAlign.center,
             ),
             Text(
@@ -730,18 +743,18 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               const Icon(Icons.insights_outlined,
                   color: Colors.blueAccent, size: 18),
               const SizedBox(width: 8),
-              const Expanded(
+              Expanded(
                 child: Text(
                   "Resumo da Semana",
                   style: TextStyle(
-                    color: Colors.white,
+                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.close, color: Colors.white38, size: 16),
+                icon: Icon(Icons.close, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)), size: 16),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
                 onPressed: _dismissWeeklyReport,
@@ -769,7 +782,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 "tempo",
                 "${report.durationMinutesThisWeek}min",
                 "",
-                Colors.white38,
+                (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)),
               ),
             ],
           ),
@@ -780,8 +793,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               const SizedBox(width: 6),
               Text(
                 "${report.streakWeeks} semana(s) consecutiva(s)",
-                style: const TextStyle(
-                  color: Colors.white70,
+                style: TextStyle(
+                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                 ),
@@ -789,7 +802,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               const Spacer(),
               Text(
                 "Meta: ${report.workoutsThisWeekGoalProgress}/${report.weeklyGoal} treinos",
-                style: const TextStyle(color: Colors.white38, fontSize: 10),
+                style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)), fontSize: 10),
               ),
             ],
           ),
@@ -802,7 +815,11 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     final todayLabel = _getTodayLabel();
     final plannedRoutineIds = provider.todayPlannedItems;
     final trackerProvider = Provider.of<TrackerProvider>(context, listen: false);
-    final accentColor = ThemeUtils.getColor(trackerProvider.currentProfile.colorAccent);
+    final isDark = context.isDark;
+    final accentColor = ThemeUtils.getAdaptiveColor(
+      trackerProvider.currentProfile.colorAccent,
+      isDark: isDark,
+    );
 
     final isRestDay = _isRestDayToday(provider.history);
     final todayRestLog = isRestDay
@@ -915,8 +932,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                         const SizedBox(height: 2),
                         Text(
                           todayLabel.toUpperCase(),
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: context.textPrimary,
                             fontSize: 18,
                             fontWeight: FontWeight.w900,
                           ),
@@ -957,7 +974,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
                       // Botão de Dicas (?)
                       IconButton(
-                        icon: const Icon(Icons.help_outline, color: Colors.white70, size: 20),
+                        icon: Icon(Icons.help_outline, color: context.textSecondary, size: 20),
                         padding: const EdgeInsets.all(6),
                         constraints: const BoxConstraints(),
                         onPressed: () {
@@ -966,9 +983,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                             backgroundColor: Colors.transparent,
                             builder: (ctx) => Container(
                               padding: const EdgeInsets.all(24),
-                              decoration: const BoxDecoration(
-                                color: Color(0xff1c1c1e),
-                                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                              decoration: BoxDecoration(
+                                color: ctx.sheetBg,
+                                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                               ),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
@@ -978,7 +995,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                     children: [
                                       Icon(Icons.lightbulb_outline, color: accentColor),
                                       const SizedBox(width: 8),
-                                      const Text("Dicas e Gestos", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                                      Text("Dicas e Gestos", style: TextStyle(color: ctx.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
                                     ],
                                   ),
                                   const SizedBox(height: 16),
@@ -996,7 +1013,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
                       // Configurações (⚙️)
                       IconButton(
-                        icon: const Icon(Icons.settings_outlined, color: Colors.white70, size: 20),
+                        icon: Icon(Icons.settings_outlined, color: context.textSecondary, size: 20),
                         padding: const EdgeInsets.all(6),
                         constraints: const BoxConstraints(),
                         onPressed: () {
@@ -1054,8 +1071,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                           children: [
                             Text(
                               "TREINO ADIADO ${provider.postponedWorkouts.length > 1 ? '(${index + 1}/${provider.postponedWorkouts.length})' : ''}",
-                              style: const TextStyle(
-                                color: Colors.white54,
+                              style: TextStyle(
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                                 fontSize: 9,
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: 0.5,
@@ -1064,8 +1081,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                             const SizedBox(height: 2),
                             Text(
                               postponed.name,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -1103,9 +1120,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   "Treino Planejado para Hoje",
-                  style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w700),
+                  style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 13, fontWeight: FontWeight.w700),
                 ),
                 if (!isRestDay)
                   TextButton.icon(
@@ -1151,10 +1168,10 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                     const Icon(Icons.nightlight_round,
                         color: Colors.blueAccent, size: 40),
                     const SizedBox(height: 12),
-                    const Text(
+                    Text(
                       "Dia de Descanso",
                       style: TextStyle(
-                          color: Colors.white,
+                          color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                           fontSize: 18,
                           fontWeight: FontWeight.bold),
                     ),
@@ -1165,7 +1182,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                           : "Aproveite para se recuperar.",
                       textAlign: TextAlign.center,
                       style:
-                          const TextStyle(color: Colors.white70, fontSize: 13),
+                          TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 13),
                     ),
                     const SizedBox(height: 16),
                     OutlinedButton.icon(
@@ -1173,17 +1190,17 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                         HapticFeedback.lightImpact();
                         provider.undoShiftPlannerForward();
                       },
-                      icon: const Icon(Icons.undo_rounded,
-                          size: 16, color: Colors.white70),
-                      label: const Text(
+                      icon: Icon(Icons.undo_rounded,
+                          size: 16, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43))),
+                      label: Text(
                         "Desfazer descanso e voltar a treinar",
                         style: TextStyle(
-                            color: Colors.white70,
+                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
                             fontSize: 12,
                             fontWeight: FontWeight.w600),
                       ),
                       style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: Colors.white.withOpacity(0.2)),
+                        side: BorderSide(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.2)),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),
                         padding: const EdgeInsets.symmetric(
@@ -1199,21 +1216,21 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
-                  color: const Color(0xff1c1c1e),
-                  border: Border.all(color: Colors.white.withOpacity(0.05)),
+                  color: context.cardBg,
+                  border: Border.all(color: context.subtleBorder),
                 ),
-                child: const Column(
+                child: Column(
                   children: [
-                    Icon(Icons.calendar_today_outlined, color: Colors.white38, size: 40),
-                    SizedBox(height: 12),
+                    Icon(Icons.calendar_today_outlined, color: context.textFaint, size: 40),
+                    const SizedBox(height: 12),
                     Text(
                       "Nenhum treino planejado.",
-                      style: TextStyle(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(color: context.textSecondary, fontSize: 16, fontWeight: FontWeight.bold),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text(
                       "Selecione um treino rápido abaixo.",
-                      style: TextStyle(color: Colors.white38, fontSize: 13),
+                      style: TextStyle(color: context.textFaint, fontSize: 13),
                     ),
                   ],
                 ),
@@ -1274,7 +1291,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                       color: Colors.black.withOpacity(0.4),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
-                                    child: Text(tag, style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold)),
+                                    child: Text(tag, style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 10, fontWeight: FontWeight.bold)),
                                   )).toList(),
                                 ),
                                 const SizedBox(height: 20),
@@ -1322,9 +1339,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   "Treino Rápido",
-                  style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w700),
+                  style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 13, fontWeight: FontWeight.w700),
                 ),
                 TextButton.icon(
                   onPressed: () {
@@ -1366,11 +1383,11 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.04),
+                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.04),
                   borderRadius: BorderRadius.circular(16)
                 ),
-                child: const Center(
-                  child: Text("Nenhuma rotina cadastrada.", style: TextStyle(color: Colors.white38)),
+                child: Center(
+                  child: Text("Nenhuma rotina cadastrada.", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)))),
                 ),
               )
             else
@@ -1389,9 +1406,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 }).toList();
 
                 if (filtered.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 12),
-                    child: Text("Nenhuma rotina nesta categoria.", style: TextStyle(color: Colors.white38)),
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Text("Nenhuma rotina nesta categoria.", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)))),
                   );
                 }
 
@@ -1419,9 +1436,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                           margin: const EdgeInsets.only(right: 12),
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: const Color(0xff1c1c1e),
+                            color: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.white.withOpacity(0.05)),
+                            border: Border.all(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05)),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1437,14 +1454,14 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                               const Spacer(),
                               Text(
                                 routine.name,
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                                style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontWeight: FontWeight.bold, fontSize: 14),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 "${routine.exercises.length} ex.",
-                                style: const TextStyle(color: Colors.white54, fontSize: 11),
+                                style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontSize: 11),
                               ),
                               const SizedBox(height: 8),
                               if (tags.isNotEmpty)
@@ -1484,10 +1501,10 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
           child: Container(
             height: MediaQuery.of(context).size.height * 0.65,
             decoration: BoxDecoration(
-              color: const Color(0xff141416).withOpacity(0.65),
+              color: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white).withOpacity(0.65),
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(24)),
-              border: Border.all(color: Colors.white.withOpacity(0.08)),
+              border: Border.all(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08)),
             ),
             padding: const EdgeInsets.all(20),
             child: Column(
@@ -1498,7 +1515,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                     width: 40,
                     height: 5,
                     decoration: BoxDecoration(
-                      color: Colors.white24,
+                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white24 : const Color(0xFFC7C7CC)),
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
@@ -1510,8 +1527,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                     Expanded(
                       child: Text(
                         routine.name,
-                        style: const TextStyle(
-                            color: Colors.white,
+                        style: TextStyle(
+                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                             fontSize: 18,
                             fontWeight: FontWeight.w800),
                         maxLines: 1,
@@ -1519,11 +1536,11 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close_rounded,
-                          color: Colors.white, size: 22),
+                      icon: Icon(Icons.close_rounded,
+                          color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), size: 22),
                       onPressed: () => Navigator.pop(context),
                       style: IconButton.styleFrom(
-                        backgroundColor: Colors.white.withOpacity(0.08),
+                        backgroundColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
                         padding: const EdgeInsets.all(6),
                         minimumSize: const Size(36, 36),
                       ),
@@ -1551,19 +1568,19 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                       return ListTile(
                         contentPadding: EdgeInsets.zero,
                         title: Text(libEx.name,
-                            style: const TextStyle(
-                                color: Colors.white,
+                            style: TextStyle(
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold)),
                         subtitle: Text(libEx.muscle,
-                            style: const TextStyle(
-                                color: Colors.white38, fontSize: 12)),
+                            style: TextStyle(
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)), fontSize: 12)),
                         trailing: Text(
                           isCardio
                               ? "${ex.reps} min"
                               : "${ex.sets}x${ex.reps} @ ${ex.weight.toStringAsFixed(1).replaceAll('.0', '')}kg",
-                          style: const TextStyle(
-                              color: Colors.white70,
+                          style: TextStyle(
+                              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
                               fontSize: 12,
                               fontWeight: FontWeight.bold),
                         ),
@@ -1603,7 +1620,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                               backgroundColor: Colors.transparent,
                               child: GlassCard(
                                 useBlur: true,
-                                borderColor: Colors.white.withOpacity(0.08),
+                                borderColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
                                 borderRadius: 20,
                                 padding: const EdgeInsets.all(20),
                                 child: Column(
@@ -1611,18 +1628,18 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                   crossAxisAlignment:
                                       CrossAxisAlignment.stretch,
                                   children: [
-                                    const Text(
+                                    Text(
                                       "Métricas de Cardio",
                                       style: TextStyle(
-                                          color: Colors.white,
+                                          color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                                           fontWeight: FontWeight.bold,
                                           fontSize: 16),
                                     ),
                                     const SizedBox(height: 8),
-                                    const Text(
+                                    Text(
                                       "Informe a distância e duração do seu treino de hoje:",
                                       style: TextStyle(
-                                          color: Colors.white70, fontSize: 12),
+                                          color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 12),
                                     ),
                                     const SizedBox(height: 16),
                                     TextField(
@@ -1631,14 +1648,14 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                           const TextInputType.numberWithOptions(
                                               decimal: true),
                                       style:
-                                          const TextStyle(color: Colors.white),
+                                          TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E))),
                                       decoration: InputDecoration(
                                         labelText: "Distância (km)",
-                                        labelStyle: const TextStyle(
-                                            color: Colors.white70),
+                                        labelStyle: TextStyle(
+                                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43))),
                                         enabledBorder: OutlineInputBorder(
                                             borderSide: BorderSide(
-                                                color: Colors.white
+                                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E))
                                                     .withOpacity(0.12))),
                                         focusedBorder: const OutlineInputBorder(
                                             borderSide: BorderSide(
@@ -1653,11 +1670,11 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                           const TextStyle(color: Colors.white),
                                       decoration: InputDecoration(
                                         labelText: "Duração (minutos)",
-                                        labelStyle: const TextStyle(
-                                            color: Colors.white70),
+                                        labelStyle: TextStyle(
+                                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43))),
                                         enabledBorder: OutlineInputBorder(
                                             borderSide: BorderSide(
-                                                color: Colors.white
+                                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E))
                                                     .withOpacity(0.12))),
                                         focusedBorder: const OutlineInputBorder(
                                             borderSide: BorderSide(
@@ -1674,9 +1691,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                             durCtrl.dispose();
                                             Navigator.pop(dialogCtx);
                                           },
-                                          child: const Text("Cancelar",
+                                          child: Text("Cancelar",
                                               style: TextStyle(
-                                                  color: Colors.white54,
+                                                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                                                   fontWeight: FontWeight.bold)),
                                         ),
                                         const SizedBox(width: 8),
@@ -1817,326 +1834,456 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     final reminderTime = ValueNotifier<TimeOfDay>(TimeOfDay(
         hour: provider.state!.settings.workoutReminderHour,
         minute: provider.state!.settings.workoutReminderMinute));
+    final themeModeState =
+        ValueNotifier<String>(provider.state!.settings.themeMode);
     final waterController = TextEditingController(
         text: (provider.state?.diet.waterGoalMl ?? 2000).toString());
-    final accentColor =
-        ThemeUtils.getColor(provider.currentProfile.colorAccent);
 
     showDialog(
       context: context,
-      builder: (dialogCtx) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 20),
-        child: GlassCard(
-          useBlur: true,
-          borderColor: Colors.white.withOpacity(0.08),
-          borderRadius: 24,
-          padding: const EdgeInsets.all(24),
-          child: SizedBox(
-            width: 320,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.settings, color: accentColor, size: 22),
-                    const SizedBox(width: 8),
-                    const Text(
-                      "Configurações Gerais",
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 16),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
+      builder: (dialogCtx) {
+        final isDark = Theme.of(dialogCtx).brightness == Brightness.dark;
+        final accentColor = ThemeUtils.getAdaptiveColor(
+          provider.currentProfile.colorAccent,
+          isDark: isDark,
+        );
+        final textPrimary = isDark ? Colors.white : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white);
+        final textMuted = isDark ? (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)) : const Color(0xFF6E6E73);
+        final textFaint = isDark ? (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)) : const Color(0xFF8E8E93);
+        final subtleBg = isDark
+            ? (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05)
+            : Colors.black.withOpacity(0.04);
+        final subtleBorder = isDark
+            ? Colors.white.withOpacity(0.10)
+            : Colors.black.withOpacity(0.08);
 
-                // SEÇÃO PERFIL DO ATLETA
-                const Text(
-                  "PERFIL DO ATLETA 👤",
-                  style: TextStyle(
-                      color: Colors.white54,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.0),
-                ),
-                const SizedBox(height: 8),
-                InkWell(
-                  onTap: () {
-                    Navigator.pop(dialogCtx);
-                    showProfileManagerDialog(context);
-                  },
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.04),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white.withOpacity(0.08)),
-                    ),
-                    child: Row(
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          child: GlassCard(
+            useBlur: true,
+            borderColor: subtleBorder,
+            borderRadius: 24,
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: 340,
+                maxHeight: MediaQuery.of(dialogCtx).size.height * 0.82,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
                       children: [
-                        ProfileAvatar(
-                          avatar: provider.currentProfile.avatar,
-                          colorName: provider.currentProfile.colorAccent,
-                          size: 32,
-                          fontSize: 16,
+                        Icon(Icons.settings, color: accentColor, size: 22),
+                        const SizedBox(width: 8),
+                        Text(
+                          "Configurações Gerais",
+                          style: TextStyle(
+                              color: textPrimary,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 16),
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                provider.currentProfile.name.isNotEmpty ? provider.currentProfile.name : "Atleta",
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const Text(
-                                "Trocar ou editar perfil",
-                                style: TextStyle(color: Colors.white38, fontSize: 11),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Icon(Icons.chevron_right, color: accentColor, size: 18),
                       ],
                     ),
-                  ),
-                ),
-                const SizedBox(height: 20),
+                    const SizedBox(height: 20),
 
-                // SEÇÃO TREINO
-                const Text(
-                  "TREINO 🏋️",
-                  style: TextStyle(
-                      color: Colors.white54,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.0),
-                ),
-                const SizedBox(height: 8),
-                ValueListenableBuilder<bool>(
-                  valueListenable: soundState,
-                  builder: (context, val, child) => SwitchListTile(
-                    title: const Text("Bips Sonoros",
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600)),
-                    value: val,
-                    activeColor: accentColor,
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    onChanged: (newVal) => soundState.value = newVal,
-                  ),
-                ),
-                ValueListenableBuilder<bool>(
-                  valueListenable: vibrationState,
-                  builder: (context, val, child) => SwitchListTile(
-                    title: const Text("Vibração",
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600)),
-                    value: val,
-                    activeColor: accentColor,
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    onChanged: (newVal) => vibrationState.value = newVal,
-                  ),
-                ),
-                ValueListenableBuilder<bool>(
-                  valueListenable: reminderEnabled,
-                  builder: (context, enabled, child) => Column(
-                    children: [
-                      SwitchListTile(
-                        title: const Text("Lembrete de Treino",
+                    // SEÇÃO APARÊNCIA
+                    Text(
+                      "APARÊNCIA 🎨",
+                      style: TextStyle(
+                          color: textMuted,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.0),
+                    ),
+                    const SizedBox(height: 8),
+                    ValueListenableBuilder<String>(
+                      valueListenable: themeModeState,
+                      builder: (context, selectedMode, _) {
+                        final options = [
+                          (
+                            id: 'system',
+                            label: 'Automático',
+                            icon: Icons.brightness_auto_rounded
+                          ),
+                          (
+                            id: 'light',
+                            label: 'Claro',
+                            icon: Icons.light_mode_rounded
+                          ),
+                          (
+                            id: 'dark',
+                            label: 'Escuro',
+                            icon: Icons.dark_mode_rounded
+                          ),
+                        ];
+                        return Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: subtleBg,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: subtleBorder),
+                          ),
+                          child: Row(
+                            children: options.map((opt) {
+                              final isSelected = selectedMode == opt.id;
+                              return Expanded(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    HapticFeedback.selectionClick();
+                                    themeModeState.value = opt.id;
+                                    provider.updateThemeMode(opt.id);
+                                  },
+                                  child: AnimatedContainer(
+                                    duration:
+                                        const Duration(milliseconds: 180),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 8, horizontal: 4),
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? accentColor
+                                          : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          opt.icon,
+                                          size: 16,
+                                          color: isSelected
+                                              ? (isDark
+                                                  ? Colors.black
+                                                  : Colors.white)
+                                              : textMuted,
+                                        ),
+                                        const SizedBox(height: 3),
+                                        Text(
+                                          opt.label,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 10.5,
+                                            fontWeight: isSelected
+                                                ? FontWeight.w800
+                                                : FontWeight.w600,
+                                            color: isSelected
+                                                ? (isDark
+                                                    ? Colors.black
+                                                    : Colors.white)
+                                                : textMuted,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 20),
+
+                    // SEÇÃO PERFIL DO ATLETA
+                    Text(
+                      "PERFIL DO ATLETA 👤",
+                      style: TextStyle(
+                          color: textMuted,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.0),
+                    ),
+                    const SizedBox(height: 8),
+                    InkWell(
+                      onTap: () {
+                        Navigator.pop(dialogCtx);
+                        showProfileManagerDialog(context);
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: subtleBg,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: subtleBorder),
+                        ),
+                        child: Row(
+                          children: [
+                            ProfileAvatar(
+                              avatar: provider.currentProfile.avatar,
+                              colorName: provider.currentProfile.colorAccent,
+                              size: 32,
+                              fontSize: 16,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    provider.currentProfile.name.isNotEmpty
+                                        ? provider.currentProfile.name
+                                        : "Atleta",
+                                    style: TextStyle(
+                                      color: textPrimary,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Text(
+                                    "Trocar ou editar perfil",
+                                    style: TextStyle(
+                                        color: textFaint, fontSize: 11),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(Icons.chevron_right,
+                                color: accentColor, size: 18),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // SEÇÃO TREINO
+                    Text(
+                      "TREINO 🏋️",
+                      style: TextStyle(
+                          color: textMuted,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.0),
+                    ),
+                    const SizedBox(height: 8),
+                    ValueListenableBuilder<bool>(
+                      valueListenable: soundState,
+                      builder: (context, val, child) => SwitchListTile(
+                        title: Text("Bips Sonoros",
                             style: TextStyle(
-                                color: Colors.white,
+                                color: textPrimary,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600)),
-                        subtitle: const Text(
-                            "Notificação diária no horário escolhido",
-                            style: TextStyle(
-                                color: Colors.white38, fontSize: 11)),
-                        value: enabled,
+                        value: val,
                         activeColor: accentColor,
                         dense: true,
                         contentPadding: EdgeInsets.zero,
-                        onChanged: (newVal) =>
-                            reminderEnabled.value = newVal,
+                        onChanged: (newVal) => soundState.value = newVal,
                       ),
-                      if (enabled)
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: ValueListenableBuilder<TimeOfDay>(
-                            valueListenable: reminderTime,
-                            builder: (context, time, child) => TextButton.icon(
-                              onPressed: () async {
-                                final picked = await showTimePicker(
-                                  context: context,
-                                  initialTime: time,
-                                );
-                                if (picked != null) {
-                                  reminderTime.value = picked;
-                                }
-                              },
-                              icon: Icon(Icons.access_time,
-                                  color: accentColor, size: 16),
-                              label: Text(
-                                "Todos os dias às ${time.format(context)}",
+                    ),
+                    ValueListenableBuilder<bool>(
+                      valueListenable: vibrationState,
+                      builder: (context, val, child) => SwitchListTile(
+                        title: Text("Vibração",
+                            style: TextStyle(
+                                color: textPrimary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600)),
+                        value: val,
+                        activeColor: accentColor,
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        onChanged: (newVal) => vibrationState.value = newVal,
+                      ),
+                    ),
+                    ValueListenableBuilder<bool>(
+                      valueListenable: reminderEnabled,
+                      builder: (context, enabled, child) => Column(
+                        children: [
+                          SwitchListTile(
+                            title: Text("Lembrete de Treino",
                                 style: TextStyle(
-                                    color: accentColor,
+                                    color: textPrimary,
                                     fontSize: 13,
-                                    fontWeight: FontWeight.bold),
+                                    fontWeight: FontWeight.w600)),
+                            subtitle: Text(
+                                "Notificação diária no horário escolhido",
+                                style:
+                                    TextStyle(color: textFaint, fontSize: 11)),
+                            value: enabled,
+                            activeColor: accentColor,
+                            dense: true,
+                            contentPadding: EdgeInsets.zero,
+                            onChanged: (newVal) =>
+                                reminderEnabled.value = newVal,
+                          ),
+                          if (enabled)
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: ValueListenableBuilder<TimeOfDay>(
+                                valueListenable: reminderTime,
+                                builder: (context, time, child) =>
+                                    TextButton.icon(
+                                  onPressed: () async {
+                                    final picked = await showTimePicker(
+                                      context: context,
+                                      initialTime: time,
+                                    );
+                                    if (picked != null) {
+                                      reminderTime.value = picked;
+                                    }
+                                  },
+                                  icon: Icon(Icons.access_time,
+                                      color: accentColor, size: 16),
+                                  label: Text(
+                                    "Todos os dias às ${time.format(context)}",
+                                    style: TextStyle(
+                                        color: accentColor,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 4),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                ),
                               ),
-                              style: TextButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 4),
-                                minimumSize: Size.zero,
-                                tapTargetSize:
-                                    MaterialTapTargetSize.shrinkWrap,
-                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // SEÇÃO DIETA/HIDRATAÇÃO
+                    Text(
+                      "HIDRATAÇÃO 💧",
+                      style: TextStyle(
+                          color: textMuted,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.0),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text("Meta de Água (ml)",
+                            style: TextStyle(
+                                color: textPrimary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600)),
+                        Container(
+                          width: 70,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: subtleBg,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: subtleBorder),
+                          ),
+                          child: TextField(
+                            controller: waterController,
+                            keyboardType: TextInputType.number,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                                color: textPrimary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold),
+                            decoration: const InputDecoration(
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.zero,
                             ),
                           ),
                         ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // SEÇÃO DIETA/HIDRATAÇÃO
-                const Text(
-                  "HIDRATAÇÃO 💧",
-                  style: TextStyle(
-                      color: Colors.white54,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.0),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text("Meta de Água (ml)",
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600)),
-                    Container(
-                      width: 70,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.04),
-                        borderRadius: BorderRadius.circular(8),
-                        border:
-                            Border.all(color: Colors.white.withOpacity(0.1)),
-                      ),
-                      child: TextField(
-                        controller: waterController,
-                        keyboardType: TextInputType.number,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold),
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                      ),
+                      ],
                     ),
-                  ],
-                ),
 
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text("Notificações",
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600)),
-                    ButtonTheme(
-                      alignedDropdown: true,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(dialogCtx);
-                          showNotificationSettingsDialog(context);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white.withOpacity(0.05),
-                          foregroundColor: accentColor,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            side:
-                                BorderSide(color: accentColor.withOpacity(0.3)),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text("Notificações",
+                            style: TextStyle(
+                                color: textPrimary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600)),
+                        ButtonTheme(
+                          alignedDropdown: true,
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.pop(dialogCtx);
+                              showNotificationSettingsDialog(context);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: subtleBg,
+                              foregroundColor: accentColor,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                side: BorderSide(
+                                    color: accentColor.withOpacity(0.3)),
+                              ),
+                            ),
+                            icon: const Icon(
+                                Icons.notifications_active_outlined,
+                                size: 16),
+                            label: const Text("Configurar",
+                                style: TextStyle(
+                                    fontSize: 12, fontWeight: FontWeight.bold)),
                           ),
                         ),
-                        icon: const Icon(Icons.notifications_active_outlined,
-                            size: 16),
-                        label: const Text("Configurar",
-                            style: TextStyle(
-                                fontSize: 12, fontWeight: FontWeight.bold)),
-                      ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // AÇÕES
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () {
+                            waterController.dispose();
+                            Navigator.pop(dialogCtx);
+                          },
+                          child: Text("Cancelar",
+                              style: TextStyle(
+                                  color: textMuted,
+                                  fontWeight: FontWeight.bold)),
+                        ),
+                        const SizedBox(width: 8),
+                        TextButton(
+                          onPressed: () {
+                            final waterGoal =
+                                int.tryParse(waterController.text.trim()) ??
+                                    2000;
+                            provider.updateSettings(
+                                soundState.value,
+                                vibrationState.value,
+                                provider.state!.settings.prepSeconds);
+                            provider.updateWorkoutReminder(
+                                reminderEnabled.value,
+                                reminderTime.value.hour,
+                                reminderTime.value.minute);
+                            provider.updateThemeMode(themeModeState.value);
+                            provider.updateWaterGoal(waterGoal);
+                            waterController.dispose();
+                            Navigator.pop(dialogCtx);
+                          },
+                          child: Text("Salvar",
+                              style: TextStyle(
+                                  color: accentColor,
+                                  fontWeight: FontWeight.bold)),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-
-                const SizedBox(height: 24),
-
-                // AÇÕES
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () {
-                        waterController.dispose();
-                        Navigator.pop(dialogCtx);
-                      },
-                      child: const Text("Cancelar",
-                          style: TextStyle(
-                              color: Colors.white54,
-                              fontWeight: FontWeight.bold)),
-                    ),
-                    const SizedBox(width: 8),
-                    TextButton(
-                      onPressed: () {
-                        final waterGoal =
-                            int.tryParse(waterController.text.trim()) ?? 2000;
-                        provider.updateSettings(
-                            soundState.value,
-                            vibrationState.value,
-                            provider.state!.settings.prepSeconds);
-                        provider.updateWorkoutReminder(
-                            reminderEnabled.value,
-                            reminderTime.value.hour,
-                            reminderTime.value.minute);
-                        provider.updateWaterGoal(waterGoal);
-                        waterController.dispose();
-                        Navigator.pop(dialogCtx);
-                      },
-                      child: Text("Salvar",
-                          style: TextStyle(
-                              color: accentColor, fontWeight: FontWeight.bold)),
-                    ),
-                  ],
-                ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -2150,24 +2297,24 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
         backgroundColor: Colors.transparent,
         child: GlassCard(
           useBlur: true,
-          borderColor: Colors.white.withOpacity(0.08),
+          borderColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
           borderRadius: 20,
           padding: const EdgeInsets.all(20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
+              Text(
                 "Treino em Andamento ⏳",
                 style: TextStyle(
-                    color: Colors.white,
+                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                     fontWeight: FontWeight.bold,
                     fontSize: 16),
               ),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 "Você possui uma sessão ativa. O que deseja fazer com ela antes de iniciar a nova?",
-                style: TextStyle(color: Colors.white70, fontSize: 13),
+                style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 13),
               ),
               const SizedBox(height: 20),
               Row(
@@ -2175,9 +2322,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(dialogCtx),
-                    child: const Text("Voltar",
+                    child: Text("Voltar",
                         style: TextStyle(
-                            color: Colors.white54,
+                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                             fontWeight: FontWeight.bold)),
                   ),
                   const SizedBox(width: 8),
@@ -2622,7 +2769,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.06),
+                                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.06),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
@@ -2633,8 +2780,8 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                                                 workout.circuitCycles
                                         ? "Ex. ${(_currentExIdx % (exercises.length ~/ workout.circuitCycles)) + 1}/${exercises.length ~/ workout.circuitCycles}"
                                         : "Ex. ${_currentExIdx + 1}/${exercises.length}",
-                                    style: const TextStyle(
-                                      color: Colors.white70,
+                                    style: TextStyle(
+                                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
                                       fontSize: 11,
                                       fontWeight: FontWeight.w700,
                                     ),
@@ -2654,7 +2801,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 10, vertical: 5),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.06),
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.06),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                     color: Colors.white.withOpacity(0.1)),
@@ -2670,11 +2817,11 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                                     builder: (context, elapsed, child) {
                                       return Text(
                                         _formatDuration(elapsed),
-                                        style: const TextStyle(
-                                          color: Colors.white,
+                                        style: TextStyle(
+                                          color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                                           fontSize: 13,
                                           fontWeight: FontWeight.w900,
-                                          fontFeatures: [
+                                          fontFeatures: const [
                                             FontFeature.tabularFigures()
                                           ],
                                         ),
@@ -2708,8 +2855,8 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                               color: const Color(0xff2c2c2e),
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16)),
-                              icon: const Icon(Icons.more_vert_rounded,
-                                  color: Colors.white70, size: 20),
+                              icon: Icon(Icons.more_vert_rounded,
+                                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), size: 20),
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
                               onSelected: (value) {
@@ -2721,17 +2868,17 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                                   _showReorderExercisesSheet(context);
                                 }
                               },
-                              itemBuilder: (context) => const [
+                              itemBuilder: (context) => [
                                 PopupMenuItem(
                                   value: 'reorder',
                                   child: Row(
                                     children: [
-                                      Icon(Icons.swap_vert,
+                                      const Icon(Icons.swap_vert,
                                           color: Colors.blueAccent, size: 20),
-                                      SizedBox(width: 12),
+                                      const SizedBox(width: 12),
                                       Text("Reordenar",
                                           style:
-                                              TextStyle(color: Colors.white)),
+                                              TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)))),
                                     ],
                                   ),
                                 ),
@@ -2739,16 +2886,16 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                                   value: 'postpone',
                                   child: Row(
                                     children: [
-                                      Icon(Icons.snooze,
+                                      const Icon(Icons.snooze,
                                           color: Colors.amberAccent, size: 20),
-                                      SizedBox(width: 12),
+                                      const SizedBox(width: 12),
                                       Text("Adiar Treino",
                                           style:
-                                              TextStyle(color: Colors.white)),
+                                              TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)))),
                                     ],
                                   ),
                                 ),
-                                PopupMenuItem(
+                                const PopupMenuItem(
                                   value: 'discard',
                                   child: Row(
                                     children: [
@@ -2900,7 +3047,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: const Color(0xff1c1c1e).withOpacity(0.85),
+                          color: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white).withOpacity(0.85),
                           borderRadius: BorderRadius.circular(24),
                           border: Border.all(
                               color: Colors.white.withOpacity(0.12), width: 1),
@@ -3113,18 +3260,18 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                                                     children: [
                                                       Text(
                                                         "$remaining",
-                                                        style: const TextStyle(
-                                                          color: Colors.white,
+                                                        style: TextStyle(
+                                                          color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                                                           fontSize: 72,
                                                           fontWeight:
                                                               FontWeight.w900,
                                                           letterSpacing: -2.0,
                                                         ),
                                                       ),
-                                                      const Text(
+                                                      Text(
                                                         "segundos",
                                                         style: TextStyle(
-                                                          color: Colors.white30,
+                                                          color: (Theme.of(context).brightness == Brightness.dark ? Colors.white30 : const Color(0xFFAEAEB2)),
                                                           fontSize: 12,
                                                           fontWeight:
                                                               FontWeight.bold,
@@ -3170,9 +3317,9 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                                                       );
                                                     }
                                                   },
-                                                  icon: const Text("-15s",
+                                                  icon: Text("-15s",
                                                       style: TextStyle(
-                                                          color: Colors.white,
+                                                          color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                                                           fontWeight:
                                                               FontWeight.bold,
                                                           fontSize: 16)),
@@ -3240,7 +3387,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                                           GlassCard(
                                             padding: const EdgeInsets.all(16),
                                             borderColor:
-                                                Colors.white.withOpacity(0.06),
+                                                (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.06),
                                             borderRadius: 16,
                                             child: Column(
                                               children: [
@@ -3263,8 +3410,8 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                                                 Text(
                                                   _timerNextExName,
                                                   textAlign: TextAlign.center,
-                                                  style: const TextStyle(
-                                                    color: Colors.white,
+                                                  style: TextStyle(
+                                                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                                                     fontSize: 20,
                                                     fontWeight: FontWeight.w800,
                                                   ),
@@ -3272,8 +3419,8 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                                                 const SizedBox(height: 2),
                                                 Text(
                                                   "Série $_timerNextSetNum",
-                                                  style: const TextStyle(
-                                                    color: Colors.white38,
+                                                  style: TextStyle(
+                                                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)),
                                                     fontSize: 12,
                                                     fontWeight: FontWeight.bold,
                                                   ),
@@ -3288,8 +3435,8 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                                                             top: 4),
                                                     child: Text(
                                                       "$_timerNextTargetReps reps • ${_timerNextTargetWeight == _timerNextTargetWeight!.toInt() ? _timerNextTargetWeight!.toInt() : _timerNextTargetWeight} kg",
-                                                      style: const TextStyle(
-                                                        color: Colors.white54,
+                                                      style: TextStyle(
+                                                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                                                         fontSize: 13,
                                                         fontWeight:
                                                             FontWeight.w600,
@@ -3430,8 +3577,8 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                             },
                             child: Text(
                               ex.name,
-                              style: const TextStyle(
-                                  color: Colors.white,
+                              style: TextStyle(
+                                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                                   fontSize: 18,
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: -0.2),
@@ -3439,8 +3586,8 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.more_vert,
-                              color: Colors.white54, size: 20),
+                          icon: Icon(Icons.more_vert,
+                              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), size: 20),
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
                           onPressed: () => _showExerciseOptionsBottomSheet(
@@ -3459,8 +3606,8 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                           Expanded(
                             child: Text(
                               widget.provider.state!.exerciseNotes[ex.id]!,
-                              style: const TextStyle(
-                                  color: Colors.white70,
+                              style: TextStyle(
+                                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
                                   fontSize: 12,
                                   fontStyle: FontStyle.italic),
                               maxLines: 2,
@@ -3477,7 +3624,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.06),
+                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.06),
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(
                                 color: Colors.white.withOpacity(0.1)),
@@ -3497,8 +3644,8 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                           const SizedBox(width: 6),
                           Text(
                             "• ${ex.executionType}",
-                            style: const TextStyle(
-                                color: Colors.white54, fontSize: 11),
+                            style: TextStyle(
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontSize: 11),
                           ),
                         ],
                       ],
@@ -3517,10 +3664,10 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                   ),
                   child: Column(
                     children: [
-                      const Text(
+                      Text(
                         "VOLUME",
                         style: TextStyle(
-                            color: Colors.white38,
+                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)),
                             fontSize: 8,
                             fontWeight: FontWeight.w800),
                       ),
@@ -3693,7 +3840,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
       TrackerProvider provider, ActiveExercise ex, int exIdx, Color accentColor) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xff1c1c1e),
+      backgroundColor: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -3707,7 +3854,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                    color: Colors.white24,
+                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white24 : const Color(0xFFC7C7CC)),
                     borderRadius: BorderRadius.circular(2)),
               ),
               ListTile(
@@ -3715,8 +3862,8 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                 title: const Text("Anotações do Exercício",
                     style: TextStyle(
                         color: Colors.white, fontWeight: FontWeight.bold)),
-                subtitle: const Text("Salvo globalmente para este exercício",
-                    style: TextStyle(color: Colors.white54, fontSize: 12)),
+                subtitle: Text("Salvo globalmente para este exercício",
+                    style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontSize: 12)),
                 onTap: () {
                   Navigator.pop(ctx);
                   _showExerciseNotesDialog(context, provider, ex);
@@ -3726,16 +3873,16 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                       ?.findActiveExerciseSourceRoutine(exIdx) !=
                   null)
                 ListTile(
-                  leading: const Icon(Icons.bookmark_added,
-                      color: Colors.white),
-                  title: const Text("Aplicar à Rotina",
+                  leading: Icon(Icons.bookmark_added,
+                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E))),
+                  title: Text("Aplicar à Rotina",
                       style: TextStyle(
-                          color: Colors.white,
+                          color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                           fontWeight: FontWeight.bold)),
-                  subtitle: const Text(
+                  subtitle: Text(
                       "Salva peso/reps/séries atuais na rotina de origem",
                       style: TextStyle(
-                          color: Colors.white54, fontSize: 12)),
+                          color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontSize: 12)),
                   onTap: () {
                     Navigator.pop(ctx);
                     final ok = provider.workoutProvider
@@ -3753,11 +3900,11 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                 ),
               ListTile(
                 leading: Icon(Icons.swap_horiz, color: accentColor),
-                title: const Text("Substituir Exercício",
+                title: Text("Substituir Exercício",
                     style: TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.bold)),
-                subtitle: const Text("Trocar por outro exercício similar",
-                    style: TextStyle(color: Colors.white54, fontSize: 12)),
+                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontWeight: FontWeight.bold)),
+                subtitle: Text("Trocar por outro exercício similar",
+                    style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontSize: 12)),
                 onTap: () {
                   Navigator.pop(ctx);
                   showModalBottomSheet(
@@ -3795,8 +3942,8 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                               fontWeight: FontWeight.bold),
                         ),
                         subtitle: Text("Série ${setIdx + 1} de ${ex.sets}",
-                            style: const TextStyle(
-                                color: Colors.white54, fontSize: 12)),
+                            style: TextStyle(
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontSize: 12)),
                         onTap: () {
                           Navigator.pop(ctx);
                           HapticFeedback.heavyImpact();
@@ -3819,14 +3966,14 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                       ListTile(
                         leading: const Icon(Icons.arrow_downward,
                             color: Colors.purpleAccent),
-                        title: const Text("Adicionar Drop-set",
+                        title: Text("Adicionar Drop-set",
                             style: TextStyle(
-                                color: Colors.white,
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                                 fontWeight: FontWeight.bold)),
-                        subtitle: const Text(
+                        subtitle: Text(
                             "Insere uma série com -20% do peso após a série atual",
                             style: TextStyle(
-                                color: Colors.white54, fontSize: 12)),
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontSize: 12)),
                         onTap: () {
                           Navigator.pop(ctx);
                           HapticFeedback.heavyImpact();
@@ -3853,10 +4000,10 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
               ],
               ListTile(
                 leading:
-                    const Icon(Icons.calculate_outlined, color: Colors.white),
-                title: const Text("Calculadora de Anilhas",
+                    Icon(Icons.calculate_outlined, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E))),
+                title: Text("Calculadora de Anilhas",
                     style: TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.bold)),
+                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontWeight: FontWeight.bold)),
                 onTap: () {
                   Navigator.pop(ctx);
                   showDialog(
@@ -3898,10 +4045,10 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
     showDialog(
       context: context,
       builder: (dialogCtx) => AlertDialog(
-        backgroundColor: const Color(0xff1c1c1e),
+        backgroundColor: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: Colors.white.withOpacity(0.08)),
+          side: BorderSide(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08)),
         ),
         title: const Text("Repetição de Falha",
             style: TextStyle(
@@ -3912,12 +4059,12 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
           controller: controller,
           keyboardType: TextInputType.number,
           autofocus: true,
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E))),
           decoration: InputDecoration(
             filled: true,
-            fillColor: Colors.white.withOpacity(0.05),
+            fillColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
             hintText: "Digite a repetição (ex: 8)",
-            hintStyle: const TextStyle(color: Colors.white24),
+            hintStyle: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white24 : const Color(0xFFC7C7CC))),
             border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: BorderSide.none),
@@ -3927,7 +4074,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
           TextButton(
             onPressed: () => Navigator.pop(dialogCtx),
             child:
-                const Text("Cancelar", style: TextStyle(color: Colors.white54)),
+                Text("Cancelar", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)))),
           ),
           TextButton(
             onPressed: () {
@@ -3959,7 +4106,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
     final workoutProvider = Provider.of<WorkoutProvider>(context, listen: false);
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xff1c1c1e),
+      backgroundColor: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -3972,12 +4119,12 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
 
             return Column(
               children: [
-                const Padding(
-                  padding: EdgeInsets.all(16.0),
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
                   child: Text(
                     "Reordenar Exercícios",
                     style: TextStyle(
-                      color: Colors.white,
+                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -4000,9 +4147,9 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                       final ex = exercises[idx];
                       return ListTile(
                         key: ValueKey(ex.id),
-                        leading: const Icon(Icons.drag_handle, color: Colors.white54),
-                        title: Text(ex.name, style: const TextStyle(color: Colors.white)),
-                        subtitle: Text("${ex.sets} séries", style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                        leading: Icon(Icons.drag_handle, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73))),
+                        title: Text(ex.name, style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)))),
+                        subtitle: Text("${ex.sets} séries", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontSize: 12)),
                       );
                     },
                   ),
@@ -4035,25 +4182,25 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
         backgroundColor: Colors.transparent,
         child: GlassCard(
           useBlur: true,
-          borderColor: Colors.white.withOpacity(0.08),
+          borderColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
           borderRadius: 20,
           padding: const EdgeInsets.all(20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
+              Text(
                 "Descartar Treino?",
                 style: TextStyle(
-                    color: Colors.white,
+                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                     fontWeight: FontWeight.w800,
                     fontSize: 16),
               ),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 "Tem certeza que deseja cancelar e descartar este treino em andamento? O progresso de hoje será perdido.",
                 style:
-                    TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+                    TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 13, height: 1.4),
               ),
               const SizedBox(height: 20),
               Row(
@@ -4061,9 +4208,9 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(dialogCtx),
-                    child: const Text("Cancelar",
+                    child: Text("Cancelar",
                         style: TextStyle(
-                            color: Colors.white54,
+                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                             fontWeight: FontWeight.bold)),
                   ),
                   const SizedBox(width: 8),
@@ -4231,7 +4378,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
             backgroundColor: Colors.transparent,
             child: GlassCard(
               useBlur: true,
-              borderColor: Colors.white.withOpacity(0.08),
+              borderColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
               borderRadius: 24,
               padding: const EdgeInsets.all(20),
               child: SingleChildScrollView(
@@ -4243,8 +4390,8 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                       isCircuit
                           ? "RPE do Ciclo $currentCycle 🔄"
                           : "RPE do Exercício 💪",
-                      style: const TextStyle(
-                          color: Colors.white,
+                      style: TextStyle(
+                          color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                           fontWeight: FontWeight.w800,
                           fontSize: 16),
                       textAlign: TextAlign.center,
@@ -4264,16 +4411,16 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                           ? "Qual foi a intensidade do esforço para este ciclo?"
                           : "Qual foi a intensidade do esforço para este exercício?",
                       style:
-                          const TextStyle(color: Colors.white70, fontSize: 12),
+                          TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 12),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 12),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text("Leve (1)",
+                        Text("Leve (1)",
                             style:
-                                TextStyle(color: Colors.white30, fontSize: 10)),
+                                TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white30 : const Color(0xFFAEAEB2)), fontSize: 10)),
                         Text(
                           "RPE: ${rpeVal.toInt()}/10",
                           style: TextStyle(
@@ -4281,9 +4428,9 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                               fontWeight: FontWeight.bold,
                               fontSize: 14),
                         ),
-                        const Text("Máximo (10)",
+                        Text("Máximo (10)",
                             style:
-                                TextStyle(color: Colors.white30, fontSize: 10)),
+                                TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white30 : const Color(0xFFAEAEB2)), fontSize: 10)),
                       ],
                     ),
                     Slider(
@@ -4292,7 +4439,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                       max: 10,
                       divisions: 9,
                       activeColor: accentColor,
-                      inactiveColor: Colors.white10,
+                      inactiveColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white10 : const Color(0x0F000000)),
                       onChanged: (val) {
                         setDialogState(() {
                           rpeVal = val;
@@ -4322,9 +4469,9 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                             Navigator.pop(dialogCtx);
                             _scrollToNextExerciseAfterRpe(exIdx);
                           },
-                          child: const Text("Pular",
+                          child: Text("Pular",
                               style: TextStyle(
-                                  color: Colors.white30,
+                                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white30 : const Color(0xFFAEAEB2)),
                                   fontWeight: FontWeight.bold)),
                         ),
                         const SizedBox(width: 8),
@@ -4409,11 +4556,11 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                         color: accentColor, size: 22),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       "Atualizar Rotina Base?",
                       style: TextStyle(
-                        color: Colors.white,
+                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                         fontWeight: FontWeight.w800,
                         fontSize: 16,
                       ),
@@ -4424,8 +4571,8 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
               const SizedBox(height: 12),
               Text(
                 "Você alterou cargas, séries ou repetições em ${modifiedExercises.length} exercício(s) de \"${active.name}\". Deseja salvar essas novas metas para os próximos treinos?",
-                style: const TextStyle(
-                    color: Colors.white70, fontSize: 13, height: 1.35),
+                style: TextStyle(
+                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 13, height: 1.35),
               ),
               const SizedBox(height: 12),
               ConstrainedBox(
@@ -4449,8 +4596,8 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                                 ex.name,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -4485,7 +4632,7 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                         );
                       },
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white70,
+                        foregroundColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
                         side: BorderSide(color: Colors.white.withOpacity(0.18)),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),

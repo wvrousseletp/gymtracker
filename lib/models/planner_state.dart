@@ -80,6 +80,7 @@ class SettingsState {
   final bool workoutReminderEnabled;
   final int workoutReminderHour;
   final int workoutReminderMinute;
+  final String themeMode; // 'system', 'light', 'dark'
 
   SettingsState({
     required this.sound,
@@ -91,6 +92,7 @@ class SettingsState {
     this.workoutReminderEnabled = false,
     this.workoutReminderHour = 19,
     this.workoutReminderMinute = 0,
+    this.themeMode = 'system',
   });
 
   SettingsState copyWith({
@@ -103,6 +105,7 @@ class SettingsState {
     bool? workoutReminderEnabled,
     int? workoutReminderHour,
     int? workoutReminderMinute,
+    String? themeMode,
   }) {
     return SettingsState(
       sound: sound ?? this.sound,
@@ -114,6 +117,7 @@ class SettingsState {
       workoutReminderEnabled: workoutReminderEnabled ?? this.workoutReminderEnabled,
       workoutReminderHour: workoutReminderHour ?? this.workoutReminderHour,
       workoutReminderMinute: workoutReminderMinute ?? this.workoutReminderMinute,
+      themeMode: themeMode ?? this.themeMode,
     );
   }
 
@@ -127,6 +131,7 @@ class SettingsState {
     'workoutReminderEnabled': workoutReminderEnabled,
     'workoutReminderHour': workoutReminderHour,
     'workoutReminderMinute': workoutReminderMinute,
+    'themeMode': themeMode,
   };
 
   factory SettingsState.fromJson(Map<String, dynamic> json) => SettingsState(
@@ -139,6 +144,7 @@ class SettingsState {
     workoutReminderEnabled: json['workoutReminderEnabled'] ?? false,
     workoutReminderHour: (json['workoutReminderHour'] as num?)?.toInt() ?? 19,
     workoutReminderMinute: (json['workoutReminderMinute'] as num?)?.toInt() ?? 0,
+    themeMode: json['themeMode']?.toString() ?? 'system',
   );
 }
 

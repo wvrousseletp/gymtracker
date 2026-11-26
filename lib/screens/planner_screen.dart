@@ -268,17 +268,17 @@ class _PlannerScreenState extends State<PlannerScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Row(
+                      Row(
                         children: [
                           Text(
                             "Meta Semanal:",
                             style: TextStyle(
-                                color: Colors.white70,
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Color(0xFF3C3C43)),
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600),
                           ),
                           SizedBox(width: 6),
-                          Icon(Icons.edit, color: Colors.white38, size: 14),
+                          Icon(Icons.edit, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : Color(0xFF8E8E93)), size: 14),
                         ],
                       ),
                       Text(
@@ -295,7 +295,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
                     borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(
                       value: progress,
-                      backgroundColor: Colors.white.withOpacity(0.05),
+                      backgroundColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                       valueColor: AlwaysStoppedAnimation<Color>(
                           goalMet ? Colors.amber : Colors.greenAccent),
                       minHeight: 6,
@@ -333,14 +333,14 @@ class _PlannerScreenState extends State<PlannerScreen> {
               Widget content = Text(
                 dayInitial,
                 style: TextStyle(
-                  color: filled ? Colors.white : (isToday ? Colors.white70 : Colors.white24),
+                  color: filled ? Colors.white : (isToday ? (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)) : (Theme.of(context).brightness == Brightness.dark ? Colors.white24 : const Color(0xFFC7C7CC))),
                   fontSize: 12,
                   fontWeight: filled || isToday ? FontWeight.bold : FontWeight.normal,
                 ),
               );
               
               if (!filled && isPlannedRest) {
-                content = Icon(Icons.battery_charging_full_rounded, color: Colors.white54, size: 16);
+                content = Icon(Icons.battery_charging_full_rounded, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), size: 16);
               }
 
               return GestureDetector(
@@ -366,8 +366,8 @@ class _PlannerScreenState extends State<PlannerScreen> {
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
-                              Colors.white.withOpacity(0.05),
-                              Colors.white.withOpacity(0.01),
+                              (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
+                              (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.01),
                             ],
                           ),
                     boxShadow: filled
@@ -384,7 +384,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
                           ? Colors.white.withOpacity(0.5)
                           : (filled
                               ? primaryColor.withOpacity(0.8)
-                              : (isPlannedRest ? Colors.white.withOpacity(0.15) : Colors.white.withOpacity(0.08))),
+                              : (isPlannedRest ? Colors.white.withOpacity(0.15) : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08))),
                       width: isToday ? 2.0 : 1.5,
                     ),
                   ),
@@ -444,11 +444,11 @@ class _PlannerScreenState extends State<PlannerScreen> {
                       children: [
                         Text(
                           workoutCount > 1 ? "Treino Duplo ($workoutCount)" : name,
-                          style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                          style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)), fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                         Text(
                           dayName,
-                          style: const TextStyle(color: Colors.white54, fontSize: 14),
+                          style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontSize: 14),
                         ),
                       ],
                     ),
@@ -475,10 +475,10 @@ class _PlannerScreenState extends State<PlannerScreen> {
   Widget _buildSummaryStat(IconData icon, String value, String label) {
     return Column(
       children: [
-        Icon(icon, color: Colors.white70, size: 28),
+        Icon(icon, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), size: 28),
         const SizedBox(height: 8),
-        Text(value, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-        Text(label, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+        Text(value, style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)), fontSize: 16, fontWeight: FontWeight.bold)),
+        Text(label, style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontSize: 12)),
       ],
     );
   }
@@ -506,7 +506,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
                 children: [
                   const Text("Configurar Consistência", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 24),
-                  const Text("Meta Semanal (dias)", style: TextStyle(color: Colors.white70, fontSize: 14)),
+                  Text("Meta Semanal (dias)", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 14)),
                   Slider(
                     value: currentGoal.toDouble(),
                     min: 1,
@@ -522,7 +522,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
                     child: Text("$currentGoal dias por semana", style: const TextStyle(color: Colors.amber, fontSize: 16, fontWeight: FontWeight.bold)),
                   ),
                   const SizedBox(height: 32),
-                  const Text("Dias de Descanso (Rest Days)", style: TextStyle(color: Colors.white70, fontSize: 14)),
+                  Text("Dias de Descanso (Rest Days)", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 14)),
                   const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -545,12 +545,12 @@ class _PlannerScreenState extends State<PlannerScreen> {
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
                             color: isRest ? Colors.white.withOpacity(0.15) : Colors.transparent,
-                            border: Border.all(color: isRest ? Colors.white54 : Colors.white12),
+                            border: Border.all(color: isRest ? (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)) : (Theme.of(context).brightness == Brightness.dark ? Colors.white12 : Colors.black12)),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
                             _daysOfWeek[index].substring(0, 1).toUpperCase(),
-                            style: TextStyle(color: isRest ? Colors.white : Colors.white54, fontWeight: isRest ? FontWeight.bold : FontWeight.normal),
+                            style: TextStyle(color: isRest ? Colors.white : (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontWeight: isRest ? FontWeight.bold : FontWeight.normal),
                           ),
                         ),
                       );
@@ -701,9 +701,9 @@ class _PlannerScreenState extends State<PlannerScreen> {
                     children: [
                       Icon(Icons.fitness_center_rounded, color: accentColor, size: 22),
                       const SizedBox(width: 8),
-                      const Text(
+                      Text(
                         "Volume de Treino Planejado",
-                        style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800),
+                        style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)), fontSize: 15, fontWeight: FontWeight.w800),
                       ),
                     ],
                   ),
@@ -718,20 +718,20 @@ class _PlannerScreenState extends State<PlannerScreen> {
                     },
                     child: Container(
                       padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(color: Colors.white12, shape: BoxShape.circle),
-                      child: const Icon(Icons.history, color: Colors.white70, size: 18),
+                      decoration: BoxDecoration(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white12 : Colors.black12), shape: BoxShape.circle),
+                      child: Icon(Icons.history, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), size: 18),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
               if (sortedStrength.isEmpty)
-                const Padding(
+                Padding(
                   padding: EdgeInsets.symmetric(vertical: 12),
                   child: Center(
                     child: Text(
                       "Nenhum treino de musculação planejado.",
-                      style: TextStyle(color: Colors.white38, fontStyle: FontStyle.italic, fontSize: 13),
+                      style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : Color(0xFF8E8E93)), fontStyle: FontStyle.italic, fontSize: 13),
                     ),
                   ),
                 )
@@ -750,7 +750,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(entry.key, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                              Text(entry.key, style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)), fontSize: 13, fontWeight: FontWeight.bold)),
                               Text(
                                 "${entry.value} séries",
                                 style: TextStyle(color: barColor, fontSize: 13, fontWeight: FontWeight.w800),
@@ -765,13 +765,13 @@ class _PlannerScreenState extends State<PlannerScreen> {
                               width: double.infinity,
                               child: Stack(
                                 children: [
-                                  Container(color: Colors.white.withOpacity(0.05)),
+                                  Container(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05)),
                                   // Marker 10 sets
                                   FractionallySizedBox(
                                     widthFactor: 10 / maxTarget,
                                     child: Align(
                                       alignment: Alignment.centerRight,
-                                      child: Container(width: 2, color: Colors.white38),
+                                      child: Container(width: 2, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93))),
                                     )
                                   ),
                                   // Marker 20 sets
@@ -779,7 +779,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
                                     widthFactor: 20 / maxTarget,
                                     child: Align(
                                       alignment: Alignment.centerRight,
-                                      child: Container(width: 2, color: Colors.white38),
+                                      child: Container(width: 2, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93))),
                                     )
                                   ),
                                   FractionallySizedBox(
@@ -810,7 +810,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
                   padding: const EdgeInsets.only(top: 12),
                   child: Text(
                     "Você também possui $outrosVolume séries de exercícios marcados como 'Outros'.",
-                    style: const TextStyle(color: Colors.white38, fontSize: 11, fontStyle: FontStyle.italic),
+                    style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)), fontSize: 11, fontStyle: FontStyle.italic),
                   ),
                 ),
             ],
@@ -828,13 +828,13 @@ class _PlannerScreenState extends State<PlannerScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Row(
+                  Row(
                     children: [
                       Icon(Icons.directions_run_rounded, color: Colors.blueAccent, size: 22),
                       SizedBox(width: 8),
                       Text(
                         "Volume de Cardio Planejado",
-                        style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800),
+                        style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)), fontSize: 15, fontWeight: FontWeight.w800),
                       ),
                     ],
                   ),
@@ -849,20 +849,20 @@ class _PlannerScreenState extends State<PlannerScreen> {
                     },
                     child: Container(
                       padding: const EdgeInsets.all(6),
-                      decoration: const BoxDecoration(color: Colors.white12, shape: BoxShape.circle),
-                      child: const Icon(Icons.history, color: Colors.white70, size: 18),
+                      decoration: BoxDecoration(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white12 : Colors.black12), shape: BoxShape.circle),
+                      child: Icon(Icons.history, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), size: 18),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
               if (totalCardio == 0)
-                const Padding(
+                Padding(
                   padding: EdgeInsets.symmetric(vertical: 12),
                   child: Center(
                     child: Text(
                       "Nenhum cardio planejado.",
-                      style: TextStyle(color: Colors.white38, fontStyle: FontStyle.italic, fontSize: 13),
+                      style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : Color(0xFF8E8E93)), fontStyle: FontStyle.italic, fontSize: 13),
                     ),
                   ),
                 )
@@ -873,7 +873,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text("Progresso Semanal", style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                        Text("Progresso Semanal", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)), fontSize: 13, fontWeight: FontWeight.bold)),
                         Text(
                           "$totalCardio / 300 min",
                           style: const TextStyle(color: Colors.blueAccent, fontSize: 13, fontWeight: FontWeight.w800),
@@ -888,7 +888,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
                         width: double.infinity,
                         child: Stack(
                           children: [
-                            Container(color: Colors.white.withOpacity(0.05)),
+                            Container(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05)),
                             FractionallySizedBox(
                               widthFactor: (totalCardio / 300.0).clamp(0.0, 1.0),
                               child: Container(
@@ -908,9 +908,9 @@ class _PlannerScreenState extends State<PlannerScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       "Meta ideal de saúde e queima calórica: 300 min/semana.",
-                      style: TextStyle(color: Colors.white54, fontSize: 11),
+                      style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : Color(0xFF6E6E73)), fontSize: 11),
                     )
                   ],
                 ),
@@ -984,7 +984,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
               Container(
                 margin: const EdgeInsets.only(top: 12, bottom: 12),
                 width: 40, height: 4,
-                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+                decoration: BoxDecoration(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white24 : const Color(0xFFC7C7CC)), borderRadius: BorderRadius.circular(2)),
               ),
               const Text("Selecionar", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
@@ -992,7 +992,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
                 child: ListView(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   children: [
-                    const Text("MODELOS DE TREINO", style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                    Text("MODELOS DE TREINO", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
                     const SizedBox(height: 8),
                     ...state.routines.map((r) => ListTile(
                       contentPadding: EdgeInsets.zero,
@@ -1002,12 +1002,12 @@ class _PlannerScreenState extends State<PlannerScreen> {
                         child: Icon(Icons.fitness_center, color: accentColor, size: 20),
                       ),
                       title: Text(r.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-                      subtitle: Text("${r.exercises.length} exercícios", style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                      subtitle: Text("${r.exercises.length} exercícios", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontSize: 12)),
                       onTap: () { Navigator.pop(ctx); onSelected("routine:${r.id}"); },
                     )),
                     if (allowExercises) ...[
                       const SizedBox(height: 24),
-                      const Text("CARDIO E EXERCÍCIOS AVULSOS", style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                      Text("CARDIO E EXERCÍCIOS AVULSOS", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
                       const SizedBox(height: 8),
                       ...state.library.map((ex) {
                         final isCardio = ex.muscle.toLowerCase().contains('cardio');
@@ -1020,7 +1020,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
                             child: Icon(isCardio ? Icons.directions_run : Icons.accessibility_new, color: color, size: 20),
                           ),
                           title: Text(ex.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-                          subtitle: Text(ex.muscle, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                          subtitle: Text(ex.muscle, style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontSize: 12)),
                           onTap: () { Navigator.pop(ctx); onSelected("exercise:${ex.id}"); },
                         );
                       }),
@@ -1080,10 +1080,10 @@ class _PlannerScreenState extends State<PlannerScreen> {
                   (newRaw) => provider.updateRoutineInContinuousBlock(
                       blockId, idx, newRaw),
                 ),
-                child: const Padding(
+                child: Padding(
                   padding: EdgeInsets.all(2),
                   child: Icon(Icons.tune,
-                      color: Colors.white54, size: 16),
+                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : Color(0xFF6E6E73)), size: 16),
                 ),
               ),
             InkWell(
@@ -1100,7 +1100,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
                       blockId, idx, idx - 1)
                   : null,
               child: Icon(Icons.keyboard_arrow_up,
-                  color: idx > 0 ? Colors.white54 : Colors.transparent,
+                  color: idx > 0 ? (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)) : Colors.transparent,
                   size: 20),
             ),
             InkWell(
@@ -1110,7 +1110,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
                   : null,
               child: Icon(Icons.keyboard_arrow_down,
                   color: idx < blockLength - 1
-                      ? Colors.white54
+                      ? (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73))
                       : Colors.transparent,
                   size: 20),
             ),
@@ -1232,7 +1232,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
       title: "Tocar para escolher treino...",
       subtitle: "",
       icon: Icons.search,
-      color: Colors.white54,
+      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
       onTap: openSelection,
       onDelete: () => provider.removeRoutineFromContinuousBlock(blockId, idx),
     );
@@ -1291,7 +1291,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.white24,
+                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white24 : const Color(0xFFC7C7CC)),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -1299,8 +1299,8 @@ class _PlannerScreenState extends State<PlannerScreen> {
               const SizedBox(height: 16),
               Text(
                 "Configurar ${libEx.name}",
-                style: const TextStyle(
-                    color: Colors.white,
+                style: TextStyle(
+                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)),
                     fontSize: 17,
                     fontWeight: FontWeight.w800),
               ),
@@ -1309,7 +1309,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
                 isCardio
                     ? "Defina a duração em minutos"
                     : "Defina séries, repetições e peso-alvo",
-                style: const TextStyle(color: Colors.white54, fontSize: 12),
+                style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontSize: 12),
               ),
               const SizedBox(height: 20),
               Row(
@@ -1359,9 +1359,9 @@ class _PlannerScreenState extends State<PlannerScreen> {
                     }
                     Navigator.pop(ctx);
                   },
-                  child: const Text("Salvar",
+                  child: Text("Salvar",
                       style: TextStyle(
-                          color: Colors.white,
+                          color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)),
                           fontWeight: FontWeight.w800)),
                 ),
               ),
@@ -1378,8 +1378,8 @@ class _PlannerScreenState extends State<PlannerScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label,
-            style: const TextStyle(
-                color: Colors.white54,
+            style: TextStyle(
+                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : Color(0xFF6E6E73)),
                 fontSize: 11,
                 fontWeight: FontWeight.w700)),
         const SizedBox(height: 6),
@@ -1387,10 +1387,10 @@ class _PlannerScreenState extends State<PlannerScreen> {
           controller: controller,
           keyboardType:
               const TextInputType.numberWithOptions(decimal: true),
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E))),
           decoration: InputDecoration(
             filled: true,
-            fillColor: Colors.white.withOpacity(0.06),
+            fillColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.06),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
@@ -1444,7 +1444,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
     String title = "Tocar para adicionar...";
     String subtitle = "";
     IconData icon = Icons.add_circle_outline;
-    Color color = Colors.white54;
+    Color color = (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73));
     Routine? routineToStart;
 
     if (selectedValue.startsWith('routine:')) {
@@ -1520,10 +1520,10 @@ class _PlannerScreenState extends State<PlannerScreen> {
                 (newRaw) =>
                     provider.updatePlannerItem(day, idx, newRaw),
               ),
-              child: const Padding(
+              child: Padding(
                 padding: EdgeInsets.all(4),
                 child: Icon(Icons.tune,
-                    color: Colors.white54, size: 18),
+                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : Color(0xFF6E6E73)), size: 18),
               ),
             ),
             const SizedBox(width: 4),
@@ -1545,7 +1545,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
                       initialValue: quantityValue.toString(),
                       keyboardType: TextInputType.number,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                      style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)), fontSize: 14, fontWeight: FontWeight.bold),
                       decoration: const InputDecoration(
                         border: InputBorder.none,
                         contentPadding: EdgeInsets.only(bottom: 14),
@@ -1565,7 +1565,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
                       },
                     ),
                   ),
-                  Text(isCardio ? "min" : "sér", style: const TextStyle(color: Colors.white54, fontSize: 10)),
+                  Text(isCardio ? "min" : "sér", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontSize: 10)),
                   const SizedBox(width: 8),
                 ],
               ),
@@ -1576,12 +1576,12 @@ class _PlannerScreenState extends State<PlannerScreen> {
               InkWell(
                 onTap: idx > 0 ? () => provider.reorderPlannerItem(day, idx, true) : null,
                 child: Icon(Icons.keyboard_arrow_up,
-                    color: idx > 0 ? Colors.white54 : Colors.transparent, size: 20),
+                    color: idx > 0 ? (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)) : Colors.transparent, size: 20),
               ),
               InkWell(
                 onTap: idx < itemCount - 1 ? () => provider.reorderPlannerItem(day, idx, false) : null,
                 child: Icon(Icons.keyboard_arrow_down,
-                    color: idx < itemCount - 1 ? Colors.white54 : Colors.transparent, size: 20),
+                    color: idx < itemCount - 1 ? (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)) : Colors.transparent, size: 20),
               ),
             ],
           ),
@@ -1594,7 +1594,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
       TrackerProvider provider, PlannerState state, Color accentColor) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white.withOpacity(0.1)),
       ),
@@ -1650,12 +1650,12 @@ class _PlannerScreenState extends State<PlannerScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icon,
-                  color: isSelected ? accentColor : Colors.white54, size: 20),
+                  color: isSelected ? accentColor : (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), size: 20),
               const SizedBox(height: 4),
               Text(
                 title,
                 style: TextStyle(
-                  color: isSelected ? accentColor : Colors.white54,
+                  color: isSelected ? accentColor : (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                   fontSize: 11,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 ),
@@ -1676,12 +1676,12 @@ class _PlannerScreenState extends State<PlannerScreen> {
       // Seção Cronograma Semanal
       Row(
         children: [
-          const Icon(Icons.calendar_month, color: Colors.white70, size: 20),
+          Icon(Icons.calendar_month, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), size: 20),
           const SizedBox(width: 8),
-          const Text(
+          Text(
             "Cronograma Semanal",
             style: TextStyle(
-              color: Colors.white,
+              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)),
               fontSize: 16,
               fontWeight: FontWeight.w800,
             ),
@@ -1689,7 +1689,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
           const Spacer(),
           Container(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
+              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: Colors.white.withOpacity(0.1)),
             ),
@@ -1697,8 +1697,8 @@ class _PlannerScreenState extends State<PlannerScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_rounded,
-                      color: Colors.white70, size: 14),
+                  icon: Icon(Icons.arrow_back_ios_rounded,
+                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Color(0xFF3C3C43)), size: 14),
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   constraints: const BoxConstraints(),
@@ -1708,10 +1708,10 @@ class _PlannerScreenState extends State<PlannerScreen> {
                   },
                 ),
                 Container(
-                    width: 1, height: 16, color: Colors.white.withOpacity(0.1)),
+                    width: 1, height: 16, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.1)),
                 IconButton(
-                  icon: const Icon(Icons.arrow_forward_ios_rounded,
-                      color: Colors.white70, size: 14),
+                  icon: Icon(Icons.arrow_forward_ios_rounded,
+                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Color(0xFF3C3C43)), size: 14),
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   constraints: const BoxConstraints(),
@@ -1726,7 +1726,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
           const SizedBox(width: 8),
           Container(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
+              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: Colors.white.withOpacity(0.1)),
             ),
@@ -1754,7 +1754,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
           margin: const EdgeInsets.only(bottom: 16),
           child: GlassCard(
             padding: const EdgeInsets.all(16),
-            borderColor: isToday ? accentColor.withOpacity(0.6) : Colors.white.withOpacity(0.06),
+            borderColor: isToday ? accentColor.withOpacity(0.6) : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.06),
             opacity: isToday ? 0.12 : 0.07,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1823,7 +1823,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
                         if (items.isNotEmpty) const SizedBox(width: 16),
                         IconButton(
                           icon: Icon(Icons.copy_all_outlined,
-                              color: Colors.white54, size: 20),
+                              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), size: 20),
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
                           tooltip: "Copiar este dia para outro",
@@ -1905,10 +1905,10 @@ class _PlannerScreenState extends State<PlannerScreen> {
                           Icon(Icons.add_circle_outline,
                               color: accentColor.withOpacity(0.6), size: 16),
                           const SizedBox(width: 8),
-                          const Text(
+                          Text(
                             "Nenhum treino agendado — tocar para adicionar",
                             style: TextStyle(
-                              color: Colors.white38,
+                              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : Color(0xFF8E8E93)),
                               fontSize: 13,
                               fontStyle: FontStyle.italic,
                             ),
@@ -1954,10 +1954,10 @@ class _PlannerScreenState extends State<PlannerScreen> {
                                   child: CircularProgressIndicator(
                                       color: accentColor, strokeWidth: 2)),
                               const SizedBox(width: 12),
-                              const Text(
+                              Text(
                                   "A IA está analisando seu histórico...",
                                   style: TextStyle(
-                                      color: Colors.white70, fontSize: 12)),
+                                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Color(0xFF3C3C43)), fontSize: 12)),
                             ],
                           )
                         : Column(
@@ -2001,10 +2001,10 @@ class _PlannerScreenState extends State<PlannerScreen> {
                               const SizedBox(height: 8),
                               if (_aiSuggestionsByDay[day] == null ||
                                   _aiSuggestionsByDay[day]!.isEmpty)
-                                const Text(
+                                Text(
                                     "Não foi possível gerar dicas baseadas no seu histórico atual.",
                                     style: TextStyle(
-                                        color: Colors.white54, fontSize: 12))
+                                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : Color(0xFF6E6E73)), fontSize: 12))
                               else
                                 ..._aiSuggestionsByDay[day]!.entries.map((e) =>
                                     Padding(
@@ -2015,14 +2015,14 @@ class _PlannerScreenState extends State<PlannerScreen> {
                                           children: [
                                             TextSpan(
                                                 text: "• ${e.key}: ",
-                                                style: const TextStyle(
+                                                style: TextStyle(
                                                     fontWeight: FontWeight.bold,
-                                                    color: Colors.white,
+                                                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)),
                                                     fontSize: 12)),
                                             TextSpan(
                                                 text: e.value,
-                                                style: const TextStyle(
-                                                    color: Colors.white70,
+                                                style: TextStyle(
+                                                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Color(0xFF3C3C43)),
                                                     fontSize: 12)),
                                           ],
                                         ),
@@ -2071,13 +2071,13 @@ class _PlannerScreenState extends State<PlannerScreen> {
     return GlassCard(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       borderColor: isRest
-          ? Colors.white24
+          ? (Theme.of(context).brightness == Brightness.dark ? Colors.white24 : const Color(0xFFC7C7CC))
           : accentColor.withOpacity(0.35),
       child: Row(
         children: [
           Icon(
             isRest ? Icons.bedtime_outlined : Icons.play_circle_outline,
-            color: isRest ? Colors.white54 : accentColor,
+            color: isRest ? (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)) : accentColor,
             size: 22,
           ),
           const SizedBox(width: 10),
@@ -2088,7 +2088,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
                 Text(
                   isRest ? "HOJE: DESCANSO" : "PRÓXIMO TREINO",
                   style: TextStyle(
-                    color: isRest ? Colors.white54 : accentColor,
+                    color: isRest ? (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)) : accentColor,
                     fontSize: 10,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.8,
@@ -2099,8 +2099,8 @@ class _PlannerScreenState extends State<PlannerScreen> {
                   isRest
                       ? "Nenhum treino será exibido na página inicial"
                       : _resolveContinuousItemName(state, flatList[idx]),
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)),
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
                   ),
@@ -2110,8 +2110,8 @@ class _PlannerScreenState extends State<PlannerScreen> {
                 if (!isRest && len > 1)
                   Text(
                     "Posição ${idx + 1} de $len na sequência",
-                    style: const TextStyle(
-                      color: Colors.white38,
+                    style: TextStyle(
+                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : Color(0xFF8E8E93)),
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
                     ),
@@ -2120,8 +2120,8 @@ class _PlannerScreenState extends State<PlannerScreen> {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.skip_previous,
-                color: Colors.white54, size: 20),
+            icon: Icon(Icons.skip_previous,
+                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : Color(0xFF6E6E73)), size: 20),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
             tooltip: "Treino anterior",
@@ -2131,8 +2131,8 @@ class _PlannerScreenState extends State<PlannerScreen> {
                 : null,
           ),
           IconButton(
-            icon: const Icon(Icons.skip_next,
-                color: Colors.white54, size: 20),
+            icon: Icon(Icons.skip_next,
+                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : Color(0xFF6E6E73)), size: 20),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
             tooltip: "Pular para o próximo da fila",
@@ -2175,7 +2175,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
               decoration: BoxDecoration(
                 color: isRest
                     ? accentColor.withOpacity(0.2)
-                    : Colors.white.withOpacity(0.08),
+                    : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: isRest
@@ -2186,7 +2186,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
               child: Text(
                 isRest ? "Voltar Treino" : "Descanso Hoje",
                 style: TextStyle(
-                  color: isRest ? accentColor : Colors.white70,
+                  color: isRest ? accentColor : (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
                 ),
@@ -2208,20 +2208,20 @@ class _PlannerScreenState extends State<PlannerScreen> {
     return [
       Row(
         children: [
-          const Icon(Icons.format_list_numbered,
-              color: Colors.white70, size: 20),
+          Icon(Icons.format_list_numbered,
+              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Color(0xFF3C3C43)), size: 20),
           const SizedBox(width: 8),
-          const Text(
+          Text(
             "Lista Contínua",
             style: TextStyle(
-              color: Colors.white,
+              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)),
               fontSize: 16,
               fontWeight: FontWeight.w800,
             ),
           ),
           const Spacer(),
           IconButton(
-            icon: const Icon(Icons.copy, color: Colors.white70, size: 20),
+            icon: Icon(Icons.copy, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), size: 20),
             tooltip: "Importar de Dias Fixos",
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
@@ -2249,12 +2249,12 @@ class _PlannerScreenState extends State<PlannerScreen> {
               context, provider, state, accentColor, flatList, currentIndex),
         ),
       if (blocks.isEmpty)
-        const Padding(
+        Padding(
           padding: EdgeInsets.symmetric(vertical: 12),
           child: Text(
             "Nenhum bloco na lista. Crie blocos de treino (A, B, C...) que se repetirão em sequência.",
             style: TextStyle(
-                color: Colors.white30,
+                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white30 : Color(0xFFAEAEB2)),
                 fontSize: 13,
                 fontStyle: FontStyle.italic),
           ),
@@ -2268,7 +2268,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
             margin: const EdgeInsets.only(bottom: 24),
             child: GlassCard(
               padding: const EdgeInsets.all(16),
-              borderColor: Colors.white.withOpacity(0.06),
+              borderColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.06),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -2278,8 +2278,8 @@ class _PlannerScreenState extends State<PlannerScreen> {
                       Expanded(
                         child: TextFormField(
                           initialValue: block.name,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)),
                             fontSize: 18,
                             fontWeight: FontWeight.w800,
                           ),
@@ -2298,8 +2298,8 @@ class _PlannerScreenState extends State<PlannerScreen> {
                       const SizedBox(width: 8),
                       Text(
                         "${blockIdx + 1}/${blocks.length} • ${block.routineIds.length} ${block.routineIds.length == 1 ? 'treino' : 'treinos'}",
-                        style: const TextStyle(
-                          color: Colors.white38,
+                        style: TextStyle(
+                          color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : Color(0xFF8E8E93)),
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
                         ),
@@ -2307,7 +2307,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
                       Row(
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.keyboard_arrow_up, color: Colors.white54, size: 20),
+                            icon: Icon(Icons.keyboard_arrow_up, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), size: 20),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
                             onPressed: blockIdx > 0 ? () {
@@ -2316,7 +2316,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
                           ),
                           const SizedBox(width: 4),
                           IconButton(
-                            icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white54, size: 20),
+                            icon: Icon(Icons.keyboard_arrow_down, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), size: 20),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
                             onPressed: blockIdx < blocks.length - 1 ? () {
@@ -2338,7 +2338,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
                   ),
                   const SizedBox(height: 16),
                   if (block.routineIds.isEmpty)
-                    const Text("Nenhum treino neste bloco.", style: TextStyle(color: Colors.white30, fontSize: 12))
+                    Text("Nenhum treino neste bloco.", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white30 : const Color(0xFFAEAEB2)), fontSize: 12))
                   else
                     ReorderableListView.builder(
                       shrinkWrap: true,
@@ -2422,10 +2422,10 @@ class _PlannerScreenState extends State<PlannerScreen> {
     showDialog(
       context: context,
       builder: (dialogCtx) => AlertDialog(
-        backgroundColor: const Color(0xff1c1c1e),
+        backgroundColor: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: Colors.white.withOpacity(0.08)),
+          side: BorderSide(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08)),
         ),
         title: Text("Copiar $sourceName",
             style: const TextStyle(
@@ -2445,8 +2445,8 @@ class _PlannerScreenState extends State<PlannerScreen> {
                     color: hasItems ? Colors.orangeAccent : accentColor,
                     size: 20),
                 title: Text(_getDayNamePt(day),
-                    style: const TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.w600)),
+                    style: TextStyle(
+                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)), fontWeight: FontWeight.w600)),
                 subtitle: hasItems
                     ? const Text("Substituirá itens existentes",
                         style: TextStyle(color: Colors.orangeAccent, fontSize: 11))
@@ -2457,22 +2457,22 @@ class _PlannerScreenState extends State<PlannerScreen> {
                     showDialog(
                       context: context,
                       builder: (confirmCtx) => AlertDialog(
-                        backgroundColor: const Color(0xff1c1c1e),
+                        backgroundColor: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
-                          side: BorderSide(color: Colors.white.withOpacity(0.08)),
+                          side: BorderSide(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08)),
                         ),
-                        title: const Text("Substituir dia?",
-                            style: TextStyle(color: Colors.white, fontSize: 15)),
+                        title: Text("Substituir dia?",
+                            style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)), fontSize: 15)),
                         content: Text(
                           "${_getDayNamePt(day)} já tem itens. O conteúdo de $sourceName vai substituir tudo.",
-                          style: const TextStyle(color: Colors.white70, fontSize: 13),
+                          style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 13),
                         ),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.pop(confirmCtx),
-                            child: const Text("Cancelar",
-                                style: TextStyle(color: Colors.white54)),
+                            child: Text("Cancelar",
+                                style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : Color(0xFF6E6E73)))),
                           ),
                           TextButton(
                             onPressed: () {
@@ -2517,9 +2517,9 @@ class _PlannerScreenState extends State<PlannerScreen> {
             return Container(
               margin: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xff1c1c1e),
+                color: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white.withOpacity(0.08)),
+                border: Border.all(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08)),
               ),
               child: SafeArea(
                 child: Column(
@@ -2532,29 +2532,29 @@ class _PlannerScreenState extends State<PlannerScreen> {
                           Icon(Icons.view_week_outlined,
                               color: accentColor, size: 20),
                           const SizedBox(width: 8),
-                          const Expanded(
+                          Expanded(
                             child: Text(
                               "Modelos de Semana",
                               style: TextStyle(
-                                color: Colors.white,
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)),
                                 fontWeight: FontWeight.w800,
                                 fontSize: 16,
                               ),
                             ),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.close,
-                                color: Colors.white54, size: 20),
+                            icon: Icon(Icons.close,
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : Color(0xFF6E6E73)), size: 20),
                             onPressed: () => Navigator.pop(sheetCtx),
                           ),
                         ],
                       ),
                     ),
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.symmetric(horizontal: 20),
                       child: Text(
                         "Salve a semana atual (seg–dom) como modelo e aplique em outras semanas — útil para alternar entre semanas de volume e intensidade.",
-                        style: TextStyle(color: Colors.white54, fontSize: 12),
+                        style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : Color(0xFF6E6E73)), fontSize: 12),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -2579,20 +2579,20 @@ class _PlannerScreenState extends State<PlannerScreen> {
                             showDialog(
                               context: ctx,
                               builder: (dCtx) => AlertDialog(
-                                backgroundColor: const Color(0xff1c1c1e),
-                                title: const Text("Nome do modelo",
+                                backgroundColor: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
+                                title: Text("Nome do modelo",
                                     style: TextStyle(
-                                        color: Colors.white,
+                                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)),
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold)),
                                 content: TextField(
                                   controller: controller,
                                   autofocus: true,
-                                  style: const TextStyle(color: Colors.white),
-                                  decoration: const InputDecoration(
+                                  style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E))),
+                                  decoration: InputDecoration(
                                     hintText: "Ex.: Semana A - Volume",
                                     hintStyle:
-                                        TextStyle(color: Colors.white30),
+                                        TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white30 : Color(0xFFAEAEB2))),
                                   ),
                                   onSubmitted: (val) {
                                     if (val.trim().isNotEmpty) {
@@ -2606,9 +2606,9 @@ class _PlannerScreenState extends State<PlannerScreen> {
                                 actions: [
                                   TextButton(
                                     onPressed: () => Navigator.pop(dCtx),
-                                    child: const Text("Cancelar",
+                                    child: Text("Cancelar",
                                         style:
-                                            TextStyle(color: Colors.white54)),
+                                            TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : Color(0xFF6E6E73)))),
                                   ),
                                   TextButton(
                                     onPressed: () {
@@ -2634,12 +2634,12 @@ class _PlannerScreenState extends State<PlannerScreen> {
                     const SizedBox(height: 8),
                     Flexible(
                       child: ordered.isEmpty
-                          ? const Padding(
+                          ? Padding(
                               padding: EdgeInsets.all(24),
                               child: Text(
                                 "Nenhum modelo salvo ainda.",
                                 style: TextStyle(
-                                    color: Colors.white30,
+                                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white30 : Color(0xFFAEAEB2)),
                                     fontSize: 13,
                                     fontStyle: FontStyle.italic),
                               ),
@@ -2656,10 +2656,10 @@ class _PlannerScreenState extends State<PlannerScreen> {
                                 return Container(
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.05),
+                                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                        color: Colors.white.withOpacity(0.08)),
+                                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08)),
                                   ),
                                   child: Row(
                                     children: [
@@ -2670,8 +2670,8 @@ class _PlannerScreenState extends State<PlannerScreen> {
                                           children: [
                                             Text(
                                               t.name,
-                                              style: const TextStyle(
-                                                color: Colors.white,
+                                              style: TextStyle(
+                                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)),
                                                 fontWeight: FontWeight.w700,
                                                 fontSize: 14,
                                               ),
@@ -2679,8 +2679,8 @@ class _PlannerScreenState extends State<PlannerScreen> {
                                             const SizedBox(height: 2),
                                             Text(
                                               "$filledDays dia(s) com treino",
-                                              style: const TextStyle(
-                                                color: Colors.white38,
+                                              style: TextStyle(
+                                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : Color(0xFF8E8E93)),
                                                 fontSize: 11,
                                               ),
                                             ),
@@ -2689,7 +2689,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
                                       ),
                                       IconButton(
                                         icon: Icon(Icons.edit_outlined,
-                                            color: Colors.white54, size: 18),
+                                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), size: 18),
                                         tooltip: "Renomear",
                                         onPressed: () {
                                           final c = TextEditingController(
@@ -2698,18 +2698,18 @@ class _PlannerScreenState extends State<PlannerScreen> {
                                             context: ctx,
                                             builder: (dCtx) => AlertDialog(
                                               backgroundColor:
-                                                  const Color(0xff1c1c1e),
-                                              title: const Text("Renomear",
+                                                  (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
+                                              title: Text("Renomear",
                                                   style: TextStyle(
-                                                      color: Colors.white,
+                                                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)),
                                                       fontSize: 16,
                                                       fontWeight:
                                                           FontWeight.bold)),
                                               content: TextField(
                                                 controller: c,
                                                 autofocus: true,
-                                                style: const TextStyle(
-                                                    color: Colors.white),
+                                                style: TextStyle(
+                                                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E))),
                                                 onSubmitted: (val) {
                                                   provider.renameWeekTemplate(
                                                       t.id, val);
@@ -2721,11 +2721,11 @@ class _PlannerScreenState extends State<PlannerScreen> {
                                                 TextButton(
                                                   onPressed: () =>
                                                       Navigator.pop(dCtx),
-                                                  child: const Text(
+                                                  child: Text(
                                                       "Cancelar",
                                                       style: TextStyle(
                                                           color:
-                                                              Colors.white54)),
+                                                              (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : Color(0xFF6E6E73)))),
                                                 ),
                                                 TextButton(
                                                   onPressed: () {
@@ -2776,29 +2776,29 @@ class _PlannerScreenState extends State<PlannerScreen> {
                                               context: ctx,
                                               builder: (dCtx) => AlertDialog(
                                                 backgroundColor:
-                                                    const Color(0xff1c1c1e),
-                                                title: const Text(
+                                                    (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
+                                                title: Text(
                                                     "Substituir semana?",
                                                     style: TextStyle(
-                                                        color: Colors.white,
+                                                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)),
                                                         fontSize: 16,
                                                         fontWeight:
                                                             FontWeight.bold)),
-                                                content: const Text(
+                                                content: Text(
                                                   "A semana atual tem treinos agendados. Aplicar o modelo vai substituir todos os dias (seg–dom).",
                                                   style: TextStyle(
-                                                      color: Colors.white70,
+                                                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Color(0xFF3C3C43)),
                                                       fontSize: 13),
                                                 ),
                                                 actions: [
                                                   TextButton(
                                                     onPressed: () =>
                                                         Navigator.pop(dCtx),
-                                                    child: const Text(
+                                                    child: Text(
                                                         "Cancelar",
                                                         style: TextStyle(
                                                             color:
-                                                                Colors.white54)),
+                                                                (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : Color(0xFF6E6E73)))),
                                                   ),
                                                   TextButton(
                                                     onPressed: () {
@@ -2859,7 +2859,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
         backgroundColor: Colors.transparent,
         child: GlassCard(
           useBlur: true,
-          borderColor: Colors.white.withOpacity(0.08),
+          borderColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
           borderRadius: 24,
           padding: const EdgeInsets.all(20),
           child: Column(
@@ -2870,19 +2870,19 @@ class _PlannerScreenState extends State<PlannerScreen> {
                 children: [
                   Icon(Icons.copy, color: accentColor, size: 20),
                   const SizedBox(width: 8),
-                  const Text(
+                  Text(
                     "Importar de Dias Fixos",
                     style: TextStyle(
-                        color: Colors.white,
+                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)),
                         fontWeight: FontWeight.w800,
                         fontSize: 16),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 "Copie as rotinas e exercícios já planejados em dias fixos diretamente para o modelo atual.",
-                style: TextStyle(color: Colors.white54, fontSize: 12),
+                style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : Color(0xFF6E6E73)), fontSize: 12),
               ),
               const SizedBox(height: 16),
               Flexible(
@@ -2893,16 +2893,16 @@ class _PlannerScreenState extends State<PlannerScreen> {
                       ListTile(
                         leading: Icon(Icons.all_inclusive,
                             color: accentColor, size: 20),
-                        title: const Text(
+                        title: Text(
                           "Importar Todos os Dias",
                           style: TextStyle(
-                              color: Colors.white,
+                              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)),
                               fontSize: 13,
                               fontWeight: FontWeight.bold),
                         ),
-                        subtitle: const Text(
+                        subtitle: Text(
                           "Copia Seg, Ter, Qua, Qui, Sex, Sáb e Dom em sequência",
-                          style: TextStyle(color: Colors.white38, fontSize: 10),
+                          style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : Color(0xFF8E8E93)), fontSize: 10),
                         ),
                         dense: true,
                         contentPadding:
@@ -2923,7 +2923,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
                           );
                         },
                       ),
-                      const Divider(color: Colors.white12),
+                      Divider(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white12 : Colors.black12)),
                       ...daysMap.entries.map((entry) {
                         final key = entry.key;
                         final label = entry.value;
@@ -2935,8 +2935,8 @@ class _PlannerScreenState extends State<PlannerScreen> {
                         return ListTile(
                           title: Text(
                             label,
-                            style: const TextStyle(
-                                color: Colors.white,
+                            style: TextStyle(
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)),
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600),
                           ),
@@ -2944,14 +2944,14 @@ class _PlannerScreenState extends State<PlannerScreen> {
                             "$itemsCount item(ns) planejado(s)",
                             style: TextStyle(
                               color: itemsCount > 0
-                                  ? Colors.white54
-                                  : Colors.white24,
+                                  ? (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73))
+                                  : (Theme.of(context).brightness == Brightness.dark ? Colors.white24 : const Color(0xFFC7C7CC)),
                               fontSize: 10,
                             ),
                           ),
                           trailing: itemsCount > 0
-                              ? const Icon(Icons.chevron_right,
-                                  color: Colors.white30, size: 16)
+                              ? Icon(Icons.chevron_right,
+                                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white30 : Color(0xFFAEAEB2)), size: 16)
                               : null,
                           dense: true,
                           enabled: itemsCount > 0,
@@ -2983,10 +2983,10 @@ class _PlannerScreenState extends State<PlannerScreen> {
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: () => Navigator.pop(dialogCtx),
-                  child: const Text(
+                  child: Text(
                     "Fechar",
                     style: TextStyle(
-                        color: Colors.white54, fontWeight: FontWeight.bold),
+                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : Color(0xFF6E6E73)), fontWeight: FontWeight.bold),
                   ),
                 ),
               ),

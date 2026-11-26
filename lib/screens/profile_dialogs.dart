@@ -102,9 +102,9 @@ class _ProfileManagerSheetState extends State<ProfileManagerSheet> {
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xff1c1c1e).withOpacity(0.95),
+        color: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white).withOpacity(0.95),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08)),
       ),
       padding: EdgeInsets.only(
         left: 20,
@@ -121,7 +121,7 @@ class _ProfileManagerSheetState extends State<ProfileManagerSheet> {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.white24,
+                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white24 : const Color(0xFFC7C7CC)),
                 borderRadius: BorderRadius.circular(2),
               ),
               margin: const EdgeInsets.symmetric(vertical: 12),
@@ -132,19 +132,19 @@ class _ProfileManagerSheetState extends State<ProfileManagerSheet> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     "Minha Conta",
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
-                      color: Colors.white,
+                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close_rounded, color: Colors.white, size: 22),
+                    icon: Icon(Icons.close_rounded, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), size: 22),
                     onPressed: () => Navigator.pop(context),
                     style: IconButton.styleFrom(
-                      backgroundColor: Colors.white.withOpacity(0.08),
+                      backgroundColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
                       padding: const EdgeInsets.all(6),
                       minimumSize: const Size(36, 36),
                     ),
@@ -165,8 +165,8 @@ class _ProfileManagerSheetState extends State<ProfileManagerSheet> {
               // Profile Name
               Text(
                 activeProfile.name,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
                 ),
@@ -176,8 +176,8 @@ class _ProfileManagerSheetState extends State<ProfileManagerSheet> {
               // User Email
               Text(
                 user?.email ?? "Sem e-mail",
-                style: const TextStyle(
-                  color: Colors.white54,
+                style: TextStyle(
+                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                 ),
@@ -292,12 +292,12 @@ class _ProfileManagerSheetState extends State<ProfileManagerSheet> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     "Editar Perfil",
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
-                      color: Colors.white,
+                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                     ),
                   ),
                   TextButton.icon(
@@ -306,13 +306,13 @@ class _ProfileManagerSheetState extends State<ProfileManagerSheet> {
                         _isEditing = false;
                       });
                     },
-                    icon: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 18),
-                    label: const Text(
+                    icon: Icon(Icons.arrow_back_rounded, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), size: 18),
+                    label: Text(
                       "Voltar",
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontWeight: FontWeight.bold),
                     ),
                     style: TextButton.styleFrom(
-                      backgroundColor: Colors.white.withOpacity(0.08),
+                      backgroundColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
@@ -326,19 +326,19 @@ class _ProfileManagerSheetState extends State<ProfileManagerSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Nome
-                    const Text(
+                    Text(
                       "Nome",
-                      style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600),
+                      style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 13, fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 6),
                     TextFormField(
                       controller: _nameController,
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E))),
                       decoration: InputDecoration(
                         filled: true,
-                        fillColor: Colors.white.withOpacity(0.05),
+                        fillColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                         hintText: "Seu nome",
-                        hintStyle: const TextStyle(color: Colors.white30),
+                        hintStyle: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white30 : const Color(0xFFAEAEB2))),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -355,9 +355,9 @@ class _ProfileManagerSheetState extends State<ProfileManagerSheet> {
                     const SizedBox(height: 16),
 
                     // Avatar (Emoji)
-                    const Text(
+                    Text(
                       "Escolha o Avatar",
-                      style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600),
+                      style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 13, fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 8),
                     SizedBox(
@@ -377,10 +377,10 @@ class _ProfileManagerSheetState extends State<ProfileManagerSheet> {
                               width: 48,
                               height: 48,
                               decoration: BoxDecoration(
-                                color: isSelected ? accentColor.withOpacity(0.15) : Colors.white.withOpacity(0.03),
+                                color: isSelected ? accentColor.withOpacity(0.15) : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.03),
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: isSelected ? accentColor : Colors.white.withOpacity(0.08),
+                                  color: isSelected ? accentColor : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
                                   width: 1.5,
                                 ),
                               ),
@@ -397,9 +397,9 @@ class _ProfileManagerSheetState extends State<ProfileManagerSheet> {
                     const SizedBox(height: 16),
 
                     // Cor do Tema
-                    const Text(
+                    Text(
                       "Escolha a Cor do Tema",
-                      style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600),
+                      style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 13, fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 8),
                     SizedBox(
@@ -419,10 +419,10 @@ class _ProfileManagerSheetState extends State<ProfileManagerSheet> {
                               margin: const EdgeInsets.only(right: 12),
                               padding: const EdgeInsets.symmetric(horizontal: 16),
                               decoration: BoxDecoration(
-                                color: isSelected ? cValue.withOpacity(0.15) : Colors.white.withOpacity(0.03),
+                                color: isSelected ? cValue.withOpacity(0.15) : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.03),
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
-                                  color: isSelected ? cValue : Colors.white.withOpacity(0.08),
+                                  color: isSelected ? cValue : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
                                   width: 1.5,
                                 ),
                               ),
@@ -430,7 +430,7 @@ class _ProfileManagerSheetState extends State<ProfileManagerSheet> {
                               child: Text(
                                 colorName,
                                 style: TextStyle(
-                                  color: isSelected ? cValue : Colors.white70,
+                                  color: isSelected ? cValue : (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
                                   fontWeight: FontWeight.w700,
                                   fontSize: 13,
                                 ),

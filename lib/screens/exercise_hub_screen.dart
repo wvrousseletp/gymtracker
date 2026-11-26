@@ -185,9 +185,9 @@ class _ExerciseHubScreenState extends State<ExerciseHubScreen> {
 
             // Progression Chart
             if (_exerciseLogs.isNotEmpty) ...[
-              const Text(
+              Text(
                 "Progressão de Carga",
-                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800),
+                style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 16, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 12),
               GlassCard(
@@ -205,16 +205,16 @@ class _ExerciseHubScreenState extends State<ExerciseHubScreen> {
             ],
 
             // History List
-            const Text(
+            Text(
               "Histórico do Exercício",
-              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800),
+              style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 16, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 12),
             _exerciseLogs.isEmpty
-                ? const Center(
+                ? Center(
                     child: Padding(
-                      padding: EdgeInsets.all(32.0),
-                      child: Text("Nenhum histórico encontrado para este exercício.", style: TextStyle(color: Colors.white54)),
+                      padding: const EdgeInsets.all(32.0),
+                      child: Text("Nenhum histórico encontrado para este exercício.", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)))),
                     ),
                   )
                 : ListView.builder(
@@ -243,10 +243,10 @@ class _ExerciseHubScreenState extends State<ExerciseHubScreen> {
             children: [
               Icon(Icons.auto_awesome, color: accentColor, size: 20),
               const SizedBox(width: 8),
-              const Expanded(
+              Expanded(
                 child: Text(
                   "Treinador IA",
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
+                  style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontWeight: FontWeight.w800, fontSize: 16),
                 ),
               ),
               if (!_isLoadingAI)
@@ -268,9 +268,9 @@ class _ExerciseHubScreenState extends State<ExerciseHubScreen> {
                   children: [
                     CircularProgressIndicator(color: accentColor, strokeWidth: 2.5),
                     const SizedBox(height: 12),
-                    const Text(
+                    Text(
                       "Analisando histórico e hipertrofia...",
-                      style: TextStyle(color: Colors.white60, fontSize: 13),
+                      style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white60 : const Color(0xFF48484A)), fontSize: 13),
                     ),
                   ],
                 ),
@@ -279,7 +279,7 @@ class _ExerciseHubScreenState extends State<ExerciseHubScreen> {
           else if (_aiInsight != null && _aiInsight!.isNotEmpty) ...[
             Text(
               _aiInsight!,
-              style: const TextStyle(color: Colors.white70, height: 1.5, fontSize: 14),
+              style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), height: 1.5, fontSize: 14),
             ),
             if (_aiError != null)
               Padding(
@@ -347,7 +347,7 @@ class _ExerciseHubScreenState extends State<ExerciseHubScreen> {
               Expanded(
                 child: Text(
                   label,
-                  style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12, fontWeight: FontWeight.w600),
+                  style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.5), fontSize: 12, fontWeight: FontWeight.w600),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -357,7 +357,7 @@ class _ExerciseHubScreenState extends State<ExerciseHubScreen> {
           const SizedBox(height: 8),
           Text(
             value,
-            style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900),
+            style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 18, fontWeight: FontWeight.w900),
           ),
         ],
       ),
@@ -383,7 +383,7 @@ class _ExerciseHubScreenState extends State<ExerciseHubScreen> {
               children: [
                 Text(
                   dateStr,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14),
+                  style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontWeight: FontWeight.w700, fontSize: 14),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -397,12 +397,12 @@ class _ExerciseHubScreenState extends State<ExerciseHubScreen> {
               children: [
                 Text(
                   "${ex.completedSets} séries x ${ex.reps} reps",
-                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                  style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 13),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   "${ex.weight.toStringAsFixed(1)} kg",
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 14),
+                  style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontWeight: FontWeight.w900, fontSize: 14),
                 ),
               ],
             ),
@@ -420,22 +420,22 @@ class _ExerciseHubScreenState extends State<ExerciseHubScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           "Modelos / Rotinas de Treino",
-          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800),
+          style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 16, fontWeight: FontWeight.w800),
         ),
         const SizedBox(height: 12),
         if (containingRoutines.isEmpty)
-          const GlassCard(
-            padding: EdgeInsets.all(16),
+          GlassCard(
+            padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                Icon(Icons.info_outline_rounded, color: Colors.white30, size: 20),
-                SizedBox(width: 8),
+                Icon(Icons.info_outline_rounded, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white30 : const Color(0xFFAEAEB2)), size: 20),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     "Este exercício não está incluído em nenhuma rotina ainda.",
-                    style: TextStyle(color: Colors.white30, fontSize: 12),
+                    style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white30 : const Color(0xFFAEAEB2)), fontSize: 12),
                   ),
                 ),
               ],
@@ -478,12 +478,12 @@ class _ExerciseHubScreenState extends State<ExerciseHubScreen> {
                           children: [
                             Text(
                               routine.name,
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14),
+                              style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontWeight: FontWeight.w700, fontSize: 14),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               details,
-                              style: const TextStyle(color: Colors.white54, fontSize: 12),
+                              style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontSize: 12),
                             ),
                           ],
                         ),
@@ -531,15 +531,15 @@ class _ExerciseHubScreenState extends State<ExerciseHubScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Séries
-                const Text("Séries", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                Text("Séries", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 12)),
                 const SizedBox(height: 6),
                 TextField(
                   controller: setsCtrl,
                   keyboardType: TextInputType.number,
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E))),
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: Colors.white.withOpacity(0.05),
+                    fillColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
                   ),
                 ),
@@ -548,16 +548,16 @@ class _ExerciseHubScreenState extends State<ExerciseHubScreen> {
                 // Reps / Tempo
                 Text(
                   isTime ? "Tempo (segundos)" : "Repetições",
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 12),
                 ),
                 const SizedBox(height: 6),
                 TextField(
                   controller: repsCtrl,
                   keyboardType: TextInputType.number,
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E))),
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: Colors.white.withOpacity(0.05),
+                    fillColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
                   ),
                 ),
@@ -566,31 +566,31 @@ class _ExerciseHubScreenState extends State<ExerciseHubScreen> {
                 // Carga / Resistência
                 Text(
                   isCardio ? "Resistência / Nível" : "Carga (kg)",
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 12),
                 ),
                 const SizedBox(height: 6),
                 TextField(
                   controller: weightCtrl,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E))),
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: Colors.white.withOpacity(0.05),
+                    fillColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
                   ),
                 ),
                 const SizedBox(height: 12),
 
                 // Descanso
-                const Text("Descanso (segundos)", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                Text("Descanso (segundos)", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 12)),
                 const SizedBox(height: 6),
                 TextField(
                   controller: restCtrl,
                   keyboardType: TextInputType.number,
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E))),
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: Colors.white.withOpacity(0.05),
+                    fillColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
                   ),
                 ),
@@ -600,7 +600,7 @@ class _ExerciseHubScreenState extends State<ExerciseHubScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogCtx),
-              child: const Text("Cancelar", style: TextStyle(color: Colors.white54)),
+              child: Text("Cancelar", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)))),
             ),
             ElevatedButton(
               onPressed: () {

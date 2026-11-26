@@ -56,8 +56,11 @@ class WorkoutProvider extends ChangeNotifier {
     return continuousBlocks.map((b) => b.routineIds).expand((x) => x).toList();
   }
 
+  int _blockIdSeq = 0;
+
   void addContinuousBlock({String? name}) {
-    final newId = DateTime.now().millisecondsSinceEpoch.toString(); // simpler than Uuid without import
+    final newId =
+        '${DateTime.now().microsecondsSinceEpoch}_${_blockIdSeq++}';
     final newName = name ?? 'Bloco ${continuousBlocks.length + 1}';
     final newBlock = WorkoutBlock(id: newId, name: newName, routineIds: []);
     continuousBlocks = List<WorkoutBlock>.from(continuousBlocks)..add(newBlock);
@@ -2684,17 +2687,17 @@ class WorkoutProvider extends ChangeNotifier {
   }
 
   void updateSettings(bool sound, bool vibration, int prepSeconds) {
-    settings = SettingsState(
+    settings = settings.copyWith(
       sound: sound,
       vibration: vibration,
       prepSeconds: prepSeconds,
-      organizationMode: settings.organizationMode,
-      continuousListCurrentIndex: settings.continuousListCurrentIndex,
-      continuousListRestDate: settings.continuousListRestDate,
-      workoutReminderEnabled: settings.workoutReminderEnabled,
-      workoutReminderHour: settings.workoutReminderHour,
-      workoutReminderMinute: settings.workoutReminderMinute,
     );
+    _save();
+  }
+
+  void updateThemeMode(String mode) {
+    if (settings.themeMode == mode) return;
+    settings = settings.copyWith(themeMode: mode);
     _save();
   }
 

@@ -129,9 +129,9 @@ class _PremiumCardioSessionViewState extends State<PremiumCardioSessionView>
         margin: const EdgeInsets.symmetric(vertical: 8),
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.03),
+            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.03),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withOpacity(0.08)),
+            border: Border.all(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08)),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.2),
@@ -167,7 +167,7 @@ class _PremiumCardioSessionViewState extends State<PremiumCardioSessionView>
                     child: CircularProgressIndicator(
                       value: progress,
                       strokeWidth: 4,
-                      backgroundColor: Colors.white.withOpacity(0.05),
+                      backgroundColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                       valueColor: AlwaysStoppedAnimation(cardioAccent.withOpacity(0.7)),
                     ),
                   ),
@@ -195,7 +195,7 @@ class _PremiumCardioSessionViewState extends State<PremiumCardioSessionView>
                         Text(
                           _formatDuration(_localSeconds > 0 ? _localSeconds : widget.workoutDurationNotifier.value),
                           style: TextStyle(
-                            color: _localSeconds > 0 ? Colors.white : Colors.white70,
+                            color: _localSeconds > 0 ? Colors.white : (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
                             fontSize: 32,
                             fontWeight: FontWeight.w200,
                             fontFeatures: const [FontFeature.tabularFigures()],
@@ -203,7 +203,7 @@ class _PremiumCardioSessionViewState extends State<PremiumCardioSessionView>
                         ),
                         if (hasGoal) ...[
                            const SizedBox(height: 4),
-                           Text("Meta: ${widget.goalMinutes}m", style: const TextStyle(color: Colors.white38, fontSize: 10)),
+                           Text("Meta: ${widget.goalMinutes}m", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)), fontSize: 10)),
                         ]
                       ],
                     ),
@@ -344,7 +344,7 @@ class _PremiumCardioSessionViewState extends State<PremiumCardioSessionView>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.04),
+        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.04),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white.withOpacity(0.1)),
       ),
@@ -357,8 +357,8 @@ class _PremiumCardioSessionViewState extends State<PremiumCardioSessionView>
               const SizedBox(width: 8),
               Text(
                 label,
-                style: const TextStyle(
-                    color: Colors.white54,
+                style: TextStyle(
+                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                     fontSize: 12,
                     fontWeight: FontWeight.bold),
               ),
@@ -390,8 +390,8 @@ class _PremiumCardioSessionViewState extends State<PremiumCardioSessionView>
               ),
               Text(
                 unit,
-                style: const TextStyle(
-                    color: Colors.white38,
+                style: TextStyle(
+                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)),
                     fontSize: 14,
                     fontWeight: FontWeight.bold),
               ),

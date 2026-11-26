@@ -44,7 +44,7 @@ class _ExerciseProgressionCardState extends State<ExerciseProgressionCard> {
 
     return GlassCard(
       useBlur: true,
-      borderColor: Colors.white.withOpacity(0.08),
+      borderColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
       borderRadius: 24,
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -69,7 +69,7 @@ class _ExerciseProgressionCardState extends State<ExerciseProgressionCard> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
+              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.white.withOpacity(0.1)),
             ),
@@ -78,7 +78,7 @@ class _ExerciseProgressionCardState extends State<ExerciseProgressionCard> {
                 value: _selectedExercise,
                 isExpanded: true,
                 dropdownColor: const Color(0xFF1E1E1E),
-                icon: const Icon(Icons.arrow_drop_down, color: Colors.white54),
+                icon: Icon(Icons.arrow_drop_down, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73))),
                 style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
                 onChanged: (String? newValue) {
                   if (newValue != null) {

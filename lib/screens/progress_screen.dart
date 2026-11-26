@@ -36,8 +36,12 @@ class _ProgressScreenState extends State<ProgressScreen> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final accentColor = context.select<TrackerProvider, Color>(
-      (p) => ThemeUtils.getColor(p.currentProfile.colorAccent),
+      (p) => ThemeUtils.getAdaptiveColor(
+        p.currentProfile.colorAccent,
+        isDark: isDark,
+      ),
     );
 
     return Scaffold(
@@ -47,8 +51,9 @@ class _ProgressScreenState extends State<ProgressScreen> with SingleTickerProvid
         child: TabBar(
           controller: _tabController,
           indicatorColor: accentColor,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white38,
+          labelColor: isDark ? Colors.white : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
+          unselectedLabelColor:
+              isDark ? (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)) : const Color(0xFF8E8E93),
           labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
           tabs: const [
             Tab(text: "Histórico"),
@@ -233,10 +238,10 @@ class _HistoryTabState extends State<HistoryTab> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   "Seu Histórico",
                   style: TextStyle(
-                    color: Colors.white,
+                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
@@ -258,7 +263,7 @@ class _HistoryTabState extends State<HistoryTab> {
           Expanded(
             child: RefreshIndicator(
               color: widget.accentColor,
-              backgroundColor: const Color(0xff1c1c1e),
+              backgroundColor: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
               onRefresh: () async {
                 await provider.syncAppleWorkouts();
                 await provider.loadWorkoutHistory();
@@ -271,13 +276,13 @@ class _HistoryTabState extends State<HistoryTab> {
                   if (monthGroups.isEmpty) {
                     return ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      children: const [
-                        SizedBox(height: 200),
+                      children: [
+                        const SizedBox(height: 200),
                         Center(
                           child: Text(
                             "Nenhum treino no diário ainda.\nPuxe para sincronizar com o Apple Health.",
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white38, fontStyle: FontStyle.italic, height: 1.4),
+                            style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)), fontStyle: FontStyle.italic, height: 1.4),
                           ),
                         ),
                       ],
@@ -310,7 +315,7 @@ class _HistoryTabState extends State<HistoryTab> {
                           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
                         margin: const EdgeInsets.only(top: 8, bottom: 8),
                         decoration: BoxDecoration(
-                          border: Border(bottom: BorderSide(color: Colors.white.withOpacity(0.05))),
+                          border: Border(bottom: BorderSide(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05))),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -319,8 +324,8 @@ class _HistoryTabState extends State<HistoryTab> {
                               children: [
                                 Text(
                                   group.name,
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                                     fontSize: 15,
                                     fontWeight: FontWeight.w800,
                                   ),
@@ -345,7 +350,7 @@ class _HistoryTabState extends State<HistoryTab> {
                             ),
                             Icon(
                               isMonthExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                              color: Colors.white54,
+                              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                               size: 20,
                             ),
                           ],
@@ -373,8 +378,8 @@ class _HistoryTabState extends State<HistoryTab> {
                                   const SizedBox(width: 8),
                                   Text(
                                     dayGroup.title,
-                                    style: const TextStyle(
-                                      color: Colors.white70,
+                                    style: TextStyle(
+                                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
                                       fontSize: 12,
                                       fontWeight: FontWeight.w700,
                                       letterSpacing: 0.3,
@@ -466,7 +471,7 @@ class _HistoryTabState extends State<HistoryTab> {
       return Center(
         child: Text(
           '${date.day}',
-          style: const TextStyle(color: Colors.white24, fontSize: 12),
+          style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white24 : const Color(0xFFC7C7CC)), fontSize: 12),
         ),
       );
     }
@@ -493,7 +498,7 @@ class _HistoryTabState extends State<HistoryTab> {
           child: Text(
             '${date.day}',
             style: TextStyle(
-              color: isToday ? accent : Colors.white70,
+              color: isToday ? accent : (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
               fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
               fontSize: 12,
             ),
@@ -569,8 +574,8 @@ class _HistoryTabState extends State<HistoryTab> {
           children: [
             Text(
               '${date.day}',
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                 fontWeight: FontWeight.w900,
                 fontSize: 11,
               ),
@@ -592,9 +597,9 @@ class _HistoryTabState extends State<HistoryTab> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.04),
+        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.04),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -622,7 +627,7 @@ class _HistoryTabState extends State<HistoryTab> {
         const SizedBox(width: 6),
         Text(
           label,
-          style: TextStyle(color: Colors.white.withOpacity(0.87), fontSize: 11, fontWeight: FontWeight.w600),
+          style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.87), fontSize: 11, fontWeight: FontWeight.w600),
         ),
       ],
     );
@@ -642,7 +647,7 @@ class _HistoryTabState extends State<HistoryTab> {
         _buildCalendarLegend(),
         GlassCard(
           padding: const EdgeInsets.all(12),
-          borderColor: Colors.white.withOpacity(0.08),
+          borderColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
           borderRadius: 20,
           child: TableCalendar<WorkoutLog>(
             firstDay: DateTime.utc(2020, 1, 1),
@@ -675,19 +680,19 @@ class _HistoryTabState extends State<HistoryTab> {
                 return _buildPremiumCalendarCell(context, day, [], widget.accentColor, isOutside: true);
               },
             ),
-            calendarStyle: const CalendarStyle(
+            calendarStyle: CalendarStyle(
               outsideDaysVisible: true,
-              defaultTextStyle: TextStyle(color: Colors.white),
-              weekendTextStyle: TextStyle(color: Colors.white70),
+              defaultTextStyle: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E))),
+              weekendTextStyle: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43))),
             ),
             headerStyle: HeaderStyle(
               titleCentered: true,
-              titleTextStyle: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+              titleTextStyle: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 16, fontWeight: FontWeight.bold),
               formatButtonVisible: false,
               leftChevronIcon: Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
+                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(Icons.chevron_left, color: widget.accentColor, size: 20),
@@ -695,15 +700,15 @@ class _HistoryTabState extends State<HistoryTab> {
               rightChevronIcon: Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
+                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(Icons.chevron_right, color: widget.accentColor, size: 20),
               ),
             ),
-            daysOfWeekStyle: const DaysOfWeekStyle(
-              weekdayStyle: TextStyle(color: Colors.white60, fontSize: 11, fontWeight: FontWeight.bold),
-              weekendStyle: TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.bold),
+            daysOfWeekStyle: DaysOfWeekStyle(
+              weekdayStyle: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white60 : const Color(0xFF48484A)), fontSize: 11, fontWeight: FontWeight.bold),
+              weekendStyle: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)), fontSize: 11, fontWeight: FontWeight.bold),
             ),
           ),
         ),
@@ -745,27 +750,27 @@ class _HistoryTabState extends State<HistoryTab> {
     if (logs.isEmpty) {
       return GlassCard(
         padding: const EdgeInsets.all(20),
-        borderColor: Colors.white.withOpacity(0.06),
+        borderColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.06),
         borderRadius: 18,
         child: Column(
           children: [
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.event_available_rounded, color: Colors.white38, size: 30),
+              child: Icon(Icons.event_available_rounded, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)), size: 30),
             ),
             const SizedBox(height: 10),
             Text(
               _formatDayHeader(selectedDay),
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+              style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontWeight: FontWeight.bold, fontSize: 14),
             ),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               "Nenhum treino ou descanso registrado nesta data.",
-              style: TextStyle(color: Colors.white38, fontSize: 12),
+              style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)), fontSize: 12),
             ),
             const SizedBox(height: 16),
             Row(
@@ -844,7 +849,7 @@ class _HistoryTabState extends State<HistoryTab> {
                   Expanded(
                     child: Text(
                       _formatDayHeader(selectedDay),
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14),
+                      style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontWeight: FontWeight.w800, fontSize: 14),
                     ),
                   ),
                   Container(
@@ -886,9 +891,9 @@ class _HistoryTabState extends State<HistoryTab> {
   Widget _buildCalendarMiniStat(String label, String value) {
     return Column(
       children: [
-        Text(label, style: const TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.w600)),
+        Text(label, style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)), fontSize: 10, fontWeight: FontWeight.w600)),
         const SizedBox(height: 2),
-        Text(value, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+        Text(value, style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 12, fontWeight: FontWeight.bold)),
       ],
     );
   }
@@ -916,10 +921,10 @@ class _HistoryTabState extends State<HistoryTab> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       "Dia de Descanso 💤",
                       style: TextStyle(
-                        color: Colors.white,
+                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
                       ),
@@ -927,7 +932,7 @@ class _HistoryTabState extends State<HistoryTab> {
                     const SizedBox(height: 2),
                     Text(
                       _formatLogDate(log.date),
-                      style: const TextStyle(color: Colors.white54, fontSize: 11),
+                      style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontSize: 11),
                     ),
                   ],
                 ),
@@ -948,7 +953,7 @@ class _HistoryTabState extends State<HistoryTab> {
       margin: const EdgeInsets.only(bottom: 12),
       child: GlassCard(
         padding: const EdgeInsets.all(16),
-        borderColor: Colors.white.withOpacity(0.04),
+        borderColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.04),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -973,8 +978,8 @@ class _HistoryTabState extends State<HistoryTab> {
                       Expanded(
                         child: Text(
                           log.name,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                             fontSize: 15,
                             fontWeight: FontWeight.w800,
                           ),
@@ -982,7 +987,7 @@ class _HistoryTabState extends State<HistoryTab> {
                       ),
                       Icon(
                         isExpanded ? Icons.expand_less : Icons.expand_more,
-                        color: Colors.white54,
+                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                         size: 20,
                       ),
                     ],
@@ -992,12 +997,12 @@ class _HistoryTabState extends State<HistoryTab> {
                     children: [
                       Text(
                         _formatLogDate(log.date),
-                        style: const TextStyle(color: Colors.white38, fontSize: 11),
+                        style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)), fontSize: 11),
                       ),
                       const SizedBox(width: 8),
                       Text(
                         "${(log.duration ~/ 60)} min",
-                        style: const TextStyle(color: Colors.white38, fontSize: 11),
+                        style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)), fontSize: 11),
                       ),
                       if (!log.exercises.every((e) => e.muscle.toLowerCase().contains('cardio') || (e.performedCardios != null && e.performedCardios!.any((c) => c != null)))) ...[
                         const SizedBox(width: 8),
@@ -1028,7 +1033,7 @@ class _HistoryTabState extends State<HistoryTab> {
 
             // Detalhes expandidos
             if (isExpanded) ...[
-              const Divider(color: Colors.white10, height: 20),
+              Divider(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white10 : const Color(0x0F000000)), height: 20),
               // Métricas gerais (RPE, Séries, Exercícios)
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1059,7 +1064,7 @@ class _HistoryTabState extends State<HistoryTab> {
                 const SizedBox(height: 10),
                 Row(
                   children: [
-                    const Text("Dores: ", style: TextStyle(color: Colors.white38, fontSize: 11)),
+                    Text("Dores: ", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)), fontSize: 11)),
                     Wrap(
                       spacing: 4,
                       children: log.recovery!.pain.map((p) => Container(
@@ -1082,7 +1087,7 @@ class _HistoryTabState extends State<HistoryTab> {
               // Lista de exercícios concluídos
               Text(
                 "Exercícios Realizados (${log.exercises.length})",
-                style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w700),
+                style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 12, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 6),
               Column(
@@ -1165,7 +1170,7 @@ class _HistoryTabState extends State<HistoryTab> {
                     margin: const EdgeInsets.symmetric(vertical: 4),
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.02),
+                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.02),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -1177,12 +1182,12 @@ class _HistoryTabState extends State<HistoryTab> {
                             children: [
                               Text(
                                 ex.name,
-                                style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 12, fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(height: 2),
                               RichText(
                                 text: TextSpan(
-                                  style: const TextStyle(color: Colors.white54, fontSize: 11),
+                                  style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontSize: 11),
                                   children: [
                                     TextSpan(text: subtitle),
                                     if (failedSets.isNotEmpty) ...[
@@ -1221,18 +1226,18 @@ class _HistoryTabState extends State<HistoryTab> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.03),
+                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.03),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.white.withOpacity(0.05)),
+                    border: Border.all(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text("Notas da Sessão:", style: TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.bold)),
+                      Text("Notas da Sessão:", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)), fontSize: 10, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 4),
                       Text(
                         log.notes,
-                        style: const TextStyle(color: Colors.white70, fontSize: 12, height: 1.3),
+                        style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 12, height: 1.3),
                       ),
                     ],
                   ),
@@ -1262,9 +1267,9 @@ class _HistoryTabState extends State<HistoryTab> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.w700)),
+        Text(label, style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)), fontSize: 10, fontWeight: FontWeight.w700)),
         const SizedBox(height: 2),
-        Text(val, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w800)),
+        Text(val, style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 13, fontWeight: FontWeight.w800)),
       ],
     );
   }
@@ -1285,21 +1290,21 @@ class _HistoryTabState extends State<HistoryTab> {
         backgroundColor: Colors.transparent,
         child: GlassCard(
           useBlur: true,
-          borderColor: Colors.white.withOpacity(0.08),
+          borderColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
           borderRadius: 20,
           padding: const EdgeInsets.all(20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
+              Text(
                 "Excluir Log de Treino?",
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
+                style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontWeight: FontWeight.w800, fontSize: 16),
               ),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 "Deseja realmente deletar este registro de treino do seu histórico?",
-                style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+                style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 13, height: 1.4),
               ),
               const SizedBox(height: 20),
               Row(
@@ -1307,7 +1312,7 @@ class _HistoryTabState extends State<HistoryTab> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(dialogCtx),
-                    child: const Text("Cancelar", style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+                    child: Text("Cancelar", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontWeight: FontWeight.bold)),
                   ),
                   const SizedBox(width: 8),
                   TextButton(
@@ -1400,7 +1405,7 @@ class _ManualWorkoutLogSheetState extends State<ManualWorkoutLogSheet> {
         data: ThemeData.dark().copyWith(
           colorScheme: ColorScheme.dark(
             primary: ThemeUtils.getColor(widget.provider.currentProfile.colorAccent),
-            surface: const Color(0xff1c1c1e),
+            surface: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
           ),
         ),
         child: child!,
@@ -1415,7 +1420,7 @@ class _ManualWorkoutLogSheetState extends State<ManualWorkoutLogSheet> {
           data: ThemeData.dark().copyWith(
             colorScheme: ColorScheme.dark(
               primary: ThemeUtils.getColor(widget.provider.currentProfile.colorAccent),
-              surface: const Color(0xff1c1c1e),
+              surface: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
             ),
           ),
           child: child!,
@@ -1442,9 +1447,9 @@ class _ManualWorkoutLogSheetState extends State<ManualWorkoutLogSheet> {
         filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
         child: Container(
           decoration: BoxDecoration(
-            color: const Color(0xff141416).withOpacity(0.65),
+            color: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white).withOpacity(0.65),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border.all(color: Colors.white.withOpacity(0.08)),
+            border: Border.all(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08)),
           ),
           padding: EdgeInsets.only(
             left: 20,
@@ -1463,22 +1468,22 @@ class _ManualWorkoutLogSheetState extends State<ManualWorkoutLogSheet> {
                 child: Container(
                   width: 36,
                   height: 4,
-                  decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+                  decoration: BoxDecoration(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white24 : const Color(0xFFC7C7CC)), borderRadius: BorderRadius.circular(2)),
                   margin: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     "Registrar Exercício Externo",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E))),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close_rounded, color: Colors.white, size: 22),
+                    icon: Icon(Icons.close_rounded, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), size: 22),
                     onPressed: () => Navigator.pop(context),
                     style: IconButton.styleFrom(
-                      backgroundColor: Colors.white.withOpacity(0.08),
+                      backgroundColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
                       padding: const EdgeInsets.all(6),
                       minimumSize: const Size(36, 36),
                     ),
@@ -1494,13 +1499,13 @@ class _ManualWorkoutLogSheetState extends State<ManualWorkoutLogSheet> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
+                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text("Data e Hora", style: TextStyle(color: Colors.white70, fontSize: 13)),
+                      Text("Data e Hora", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 13)),
                       Text(
                         "${_selectedDate.day.toString().padLeft(2, '0')}/${_selectedDate.month.toString().padLeft(2, '0')}/${_selectedDate.year} ${_selectedDate.hour.toString().padLeft(2, '0')}:${_selectedDate.minute.toString().padLeft(2, '0')}",
                         style: TextStyle(color: accentColor, fontWeight: FontWeight.bold, fontSize: 13),
@@ -1512,20 +1517,20 @@ class _ManualWorkoutLogSheetState extends State<ManualWorkoutLogSheet> {
               const SizedBox(height: 12),
 
               // Exercício Dropdown
-              const Text("Exercício da Biblioteca", style: TextStyle(color: Colors.white54, fontSize: 11)),
+              Text("Exercício da Biblioteca", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontSize: 11)),
               const SizedBox(height: 4),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
+                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<LibraryExercise>(
                     value: _selectedExercise,
-                    hint: const Text("Selecione um exercício...", style: TextStyle(color: Colors.white30, fontSize: 13)),
-                    dropdownColor: const Color(0xff1c1c1e),
-                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    hint: Text("Selecione um exercício...", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white30 : const Color(0xFFAEAEB2)), fontSize: 13)),
+                    dropdownColor: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
+                    style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 13),
                     isExpanded: true,
                     onChanged: (val) {
                       setState(() {
@@ -1555,15 +1560,15 @@ class _ManualWorkoutLogSheetState extends State<ManualWorkoutLogSheet> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text("Séries", style: TextStyle(color: Colors.white54, fontSize: 10)),
+                          Text("Séries", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontSize: 10)),
                           const SizedBox(height: 4),
                           TextFormField(
                             initialValue: _setsCount.toString(),
                             keyboardType: TextInputType.number,
-                            style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                            style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 13, fontWeight: FontWeight.bold),
                             decoration: InputDecoration(
                               filled: true,
-                              fillColor: Colors.white.withOpacity(0.05),
+                              fillColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                               contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
                             ),
@@ -1582,16 +1587,16 @@ class _ManualWorkoutLogSheetState extends State<ManualWorkoutLogSheet> {
                         children: [
                           Text(
                             _selectedExercise!.measurementType == MeasurementType.time ? "Tempo (s)" : "Reps Padrão",
-                            style: const TextStyle(color: Colors.white54, fontSize: 10),
+                            style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontSize: 10),
                           ),
                           const SizedBox(height: 4),
                           TextFormField(
                             initialValue: _repsCount.toString(),
                             keyboardType: TextInputType.number,
-                            style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                            style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 13, fontWeight: FontWeight.bold),
                             decoration: InputDecoration(
                               filled: true,
-                              fillColor: Colors.white.withOpacity(0.05),
+                              fillColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                               contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
                             ),
@@ -1614,15 +1619,15 @@ class _ManualWorkoutLogSheetState extends State<ManualWorkoutLogSheet> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text("Carga Padrão (kg)", style: TextStyle(color: Colors.white54, fontSize: 10)),
+                            Text("Carga Padrão (kg)", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontSize: 10)),
                             const SizedBox(height: 4),
                             TextFormField(
                               initialValue: _weightVal.toString(),
                               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                              style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 13, fontWeight: FontWeight.bold),
                               decoration: InputDecoration(
                                 filled: true,
-                                fillColor: Colors.white.withOpacity(0.05),
+                                fillColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
                               ),
@@ -1644,7 +1649,7 @@ class _ManualWorkoutLogSheetState extends State<ManualWorkoutLogSheet> {
                 const SizedBox(height: 16),
 
                 // Lista de Séries Customizadas
-                const Text("Detalhamento por Série:", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                Text("Detalhamento por Série:", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontWeight: FontWeight.bold, fontSize: 13)),
                 const SizedBox(height: 8),
                 ListView.builder(
                   shrinkWrap: true,
@@ -1656,13 +1661,13 @@ class _ManualWorkoutLogSheetState extends State<ManualWorkoutLogSheet> {
                       margin: const EdgeInsets.only(bottom: 8),
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.02),
+                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.02),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.white.withOpacity(0.06)),
+                        border: Border.all(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.06)),
                       ),
                       child: Row(
                         children: [
-                          Text("S${idx + 1}", style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+                          Text("S${idx + 1}", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 12, fontWeight: FontWeight.bold)),
                           const SizedBox(width: 8),
                           
                           // Input Reps / Tempo
@@ -1670,10 +1675,10 @@ class _ManualWorkoutLogSheetState extends State<ManualWorkoutLogSheet> {
                             child: TextFormField(
                               initialValue: _setsReps[idx].toString(),
                               keyboardType: TextInputType.number,
-                              style: const TextStyle(color: Colors.white, fontSize: 12),
+                              style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 12),
                               decoration: InputDecoration(
                                 filled: true,
-                                fillColor: Colors.white.withOpacity(0.04),
+                                fillColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.04),
                                 isDense: true,
                                 contentPadding: const EdgeInsets.all(6),
                                 labelText: isCardio ? "Minutos" : (_selectedExercise!.measurementType == MeasurementType.time ? "Segs" : "Reps"),
@@ -1693,10 +1698,10 @@ class _ManualWorkoutLogSheetState extends State<ManualWorkoutLogSheet> {
                             child: TextFormField(
                               initialValue: isCardio ? "0.0" : _setsWeights[idx].toString(),
                               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                              style: const TextStyle(color: Colors.white, fontSize: 12),
+                              style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 12),
                               decoration: InputDecoration(
                                 filled: true,
-                                fillColor: Colors.white.withOpacity(0.04),
+                                fillColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.04),
                                 isDense: true,
                                 contentPadding: const EdgeInsets.all(6),
                                 labelText: isCardio ? "Km" : "Carga",
@@ -1725,13 +1730,13 @@ class _ManualWorkoutLogSheetState extends State<ManualWorkoutLogSheet> {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: _setsFailures[idx] ? Colors.redAccent.withOpacity(0.15) : Colors.white.withOpacity(0.02),
+                                  color: _setsFailures[idx] ? Colors.redAccent.withOpacity(0.15) : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.02),
                                   borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: _setsFailures[idx] ? Colors.redAccent : Colors.white.withOpacity(0.08)),
+                                  border: Border.all(color: _setsFailures[idx] ? Colors.redAccent : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08)),
                                 ),
-                                child: const Text(
+                                child: Text(
                                   "Falha",
-                                  style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold),
+                                  style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 10, fontWeight: FontWeight.bold),
                                 ),
                               ),
                             ),
@@ -1741,7 +1746,7 @@ class _ManualWorkoutLogSheetState extends State<ManualWorkoutLogSheet> {
                                 width: 28,
                                 height: 26,
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.05),
+                                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: TextFormField(
@@ -1749,12 +1754,12 @@ class _ManualWorkoutLogSheetState extends State<ManualWorkoutLogSheet> {
                                   keyboardType: TextInputType.number,
                                   textAlign: TextAlign.center,
                                   style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                                  decoration: const InputDecoration(
+                                  decoration: InputDecoration(
                                     border: InputBorder.none,
                                     contentPadding: EdgeInsets.zero,
                                     isDense: true,
                                     hintText: "-",
-                                    hintStyle: TextStyle(color: Colors.white24),
+                                    hintStyle: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white24 : const Color(0xFFC7C7CC))),
                                   ),
                                   onChanged: (val) {
                                     _setsFailureReps[idx] = int.tryParse(val);
@@ -1789,18 +1794,18 @@ class _ManualWorkoutLogSheetState extends State<ManualWorkoutLogSheet> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text("Esforço (RPE 1-10)", style: TextStyle(color: Colors.white54, fontSize: 11)),
+                          Text("Esforço (RPE 1-10)", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontSize: 11)),
                           const SizedBox(height: 4),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.05),
+                              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: DropdownButtonHideUnderline(
                               child: DropdownButton<int>(
                                 value: _rpe,
-                                dropdownColor: const Color(0xff1c1c1e),
+                                dropdownColor: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
                                 style: const TextStyle(color: Colors.white, fontSize: 14),
                                 isExpanded: true,
                                 onChanged: (val) {
@@ -1822,12 +1827,12 @@ class _ManualWorkoutLogSheetState extends State<ManualWorkoutLogSheet> {
                 TextField(
                   controller: _notesCtrl,
                   maxLines: 2,
-                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 13),
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: Colors.white.withOpacity(0.05),
+                    fillColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                     hintText: "Observações / Notas do Treino (opcional)",
-                    hintStyle: const TextStyle(color: Colors.white30, fontSize: 12),
+                    hintStyle: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white30 : const Color(0xFFAEAEB2)), fontSize: 12),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
                   ),
                 ),
@@ -1930,12 +1935,12 @@ class _ManualWorkoutLogSheetState extends State<ManualWorkoutLogSheet> {
                   ),
                 ),
               ] else ...[
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 40),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 40),
                   child: Center(
                     child: Text(
                       "Selecione um exercício acima para configurar as séries.",
-                      style: TextStyle(color: Colors.white24, fontSize: 12, fontStyle: FontStyle.italic),
+                      style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white24 : const Color(0xFFC7C7CC)), fontSize: 12, fontStyle: FontStyle.italic),
                     ),
                   ),
                 ),
@@ -1989,10 +1994,10 @@ class _MedidasTabState extends State<MedidasTab> {
         ),
       ),
       body: measurements.isEmpty
-          ? const Center(
+          ? Center(
               child: Text(
                 "Nenhum registro de medidas ainda.",
-                style: TextStyle(color: Colors.white38, fontStyle: FontStyle.italic),
+                style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)), fontStyle: FontStyle.italic),
               ),
             )
           : ListView.builder(
@@ -2004,7 +2009,7 @@ class _MedidasTabState extends State<MedidasTab> {
                   margin: const EdgeInsets.only(bottom: 12),
                   child: GlassCard(
                     padding: const EdgeInsets.all(14),
-                    borderColor: Colors.white.withOpacity(0.04),
+                    borderColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.04),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -2013,7 +2018,7 @@ class _MedidasTabState extends State<MedidasTab> {
                           children: [
                             Text(
                               _formatMedidaDate(m.date),
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14),
+                              style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontWeight: FontWeight.w800, fontSize: 14),
                             ),
                             Row(
                               mainAxisSize: MainAxisSize.min,
@@ -2075,9 +2080,9 @@ class _MedidasTabState extends State<MedidasTab> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(label, style: const TextStyle(color: Colors.white38, fontSize: 9, fontWeight: FontWeight.bold)),
+        Text(label, style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)), fontSize: 9, fontWeight: FontWeight.bold)),
         const SizedBox(height: 1),
-        Text(val, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+        Text(val, style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 11, fontWeight: FontWeight.bold)),
       ],
     );
   }
@@ -2147,15 +2152,15 @@ class _MedidasTabState extends State<MedidasTab> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       "Registrar Medidas",
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 20),
+                      style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontWeight: FontWeight.w800, fontSize: 20),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close_rounded, color: Colors.white, size: 22),
+                      icon: Icon(Icons.close_rounded, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), size: 22),
                       onPressed: () => Navigator.pop(bottomSheetCtx),
                       style: IconButton.styleFrom(
-                        backgroundColor: Colors.white.withOpacity(0.08),
+                        backgroundColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
                         padding: const EdgeInsets.all(6),
                         minimumSize: const Size(36, 36),
                       ),
@@ -2301,15 +2306,15 @@ class _MedidasTabState extends State<MedidasTab> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       "Editar Medidas",
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 20),
+                      style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontWeight: FontWeight.w800, fontSize: 20),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close_rounded, color: Colors.white, size: 22),
+                      icon: Icon(Icons.close_rounded, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), size: 22),
                       onPressed: () => Navigator.pop(bottomSheetCtx),
                       style: IconButton.styleFrom(
-                        backgroundColor: Colors.white.withOpacity(0.08),
+                        backgroundColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
                         padding: const EdgeInsets.all(6),
                         minimumSize: const Size(36, 36),
                       ),
@@ -2413,12 +2418,12 @@ class _MedidasTabState extends State<MedidasTab> {
       child: TextField(
         controller: ctrl,
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        style: const TextStyle(color: Colors.white, fontSize: 13),
+        style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 13),
         decoration: InputDecoration(
           filled: true,
-          fillColor: Colors.white.withOpacity(0.05),
+          fillColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
           labelText: label,
-          labelStyle: const TextStyle(color: Colors.white54, fontSize: 12),
+          labelStyle: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontSize: 12),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
           contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           isDense: true,

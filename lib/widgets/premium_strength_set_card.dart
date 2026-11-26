@@ -168,9 +168,9 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
       margin: EdgeInsets.only(bottom: widget.ex.isUnilateral && !isRight ? 8.0 : 0.0),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.02),
+        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.02),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
+        border: Border.all(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.06)),
       ),
       child: Row(
         children: [
@@ -183,7 +183,7 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
                 child: CircularProgressIndicator(
                   value: cappedProgress,
                   strokeWidth: 3.5,
-                  backgroundColor: Colors.white.withOpacity(0.05),
+                  backgroundColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                   valueColor: AlwaysStoppedAnimation(
                     elapsed >= targetSeconds ? Colors.greenAccent : widget.accentColor,
                   ),
@@ -210,7 +210,7 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
                     ? (isRight ? "LADO DIREITO" : "LADO ESQUERDO") 
                     : (isRunning ? "CRONÔMETRO ATIVO" : "ISOMETRIA"),
                   style: TextStyle(
-                    color: isRunning ? widget.accentColor : Colors.white60,
+                    color: isRunning ? widget.accentColor : (Theme.of(context).brightness == Brightness.dark ? Colors.white60 : const Color(0xFF48484A)),
                     fontSize: 9,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.0,
@@ -219,7 +219,7 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
                 const SizedBox(height: 2),
                 Text(
                   isRunning ? "Tempo sob tensão correndo..." : "Toque para cronometrar a série",
-                  style: const TextStyle(color: Colors.white30, fontSize: 10),
+                  style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white30 : const Color(0xFFAEAEB2)), fontSize: 10),
                 ),
               ],
             ),
@@ -229,7 +229,7 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
               if (elapsed > 0) ...[
                 IconButton(
                   onPressed: () => _resetTimer(isRight: isRight),
-                  icon: const Icon(Icons.refresh_rounded, color: Colors.white60, size: 20),
+                  icon: Icon(Icons.refresh_rounded, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white60 : const Color(0xFF48484A)), size: 20),
                   tooltip: "Reiniciar",
                   constraints: const BoxConstraints(),
                   padding: const EdgeInsets.all(8),
@@ -263,7 +263,7 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
         case 'W': return Colors.orangeAccent;
         case 'D': return Colors.purpleAccent;
         case 'A': return Colors.redAccent;
-        default: return Colors.white54;
+        default: return (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73));
       }
     }
     String getTypeLabel(String type) {
@@ -376,7 +376,7 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
                             child: Text(
                               currentType == 'N' ? "SÉRIE ATUAL" : getTypeLabel(currentType).toUpperCase(),
                               style: TextStyle(
-                                color: currentType == 'N' ? Colors.white70 : getTypeColor(currentType),
+                                color: currentType == 'N' ? (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)) : getTypeColor(currentType),
                                 fontWeight: FontWeight.bold,
                                 fontSize: 10,
                                 letterSpacing: 0.8,
@@ -426,10 +426,10 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
                     padding: const EdgeInsets.symmetric(
                         vertical: 14, horizontal: 12),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.04),
+                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.04),
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.08),
+                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
                       ),
                     ),
                     child: Row(
@@ -605,7 +605,7 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
         margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.03),
+          color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.03),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: widget.isFailure
@@ -645,13 +645,13 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.06),
+                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.06),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                       ((!isTime || weight > 0) ? "$repsStr • $weightStr" : repsStr) + (currentRir != null ? " • RIR $currentRir" : ""),
-                      style: const TextStyle(
-                        color: Colors.white70,
+                      style: TextStyle(
+                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
                       ),
@@ -682,8 +682,8 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
             // Edit button
             IconButton(
               onPressed: widget.onEditTap,
-              icon: const Icon(Icons.edit_outlined,
-                  color: Colors.white38, size: 18),
+              icon: Icon(Icons.edit_outlined,
+                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)), size: 18),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
               tooltip: "Editar série",
@@ -692,8 +692,8 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
             // Reopen / Undo button
             IconButton(
               onPressed: widget.onDoneTap,
-              icon: const Icon(Icons.undo_rounded,
-                  color: Colors.white38, size: 18),
+              icon: Icon(Icons.undo_rounded,
+                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)), size: 18),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
               tooltip: "Reabrir série",
@@ -711,10 +711,10 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
         margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.015),
+          color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.015),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: Colors.white.withOpacity(0.04),
+            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.04),
             width: 1,
           ),
         ),
@@ -727,7 +727,7 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: Colors.white24,
+                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white24 : const Color(0xFFC7C7CC)),
                   width: 1.5,
                 ),
               ),
@@ -743,8 +743,8 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
             // Set label
             Text(
               "Série ${widget.setIndex + 1}",
-              style: const TextStyle(
-                color: Colors.white54,
+              style: TextStyle(
+                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
               ),
@@ -756,16 +756,16 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
                 (!isTime || weight > 0)
                     ? "$repsStr • $weightStr (planejado)"
                     : "$repsStr (planejado)",
-                style: const TextStyle(
-                  color: Colors.white30,
+                style: TextStyle(
+                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white30 : const Color(0xFFAEAEB2)),
                   fontSize: 12,
                 ),
               ),
             ),
             // Edit action
-            const Icon(
+            Icon(
               Icons.edit_outlined,
-              color: Colors.white24,
+              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white24 : const Color(0xFFC7C7CC)),
               size: 16,
             ),
           ],
@@ -785,7 +785,7 @@ class _PremiumStrengthSetCardState extends State<PremiumStrengthSetCard> {
         Text(
           value,
           style: TextStyle(
-            color: isActive ? Colors.white : Colors.white70,
+            color: isActive ? Colors.white : (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
             fontSize: 36,
             fontWeight: FontWeight.w900,
             fontFeatures: const [FontFeature.tabularFigures()],

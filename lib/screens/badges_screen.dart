@@ -19,7 +19,7 @@ class BadgesScreen extends StatelessWidget {
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+            icon: Icon(Icons.arrow_back_ios_new_rounded, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), size: 20),
             onPressed: () => Navigator.of(context).pop(),
           ),
         ),
@@ -53,7 +53,7 @@ class BadgesScreen extends StatelessWidget {
             GlassCard(
               useBlur: true,
               borderRadius: 24,
-              borderColor: Colors.white.withOpacity(0.05),
+              borderColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
               padding: const EdgeInsets.all(24),
               child: Row(
                 children: [
@@ -73,16 +73,16 @@ class BadgesScreen extends StatelessWidget {
                       ),
                       Text(
                         "${unlocked.length}/${BadgesService.allBadges.length}",
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                         ),
                       )
                     ],
                   ),
                   const SizedBox(width: 24),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -91,15 +91,15 @@ class BadgesScreen extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                           ),
                         ),
-                        SizedBox(height: 4),
+                        const SizedBox(height: 4),
                         Text(
                           "Continue treinando para desbloquear todas as medalhas!",
                           style: TextStyle(
                             fontSize: 14,
-                            color: Colors.white70,
+                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
                           ),
                         ),
                       ],
@@ -112,12 +112,12 @@ class BadgesScreen extends StatelessWidget {
 
             // Unlocked Badges
             if (unlocked.isNotEmpty) ...[
-              const Text(
+              Text(
                 "Desbloqueadas",
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                 ),
               ),
               const SizedBox(height: 16),
@@ -141,12 +141,12 @@ class BadgesScreen extends StatelessWidget {
 
             // Locked Badges
             if (locked.isNotEmpty) ...[
-              const Text(
+              Text(
                 "Ainda Bloqueadas",
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                 ),
               ),
               const SizedBox(height: 16),
@@ -186,8 +186,8 @@ class _BadgeItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = isLocked ? Colors.white.withOpacity(0.02) : accentColor.withOpacity(0.15);
-    final borderColor = isLocked ? Colors.white.withOpacity(0.05) : accentColor.withOpacity(0.3);
+    final bgColor = isLocked ? (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.02) : accentColor.withOpacity(0.15);
+    final borderColor = isLocked ? (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05) : accentColor.withOpacity(0.3);
 
     return GestureDetector(
       onTap: () {
@@ -214,7 +214,7 @@ class _BadgeItem extends StatelessWidget {
                       badge.icon,
                       style: TextStyle(
                         fontSize: 40,
-                        color: isLocked ? Colors.white24 : Colors.white,
+                        color: isLocked ? (Theme.of(context).brightness == Brightness.dark ? Colors.white24 : const Color(0xFFC7C7CC)) : Colors.white,
                       ),
                     ),
                   ),
@@ -225,16 +225,16 @@ class _BadgeItem extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: isLocked ? Colors.white54 : Colors.white,
+                    color: isLocked ? (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)) : Colors.white,
                   ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 12),
                 Text(
                   badge.description,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
-                    color: Colors.white70,
+                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
                     height: 1.4,
                   ),
                   textAlign: TextAlign.center,
@@ -247,12 +247,12 @@ class _BadgeItem extends StatelessWidget {
                       color: Colors.black26,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.lock, size: 14, color: Colors.white54),
-                        SizedBox(width: 6),
-                        Text("Bloqueada", style: TextStyle(color: Colors.white54, fontSize: 12)),
+                        Icon(Icons.lock, size: 14, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73))),
+                        const SizedBox(width: 6),
+                        Text("Bloqueada", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontSize: 12)),
                       ],
                     ),
                   ),
@@ -293,14 +293,14 @@ class _BadgeItem extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: isLocked ? Colors.white.withOpacity(0.05) : accentColor.withOpacity(0.2),
+                color: isLocked ? (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05) : accentColor.withOpacity(0.2),
                 shape: BoxShape.circle,
               ),
               child: Text(
                 badge.icon,
                 style: TextStyle(
                   fontSize: 28,
-                  color: isLocked ? Colors.white24 : Colors.white,
+                  color: isLocked ? (Theme.of(context).brightness == Brightness.dark ? Colors.white24 : const Color(0xFFC7C7CC)) : Colors.white,
                 ),
               ),
             ),
@@ -310,7 +310,7 @@ class _BadgeItem extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
-                color: isLocked ? Colors.white54 : Colors.white,
+                color: isLocked ? (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)) : Colors.white,
               ),
               textAlign: TextAlign.center,
               maxLines: 2,

@@ -140,12 +140,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       "Faça login com sua conta do Google para sincronizar e acompanhar seus treinos com segurança na nuvem",
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.white54,
+                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -159,10 +159,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: Container(
                           padding: const EdgeInsets.all(24.0),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.03),
+                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.03),
                             borderRadius: BorderRadius.circular(24),
                             border: Border.all(
-                              color: Colors.white.withOpacity(0.07),
+                              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.07),
                               width: 1.5,
                             ),
                           ),
@@ -230,7 +230,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ),
                                     ),
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.white.withOpacity(0.08),
+                                      backgroundColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
                                       foregroundColor: Colors.white,
                                       padding: const EdgeInsets.symmetric(vertical: 16),
                                       elevation: 0,

@@ -92,7 +92,7 @@ class _CircularProgressTimerState extends State<CircularProgressTimer> with Sing
                   child: CircularProgressIndicator(
                     value: 1.0 - progress,
                     strokeWidth: 10,
-                    backgroundColor: Colors.white.withOpacity(0.05),
+                    backgroundColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                     valueColor: AlwaysStoppedAnimation<Color>(widget.progressColor),
                   ),
                 ),
@@ -108,11 +108,11 @@ class _CircularProgressTimerState extends State<CircularProgressTimer> with Sing
                         letterSpacing: -1,
                       ),
                     ),
-                    const Text(
+                    Text(
                       "segundos",
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.white54,
+                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -126,9 +126,9 @@ class _CircularProgressTimerState extends State<CircularProgressTimer> with Sing
         Text(
           widget.subtext,
           textAlign: TextAlign.center,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
-            color: Colors.white70,
+            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -138,7 +138,7 @@ class _CircularProgressTimerState extends State<CircularProgressTimer> with Sing
             onPressed: widget.onSkip,
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              backgroundColor: Colors.white.withOpacity(0.06),
+              backgroundColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.06),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
                 side: BorderSide(color: Colors.white.withOpacity(0.12)),

@@ -54,8 +54,23 @@ void main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  ThemeMode _resolveThemeMode(String mode) {
+    switch (mode) {
+      case 'light':
+        return ThemeMode.light;
+      case 'dark':
+        return ThemeMode.dark;
+      case 'system':
+      default:
+        return ThemeMode.system;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final themeModeStr =
+        context.select<WorkoutProvider, String>((w) => w.settings.themeMode);
+
     return MaterialApp(
       title: 'Los Mooscles',
       debugShowCheckedModeBanner: false,
@@ -73,8 +88,10 @@ class MyApp extends StatelessWidget {
       builder: (context, child) {
         return Consumer<ProfileProvider>(
           builder: (context, profileProvider, _) {
+            final isDark = Theme.of(context).brightness == Brightness.dark;
             final colorName = profileProvider.currentProfile.colorAccent;
-            final accentColor = ThemeUtils.getColor(colorName);
+            final accentColor =
+                ThemeUtils.getAdaptiveColor(colorName, isDark: isDark);
             return TextSelectionTheme(
               data: TextSelectionThemeData(
                 cursorColor: accentColor,
@@ -89,8 +106,10 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         brightness: Brightness.light,
         scaffoldBackgroundColor: const Color(0xfff2f2f7),
+        cardColor: Colors.white,
+        dialogBackgroundColor: Colors.white,
         colorScheme: const ColorScheme.light(
-          primary: Colors.black,
+          primary: Color(0xFF1C1C1E),
           background: Color(0xfff2f2f7),
           surface: Colors.white,
         ),
@@ -109,6 +128,8 @@ class MyApp extends StatelessWidget {
       darkTheme: ThemeData(
         brightness: Brightness.dark,
         scaffoldBackgroundColor: Colors.black,
+        cardColor: const Color(0xff1c1c1e),
+        dialogBackgroundColor: const Color(0xff1c1c1e),
         colorScheme: const ColorScheme.dark(
           primary: Colors.white,
           background: Colors.black,
@@ -126,7 +147,7 @@ class MyApp extends StatelessWidget {
         textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme),
         useMaterial3: true,
       ),
-      themeMode: ThemeMode.system,
+      themeMode: _resolveThemeMode(themeModeStr),
       home: StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {

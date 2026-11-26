@@ -54,23 +54,29 @@ class _MainNavigationState extends State<MainNavigation> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isLoading = context.select<TrackerProvider, bool>((p) => p.isLoading);
     if (isLoading) {
-      return const Scaffold(
-        backgroundColor: Colors.black,
+      return Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Center(
-          child: CircularProgressIndicator(color: Colors.white),
+          child: CircularProgressIndicator(
+            color: isDark ? Colors.white : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
+          ),
         ),
       );
     }
 
     // Optimize provider selects - only rebuild when profile colorAccent changes
     final accentColor = context.select<TrackerProvider, Color>(
-      (p) => ThemeUtils.getColor(p.currentProfile.colorAccent),
+      (p) => ThemeUtils.getAdaptiveColor(
+        p.currentProfile.colorAccent,
+        isDark: isDark,
+      ),
     );
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           // Efeito de brilho de fundo radial no estilo iOS premium
@@ -124,8 +130,10 @@ class _MainNavigationState extends State<MainNavigation> {
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.4),
-                      blurRadius: 24,
+                      color: isDark
+                          ? Colors.black.withOpacity(0.4)
+                          : Colors.black.withOpacity(0.10),
+                      blurRadius: isDark ? 24 : 20,
                       offset: const Offset(0, 8),
                     ),
                   ],
@@ -136,10 +144,14 @@ class _MainNavigationState extends State<MainNavigation> {
                     filter: ImageFilter.blur(sigmaX: 12.0, sigmaY: 12.0),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: const Color(0xff141416).withOpacity(0.4),
+                        color: isDark
+                            ? (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white).withOpacity(0.4)
+                            : Colors.white.withOpacity(0.88),
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.08),
+                          color: isDark
+                              ? (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08)
+                              : Colors.black.withOpacity(0.08),
                           width: 1.0,
                         ),
                       ),
@@ -300,7 +312,7 @@ class _MainNavigationState extends State<MainNavigation> {
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(message, style: const TextStyle(color: Colors.white70, fontSize: 16)),
+                      Text(message, style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 16)),
                       if (totalWorkouts > 0) ...[
                         const SizedBox(height: 24),
                         Row(
@@ -333,10 +345,10 @@ class _MainNavigationState extends State<MainNavigation> {
   Widget _buildReportStat(IconData icon, String value, String label) {
     return Column(
       children: [
-        Icon(icon, color: Colors.white70, size: 28),
+        Icon(icon, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), size: 28),
         const SizedBox(height: 8),
         Text(value, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-        Text(label, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+        Text(label, style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontSize: 12)),
       ],
     );
   }
@@ -371,7 +383,7 @@ class _MainNavigationState extends State<MainNavigation> {
           insetPadding: const EdgeInsets.symmetric(horizontal: 20),
           child: GlassCard(
             useBlur: true,
-            borderColor: Colors.white.withOpacity(0.08),
+            borderColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
             borderRadius: 24,
             padding: const EdgeInsets.all(24),
             child: SizedBox(
@@ -394,10 +406,10 @@ class _MainNavigationState extends State<MainNavigation> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  const Text(
+                  Text(
                     "Veja o que preparamos para você nesta atualização:",
                     style: TextStyle(
-                        color: Colors.white70, fontSize: 13, height: 1.4),
+                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Color(0xFF3C3C43)), fontSize: 13, height: 1.4),
                   ),
                   const SizedBox(height: 16),
                   Flexible(
@@ -472,8 +484,8 @@ class _MainNavigationState extends State<MainNavigation> {
               const SizedBox(height: 2),
               Text(
                 description,
-                style: const TextStyle(
-                    color: Colors.white54, fontSize: 11, height: 1.3),
+                style: TextStyle(
+                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : Color(0xFF6E6E73)), fontSize: 11, height: 1.3),
               ),
             ],
           ),

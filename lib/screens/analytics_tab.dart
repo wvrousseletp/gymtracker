@@ -96,7 +96,7 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
       return Center(
         child: Text(
           "Sem dados suficientes para estatísticas.",
-          style: TextStyle(color: Colors.white.withOpacity(0.5)),
+          style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.5)),
         ),
       );
     }
@@ -145,7 +145,7 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
                   }),
                   foregroundColor: MaterialStateProperty.resolveWith<Color>((states) {
                     if (states.contains(MaterialState.selected)) return widget.accentColor;
-                    return Colors.white54;
+                    return (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73));
                   }),
                   side: MaterialStateProperty.all(BorderSide(color: Colors.white.withOpacity(0.1))),
                 ),
@@ -155,7 +155,7 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
                  Row(
                    children: [
                      IconButton(
-                       icon: const Icon(Icons.restore, color: Colors.white54),
+                       icon: Icon(Icons.restore, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73))),
                        onPressed: _resetOrder,
                        tooltip: "Restaurar Padrão",
                      ),
@@ -167,7 +167,7 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
                  )
               else
                 IconButton(
-                  icon: const Icon(Icons.edit, color: Colors.white54),
+                  icon: Icon(Icons.edit, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73))),
                   onPressed: () => setState(() => _isEditing = true),
                 )
             ],
@@ -193,7 +193,7 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
                       padding: const EdgeInsets.symmetric(vertical: 8.0),
                       child: Row(
                         children: [
-                          const Icon(Icons.drag_handle, color: Colors.white38),
+                          Icon(Icons.drag_handle, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93))),
                           const SizedBox(width: 12),
                           Expanded(
                             child: _buildWidgetForKey(key, filteredHistory, dietProvider, filteredDateStrings),
@@ -271,37 +271,37 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
 
     return GlassCard(
       useBlur: true,
-      borderColor: Colors.white.withOpacity(0.08),
+      borderColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
       borderRadius: 24,
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             "Evolução de Volume Total",
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
             ),
           ),
           const SizedBox(height: 4),
           Text(
             "Treinos no período: ${sorted.length} (kg)",
-            style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.5)),
+            style: TextStyle(fontSize: 12, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.5)),
           ),
           const SizedBox(height: 24),
           SizedBox(
             height: 200,
             child: sorted.isEmpty
-                ? const Center(child: Text("Sem dados suficientes", style: TextStyle(color: Colors.white54)))
+                ? Center(child: Text("Sem dados suficientes", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)))))
                 : LineChart(
                     LineChartData(
                       gridData: FlGridData(
                         show: true,
                         drawVerticalLine: false,
                         getDrawingHorizontalLine: (value) => FlLine(
-                          color: Colors.white.withOpacity(0.05),
+                          color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                           strokeWidth: 1,
                         ),
                       ),
@@ -316,7 +316,7 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
                             getTitlesWidget: (value, meta) {
                               return Text(
                                 "${(value / 1000).toStringAsFixed(1)}k",
-                                style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10),
+                                style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.5), fontSize: 10),
                               );
                             },
                           ),
@@ -333,7 +333,7 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
                                 padding: const EdgeInsets.only(top: 8.0),
                                 child: Text(
                                   DateFormat("dd/MM").format(date),
-                                  style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10),
+                                  style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.5), fontSize: 10),
                                 ),
                               );
                             },
@@ -382,24 +382,24 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
 
     return GlassCard(
       useBlur: true,
-      borderColor: Colors.white.withOpacity(0.08),
+      borderColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
       borderRadius: 24,
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             "Frequência Muscular",
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
             ),
           ),
           const SizedBox(height: 4),
           Text(
             "Músculos treinados no período",
-            style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.5)),
+            style: TextStyle(fontSize: 12, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.5)),
           ),
           const SizedBox(height: 16),
           Row(
@@ -414,7 +414,7 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
                     final intensity = maxCount > 0 ? count / maxCount : 0.0;
                     
                     Color chipColor = widget.accentColor.withOpacity(0.1 + (0.9 * intensity));
-                    if (count == 0) chipColor = Colors.white.withOpacity(0.05);
+                    if (count == 0) chipColor = (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05);
 
                     return GestureDetector(
                       onTap: () {
@@ -437,7 +437,7 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
                             Text(
                               m,
                               style: TextStyle(
-                                color: count > 0 ? Colors.white : Colors.white54,
+                                color: count > 0 ? Colors.white : (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                                 fontWeight: count > 0 ? FontWeight.bold : FontWeight.normal,
                                 fontSize: 12,
                               ),
@@ -447,7 +447,7 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
                               Text(
                                 "$count",
                                 style: TextStyle(
-                                  color: Colors.white.withOpacity(0.8),
+                                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.8),
                                   fontWeight: FontWeight.bold,
                                   fontSize: 10,
                                 ),
@@ -498,7 +498,7 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1C1C1E),
+      backgroundColor: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -511,16 +511,16 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
             children: [
               Text(
                 "Exercícios para $muscle",
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                 ),
               ),
               const SizedBox(height: 16),
               Expanded(
                 child: muscleExercises.isEmpty
-                    ? const Center(child: Text("Nenhum exercício encontrado.", style: TextStyle(color: Colors.white54)))
+                    ? Center(child: Text("Nenhum exercício encontrado.", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)))))
                     : ListView.builder(
                         itemCount: muscleExercises.length,
                         itemBuilder: (context, index) {
@@ -535,10 +535,10 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
                           }
                           return ListTile(
                             contentPadding: EdgeInsets.zero,
-                            title: Text(data['exerciseName'], style: const TextStyle(color: Colors.white)),
+                            title: Text(data['exerciseName'], style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)))),
                             subtitle: Text(
                               dateFormatted,
-                              style: TextStyle(color: Colors.white.withOpacity(0.5)),
+                              style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.5)),
                             ),
                             trailing: Text(
                               "${data['sets']}x${data['reps']} • ${data['weight']}kg",
@@ -614,7 +614,7 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
 
     return GlassCard(
       useBlur: true,
-      borderColor: Colors.white.withOpacity(0.08),
+      borderColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
       borderRadius: 24,
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -624,12 +624,12 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
             children: [
               Icon(Icons.directions_run, color: accentColor, size: 22),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 "Métricas de Cardio",
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                 ),
               ),
             ],
@@ -667,8 +667,8 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            color: Colors.white54,
+          style: TextStyle(
+            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
             fontSize: 11,
             fontWeight: FontWeight.w600,
           ),

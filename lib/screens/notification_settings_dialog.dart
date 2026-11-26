@@ -46,12 +46,12 @@ class NotificationSettingsSheet extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   "Notificações",
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
-                    color: Colors.white,
+                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                   ),
                 ),
                 IconButton(
@@ -73,7 +73,7 @@ class NotificationSettingsSheet extends StatelessWidget {
             _buildHydrationSelector(context, prefs, provider, accentColor),
             const SizedBox(height: 12),
             SwitchListTile(
-              title: const Text("Silenciar à noite", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+              title: Text("Silenciar à noite", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontWeight: FontWeight.w600)),
               subtitle: Text(
                 prefs.silenceHydrationAtNight 
                     ? "Não notificar entre ${prefs.silentNightStartHour}h e ${prefs.silentNightEndHour}h"
@@ -111,7 +111,7 @@ class NotificationSettingsSheet extends StatelessWidget {
             _buildRestTimerSelector(context, prefs, provider, accentColor),
             const SizedBox(height: 12),
             SwitchListTile(
-              title: const Text("Lembretes Motivacionais", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+              title: Text("Lembretes Motivacionais", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontWeight: FontWeight.w600)),
               subtitle: const Text("Avisar quando você ficar muitos dias sem treinar", style: TextStyle(color: Colors.white54, fontSize: 12)),
               value: prefs.motivationRemindersEnabled,
               activeColor: accentColor,
@@ -279,7 +279,7 @@ class NotificationSettingsSheet extends StatelessWidget {
           children: [
             Text(
               label,
-              style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+              style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 14, fontWeight: FontWeight.w600),
             ),
             Row(
               children: [
@@ -314,9 +314,9 @@ class NotificationSettingsSheet extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
+              Text(
                 "Selecione a hora",
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18),
+                style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontWeight: FontWeight.w800, fontSize: 18),
               ),
               const SizedBox(height: 24),
               SizedBox(

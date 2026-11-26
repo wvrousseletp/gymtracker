@@ -888,6 +888,13 @@ class TrackerProvider extends ChangeNotifier with WidgetsBindingObserver {
   void updateSettings(bool sound, bool vibration, int prepSeconds) {
     if (_workoutProvider == null) return;
     _workoutProvider!.updateSettings(sound, vibration, prepSeconds);
+    notifyListeners();
+  }
+
+  void updateThemeMode(String mode) {
+    if (_workoutProvider == null) return;
+    _workoutProvider!.updateThemeMode(mode);
+    notifyListeners();
   }
 
   void setOrganizationMode(OrganizationMode mode) {

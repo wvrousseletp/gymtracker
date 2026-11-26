@@ -56,7 +56,7 @@ class _SpeechNotesDialogState extends State<SpeechNotesDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: const Color(0xff1c1c1e),
+      backgroundColor: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: Colors.white.withOpacity(0.1)),
@@ -74,9 +74,9 @@ class _SpeechNotesDialogState extends State<SpeechNotesDialog> {
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
               hintText: "Senti o ombro, banco inclinado no nível 3...",
-              hintStyle: const TextStyle(color: Colors.white38),
+              hintStyle: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93))),
               filled: true,
-              fillColor: Colors.white.withOpacity(0.05),
+              fillColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
@@ -107,7 +107,7 @@ class _SpeechNotesDialogState extends State<SpeechNotesDialog> {
             Text(
               _isListening ? "Ouvindo... Solte para parar" : "Segure para falar",
               style: TextStyle(
-                color: _isListening ? Colors.redAccent : Colors.white54,
+                color: _isListening ? Colors.redAccent : (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                 fontSize: 12,
               ),
             ),
@@ -117,7 +117,7 @@ class _SpeechNotesDialogState extends State<SpeechNotesDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text("Cancelar", style: TextStyle(color: Colors.white54)),
+          child: Text("Cancelar", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)))),
         ),
         TextButton(
           onPressed: () {

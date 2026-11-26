@@ -157,7 +157,7 @@ class _VolumeHistorySheetState extends State<VolumeHistorySheet> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.white24,
+              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white24 : const Color(0xFFC7C7CC)),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -182,8 +182,8 @@ class _VolumeHistorySheetState extends State<VolumeHistorySheet> {
                     const SizedBox(height: 2),
                     Text(
                       currentSubtitle,
-                      style: const TextStyle(
-                        color: Colors.white54,
+                      style: TextStyle(
+                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                         fontSize: 12,
                       ),
                     ),
@@ -238,11 +238,11 @@ class _VolumeHistorySheetState extends State<VolumeHistorySheet> {
           const SizedBox(height: 12),
 
           if (_allMuscles.isEmpty)
-            const Expanded(
+            Expanded(
               child: Center(
                 child: Text(
                   "Sem dados suficientes de treinos recentes.",
-                  style: TextStyle(color: Colors.white54),
+                  style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73))),
                 ),
               ),
             )
@@ -255,16 +255,16 @@ class _VolumeHistorySheetState extends State<VolumeHistorySheet> {
                 child: RadarChart(
                   RadarChartData(
                     radarBackgroundColor: Colors.transparent,
-                    radarBorderData: const BorderSide(
-                      color: Colors.white24,
+                    radarBorderData: BorderSide(
+                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white24 : const Color(0xFFC7C7CC)),
                       width: 1.5,
                     ),
-                    tickBorderData: const BorderSide(
-                      color: Colors.white12,
+                    tickBorderData: BorderSide(
+                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white12 : Colors.black12),
                       width: 1,
                     ),
-                    gridBorderData: const BorderSide(
-                      color: Colors.white24,
+                    gridBorderData: BorderSide(
+                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white24 : const Color(0xFFC7C7CC)),
                       width: 1,
                     ),
                     ticksTextStyle: const TextStyle(color: Colors.transparent),
@@ -332,22 +332,22 @@ class _VolumeHistorySheetState extends State<VolumeHistorySheet> {
                 children: [
                   const Icon(Icons.circle, color: Colors.greenAccent, size: 10),
                   const SizedBox(width: 6),
-                  const Text(
+                  Text(
                     "Alvo (10-20 séries)",
-                    style: TextStyle(color: Colors.white70, fontSize: 11),
+                    style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 11),
                   ),
                   const SizedBox(width: 20),
                   Icon(Icons.circle, color: widget.accentColor, size: 10),
                   const SizedBox(width: 6),
                   Text(
                     _selectedWeekIndex == -1 ? "Sua Média" : "Real da Semana",
-                    style: const TextStyle(color: Colors.white70, fontSize: 11),
+                    style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 11),
                   ),
                 ],
               ),
             ),
 
-            const Divider(color: Colors.white12, height: 16),
+            Divider(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white12 : Colors.black12), height: 16),
 
             // Muscle Breakdown List with Week-by-Week matrix
             Expanded(
@@ -374,9 +374,9 @@ class _VolumeHistorySheetState extends State<VolumeHistorySheet> {
                     margin: const EdgeInsets.only(bottom: 10),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.04),
+                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.04),
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: Colors.white.withOpacity(0.06)),
+                      border: Border.all(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.06)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -425,8 +425,8 @@ class _VolumeHistorySheetState extends State<VolumeHistorySheet> {
                             final isCurrentSelection =
                                 _selectedWeekIndex == chronIdx;
 
-                            Color badgeColor = Colors.white30;
-                            Color badgeBg = Colors.white.withOpacity(0.03);
+                            Color badgeColor = (Theme.of(context).brightness == Brightness.dark ? Colors.white30 : const Color(0xFFAEAEB2));
+                            Color badgeBg = (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.03);
 
                             if (sets >= 10 && sets <= 20) {
                               badgeColor = Colors.greenAccent;
@@ -454,7 +454,7 @@ class _VolumeHistorySheetState extends State<VolumeHistorySheet> {
                                   border: Border.all(
                                     color: isCurrentSelection
                                         ? widget.accentColor
-                                        : Colors.white.withOpacity(0.08),
+                                        : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
                                     width: isCurrentSelection ? 1.5 : 1,
                                   ),
                                 ),
@@ -465,7 +465,7 @@ class _VolumeHistorySheetState extends State<VolumeHistorySheet> {
                                       style: TextStyle(
                                         color: isCurrentSelection
                                             ? Colors.white
-                                            : Colors.white54,
+                                            : (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                                         fontSize: 9,
                                         fontWeight: isCurrentSelection
                                             ? FontWeight.bold
@@ -507,7 +507,7 @@ class _VolumeHistorySheetState extends State<VolumeHistorySheet> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color: isSelected ? widget.accentColor : Colors.white.withOpacity(0.06),
+          color: isSelected ? widget.accentColor : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.06),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
@@ -518,7 +518,7 @@ class _VolumeHistorySheetState extends State<VolumeHistorySheet> {
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.black : Colors.white70,
+            color: isSelected ? Colors.black : (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
             fontSize: 12,
             fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
           ),

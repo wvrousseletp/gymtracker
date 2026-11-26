@@ -128,7 +128,7 @@ class _CardioHistorySheetState extends State<CardioHistorySheet> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.white24,
+              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white24 : const Color(0xFFC7C7CC)),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -139,10 +139,10 @@ class _CardioHistorySheetState extends State<CardioHistorySheet> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Column(
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       "Histórico de Cardio",
                       style: TextStyle(
                         color: Colors.white,
@@ -150,11 +150,11 @@ class _CardioHistorySheetState extends State<CardioHistorySheet> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(height: 2),
+                    const SizedBox(height: 2),
                     Text(
                       "Minutos executados por semana (Meta: 300m)",
                       style: TextStyle(
-                        color: Colors.white54,
+                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                         fontSize: 12,
                       ),
                     ),
@@ -198,8 +198,8 @@ class _CardioHistorySheetState extends State<CardioHistorySheet> {
                   gridData: FlGridData(
                     show: true,
                     drawVerticalLine: false,
-                    getDrawingHorizontalLine: (value) => const FlLine(
-                      color: Colors.white12,
+                    getDrawingHorizontalLine: (value) => FlLine(
+                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white12 : Colors.black12),
                       strokeWidth: 1,
                       dashArray: [5, 5],
                     ),
@@ -245,8 +245,8 @@ class _CardioHistorySheetState extends State<CardioHistorySheet> {
                               value == 400) {
                             return Text(
                               "${value.toInt()}m",
-                              style: const TextStyle(
-                                color: Colors.white38,
+                              style: TextStyle(
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)),
                                 fontSize: 10,
                               ),
                             );
@@ -265,8 +265,8 @@ class _CardioHistorySheetState extends State<CardioHistorySheet> {
                               padding: const EdgeInsets.only(top: 8.0),
                               child: Text(
                                 chronWeeks[idx].shortTitle,
-                                style: const TextStyle(
-                                  color: Colors.white70,
+                                style: TextStyle(
+                                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -290,7 +290,7 @@ class _CardioHistorySheetState extends State<CardioHistorySheet> {
                               ? Colors.greenAccent
                               : (w.totalMinutes > 0
                                   ? Colors.blueAccent
-                                  : Colors.white12),
+                                  : (Theme.of(context).brightness == Brightness.dark ? Colors.white12 : Colors.black12)),
                           width: 28,
                           borderRadius: const BorderRadius.vertical(
                             top: Radius.circular(8),
@@ -304,7 +304,7 @@ class _CardioHistorySheetState extends State<CardioHistorySheet> {
             ),
           ),
 
-          const Divider(color: Colors.white12, height: 20),
+          Divider(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white12 : Colors.black12), height: 20),
 
           // Week-by-Week Detailed Breakdown List
           Expanded(
@@ -347,7 +347,7 @@ class _CardioHistorySheetState extends State<CardioHistorySheet> {
                       ? Colors.greenAccent
                       : (w.totalMinutes > 0
                           ? Colors.blueAccent
-                          : Colors.white30);
+                          : (Theme.of(context).brightness == Brightness.dark ? Colors.white30 : const Color(0xFFAEAEB2)));
 
                   return Container(
                     margin: const EdgeInsets.only(bottom: 8),
@@ -356,10 +356,10 @@ class _CardioHistorySheetState extends State<CardioHistorySheet> {
                       vertical: 10,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.04),
+                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.04),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.06),
+                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.06),
                       ),
                     ),
                     child: Row(
@@ -379,8 +379,8 @@ class _CardioHistorySheetState extends State<CardioHistorySheet> {
                             const SizedBox(height: 2),
                             Text(
                               w.dateRange,
-                              style: const TextStyle(
-                                color: Colors.white38,
+                              style: TextStyle(
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)),
                                 fontSize: 11,
                               ),
                             ),
@@ -403,7 +403,7 @@ class _CardioHistorySheetState extends State<CardioHistorySheet> {
                               style: TextStyle(
                                 color: isReached
                                     ? Colors.greenAccent
-                                    : Colors.white54,
+                                    : (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                                 fontSize: 11,
                               ),
                             ),
@@ -425,16 +425,16 @@ class _CardioHistorySheetState extends State<CardioHistorySheet> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.04),
+        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.04),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
+        border: Border.all(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.06)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
-            style: const TextStyle(color: Colors.white54, fontSize: 11),
+            style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontSize: 11),
           ),
           const SizedBox(height: 4),
           Text(

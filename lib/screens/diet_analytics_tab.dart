@@ -101,10 +101,10 @@ class DietAnalyticsTab extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 24),
-        const Text(
+        Text(
           "Histórico de Calorias (Kcal)",
           style: TextStyle(
-              color: Colors.white,
+              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
               fontSize: 16,
               fontWeight: FontWeight.bold),
         ),
@@ -186,10 +186,10 @@ class DietAnalyticsTab extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 24),
-        const Text(
+        Text(
           "Histórico de Hidratação (ml)",
           style: TextStyle(
-              color: Colors.white,
+              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
               fontSize: 16,
               fontWeight: FontWeight.bold),
         ),

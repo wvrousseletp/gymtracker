@@ -73,10 +73,10 @@ class _PlateCalculatorDialogState extends State<PlateCalculatorDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: const Color(0xff1c1c1e),
+      backgroundColor: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: Colors.white.withOpacity(0.08)),
+        side: BorderSide(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08)),
       ),
       title: const Text("Calculadora de Anilhas",
           style: TextStyle(
@@ -92,7 +92,7 @@ class _PlateCalculatorDialogState extends State<PlateCalculatorDialog> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text("Alvo (kg)", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                      Text("Alvo (kg)", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 12)),
                       const SizedBox(height: 6),
                       TextField(
                         controller: _targetWeightController,
@@ -100,10 +100,10 @@ class _PlateCalculatorDialogState extends State<PlateCalculatorDialog> {
                         style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                         decoration: InputDecoration(
                           filled: true,
-                          fillColor: Colors.white.withOpacity(0.05),
+                          fillColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
                           hintText: "Ex: 100",
-                          hintStyle: const TextStyle(color: Colors.white24),
+                          hintStyle: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white24 : const Color(0xFFC7C7CC))),
                         ),
                         onChanged: (_) => _calculatePlates(),
                       ),
@@ -115,7 +115,7 @@ class _PlateCalculatorDialogState extends State<PlateCalculatorDialog> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text("Barra (kg)", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                      Text("Barra (kg)", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 12)),
                       const SizedBox(height: 6),
                       TextField(
                         controller: _barWeightController,
@@ -123,7 +123,7 @@ class _PlateCalculatorDialogState extends State<PlateCalculatorDialog> {
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
                           filled: true,
-                          fillColor: Colors.white.withOpacity(0.05),
+                          fillColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
                         ),
                         onChanged: (_) => _calculatePlates(),
@@ -137,7 +137,7 @@ class _PlateCalculatorDialogState extends State<PlateCalculatorDialog> {
             if (hasError)
               const Text("O peso alvo deve ser maior que a barra.", style: TextStyle(color: Colors.redAccent, fontSize: 13))
             else if (platesNeededPerSide.isNotEmpty) ...[
-              const Text("Coloque DE CADA LADO:", style: TextStyle(color: Colors.white70, fontSize: 12)),
+              Text("Coloque DE CADA LADO:", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 12)),
               const SizedBox(height: 16),
               Center(
                 child: SingleChildScrollView(
@@ -214,14 +214,14 @@ class _PlateCalculatorDialogState extends State<PlateCalculatorDialog> {
                 )).toList(),
               )
             ] else
-              const Text("Digite os valores para calcular.", style: TextStyle(color: Colors.white38, fontSize: 13, fontStyle: FontStyle.italic)),
+              Text("Digite os valores para calcular.", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)), fontSize: 13, fontStyle: FontStyle.italic)),
           ],
         ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text("Fechar", style: TextStyle(color: Colors.white54)),
+          child: Text("Fechar", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)))),
         ),
       ],
     );

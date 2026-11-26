@@ -26,6 +26,12 @@ class ModernPlannerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final titleColor = isDark ? Colors.white : const Color(0xFF1C1C1E);
+    final subtitleColor = isDark ? Colors.white54 : const Color(0xFF6E6E73);
+    final effectiveColor =
+        (!isDark && color == Colors.white) ? const Color(0xFF1C1C1E) : color;
+
     return Dismissible(
       key: key ?? ValueKey('planner_card_${title}_${subtitle}_${color.value}'),
       direction: DismissDirection.endToStart,
@@ -45,19 +51,22 @@ class ModernPlannerCard extends StatelessWidget {
           margin: const EdgeInsets.symmetric(vertical: 6),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.05),
+            color: isDark
+                ? effectiveColor.withOpacity(0.05)
+                : Colors.white.withOpacity(0.95),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: color.withOpacity(0.15)),
+            border: Border.all(
+                color: effectiveColor.withOpacity(isDark ? 0.15 : 0.22)),
           ),
           child: Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.12),
+                  color: effectiveColor.withOpacity(0.12),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, color: color, size: 20),
+                child: Icon(icon, color: effectiveColor, size: 20),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -65,15 +74,15 @@ class ModernPlannerCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(title,
-                        style: const TextStyle(
-                            color: Colors.white,
+                        style: TextStyle(
+                            color: titleColor,
                             fontWeight: FontWeight.bold,
                             fontSize: 14)),
                     if (subtitle.isNotEmpty) const SizedBox(height: 2),
                     if (subtitle.isNotEmpty)
                       Text(subtitle,
-                          style: const TextStyle(
-                              color: Colors.white54, fontSize: 12)),
+                          style: TextStyle(
+                              color: subtitleColor, fontSize: 12)),
                   ],
                 ),
               ),

@@ -42,21 +42,25 @@ class _DietScreenState extends State<DietScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final profileProvider = Provider.of<ProfileProvider>(context);
-    final accentColor =
-        ThemeUtils.getColor(profileProvider.currentProfile.colorAccent);
+    final accentColor = ThemeUtils.getAdaptiveColor(
+      profileProvider.currentProfile.colorAccent,
+      isDark: isDark,
+    );
 
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Column(
         children: [
           Container(
-            color: Colors.black,
+            color: Theme.of(context).scaffoldBackgroundColor,
             child: TabBar(
               controller: _tabController,
               indicatorColor: accentColor,
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.white38,
+              labelColor: isDark ? Colors.white : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
+              unselectedLabelColor:
+                  isDark ? (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)) : const Color(0xFF8E8E93),
               labelStyle:
                   const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
               tabs: const [
@@ -133,7 +137,7 @@ class RefeicoesTab extends StatelessWidget {
       ),
       body: RefreshIndicator(
         color: accentColor,
-        backgroundColor: const Color(0xff1c1c1e),
+        backgroundColor: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
         onRefresh: () async {
           provider.checkAndResetDailyDiet();
           await provider.syncHealthMetrics();
@@ -150,7 +154,7 @@ class RefeicoesTab extends StatelessWidget {
                     // Resumo de Calorias & Macros
                     GlassCard(
                       padding: const EdgeInsets.all(16),
-                      borderColor: Colors.white.withOpacity(0.04),
+                      borderColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.04),
                       child: Column(
                         children: [
                           Row(
@@ -159,24 +163,24 @@ class RefeicoesTab extends StatelessWidget {
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text("Saldo Líquido de Calorias",
+                                  Text("Saldo Líquido de Calorias",
                                       style: TextStyle(
-                                          color: Colors.white54,
+                                          color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                                           fontSize: 11,
                                           fontWeight: FontWeight.bold)),
                                   const SizedBox(height: 2),
                                   Text(
                                     "$netCals / ${diet.caloriesGoal} kcal",
-                                    style: const TextStyle(
-                                        color: Colors.white,
+                                    style: TextStyle(
+                                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                                         fontSize: 16,
                                         fontWeight: FontWeight.w900),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
                                     "Consumido: $totalCals kcal • Ativo: $activeCals kcal",
-                                    style: const TextStyle(
-                                        color: Colors.white38,
+                                    style: TextStyle(
+                                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)),
                                         fontSize: 9,
                                         fontWeight: FontWeight.bold),
                                   ),
@@ -194,7 +198,7 @@ class RefeicoesTab extends StatelessWidget {
                           const SizedBox(height: 8),
                           LinearProgressIndicator(
                             value: netProgress,
-                            backgroundColor: Colors.white.withOpacity(0.05),
+                            backgroundColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                             valueColor:
                                 AlwaysStoppedAnimation<Color>(accentColor),
                             borderRadius: BorderRadius.circular(4),
@@ -237,7 +241,7 @@ class RefeicoesTab extends StatelessWidget {
                       GlassCard(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 12),
-                        borderColor: Colors.white.withOpacity(0.04),
+                        borderColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.04),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -249,16 +253,16 @@ class RefeicoesTab extends StatelessWidget {
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text("Gasto Ativo",
+                                    Text("Gasto Ativo",
                                         style: TextStyle(
-                                            color: Colors.white54,
+                                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                                             fontSize: 9,
                                             fontWeight: FontWeight.bold)),
                                     const SizedBox(height: 2),
                                     Text(
                                       "${provider.todayBurnedCalories} kcal",
-                                      style: const TextStyle(
-                                          color: Colors.white,
+                                      style: TextStyle(
+                                          color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                                           fontSize: 13,
                                           fontWeight: FontWeight.w900),
                                     ),
@@ -274,16 +278,16 @@ class RefeicoesTab extends StatelessWidget {
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text("Passos",
+                                    Text("Passos",
                                         style: TextStyle(
-                                            color: Colors.white54,
+                                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                                             fontSize: 9,
                                             fontWeight: FontWeight.bold)),
                                     const SizedBox(height: 2),
                                     Text(
                                       "${provider.todaySteps}",
-                                      style: const TextStyle(
-                                          color: Colors.white,
+                                      style: TextStyle(
+                                          color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                                           fontSize: 13,
                                           fontWeight: FontWeight.w900),
                                     ),
@@ -299,9 +303,9 @@ class RefeicoesTab extends StatelessWidget {
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text("Frequência",
+                                    Text("Frequência",
                                         style: TextStyle(
-                                            color: Colors.white54,
+                                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                                             fontSize: 9,
                                             fontWeight: FontWeight.bold)),
                                     const SizedBox(height: 2),
@@ -309,8 +313,8 @@ class RefeicoesTab extends StatelessWidget {
                                       provider.currentHeartRate > 0
                                           ? "${provider.currentHeartRate} bpm"
                                           : "--",
-                                      style: const TextStyle(
-                                          color: Colors.white,
+                                      style: TextStyle(
+                                          color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                                           fontSize: 13,
                                           fontWeight: FontWeight.w900),
                                     ),
@@ -333,28 +337,28 @@ class RefeicoesTab extends StatelessWidget {
                               Icon(Icons.favorite,
                                   color: accentColor, size: 20),
                               const SizedBox(width: 12),
-                              const Expanded(
+                              Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       "Conectar com App Saúde",
                                       style: TextStyle(
-                                          color: Colors.white,
+                                          color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                                           fontSize: 13,
                                           fontWeight: FontWeight.bold),
                                     ),
-                                    SizedBox(height: 2),
+                                    const SizedBox(height: 2),
                                     Text(
                                       "Acompanhe calorias ativas, passos e batimentos cardíacos.",
                                       style: TextStyle(
-                                          color: Colors.white54, fontSize: 10),
+                                          color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontSize: 10),
                                     ),
                                   ],
                                 ),
                               ),
-                              const Icon(Icons.chevron_right,
-                                  color: Colors.white54),
+                              Icon(Icons.chevron_right,
+                                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73))),
                             ],
                           ),
                         ),
@@ -364,10 +368,10 @@ class RefeicoesTab extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           "Refeições do Dia",
                           style: TextStyle(
-                              color: Colors.white,
+                              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                               fontSize: 15,
                               fontWeight: FontWeight.w800),
                         ),
@@ -421,13 +425,13 @@ class RefeicoesTab extends StatelessWidget {
                     ),
                     const SizedBox(height: 10),
                     if (diet.meals.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 24),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 24),
                         child: Center(
                           child: Text(
                             "Nenhuma refeição registrada hoje.",
                             style: TextStyle(
-                                color: Colors.white38,
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)),
                                 fontStyle: FontStyle.italic),
                           ),
                         ),
@@ -502,8 +506,8 @@ class RefeicoesTab extends StatelessWidget {
                   const SizedBox(width: 6),
                   Text(
                     cat,
-                    style: const TextStyle(
-                      color: Colors.white70,
+                    style: TextStyle(
+                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
                       fontSize: 12,
                       fontWeight: FontWeight.w800,
                     ),
@@ -512,8 +516,8 @@ class RefeicoesTab extends StatelessWidget {
               ),
               Text(
                 "$catCals kcal",
-                style: const TextStyle(
-                  color: Colors.white54,
+                style: TextStyle(
+                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                 ),
@@ -532,7 +536,7 @@ class RefeicoesTab extends StatelessWidget {
               child: GlassCard(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                borderColor: Colors.white.withOpacity(0.04),
+                borderColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.04),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -547,8 +551,8 @@ class RefeicoesTab extends StatelessWidget {
                                 child: Text(
                                   meal.name,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                      color: Colors.white,
+                                  style: TextStyle(
+                                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                                       fontWeight: FontWeight.bold,
                                       fontSize: 13),
                                 ),
@@ -556,8 +560,8 @@ class RefeicoesTab extends StatelessWidget {
                               const SizedBox(width: 8),
                               Text(
                                 meal.time,
-                                style: const TextStyle(
-                                    color: Colors.white38, fontSize: 11),
+                                style: TextStyle(
+                                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)), fontSize: 11),
                               ),
                             ],
                           ),
@@ -582,8 +586,8 @@ class RefeicoesTab extends StatelessWidget {
                       children: [
                         Text(
                           "${meal.calories} kcal",
-                          style: const TextStyle(
-                              color: Colors.white,
+                          style: TextStyle(
+                              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                               fontWeight: FontWeight.w900,
                               fontSize: 13),
                         ),
@@ -591,8 +595,8 @@ class RefeicoesTab extends StatelessWidget {
                         GestureDetector(
                           onTap: () =>
                               _showEditMealDialog(context, dietProvider, meal),
-                          child: const Icon(Icons.edit_outlined,
-                              color: Colors.white38, size: 17),
+                          child: Icon(Icons.edit_outlined,
+                              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)), size: 17),
                         ),
                         const SizedBox(width: 8),
                         GestureDetector(
@@ -629,9 +633,9 @@ class RefeicoesTab extends StatelessWidget {
 
     InputDecoration inputDeco(String label) => InputDecoration(
           labelText: label,
-          labelStyle: const TextStyle(color: Colors.white54, fontSize: 11),
+          labelStyle: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), fontSize: 11),
           filled: true,
-          fillColor: Colors.white.withOpacity(0.05),
+          fillColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
           border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide.none),
@@ -647,7 +651,7 @@ class RefeicoesTab extends StatelessWidget {
           backgroundColor: Colors.transparent,
           child: GlassCard(
             useBlur: true,
-            borderColor: Colors.white.withOpacity(0.08),
+            borderColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
             borderRadius: 20,
             padding: const EdgeInsets.all(20),
             child: SizedBox(
@@ -660,16 +664,16 @@ class RefeicoesTab extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           "Editar Refeição",
                           style: TextStyle(
-                              color: Colors.white,
+                              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                               fontWeight: FontWeight.w800,
                               fontSize: 16),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.close_rounded,
-                              color: Colors.white70, size: 20),
+                          icon: Icon(Icons.close_rounded,
+                              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), size: 20),
                           onPressed: () => Navigator.pop(dialogCtx),
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
@@ -689,9 +693,9 @@ class RefeicoesTab extends StatelessWidget {
                             if (v) setDialogState(() => selectedCat = cat);
                           },
                           selectedColor: accentColor.withOpacity(0.25),
-                          backgroundColor: Colors.white.withOpacity(0.05),
+                          backgroundColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                           labelStyle: TextStyle(
-                            color: isSel ? accentColor : Colors.white70,
+                            color: isSel ? accentColor : (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
                             fontSize: 11,
                             fontWeight:
                                 isSel ? FontWeight.bold : FontWeight.normal,
@@ -702,7 +706,7 @@ class RefeicoesTab extends StatelessWidget {
                     const SizedBox(height: 12),
                     TextField(
                       controller: nameCtrl,
-                      style: const TextStyle(color: Colors.white, fontSize: 13),
+                      style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 13),
                       decoration: inputDeco("Alimento / Refeição"),
                     ),
                     const SizedBox(height: 8),
@@ -712,8 +716,8 @@ class RefeicoesTab extends StatelessWidget {
                           child: TextField(
                             controller: calsCtrl,
                             keyboardType: TextInputType.number,
-                            style: const TextStyle(
-                                color: Colors.white, fontSize: 12),
+                            style: TextStyle(
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 12),
                             decoration: inputDeco("Calorias (kcal)"),
                           ),
                         ),
@@ -721,8 +725,8 @@ class RefeicoesTab extends StatelessWidget {
                         Expanded(
                           child: TextField(
                             controller: timeCtrl,
-                            style: const TextStyle(
-                                color: Colors.white, fontSize: 12),
+                            style: TextStyle(
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 12),
                             decoration: inputDeco("Horário (HH:MM)"),
                           ),
                         ),
@@ -736,8 +740,8 @@ class RefeicoesTab extends StatelessWidget {
                             controller: protCtrl,
                             keyboardType: const TextInputType.numberWithOptions(
                                 decimal: true),
-                            style: const TextStyle(
-                                color: Colors.white, fontSize: 12),
+                            style: TextStyle(
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 12),
                             decoration: inputDeco("Prot (g)"),
                           ),
                         ),
@@ -747,8 +751,8 @@ class RefeicoesTab extends StatelessWidget {
                             controller: carbsCtrl,
                             keyboardType: const TextInputType.numberWithOptions(
                                 decimal: true),
-                            style: const TextStyle(
-                                color: Colors.white, fontSize: 12),
+                            style: TextStyle(
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 12),
                             decoration: inputDeco("Carbs (g)"),
                           ),
                         ),
@@ -758,8 +762,8 @@ class RefeicoesTab extends StatelessWidget {
                             controller: fatCtrl,
                             keyboardType: const TextInputType.numberWithOptions(
                                 decimal: true),
-                            style: const TextStyle(
-                                color: Colors.white, fontSize: 12),
+                            style: TextStyle(
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 12),
                             decoration: inputDeco("Gord (g)"),
                           ),
                         ),
@@ -771,8 +775,8 @@ class RefeicoesTab extends StatelessWidget {
                       children: [
                         TextButton(
                           onPressed: () => Navigator.pop(dialogCtx),
-                          child: const Text("Cancelar",
-                              style: TextStyle(color: Colors.white54)),
+                          child: Text("Cancelar",
+                              style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)))),
                         ),
                         const SizedBox(width: 8),
                         ElevatedButton(
@@ -1288,9 +1292,9 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
   InputDecoration _dialogInputDeco(String hint) {
     return InputDecoration(
       filled: true,
-      fillColor: Colors.white.withOpacity(0.05),
+      fillColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
       hintText: hint,
-      hintStyle: const TextStyle(color: Colors.white30, fontSize: 12),
+      hintStyle: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white30 : const Color(0xFFAEAEB2)), fontSize: 12),
       border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -1302,9 +1306,9 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03),
+        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.03),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05)),
       ),
       child: Row(
         children: [
@@ -1339,12 +1343,12 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
           child: Column(
             children: [
               Icon(icon,
-                  size: 16, color: active ? accentColor : Colors.white38),
+                  size: 16, color: active ? accentColor : (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93))),
               const SizedBox(height: 2),
               Text(
                 title,
                 style: TextStyle(
-                  color: active ? Colors.white : Colors.white38,
+                  color: active ? Colors.white : (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)),
                   fontSize: 10,
                   fontWeight: active ? FontWeight.bold : FontWeight.normal,
                 ),
@@ -1363,7 +1367,7 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
       backgroundColor: Colors.transparent,
       child: GlassCard(
         useBlur: true,
-        borderColor: Colors.white.withOpacity(0.08),
+        borderColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
         borderRadius: 20,
         padding: const EdgeInsets.all(20),
         child: SizedBox(
@@ -1375,18 +1379,18 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     "Registrar Refeição",
                     style: TextStyle(
-                        color: Colors.white,
+                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                         fontWeight: FontWeight.w800,
                         fontSize: 16),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close_rounded, color: Colors.white, size: 20),
+                    icon: Icon(Icons.close_rounded, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), size: 20),
                     onPressed: () => Navigator.pop(context),
                     style: IconButton.styleFrom(
-                      backgroundColor: Colors.white.withOpacity(0.08),
+                      backgroundColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
                       padding: const EdgeInsets.all(4),
                       minimumSize: const Size(32, 32),
                     ),
@@ -1408,10 +1412,10 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                           if (v) setState(() => _selectedCategory = cat);
                         },
                         selectedColor: accentColor.withOpacity(0.25),
-                        backgroundColor: Colors.white.withOpacity(0.05),
+                        backgroundColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                         visualDensity: VisualDensity.compact,
                         labelStyle: TextStyle(
-                          color: isSel ? accentColor : Colors.white70,
+                          color: isSel ? accentColor : (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
                           fontSize: 10,
                           fontWeight:
                               isSel ? FontWeight.bold : FontWeight.normal,
@@ -1432,8 +1436,8 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                       if (_activeTab == 0) ...[
                         TextField(
                           controller: _searchCtrl,
-                          style: const TextStyle(
-                              color: Colors.white, fontSize: 14),
+                          style: TextStyle(
+                              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 14),
                           decoration: _dialogInputDeco(
                               "Buscar ou descrever refeição p/ IA..."),
                           onChanged: (_) => _onSearchChanged(),
@@ -1476,31 +1480,31 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                           Container(
                             constraints: const BoxConstraints(maxHeight: 180),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.03),
+                              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.03),
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
-                                  color: Colors.white.withOpacity(0.05)),
+                                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05)),
                             ),
                             child: ListView.separated(
                               shrinkWrap: true,
                               physics: const ClampingScrollPhysics(),
                               itemCount: _searchResults.length,
                               separatorBuilder: (_, __) => Divider(
-                                  color: Colors.white.withOpacity(0.05),
+                                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                                   height: 1),
                               itemBuilder: (context, index) {
                                 final item = _searchResults[index];
                                 return ListTile(
                                   dense: true,
                                   title: Text(item.name,
-                                      style: const TextStyle(
-                                          color: Colors.white,
+                                      style: TextStyle(
+                                          color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                                           fontWeight: FontWeight.bold,
                                           fontSize: 13)),
                                   subtitle: Text(
                                     "${item.calories} kcal | P: ${item.protein}g | C: ${item.carbs}g | G: ${item.fat}g por ${item.servingSize.round()}g",
-                                    style: const TextStyle(
-                                        color: Colors.white60, fontSize: 11),
+                                    style: TextStyle(
+                                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white60 : const Color(0xFF48484A)), fontSize: 11),
                                   ),
                                   onTap: () => _selectFood(item),
                                 );
@@ -1554,23 +1558,23 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                                   padding: const EdgeInsets.symmetric(
                                       vertical: 8, horizontal: 8),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.05),
+                                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                                     borderRadius: BorderRadius.circular(10),
                                     border: Border.all(
                                         color: Colors.white.withOpacity(0.1)),
                                   ),
-                                  child: const Row(
+                                  child: Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       Icon(Icons.edit_note_rounded,
-                                          color: Colors.white70, size: 16),
-                                      SizedBox(width: 5),
+                                          color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), size: 16),
+                                      const SizedBox(width: 5),
                                       Flexible(
                                         child: Text(
                                           "Modo Manual",
                                           overflow: TextOverflow.ellipsis,
                                           style: TextStyle(
-                                              color: Colors.white70,
+                                              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
                                               fontSize: 11,
                                               fontWeight: FontWeight.bold),
                                         ),
@@ -1587,10 +1591,10 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.03),
+                              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.03),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                  color: Colors.white.withOpacity(0.06)),
+                                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.06)),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1602,8 +1606,8 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                                     Expanded(
                                       child: Text(
                                         _selectedFood!.name,
-                                        style: const TextStyle(
-                                            color: Colors.white,
+                                        style: TextStyle(
+                                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                                             fontWeight: FontWeight.bold,
                                             fontSize: 13),
                                         overflow: TextOverflow.ellipsis,
@@ -1625,8 +1629,8 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                                       child: TextField(
                                         controller: _quantityCtrl,
                                         keyboardType: TextInputType.number,
-                                        style: const TextStyle(
-                                            color: Colors.white, fontSize: 13),
+                                        style: TextStyle(
+                                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 13),
                                         decoration: _dialogInputDeco(
                                             "Quantidade (g ou ml)"),
                                         onChanged: (_) => setState(() {}),
@@ -1657,8 +1661,8 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                                       children: [
                                         Text(
                                           "Total: $calories kcal",
-                                          style: const TextStyle(
-                                              color: Colors.white,
+                                          style: TextStyle(
+                                              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                                               fontWeight: FontWeight.w900,
                                               fontSize: 14),
                                         ),
@@ -1693,26 +1697,26 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.03),
+                              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.03),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                  color: Colors.white.withOpacity(0.06)),
+                                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.06)),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
+                                Text(
                                   "Modo Manual ✍️",
                                   style: TextStyle(
-                                      color: Colors.white,
+                                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                                       fontWeight: FontWeight.bold,
                                       fontSize: 13),
                                 ),
                                 const SizedBox(height: 10),
                                 TextField(
                                   controller: _manualNameCtrl,
-                                  style: const TextStyle(
-                                      color: Colors.white, fontSize: 13),
+                                  style: TextStyle(
+                                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 13),
                                   decoration:
                                       _dialogInputDeco("Nome do alimento..."),
                                   onChanged: (_) => setState(() {}),
@@ -1724,8 +1728,8 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                                       child: TextField(
                                         controller: _manualCalsCtrl,
                                         keyboardType: TextInputType.number,
-                                        style: const TextStyle(
-                                            color: Colors.white, fontSize: 12),
+                                        style: TextStyle(
+                                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 12),
                                         decoration:
                                             _dialogInputDeco("Calorias (kcal)"),
                                       ),
@@ -1735,8 +1739,8 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                                       child: TextField(
                                         controller: _manualProtCtrl,
                                         keyboardType: TextInputType.number,
-                                        style: const TextStyle(
-                                            color: Colors.white, fontSize: 12),
+                                        style: TextStyle(
+                                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 12),
                                         decoration:
                                             _dialogInputDeco("Prot (g)"),
                                       ),
@@ -1750,8 +1754,8 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                                       child: TextField(
                                         controller: _manualCarbsCtrl,
                                         keyboardType: TextInputType.number,
-                                        style: const TextStyle(
-                                            color: Colors.white, fontSize: 12),
+                                        style: TextStyle(
+                                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 12),
                                         decoration:
                                             _dialogInputDeco("Carbs (g)"),
                                       ),
@@ -1761,8 +1765,8 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                                       child: TextField(
                                         controller: _manualFatCtrl,
                                         keyboardType: TextInputType.number,
-                                        style: const TextStyle(
-                                            color: Colors.white, fontSize: 12),
+                                        style: TextStyle(
+                                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 12),
                                         decoration:
                                             _dialogInputDeco("Gord (g)"),
                                       ),
@@ -1780,13 +1784,13 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                               child: CircularProgressIndicator(
                                   color: Colors.amber))
                         else if (_favorites.isEmpty)
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 24),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 24),
                             child: Center(
                               child: Text(
                                 "Nenhum favorito salvo ainda.",
                                 style: TextStyle(
-                                    color: Colors.white38, fontSize: 12),
+                                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)), fontSize: 12),
                               ),
                             ),
                           )
@@ -1796,7 +1800,7 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                             physics: const NeverScrollableScrollPhysics(),
                             itemCount: _favorites.length,
                             separatorBuilder: (_, __) => Divider(
-                                color: Colors.white.withOpacity(0.05),
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                                 height: 1),
                             itemBuilder: (context, index) {
                               final fav = _favorites[index];
@@ -1804,14 +1808,14 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                                 dense: true,
                                 contentPadding: EdgeInsets.zero,
                                 title: Text(fav.food.name,
-                                    style: const TextStyle(
-                                        color: Colors.white,
+                                    style: TextStyle(
+                                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                                         fontWeight: FontWeight.bold,
                                         fontSize: 13)),
                                 subtitle: Text(
                                   "${fav.favoriteQuantity.round()}g | ${(fav.food.calories * (fav.favoriteQuantity / fav.food.servingSize)).round()} kcal",
-                                  style: const TextStyle(
-                                      color: Colors.white60, fontSize: 11),
+                                  style: TextStyle(
+                                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white60 : const Color(0xFF48484A)), fontSize: 11),
                                 ),
                                 trailing: IconButton(
                                   icon: const Icon(Icons.star,
@@ -1830,8 +1834,8 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                               Expanded(
                                 child: TextField(
                                   controller: _comboNameCtrl,
-                                  style: const TextStyle(
-                                      color: Colors.white, fontSize: 13),
+                                  style: TextStyle(
+                                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 13),
                                   decoration: _dialogInputDeco(
                                       "Nome da refeição (ex: Café da Manhã)"),
                                   onChanged: (_) => setState(() {}),
@@ -1860,8 +1864,8 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                                     Expanded(
                                       child: Text(
                                         "${item.food.name} (${item.quantity.round()}g) - ${(item.food.calories * (item.quantity / item.food.servingSize)).round()} kcal",
-                                        style: const TextStyle(
-                                            color: Colors.white70,
+                                        style: TextStyle(
+                                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
                                             fontSize: 11),
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -1881,8 +1885,8 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                           const SizedBox(height: 10),
                           TextField(
                             controller: _comboSearchCtrl,
-                            style: const TextStyle(
-                                color: Colors.white, fontSize: 12),
+                            style: TextStyle(
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 12),
                             decoration: _dialogInputDeco(
                                 "Buscar e adicionar alimento..."),
                             onChanged: (_) => _onComboSearchChanged(),
@@ -1892,7 +1896,7 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                             Container(
                               constraints: const BoxConstraints(maxHeight: 120),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.02),
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.02),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: ListView.builder(
@@ -1903,8 +1907,8 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                                   return ListTile(
                                     dense: true,
                                     title: Text(food.name,
-                                        style: const TextStyle(
-                                            color: Colors.white, fontSize: 12)),
+                                        style: TextStyle(
+                                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 12)),
                                     onTap: () => _addItemToNewCombo(food),
                                   );
                                 },
@@ -1932,9 +1936,9 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text("Suas Refeições Salvas",
+                              Text("Suas Refeições Salvas",
                                   style: TextStyle(
-                                      color: Colors.white70, fontSize: 12)),
+                                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 12)),
                               TextButton.icon(
                                 icon: const Icon(Icons.add,
                                     size: 14, color: Colors.amber),
@@ -1951,13 +1955,13 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                                 child: CircularProgressIndicator(
                                     color: Colors.amber))
                           else if (_presets.isEmpty)
-                            const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 24),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 24),
                               child: Center(
                                 child: Text(
                                   "Nenhuma refeição salva ainda.",
                                   style: TextStyle(
-                                      color: Colors.white38, fontSize: 12),
+                                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)), fontSize: 12),
                                 ),
                               ),
                             )
@@ -1967,7 +1971,7 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                               physics: const NeverScrollableScrollPhysics(),
                               itemCount: _presets.length,
                               separatorBuilder: (_, __) => Divider(
-                                  color: Colors.white.withOpacity(0.05),
+                                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                                   height: 1),
                               itemBuilder: (context, index) {
                                 final preset = _presets[index];
@@ -1976,15 +1980,15 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                                   contentPadding: EdgeInsets.zero,
                                   title: Text(
                                     preset.name,
-                                    style: const TextStyle(
-                                        color: Colors.white,
+                                    style: TextStyle(
+                                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                                         fontWeight: FontWeight.bold,
                                         fontSize: 13),
                                   ),
                                   subtitle: Text(
                                     "${preset.items.length} itens | ${preset.totalCalories} kcal",
-                                    style: const TextStyle(
-                                        color: Colors.white60, fontSize: 11),
+                                    style: TextStyle(
+                                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white60 : const Color(0xFF48484A)), fontSize: 11),
                                   ),
                                   trailing: IconButton(
                                     icon: const Icon(Icons.delete,
@@ -2007,9 +2011,9 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text("Cancelar",
+                    child: Text("Cancelar",
                         style: TextStyle(
-                            color: Colors.white54,
+                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                             fontWeight: FontWeight.bold)),
                   ),
                   if (_activeTab == 0 &&
@@ -2052,8 +2056,8 @@ class _AddMealDialogContentState extends State<_AddMealDialogContent> {
                   color: color, fontSize: 9, fontWeight: FontWeight.bold)),
           const SizedBox(height: 2),
           Text(value,
-              style: const TextStyle(
-                  color: Colors.white,
+              style: TextStyle(
+                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                   fontSize: 11,
                   fontWeight: FontWeight.w600)),
         ],
@@ -2095,7 +2099,7 @@ class AguaTab extends StatelessWidget {
                   width: 140,
                   height: 200,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.03),
+                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.03),
                     borderRadius: const BorderRadius.vertical(
                         bottom: Radius.circular(20), top: Radius.circular(8)),
                     border: Border.all(
@@ -2113,16 +2117,16 @@ class AguaTab extends StatelessWidget {
                       children: [
                         Text(
                           "${diet.waterIntakeMl} ml",
-                          style: const TextStyle(
-                              color: Colors.white,
+                          style: TextStyle(
+                              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                               fontSize: 22,
                               fontWeight: FontWeight.w900),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           "Meta: ${diet.waterGoalMl} ml",
-                          style: const TextStyle(
-                              color: Colors.white54,
+                          style: TextStyle(
+                              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                               fontSize: 11,
                               fontWeight: FontWeight.w700),
                         ),
@@ -2156,10 +2160,10 @@ class AguaTab extends StatelessWidget {
               onPressed: () {
                 provider.updateWaterIntake(0);
               },
-              icon: const Icon(Icons.refresh, color: Colors.white54, size: 16),
-              label: const Text("Zerar Consumo",
+              icon: Icon(Icons.refresh, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), size: 16),
+              label: Text("Zerar Consumo",
                   style: TextStyle(
-                      color: Colors.white54,
+                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                       fontSize: 12,
                       fontWeight: FontWeight.bold)),
             ),
@@ -2244,7 +2248,7 @@ class _JejumTabState extends State<JejumTab> {
             colorScheme: ColorScheme.dark(
               primary: widget.accentColor,
               onPrimary: Colors.black,
-              surface: const Color(0xff1c1c1e),
+              surface: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
               onSurface: Colors.white,
             ),
           ),
@@ -2264,7 +2268,7 @@ class _JejumTabState extends State<JejumTab> {
             colorScheme: ColorScheme.dark(
               primary: widget.accentColor,
               onPrimary: Colors.black,
-              surface: const Color(0xff1c1c1e),
+              surface: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
               onSurface: Colors.white,
             ),
           ),
@@ -2353,14 +2357,14 @@ class _JejumTabState extends State<JejumTab> {
 
     return GlassCard(
       padding: const EdgeInsets.all(20),
-      borderColor: Colors.white.withOpacity(0.04),
+      borderColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.04),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             "Estatísticas de Jejum",
             style: TextStyle(
-                color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15),
+                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontWeight: FontWeight.w800, fontSize: 15),
           ),
           const SizedBox(height: 16),
           Row(
@@ -2427,8 +2431,8 @@ class _JejumTabState extends State<JejumTab> {
           const SizedBox(height: 8),
           Text(
             value,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
               fontSize: 18,
               fontWeight: FontWeight.w900,
             ),
@@ -2436,8 +2440,8 @@ class _JejumTabState extends State<JejumTab> {
           const SizedBox(height: 2),
           Text(
             label,
-            style: const TextStyle(
-              color: Colors.white60,
+            style: TextStyle(
+              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white60 : const Color(0xFF48484A)),
               fontSize: 10,
               fontWeight: FontWeight.w600,
             ),
@@ -2451,7 +2455,7 @@ class _JejumTabState extends State<JejumTab> {
     showDialog(
       context: context,
       builder: (dialogCtx) => AlertDialog(
-        backgroundColor: const Color(0xff1c1c1e),
+        backgroundColor: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
         title: const Text(
           "Finalizar Jejum",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
@@ -2492,7 +2496,7 @@ class _JejumTabState extends State<JejumTab> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text("Cancelar", style: TextStyle(color: Colors.white60, fontWeight: FontWeight.bold)),
+            child: Text("Cancelar", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white60 : const Color(0xFF48484A)), fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -2505,7 +2509,7 @@ class _JejumTabState extends State<JejumTab> {
     showDialog(
       context: context,
       builder: (dialogCtx) => AlertDialog(
-        backgroundColor: const Color(0xff1c1c1e),
+        backgroundColor: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
         title: const Text(
           "Horário de Término",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
@@ -2513,9 +2517,9 @@ class _JejumTabState extends State<JejumTab> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
+            Text(
               "Selecione quando você terminou o jejum:",
-              style: TextStyle(color: Colors.white70),
+              style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43))),
             ),
             const SizedBox(height: 16),
             SizedBox(
@@ -2536,7 +2540,7 @@ class _JejumTabState extends State<JejumTab> {
           TextButton(
             onPressed: () => Navigator.pop(dialogCtx),
             child:
-                const Text("Cancelar", style: TextStyle(color: Colors.white60)),
+                Text("Cancelar", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white60 : const Color(0xFF48484A)))),
           ),
           ElevatedButton(
             onPressed: () {
@@ -2588,9 +2592,9 @@ class _JejumTabState extends State<JejumTab> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03),
+        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.03),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
+        border: Border.all(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.06)),
       ),
       child: Row(
         children: [
@@ -2600,8 +2604,8 @@ class _JejumTabState extends State<JejumTab> {
           Expanded(
             child: Text(
               quote,
-              style: const TextStyle(
-                color: Colors.white70,
+              style: TextStyle(
+                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
                 fontSize: 13,
                 fontStyle: FontStyle.italic,
                 height: 1.4,
@@ -2682,8 +2686,8 @@ class _JejumTabState extends State<JejumTab> {
                   const SizedBox(height: 4),
                   Text(
                     stageDesc,
-                    style: const TextStyle(
-                        color: Colors.white70, fontSize: 12, height: 1.3),
+                    style: TextStyle(
+                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 12, height: 1.3),
                   ),
                 ],
               ),
@@ -2728,12 +2732,12 @@ class _JejumTabState extends State<JejumTab> {
                 decoration: BoxDecoration(
                   color: isSel
                       ? widget.accentColor.withOpacity(0.2)
-                      : Colors.white.withOpacity(0.04),
+                      : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.04),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: isSel
                         ? widget.accentColor.withOpacity(0.4)
-                        : Colors.white.withOpacity(0.08),
+                        : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
                     width: 1.2,
                   ),
                 ),
@@ -2743,13 +2747,13 @@ class _JejumTabState extends State<JejumTab> {
                     Icon(
                       icon,
                       size: 16,
-                      color: isSel ? widget.accentColor : Colors.white60,
+                      color: isSel ? widget.accentColor : (Theme.of(context).brightness == Brightness.dark ? Colors.white60 : const Color(0xFF48484A)),
                     ),
                     const SizedBox(width: 6),
                     Text(
                       name,
                       style: TextStyle(
-                        color: isSel ? widget.accentColor : Colors.white70,
+                        color: isSel ? widget.accentColor : (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
                       ),
@@ -2825,9 +2829,9 @@ class _JejumTabState extends State<JejumTab> {
                                       value: 1.0,
                                       strokeWidth: 12,
                                       backgroundColor:
-                                          Colors.white.withOpacity(0.05),
+                                          (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                                       valueColor: AlwaysStoppedAnimation<Color>(
-                                          Colors.white.withOpacity(0.05)),
+                                          (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05)),
                                     ),
                                   ),
                                   // Progress circle
@@ -2850,8 +2854,8 @@ class _JejumTabState extends State<JejumTab> {
                                     children: [
                                       Text(
                                         _formatDuration(elapsed),
-                                        style: const TextStyle(
-                                          color: Colors.white,
+                                        style: TextStyle(
+                                          color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                                           fontSize: 32,
                                           fontWeight: FontWeight.w900,
                                           letterSpacing: 1.0,
@@ -2861,8 +2865,8 @@ class _JejumTabState extends State<JejumTab> {
                                       if (!isIndefinite)
                                         Text(
                                           "Restante: ${_formatDuration(Duration(seconds: remainingSecs.toInt()))}",
-                                          style: const TextStyle(
-                                              color: Colors.white54,
+                                          style: TextStyle(
+                                              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                                               fontSize: 11,
                                               fontWeight: FontWeight.w600),
                                         ),
@@ -2899,8 +2903,8 @@ class _JejumTabState extends State<JejumTab> {
                               isIndefinite
                                   ? "Jejum por Tempo Indefinido"
                                   : "Meta: ${active.goalDurationHours.toStringAsFixed(0)} horas",
-                              style: const TextStyle(
-                                  color: Colors.white54,
+                              style: TextStyle(
+                                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700),
                             ),
@@ -2972,25 +2976,25 @@ class _JejumTabState extends State<JejumTab> {
                     builder: (context, setDialogState) {
                       return GlassCard(
                         padding: const EdgeInsets.all(20),
-                        borderColor: Colors.white.withOpacity(0.04),
+                        borderColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.04),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Center(
+                            Center(
                               child: Text(
                                 "Iniciar Novo Jejum",
                                 style: TextStyle(
-                                    color: Colors.white,
+                                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                                     fontWeight: FontWeight.w800,
                                     fontSize: 15),
                               ),
                             ),
                             const SizedBox(height: 16),
 
-                            const Text(
+                            Text(
                               "Protocolos Sugeridos",
                               style: TextStyle(
-                                  color: Colors.white54,
+                                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold),
                             ),
@@ -3001,10 +3005,10 @@ class _JejumTabState extends State<JejumTab> {
                               });
                             }),
 
-                            const Text(
+                            Text(
                               "Duração Meta",
                               style: TextStyle(
-                                  color: Colors.white54,
+                                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold),
                             ),
@@ -3013,17 +3017,17 @@ class _JejumTabState extends State<JejumTab> {
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 16),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.05),
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                    color: Colors.white.withOpacity(0.08)),
+                                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08)),
                               ),
                               child: DropdownButtonHideUnderline(
                                 child: DropdownButton<double>(
                                   value: _selectedGoalHours,
-                                  dropdownColor: const Color(0xff1c1c1e),
-                                  style: const TextStyle(
-                                      color: Colors.white,
+                                  dropdownColor: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
+                                  style: TextStyle(
+                                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                                       fontSize: 14,
                                       fontWeight: FontWeight.bold),
                                   isExpanded: true,
@@ -3053,10 +3057,10 @@ class _JejumTabState extends State<JejumTab> {
                             ),
                             const SizedBox(height: 16),
 
-                            const Text(
+                            Text(
                               "Horário de Início",
                               style: TextStyle(
-                                  color: Colors.white54,
+                                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold),
                             ),
@@ -3067,22 +3071,22 @@ class _JejumTabState extends State<JejumTab> {
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 16, vertical: 12),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.05),
+                                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
-                                      color: Colors.white.withOpacity(0.08)),
+                                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08)),
                                 ),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
                                       "${_selectedStartTime.day.toString().padLeft(2, '0')}/${_selectedStartTime.month.toString().padLeft(2, '0')} às ${_selectedStartTime.hour.toString().padLeft(2, '0')}:${_selectedStartTime.minute.toString().padLeft(2, '0')}",
-                                      style: const TextStyle(
-                                          color: Colors.white,
+                                      style: TextStyle(
+                                          color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                                           fontSize: 14,
                                           fontWeight: FontWeight.bold),
                                     ),
-                                    const Icon(Icons.edit_calendar, color: Colors.white54, size: 18),
+                                    Icon(Icons.edit_calendar, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), size: 18),
                                   ],
                                 ),
                               ),
@@ -3103,7 +3107,7 @@ class _JejumTabState extends State<JejumTab> {
                                       },
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor:
-                                            Colors.white.withOpacity(0.06),
+                                            (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.06),
                                         foregroundColor: Colors.white,
                                         side: BorderSide(
                                             color:
@@ -3114,10 +3118,10 @@ class _JejumTabState extends State<JejumTab> {
                                                 BorderRadius.circular(12)),
                                         elevation: 0,
                                       ),
-                                      child: const Text(
+                                      child: Text(
                                         "Jejum Indefinido",
                                         style: TextStyle(
-                                            color: Colors.white,
+                                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                                             fontWeight: FontWeight.w800,
                                             fontSize: 12),
                                       ),
@@ -3167,10 +3171,10 @@ class _JejumTabState extends State<JejumTab> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   "Abstinências Ativas",
                   style: TextStyle(
-                      color: Colors.white,
+                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                       fontSize: 15,
                       fontWeight: FontWeight.w800),
                 ),
@@ -3191,13 +3195,13 @@ class _JejumTabState extends State<JejumTab> {
             const SizedBox(height: 10),
 
             diet.abstinence.isEmpty
-                ? const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 16),
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                     child: Center(
                       child: Text(
                         "Nenhuma abstinência registrada.",
                         style: TextStyle(
-                            color: Colors.white24,
+                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white24 : const Color(0xFFC7C7CC)),
                             fontStyle: FontStyle.italic,
                             fontSize: 12),
                       ),
@@ -3234,7 +3238,7 @@ class _JejumTabState extends State<JejumTab> {
                         margin: const EdgeInsets.only(bottom: 8),
                         child: GlassCard(
                           padding: const EdgeInsets.all(12),
-                          borderColor: Colors.white.withOpacity(0.04),
+                          borderColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.04),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -3244,8 +3248,8 @@ class _JejumTabState extends State<JejumTab> {
                                   children: [
                                     Text(
                                       a.title,
-                                      style: const TextStyle(
-                                          color: Colors.white,
+                                      style: TextStyle(
+                                          color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                                           fontWeight: FontWeight.bold,
                                           fontSize: 13),
                                     ),
@@ -3262,8 +3266,8 @@ class _JejumTabState extends State<JejumTab> {
                                       const SizedBox(height: 4),
                                       Text(
                                         a.notes!,
-                                        style: const TextStyle(
-                                            color: Colors.white38,
+                                        style: TextStyle(
+                                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)),
                                             fontSize: 10,
                                             fontStyle: FontStyle.italic),
                                       ),
@@ -3298,12 +3302,12 @@ class _JejumTabState extends State<JejumTab> {
             const SizedBox(height: 24),
 
             // HISTÓRICO DE JEJUNS
-            const Align(
+            Align(
               alignment: Alignment.centerLeft,
               child: Text(
                 "Histórico de Jejuns",
                 style: TextStyle(
-                    color: Colors.white,
+                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                     fontSize: 15,
                     fontWeight: FontWeight.w800),
               ),
@@ -3311,13 +3315,13 @@ class _JejumTabState extends State<JejumTab> {
             const SizedBox(height: 10),
 
             diet.fasting.history.isEmpty
-                ? const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24),
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
                     child: Center(
                       child: Text(
                         "Nenhum jejum concluído no histórico.",
                         style: TextStyle(
-                            color: Colors.white38, fontStyle: FontStyle.italic),
+                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)), fontStyle: FontStyle.italic),
                       ),
                     ),
                   )
@@ -3375,8 +3379,8 @@ class _JejumTabState extends State<JejumTab> {
                                       const SizedBox(width: 8),
                                       Text(
                                         "Data: $dateStr",
-                                        style: const TextStyle(
-                                            color: Colors.white38,
+                                        style: TextStyle(
+                                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)),
                                             fontSize: 11),
                                       ),
                                     ],
@@ -3384,15 +3388,15 @@ class _JejumTabState extends State<JejumTab> {
                                   const SizedBox(height: 4),
                                   Text(
                                     "Fasting de ${goalHours.toStringAsFixed(0)}h",
-                                    style: const TextStyle(
-                                        color: Colors.white70, fontSize: 11),
+                                    style: TextStyle(
+                                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 11),
                                   ),
                                 ],
                               ),
                               Text(
                                 _formatDurationShort(diff),
-                                style: const TextStyle(
-                                    color: Colors.white,
+                                style: TextStyle(
+                                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                                     fontWeight: FontWeight.w900,
                                     fontSize: 13),
                               ),
@@ -3429,7 +3433,7 @@ class _JejumTabState extends State<JejumTab> {
                   colorScheme: ColorScheme.dark(
                     primary: widget.accentColor,
                     onPrimary: Colors.black,
-                    surface: const Color(0xff1c1c1e),
+                    surface: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
                   ),
                 ),
                 child: child!,
@@ -3446,7 +3450,7 @@ class _JejumTabState extends State<JejumTab> {
                   colorScheme: ColorScheme.dark(
                     primary: widget.accentColor,
                     onPrimary: Colors.black,
-                    surface: const Color(0xff1c1c1e),
+                    surface: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
                   ),
                 ),
                 child: child!,
@@ -3467,17 +3471,17 @@ class _JejumTabState extends State<JejumTab> {
             backgroundColor: Colors.transparent,
             child: GlassCard(
               useBlur: true,
-              borderColor: Colors.white.withOpacity(0.08),
+              borderColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
               borderRadius: 20,
               padding: const EdgeInsets.all(20),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text(
+                  Text(
                     "Nova Abstinência",
                     style: TextStyle(
-                        color: Colors.white,
+                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                         fontWeight: FontWeight.w800,
                         fontSize: 16),
                   ),
@@ -3485,13 +3489,13 @@ class _JejumTabState extends State<JejumTab> {
                   TextField(
                     controller: titleCtrl,
                     autofocus: true,
-                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 13),
                     decoration: InputDecoration(
                       filled: true,
-                      fillColor: Colors.white.withOpacity(0.05),
+                      fillColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                       hintText: "O que você vai parar? (ex: Açúcar)",
                       hintStyle:
-                          const TextStyle(color: Colors.white30, fontSize: 12),
+                          TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white30 : const Color(0xFFAEAEB2)), fontSize: 12),
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
                           borderSide: BorderSide.none),
@@ -3501,13 +3505,13 @@ class _JejumTabState extends State<JejumTab> {
                   TextField(
                     controller: notesCtrl,
                     maxLines: 2,
-                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 13),
                     decoration: InputDecoration(
                       filled: true,
-                      fillColor: Colors.white.withOpacity(0.05),
+                      fillColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05),
                       hintText: "Notas / Motivação (Opcional)",
                       hintStyle:
-                          const TextStyle(color: Colors.white30, fontSize: 12),
+                          TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white30 : const Color(0xFFAEAEB2)), fontSize: 12),
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
                           borderSide: BorderSide.none),
@@ -3518,21 +3522,21 @@ class _JejumTabState extends State<JejumTab> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Column(
+                      Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             "Iniciado em:",
                             style: TextStyle(
-                                color: Colors.white54,
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold),
                           ),
-                          SizedBox(height: 2),
+                          const SizedBox(height: 2),
                           Text(
                             "Caso já tenha começado",
                             style:
-                                TextStyle(color: Colors.white24, fontSize: 10),
+                                TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white24 : const Color(0xFFC7C7CC)), fontSize: 10),
                           ),
                         ],
                       ),
@@ -3548,7 +3552,7 @@ class _JejumTabState extends State<JejumTab> {
                               fontWeight: FontWeight.bold),
                         ),
                         style: TextButton.styleFrom(
-                          backgroundColor: Colors.white.withOpacity(0.04),
+                          backgroundColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.04),
                           padding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 6),
                           shape: RoundedRectangleBorder(
@@ -3563,9 +3567,9 @@ class _JejumTabState extends State<JejumTab> {
                     children: [
                       TextButton(
                         onPressed: () => Navigator.pop(dialogCtx),
-                        child: const Text("Cancelar",
+                        child: Text("Cancelar",
                             style: TextStyle(
-                                color: Colors.white54,
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                                 fontWeight: FontWeight.bold)),
                       ),
                       const SizedBox(width: 8),
@@ -3605,25 +3609,25 @@ class _JejumTabState extends State<JejumTab> {
         backgroundColor: Colors.transparent,
         child: GlassCard(
           useBlur: true,
-          borderColor: Colors.white.withOpacity(0.08),
+          borderColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
           borderRadius: 20,
           padding: const EdgeInsets.all(20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
+              Text(
                 "Zerar Contador?",
                 style: TextStyle(
-                    color: Colors.white,
+                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                     fontWeight: FontWeight.w800,
                     fontSize: 16),
               ),
               const SizedBox(height: 12),
               Text(
                 "Deseja realmente reiniciar o tempo de '${a.title}'? O contador recomeçará do zero.",
-                style: const TextStyle(
-                    color: Colors.white70, fontSize: 13, height: 1.4),
+                style: TextStyle(
+                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 13, height: 1.4),
               ),
               const SizedBox(height: 20),
               Row(
@@ -3631,9 +3635,9 @@ class _JejumTabState extends State<JejumTab> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(dialogCtx),
-                    child: const Text("Cancelar",
+                    child: Text("Cancelar",
                         style: TextStyle(
-                            color: Colors.white54,
+                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                             fontWeight: FontWeight.bold)),
                   ),
                   const SizedBox(width: 8),
@@ -3827,7 +3831,7 @@ class _ManualFastingSheetState extends State<_ManualFastingSheet> {
             color: const Color(0xff0d0d0f).withOpacity(0.92),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
             border:
-                Border.all(color: Colors.white.withOpacity(0.08), width: 1.5),
+                Border.all(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08), width: 1.5),
           ),
           padding: EdgeInsets.only(
             left: 20,
@@ -3842,21 +3846,21 @@ class _ManualFastingSheetState extends State<_ManualFastingSheet> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     "Adicionar Jejum Manual",
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w900,
-                      color: Colors.white,
+                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                       letterSpacing: -0.3,
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close_rounded,
-                        color: Colors.white, size: 22),
+                    icon: Icon(Icons.close_rounded,
+                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), size: 22),
                     onPressed: () => Navigator.pop(context),
                     style: IconButton.styleFrom(
-                      backgroundColor: Colors.white.withOpacity(0.08),
+                      backgroundColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08),
                       padding: const EdgeInsets.all(6),
                       minimumSize: const Size(36, 36),
                     ),
@@ -3935,7 +3939,7 @@ class _ManualFastingSheetState extends State<_ManualFastingSheet> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.04),
+              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.04),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                   color: isExpanded
@@ -3946,8 +3950,8 @@ class _ManualFastingSheetState extends State<_ManualFastingSheet> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(title,
-                    style: const TextStyle(
-                        color: Colors.white70,
+                    style: TextStyle(
+                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
                         fontWeight: FontWeight.w600,
                         fontSize: 14)),
                 Text(
@@ -3968,16 +3972,16 @@ class _ManualFastingSheetState extends State<_ManualFastingSheet> {
             height: 160,
             padding: const EdgeInsets.symmetric(vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.06),
+              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.06),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: widget.accentColor.withOpacity(0.25)),
             ),
             child: CupertinoTheme(
-              data: const CupertinoThemeData(
+              data: CupertinoThemeData(
                 brightness: Brightness.dark,
                 textTheme: CupertinoTextThemeData(
                   dateTimePickerTextStyle: TextStyle(
-                    color: Colors.white,
+                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
                   ),

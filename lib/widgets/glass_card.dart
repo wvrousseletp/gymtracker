@@ -23,6 +23,7 @@ class GlassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     Widget cardContent = Padding(
       padding: padding ?? const EdgeInsets.all(16),
       child: child,
@@ -43,24 +44,38 @@ class GlassCard extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(borderRadius),
           border: Border.all(
-            color: borderColor ?? Colors.white.withOpacity(0.08),
-            width: 1.5,
+            color: borderColor ??
+                (isDark
+                    ? Colors.white.withOpacity(0.08)
+                    : Colors.black.withOpacity(0.07)),
+            width: isDark ? 1.5 : 1.0,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
+              color: isDark
+                  ? Colors.black.withOpacity(0.3)
+                  : Colors.black.withOpacity(0.06),
+              blurRadius: isDark ? 15 : 12,
+              offset: Offset(0, isDark ? 8 : 4),
             ),
           ],
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.white.withOpacity(opacity),
-              Colors.white.withOpacity(opacity * 0.3),
-            ],
-          ),
+          gradient: isDark
+              ? LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withOpacity(opacity),
+                    Colors.white.withOpacity(opacity * 0.3),
+                  ],
+                )
+              : LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withOpacity(0.96),
+                    Colors.white.withOpacity(0.90),
+                  ],
+                ),
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(borderRadius - 1.5),

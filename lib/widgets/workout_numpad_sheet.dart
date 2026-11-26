@@ -109,7 +109,7 @@ class _WorkoutNumpadSheetState extends State<WorkoutNumpadSheet> {
 
   Widget _buildNumpadKey(String label, {Color? color, VoidCallback? onTap, IconData? icon}) {
     return Material(
-      color: color ?? Colors.white.withOpacity(0.06),
+      color: color ?? (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.06),
       borderRadius: BorderRadius.circular(16),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -135,7 +135,7 @@ class _WorkoutNumpadSheetState extends State<WorkoutNumpadSheet> {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4),
         child: Material(
-          color: Colors.white.withOpacity(0.06),
+          color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.06),
           borderRadius: BorderRadius.circular(12),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
@@ -167,9 +167,9 @@ class _WorkoutNumpadSheetState extends State<WorkoutNumpadSheet> {
     } catch (_) {}
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF1C1C1E),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      decoration: BoxDecoration(
+        color: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.only(
         left: 20,
@@ -185,7 +185,7 @@ class _WorkoutNumpadSheetState extends State<WorkoutNumpadSheet> {
             width: 36,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.white24,
+              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white24 : const Color(0xFFC7C7CC)),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -247,13 +247,13 @@ class _WorkoutNumpadSheetState extends State<WorkoutNumpadSheet> {
                             Icon(
                               widget.isTime ? Icons.timer_outlined : Icons.repeat_rounded,
                               size: 14,
-                              color: !_editingWeight ? accentColor : Colors.white54,
+                              color: !_editingWeight ? accentColor : (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                             ),
                             const SizedBox(width: 4),
                             Text(
                               widget.isTime ? "Segundos" : "Reps",
                               style: TextStyle(
-                                color: !_editingWeight ? accentColor : Colors.white54,
+                                color: !_editingWeight ? accentColor : (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -308,13 +308,13 @@ class _WorkoutNumpadSheetState extends State<WorkoutNumpadSheet> {
                             Icon(
                               Icons.scale_rounded,
                               size: 14,
-                              color: _editingWeight ? accentColor : Colors.white54,
+                              color: _editingWeight ? accentColor : (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                             ),
                             const SizedBox(width: 4),
                             Text(
                               "Peso (kg)",
                               style: TextStyle(
-                                color: _editingWeight ? accentColor : Colors.white54,
+                                color: _editingWeight ? accentColor : (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)),
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
                               ),
