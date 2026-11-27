@@ -145,6 +145,24 @@ class _HistoryTabState extends State<HistoryTab> {
   bool _isCalendarView = false;
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  String _normalizeSearch(String input) {
+    const withDiacritics = 'áàâãäéèêëíìîïóòôõöúùûüçñ';
+    const withoutDiacritics = 'aaaaaeeeeiiiiooooouuuucn';
+    var res = input.toLowerCase();
+    for (int i = 0; i < withDiacritics.length; i++) {
+      res = res.replaceAll(withDiacritics[i], withoutDiacritics[i]);
+    }
+    return res;
+  }
 
   static const Map<int, String> _monthNames = {
     1: 'Janeiro',
@@ -242,11 +260,25 @@ class _HistoryTabState extends State<HistoryTab> {
       return const Center(child: CircularProgressIndicator(color: Colors.white));
     }
 
-    final history = state.history;
-    if (!_monthsInitialized && history.isNotEmpty) {
-      _initializeExpandedMonths(history);
+    final rawHistory = state.history;
+    if (!_monthsInitialized && rawHistory.isNotEmpty) {
+      _initializeExpandedMonths(rawHistory);
     }
+    final normalizedQuery = _normalizeSearch(_searchQuery);
+    final history = normalizedQuery.isEmpty
+        ? rawHistory
+        : rawHistory.where((log) {
+            if (_normalizeSearch(log.name).contains(normalizedQuery)) {
+              return true;
+            }
+            return log.exercises.any(
+                (ex) => _normalizeSearch(ex.name).contains(normalizedQuery));
+          }).toList();
     final monthGroups = _groupHistory(history);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fabIconColor = widget.accentColor.computeLuminance() > 0.5
+        ? Colors.black
+        : Colors.white;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -258,7 +290,7 @@ class _HistoryTabState extends State<HistoryTab> {
           },
           backgroundColor: widget.accentColor,
           mini: true,
-          child: const Icon(Icons.add_task, color: Colors.black),
+          child: Icon(Icons.add_task, color: fabIconColor),
         ),
       ),
       body: Column(
@@ -271,7 +303,7 @@ class _HistoryTabState extends State<HistoryTab> {
                 Text(
                   "Seu Histórico",
                   style: TextStyle(
-                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
+                    color: isDark ? Colors.white : const Color(0xFF1C1C1E),
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
@@ -290,10 +322,71 @@ class _HistoryTabState extends State<HistoryTab> {
               ],
             ),
           ),
+          if (!_isCalendarView && rawHistory.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Container(
+                height: 40,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: (isDark ? Colors.white : Colors.black).withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                      color: (isDark ? Colors.white : Colors.black)
+                          .withOpacity(0.08)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.search_rounded,
+                        size: 18,
+                        color: (isDark ? Colors.white : const Color(0xFF1C1C1E))
+                            .withOpacity(0.45)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        controller: _searchController,
+                        onChanged: (v) =>
+                            setState(() => _searchQuery = v.trim()),
+                        style: TextStyle(
+                          color: isDark ? Colors.white : const Color(0xFF1C1C1E),
+                          fontSize: 13,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: "Buscar treino ou exercício...",
+                          hintStyle: TextStyle(
+                            color: (isDark
+                                    ? Colors.white
+                                    : const Color(0xFF1C1C1E))
+                                .withOpacity(0.4),
+                            fontSize: 13,
+                          ),
+                          border: InputBorder.none,
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ),
+                    ),
+                    if (_searchQuery.isNotEmpty)
+                      GestureDetector(
+                        onTap: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                        child: Icon(Icons.close_rounded,
+                            size: 16,
+                            color: (isDark
+                                    ? Colors.white
+                                    : const Color(0xFF1C1C1E))
+                                .withOpacity(0.5)),
+                      ),
+                  ],
+                ),
+              ),
+            ),
           Expanded(
             child: RefreshIndicator(
               color: widget.accentColor,
-              backgroundColor: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
+              backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
               onRefresh: () async {
                 await provider.syncAppleWorkouts();
                 await provider.loadWorkoutHistory();
@@ -301,18 +394,75 @@ class _HistoryTabState extends State<HistoryTab> {
               child: Builder(
                 builder: (context) {
                   if (_isCalendarView) {
-                    return _buildCalendarView(history, provider);
+                    return _buildCalendarView(rawHistory, provider);
                   }
                   if (monthGroups.isEmpty) {
                     return ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 80),
                       children: [
-                        const SizedBox(height: 200),
-                        Center(
-                          child: Text(
-                            "Nenhum treino no diário ainda.\nPuxe para sincronizar com o Apple Health.",
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)), fontStyle: FontStyle.italic, height: 1.4),
+                        GlassCard(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            children: [
+                              Icon(
+                                _searchQuery.isNotEmpty
+                                    ? Icons.search_off_rounded
+                                    : Icons.history_rounded,
+                                size: 36,
+                                color: widget.accentColor.withOpacity(0.85),
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                _searchQuery.isNotEmpty
+                                    ? "Nenhum treino encontrado para \"$_searchQuery\""
+                                    : "Nenhum treino no diário ainda",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: isDark
+                                      ? Colors.white
+                                      : const Color(0xFF1C1C1E),
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                _searchQuery.isNotEmpty
+                                    ? "Tente buscar outro nome de treino ou exercício."
+                                    : "Puxe para sincronizar ou registre um treino manualmente.",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: isDark
+                                      ? Colors.white54
+                                      : const Color(0xFF6E6E73),
+                                  fontSize: 12,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              if (_searchQuery.isEmpty)
+                                ElevatedButton.icon(
+                                  onPressed: () =>
+                                      _openAddManualLogDialog(context, provider),
+                                  icon: const Icon(Icons.add_task_rounded,
+                                      size: 16),
+                                  label: const Text(
+                                    "Registrar Treino Manual",
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 12),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: widget.accentColor,
+                                    foregroundColor: fabIconColor,
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(12)),
+                                    elevation: 0,
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                       ],
@@ -2010,6 +2160,11 @@ class _MedidasTabState extends State<MedidasTab> {
     final measurements = List<BodyMeasurement>.from(state.medidas)
       ..sort((a, b) => b.date.compareTo(a.date)); // Mais recente primeiro
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fabIconColor = widget.accentColor.computeLuminance() > 0.5
+        ? Colors.black
+        : Colors.white;
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       floatingActionButton: Padding(
@@ -2020,14 +2175,63 @@ class _MedidasTabState extends State<MedidasTab> {
           },
           backgroundColor: widget.accentColor,
           mini: true,
-          child: const Icon(Icons.add, color: Colors.black),
+          child: Icon(Icons.add, color: fabIconColor),
         ),
       ),
       body: measurements.isEmpty
           ? Center(
-              child: Text(
-                "Nenhum registro de medidas ainda.",
-                style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)), fontStyle: FontStyle.italic),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: GlassCard(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.straighten_rounded,
+                          size: 36,
+                          color: widget.accentColor.withOpacity(0.85)),
+                      const SizedBox(height: 12),
+                      Text(
+                        "Nenhuma medida registrada ainda",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: isDark ? Colors.white : const Color(0xFF1C1C1E),
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        "Acompanhe sua evolução de peso, gordura corporal e circunferências.",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: isDark
+                              ? Colors.white54
+                              : const Color(0xFF6E6E73),
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: () =>
+                            _openAddMeasurementDialog(context, provider),
+                        icon: const Icon(Icons.add_rounded, size: 16),
+                        label: const Text(
+                          "Registrar Medida",
+                          style: TextStyle(
+                              fontWeight: FontWeight.w800, fontSize: 12),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: widget.accentColor,
+                          foregroundColor: fabIconColor,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          elevation: 0,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             )
           : ListView.builder(

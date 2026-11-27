@@ -158,7 +158,12 @@ class RefeicoesTab extends StatelessWidget {
           },
           backgroundColor: accentColor,
           mini: true,
-          child: const Icon(Icons.add, color: Colors.black),
+          child: Icon(
+            Icons.add,
+            color: accentColor.computeLuminance() > 0.5
+                ? Colors.black
+                : Colors.white,
+          ),
         ),
       ),
       body: RefreshIndicator(
@@ -283,6 +288,107 @@ class RefeicoesTab extends StatelessWidget {
                         ],
                       ),
                     ),
+                    const SizedBox(height: 12),
+                    // Mini-barra de Hidratação Rápida (+250ml / +500ml)
+                    Builder(builder: (context) {
+                      final isDark =
+                          Theme.of(context).brightness == Brightness.dark;
+                      final waterGoal =
+                          diet.waterGoalMl > 0 ? diet.waterGoalMl : 2000;
+                      final waterProgress =
+                          (diet.waterIntakeMl / waterGoal).clamp(0.0, 1.0);
+                      final waterBlue = isDark
+                          ? const Color(0xFF38BDF8)
+                          : const Color(0xFF0284C7);
+                      return GlassCard(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 10),
+                        child: Row(
+                          children: [
+                            Icon(Icons.water_drop_rounded,
+                                color: waterBlue, size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "Água: ${(diet.waterIntakeMl / 1000).toStringAsFixed(2)}L / ${(waterGoal / 1000).toStringAsFixed(1)}L",
+                                    style: TextStyle(
+                                      color: isDark
+                                          ? Colors.white
+                                          : const Color(0xFF1C1C1E),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 5),
+                                  LinearProgressIndicator(
+                                    value: waterProgress,
+                                    backgroundColor: (isDark
+                                            ? Colors.white
+                                            : Colors.black)
+                                        .withOpacity(0.06),
+                                    valueColor:
+                                        AlwaysStoppedAnimation<Color>(waterBlue),
+                                    borderRadius: BorderRadius.circular(3),
+                                    minHeight: 5,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            InkWell(
+                              borderRadius: BorderRadius.circular(10),
+                              onTap: () {
+                                dietProvider.updateWaterIntake(
+                                    diet.waterIntakeMl + 250);
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: waterBlue.withOpacity(0.14),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  "+250ml",
+                                  style: TextStyle(
+                                    color: waterBlue,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            InkWell(
+                              borderRadius: BorderRadius.circular(10),
+                              onTap: () {
+                                dietProvider.updateWaterIntake(
+                                    diet.waterIntakeMl + 500);
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: waterBlue.withOpacity(0.22),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  "+500ml",
+                                  style: TextStyle(
+                                    color: waterBlue,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
                     const SizedBox(height: 12),
                     // HealthKit Summary / Opt-in Card
                     if (provider.healthAuthorized) ...[
@@ -543,13 +649,106 @@ class RefeicoesTab extends StatelessWidget {
                     }),
                     if (diet.meals.isEmpty)
                       Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 24),
-                        child: Center(
-                          child: Text(
-                            "Nenhuma refeição registrada hoje.",
-                            style: TextStyle(
-                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)),
-                                fontStyle: FontStyle.italic),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        child: GlassCard(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            children: [
+                              Icon(Icons.restaurant_menu_rounded,
+                                  size: 32,
+                                  color: accentColor.withOpacity(0.85)),
+                              const SizedBox(height: 10),
+                              Text(
+                                "Nenhuma refeição registrada hoje",
+                                style: TextStyle(
+                                  color: Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? Colors.white
+                                      : const Color(0xFF1C1C1E),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                "Adicione sua primeira refeição ou repita o registro de ontem.",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? Colors.white54
+                                      : const Color(0xFF6E6E73),
+                                  fontSize: 12,
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                alignment: WrapAlignment.center,
+                                children: [
+                                  ElevatedButton.icon(
+                                    onPressed: () => _openAddMealDialog(
+                                        context, dietProvider),
+                                    icon: const Icon(Icons.add_rounded,
+                                        size: 16),
+                                    label: const Text(
+                                      "Adicionar Refeição",
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 12),
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: accentColor,
+                                      foregroundColor:
+                                          accentColor.computeLuminance() > 0.5
+                                              ? Colors.black
+                                              : Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12)),
+                                      elevation: 0,
+                                    ),
+                                  ),
+                                  if (dietProvider.latestHistoryDayWithMeals !=
+                                      null)
+                                    OutlinedButton.icon(
+                                      onPressed: () {
+                                        final copied = dietProvider
+                                            .copyPreviousDayMeals();
+                                        if (copied > 0) {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                  '$copied refeição(ões) copiada(s)!'),
+                                              behavior:
+                                                  SnackBarBehavior.floating,
+                                            ),
+                                          );
+                                        }
+                                      },
+                                      icon: Icon(Icons.history_rounded,
+                                          size: 15, color: accentColor),
+                                      label: Text(
+                                        "Repetir Ontem",
+                                        style: TextStyle(
+                                            color: accentColor,
+                                            fontWeight: FontWeight.w800,
+                                            fontSize: 12),
+                                      ),
+                                      style: OutlinedButton.styleFrom(
+                                        side: BorderSide(
+                                            color:
+                                                accentColor.withOpacity(0.45)),
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12)),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
                       ),

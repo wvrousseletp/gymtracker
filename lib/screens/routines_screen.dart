@@ -56,58 +56,6 @@ class _RoutinesScreenState extends State<RoutinesScreen>
     super.dispose();
   }
 
-  Widget _buildSegmentTab(int index, String title, IconData icon, Color accentColor) {
-    final isSelected = _tabController.index == index;
-    return Expanded(
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () {
-          HapticFeedback.selectionClick();
-          _tabController.animateTo(index);
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: isSelected ? accentColor.withOpacity(0.18) : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-            border: isSelected ? Border.all(color: accentColor.withOpacity(0.4), width: 1.0) : null,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 15,
-                color: isSelected
-                    ? accentColor
-                    : (Theme.of(context).brightness == Brightness.dark
-                        ? (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73))
-                        : const Color(0xFF6E6E73)),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                title,
-                style: TextStyle(
-                  color: isSelected
-                      ? (Theme.of(context).brightness == Brightness.dark
-                          ? Colors.white
-                          : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white))
-                      : (Theme.of(context).brightness == Brightness.dark
-                          ? (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73))
-                          : const Color(0xFF6E6E73)),
-                  fontSize: 13,
-                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -122,29 +70,47 @@ class _RoutinesScreenState extends State<RoutinesScreen>
       backgroundColor: Colors.transparent,
       body: Column(
         children: [
-          // Segmented Control em cápsula de vidro estilo iOS
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05)
-                    : Colors.black.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isDark
-                      ? (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.08)
-                      : Colors.black.withOpacity(0.08),
-                ),
+          Container(
+            margin: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.white.withOpacity(0.06)
+                  : Colors.black.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: TabBar(
+              controller: _tabController,
+              dividerColor: Colors.transparent,
+              indicatorSize: TabBarIndicatorSize.tab,
+              indicator: BoxDecoration(
+                color: isDark ? accentColor.withOpacity(0.22) : Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: isDark
+                    ? Border.all(color: accentColor.withOpacity(0.45))
+                    : null,
+                boxShadow: isDark
+                    ? null
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.06),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
               ),
-              child: Row(
-                children: [
-                  _buildSegmentTab(0, "Agenda", Icons.calendar_month_outlined, accentColor),
-                  _buildSegmentTab(1, "Modelos", Icons.fitness_center_outlined, accentColor),
-                  _buildSegmentTab(2, "Biblioteca", Icons.menu_book_outlined, accentColor),
-                ],
-              ),
+              labelColor: isDark ? accentColor : const Color(0xFF1C1C1E),
+              unselectedLabelColor:
+                  isDark ? Colors.white54 : const Color(0xFF6E6E73),
+              labelStyle:
+                  const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+              unselectedLabelStyle:
+                  const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+              tabs: const [
+                Tab(height: 36, text: "Agenda"),
+                Tab(height: 36, text: "Modelos"),
+                Tab(height: 36, text: "Biblioteca"),
+              ],
             ),
           ),
           Expanded(
@@ -186,9 +152,16 @@ class RoutinesTab extends StatelessWidget {
             FloatingActionButton(
               heroTag: "importRoutineFAB",
               onPressed: () => _showImportRoutineDialog(context, provider, accentColor),
-              backgroundColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white12 : Colors.black12),
+              backgroundColor: Theme.of(context).brightness == Brightness.dark
+                  ? const Color(0xFF2C2C2E)
+                  : Colors.white,
               mini: true,
-              child: const Icon(Icons.download_rounded, color: Colors.white),
+              child: Icon(
+                Icons.download_rounded,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : const Color(0xFF1C1C1E),
+              ),
             ),
             const SizedBox(height: 12),
             FloatingActionButton(
@@ -198,7 +171,12 @@ class RoutinesTab extends StatelessWidget {
               },
               backgroundColor: accentColor,
               mini: true,
-              child: const Icon(Icons.add, color: Colors.black),
+              child: Icon(
+                Icons.add,
+                color: accentColor.computeLuminance() > 0.5
+                    ? Colors.black
+                    : Colors.white,
+              ),
             ),
           ],
         ),
@@ -2643,7 +2621,12 @@ class _LibraryTabState extends State<LibraryTab> {
           },
           backgroundColor: widget.accentColor,
           mini: true,
-          child: const Icon(Icons.add, color: Colors.black),
+          child: Icon(
+            Icons.add,
+            color: widget.accentColor.computeLuminance() > 0.5
+                ? Colors.black
+                : Colors.white,
+          ),
         ),
       ),
       body: Column(

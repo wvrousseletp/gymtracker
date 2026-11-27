@@ -2777,8 +2777,13 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                       center: const Alignment(0, -0.8),
                       radius: 1.5,
                       colors: [
-                        accentColor.withOpacity(0.15),
-                        Colors.black,
+                        accentColor.withOpacity(
+                            Theme.of(context).brightness == Brightness.dark
+                                ? 0.15
+                                : 0.08),
+                        Theme.of(context).brightness == Brightness.dark
+                            ? Colors.black
+                            : const Color(0xFFF2F2F7),
                       ],
                     ),
                   ),
@@ -2935,7 +2940,10 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
 
                             // Menu de Opções Rápido (Adiar / Descartar)
                             PopupMenuButton<String>(
-                              color: const Color(0xff2c2c2e),
+                              color: Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? const Color(0xff2c2c2e)
+                                  : Colors.white,
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16)),
                               icon: Icon(Icons.more_vert_rounded,
@@ -3022,7 +3030,11 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                                     ? accentColor
                                     : isCompleted
                                         ? accentColor.withOpacity(0.4)
-                                        : Colors.white.withOpacity(0.12),
+                                        : (Theme.of(context).brightness ==
+                                                    Brightness.dark
+                                                ? Colors.white
+                                                : Colors.black)
+                                            .withOpacity(0.12),
                                 borderRadius: BorderRadius.circular(2),
                               ),
                             ),
@@ -3030,6 +3042,85 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
                         }),
                       ),
                     ),
+
+                  // Barra de Ações Rápidas Compacta
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: Builder(builder: (context) {
+                      final isDark =
+                          Theme.of(context).brightness == Brightness.dark;
+                      final chipBg = (isDark ? Colors.white : Colors.black)
+                          .withOpacity(0.05);
+                      final chipBorder = (isDark ? Colors.white : Colors.black)
+                          .withOpacity(0.08);
+                      final chipText =
+                          isDark ? Colors.white70 : const Color(0xFF3C3C43);
+
+                      Widget quickBtn(
+                          IconData icon, String label, VoidCallback onTap,
+                          {bool highlight = false}) {
+                        return InkWell(
+                          borderRadius: BorderRadius.circular(10),
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            onTap();
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: highlight
+                                  ? accentColor.withOpacity(0.14)
+                                  : chipBg,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                  color: highlight
+                                      ? accentColor.withOpacity(0.35)
+                                      : chipBorder),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(icon,
+                                    size: 13,
+                                    color: highlight ? accentColor : chipText),
+                                const SizedBox(width: 5),
+                                Text(
+                                  label,
+                                  style: TextStyle(
+                                    color: highlight ? accentColor : chipText,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+
+                      return Row(
+                        children: [
+                          quickBtn(Icons.calculate_outlined, "Anilhas", () {
+                            showDialog(
+                              context: context,
+                              builder: (_) =>
+                                  PlateCalculatorDialog(accentColor: accentColor),
+                            );
+                          }),
+                          const SizedBox(width: 8),
+                          quickBtn(Icons.swap_vert_rounded, "Reordenar", () {
+                            _showReorderExercisesSheet(context);
+                          }),
+                          const Spacer(),
+                          quickBtn(Icons.flag_rounded, "Finalizar", () {
+                            _finishWorkoutDirectly(context);
+                          }, highlight: true),
+                        ],
+                      );
+                    }),
+                  ),
 
                   // Carrossel de Exercícios (PageView)
                   if (exercises.isNotEmpty)
@@ -4594,174 +4685,466 @@ class _ActiveWorkoutViewState extends State<ActiveWorkoutView>
   void _finishWorkoutDirectly(BuildContext context) {
     final workoutProv = widget.provider.workoutProvider;
     final active = workoutProv?.activeWorkout;
-    final modifiedIndices =
-        workoutProv?.getModifiedRoutineExerciseIndices() ?? const <int>[];
+    if (active == null) return;
 
-    if (active == null || modifiedIndices.isEmpty) {
-      widget.provider.finishWorkout(
-        _workoutDurationNotifier.value,
-        8, // calculatedRpe is automatically resolved inside the provider
-        "",
-      );
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : const Color(0xFF1C1C1E);
+    final mutedColor = isDark ? Colors.white60 : const Color(0xFF6E6E73);
+    final accentColor = ThemeUtils.getAdaptiveColor(
+      widget.provider.currentProfile.colorAccent,
+      isDark: isDark,
+    );
+    final ctaTextColor =
+        accentColor.computeLuminance() > 0.5 ? Colors.black : Colors.white;
+
+    int completedSets = 0;
+    int totalSets = 0;
+    double sessionVolume = 0;
+    final List<String> prExerciseNames = [];
+
+    for (final ex in active.exercises) {
+      totalSets += ex.setsState.length;
+      final doneCount = ex.setsState.where((s) => s).length;
+      completedSets += doneCount;
+      if (doneCount == 0 || ex.isCardio) continue;
+
+      final lastPerf = workoutProv?.getLastPerformance(ex.name);
+      bool beatPr = false;
+      for (int i = 0; i < ex.setsState.length; i++) {
+        if (!ex.setsState[i]) continue;
+        final w = (ex.weightsPerSet != null && i < ex.weightsPerSet!.length)
+            ? ex.weightsPerSet![i]
+            : ex.weight;
+        final r = (ex.repsPerSet != null && i < ex.repsPerSet!.length)
+            ? ex.repsPerSet![i]
+            : ex.reps;
+        sessionVolume += w * r;
+        if (lastPerf != null && w > 0 && r > 0) {
+          final curr1Rm = w * (1.0 + r / 30.0);
+          final prev1Rm = lastPerf.weight * (1.0 + lastPerf.reps / 30.0);
+          if (w > lastPerf.weight || curr1Rm > prev1Rm) {
+            beatPr = true;
+          }
+        }
+      }
+      if (beatPr) prExerciseNames.add(ex.name);
+    }
+
+    // Proteção contra finalização acidental com 0 séries concluídas
+    if (completedSets == 0) {
+      showDialog<void>(
+        context: context,
+        builder: (dialogCtx) => AlertDialog(
+          backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(
+            "Nenhuma série concluída",
+            style: TextStyle(
+                color: textColor, fontWeight: FontWeight.w800, fontSize: 17),
+          ),
+          content: Text(
+            "Você ainda não marcou nenhuma série neste treino. Deseja continuar treinando ou descartar?",
+            style: TextStyle(color: mutedColor, fontSize: 13),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogCtx);
+                _confirmDiscardWorkout(context);
+              },
+              child: const Text("Descartar",
+                  style: TextStyle(
+                      color: Colors.redAccent, fontWeight: FontWeight.w700)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(dialogCtx),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: accentColor,
+                foregroundColor: ctaTextColor,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
+              ),
+              child: const Text("Continuar Treino",
+                  style: TextStyle(fontWeight: FontWeight.w800)),
+            ),
+          ],
+        ),
+      ).then((_) {
+        if (mounted) _autoFinishDialogShowing = false;
+      });
       return;
     }
 
-    final accentColor =
-        ThemeUtils.getColor(widget.provider.currentProfile.colorAccent);
+    // Comparativo com o último treino de mesmo nome
+    double? prevSameVolume;
+    for (final log in (workoutProv?.history ?? const <WorkoutLog>[])) {
+      if (log.isRestDayLog) continue;
+      if (log.name.trim().toLowerCase() == active.name.trim().toLowerCase()) {
+        double vol = 0;
+        for (final ex in log.exercises) {
+          final isCardioEx = ex.muscle.toLowerCase().contains('cardio') ||
+              (ex.performedCardios?.isNotEmpty ?? false);
+          if (!isCardioEx && ex.completedSets > 0) {
+            vol += ex.weight * ex.reps * ex.completedSets;
+          }
+        }
+        if (vol > 0) {
+          prevSameVolume = vol;
+          break;
+        }
+      }
+    }
+    final int? volumeDeltaPct = (prevSameVolume != null && prevSameVolume > 0)
+        ? (((sessionVolume - prevSameVolume) / prevSameVolume) * 100).round()
+        : null;
+
+    final modifiedIndices =
+        workoutProv?.getModifiedRoutineExerciseIndices() ?? const <int>[];
     final modifiedExercises = modifiedIndices
         .where((i) => i >= 0 && i < active.exercises.length)
         .map((i) => active.exercises[i])
         .toList();
 
+    bool updateRoutineGoals = modifiedExercises.isNotEmpty;
+    final pendingSets = totalSets - completedSets;
+    final durationLabel = _formatDuration(_workoutDurationNotifier.value);
+    final volLabel = sessionVolume >= 1000
+        ? "${(sessionVolume / 1000).toStringAsFixed(1)}t"
+        : "${sessionVolume.toStringAsFixed(0)} kg";
+
     showDialog<bool>(
       context: context,
       barrierDismissible: true,
-      builder: (dialogCtx) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: GlassCard(
-          useBlur: true,
-          borderColor: Colors.white.withOpacity(0.1),
-          borderRadius: 24,
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => Dialog(
+          backgroundColor: Colors.transparent,
+          child: GlassCard(
+            useBlur: true,
+            borderColor: (isDark ? Colors.white : Colors.black).withOpacity(0.1),
+            borderRadius: 24,
+            padding: const EdgeInsets.all(20),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: accentColor.withOpacity(0.18),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(Icons.trending_up_rounded,
-                        color: accentColor, size: 22),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      "Atualizar Rotina Base?",
-                      style: TextStyle(
-                        color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
-                        fontWeight: FontWeight.w800,
-                        fontSize: 16,
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: accentColor.withOpacity(0.16),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Icon(Icons.emoji_events_rounded,
+                            color: accentColor, size: 22),
                       ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                "Você alterou cargas, séries ou repetições em ${modifiedExercises.length} exercício(s) de \"${active.name}\". Deseja salvar essas novas metas para os próximos treinos?",
-                style: TextStyle(
-                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 13, height: 1.35),
-              ),
-              const SizedBox(height: 12),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 160),
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: modifiedExercises.map((ex) {
-                      final wLabel = ex.weight == ex.weight.roundToDouble()
-                          ? ex.weight.toInt().toString()
-                          : ex.weight.toStringAsFixed(1);
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Row(
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(Icons.check_circle_outline,
-                                size: 15, color: accentColor),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                ex.name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                            Text(
+                              "Resumo do Treino",
+                              style: TextStyle(
+                                color: textColor,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 17,
                               ),
                             ),
                             Text(
-                              "${ex.sets}×${ex.reps} • ${wLabel}kg",
+                              active.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                color: accentColor,
+                                  color: mutedColor,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // KPIs rápidos
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: (isDark ? Colors.white : Colors.black)
+                                .withOpacity(0.04),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            children: [
+                              Text("Tempo",
+                                  style: TextStyle(
+                                      color: mutedColor,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700)),
+                              const SizedBox(height: 3),
+                              Text(durationLabel,
+                                  style: TextStyle(
+                                      color: textColor,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w900)),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: (isDark ? Colors.white : Colors.black)
+                                .withOpacity(0.04),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            children: [
+                              Text("Séries",
+                                  style: TextStyle(
+                                      color: mutedColor,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700)),
+                              const SizedBox(height: 3),
+                              Text("$completedSets/$totalSets",
+                                  style: TextStyle(
+                                      color: textColor,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w900)),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: (isDark ? Colors.white : Colors.black)
+                                .withOpacity(0.04),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            children: [
+                              Text("Volume",
+                                  style: TextStyle(
+                                      color: mutedColor,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700)),
+                              const SizedBox(height: 3),
+                              Text(volLabel,
+                                  style: TextStyle(
+                                      color: textColor,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w900)),
+                              if (volumeDeltaPct != null)
+                                Text(
+                                  "${volumeDeltaPct > 0 ? '+' : ''}$volumeDeltaPct% vs ant.",
+                                  style: TextStyle(
+                                    color: volumeDeltaPct >= 0
+                                        ? (isDark
+                                            ? Colors.greenAccent
+                                            : const Color(0xFF1E8E3E))
+                                        : Colors.redAccent,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  if (pendingSets > 0) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withOpacity(0.14),
+                        borderRadius: BorderRadius.circular(10),
+                        border:
+                            Border.all(color: Colors.amber.withOpacity(0.4)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outline_rounded,
+                              size: 16,
+                              color: isDark
+                                  ? Colors.amberAccent
+                                  : const Color(0xFFB45309)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              "Ainda restam $pendingSets série${pendingSets > 1 ? 's' : ''} não marcada${pendingSets > 1 ? 's' : ''}.",
+                              style: TextStyle(
+                                color: isDark
+                                    ? Colors.amberAccent
+                                    : const Color(0xFFB45309),
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
-                          ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  if (prExerciseNames.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
+                        border:
+                            Border.all(color: Colors.amber.withOpacity(0.35)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "🏆 ${prExerciseNames.length} NOVO${prExerciseNames.length > 1 ? 'S' : ''} RECORDE${prExerciseNames.length > 1 ? 'S' : ''} (PR)",
+                            style: TextStyle(
+                              color: isDark
+                                  ? Colors.amberAccent
+                                  : const Color(0xFFB45309),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.6,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            prExerciseNames.join(" • "),
+                            style: TextStyle(
+                              color: textColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  if (modifiedExercises.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: (isDark ? Colors.white : Colors.black)
+                            .withOpacity(0.04),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Atualizar metas da rotina base",
+                                  style: TextStyle(
+                                      color: textColor,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w800),
+                                ),
+                                Text(
+                                  "${modifiedExercises.length} exercício(s) alterado(s) hoje",
+                                  style: TextStyle(
+                                      color: mutedColor, fontSize: 10),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Switch(
+                            value: updateRoutineGoals,
+                            activeColor: accentColor,
+                            onChanged: (v) =>
+                                setDialogState(() => updateRoutineGoals = v),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(dialogCtx, false),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: mutedColor,
+                            side: BorderSide(
+                                color: (isDark ? Colors.white : Colors.black)
+                                    .withOpacity(0.16)),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: const Text(
+                            "Voltar",
+                            style: TextStyle(
+                                fontSize: 13, fontWeight: FontWeight.w700),
+                          ),
                         ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 18),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () {
-                        Navigator.pop(dialogCtx, false);
-                        widget.provider.finishWorkout(
-                          _workoutDurationNotifier.value,
-                          8,
-                          "",
-                        );
-                      },
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
-                        side: BorderSide(color: Colors.white.withOpacity(0.18)),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
-                      child: const Text(
-                        "Só Hoje",
-                        style: TextStyle(
-                            fontSize: 13, fontWeight: FontWeight.w700),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        flex: 2,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            if (updateRoutineGoals &&
+                                modifiedExercises.isNotEmpty) {
+                              workoutProv?.applyAllModifiedExercisesToRoutine();
+                            }
+                            Navigator.pop(dialogCtx, true);
+                            widget.provider.finishWorkout(
+                              _workoutDurationNotifier.value,
+                              8,
+                              "",
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: accentColor,
+                            foregroundColor: ctaTextColor,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            elevation: 0,
+                          ),
+                          child: const Text(
+                            "Concluir Treino",
+                            style: TextStyle(
+                                fontSize: 13, fontWeight: FontWeight.w900),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        workoutProv?.applyAllModifiedExercisesToRoutine();
-                        Navigator.pop(dialogCtx, true);
-                        widget.provider.finishWorkout(
-                          _workoutDurationNotifier.value,
-                          8,
-                          "",
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: accentColor,
-                        foregroundColor: Colors.black,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      child: const Text(
-                        "Atualizar Rotina",
-                        style: TextStyle(
-                            fontSize: 13, fontWeight: FontWeight.w800),
-                      ),
-                    ),
+                    ],
                   ),
                 ],
               ),
-            ],
+            ),
           ),
         ),
       ),
     ).then((result) {
-      if (result == null && mounted) {
+      if ((result == null || result == false) && mounted) {
         _autoFinishDialogShowing = false;
       }
     });

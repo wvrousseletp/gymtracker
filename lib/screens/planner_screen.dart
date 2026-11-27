@@ -44,6 +44,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
   final Map<String, Map<String, String>> _aiSuggestionsByDay = {};
   final Map<String, bool> _isLoadingAIByDay = {};
   final Map<String, bool> _showAIByDay = {};
+  bool _showFullOverview = false;
 
   @override
   void initState() {
@@ -903,17 +904,196 @@ class _PlannerScreenState extends State<PlannerScreen> {
         padding:
             const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 120),
         children: [
-          // 1. Consistência Semanal
-          _buildWeeklyStreakHeader(context, provider, state, accentColor),
-          const SizedBox(height: 16),
+          // Faixa compacta de resumo (Consistência + Volume + Modo) para a agenda aparecer logo no topo
+          Builder(builder: (context) {
+            final isDark = Theme.of(context).brightness == Brightness.dark;
+            final textColor = isDark ? Colors.white : const Color(0xFF1C1C1E);
+            final mutedColor = isDark ? Colors.white54 : const Color(0xFF6E6E73);
+            final volMap = WorkoutProvider.computePlannedVolume(state);
+            final totalPlannedSets =
+                volMap.strengthByMuscle.values.fold<int>(0, (s, v) => s + v);
+            final isContinuous = state.settings.organizationMode ==
+                OrganizationMode.continuousList;
 
-          // 2. Volume de Treino Planejado
-          _buildPlannedVolumeHeader(context, provider, state, accentColor),
-          const SizedBox(height: 24),
+            return Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          setState(() => _showFullOverview = !_showFullOverview);
+                        },
+                        child: GlassCard(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
+                          borderRadius: 16,
+                          child: Row(
+                            children: [
+                              const Text("🔥", style: TextStyle(fontSize: 16)),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "Consistência",
+                                      style: TextStyle(
+                                          color: mutedColor,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700),
+                                    ),
+                                    Text(
+                                      "${state.streak.consecutiveWeeks} sem",
+                                      style: TextStyle(
+                                          color: textColor,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w900),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(
+                                _showFullOverview
+                                    ? Icons.expand_less_rounded
+                                    : Icons.expand_more_rounded,
+                                size: 16,
+                                color: mutedColor,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          setState(() => _showFullOverview = !_showFullOverview);
+                        },
+                        child: GlassCard(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
+                          borderRadius: 16,
+                          child: Row(
+                            children: [
+                              Icon(Icons.bar_chart_rounded,
+                                  size: 18, color: accentColor),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "Volume",
+                                      style: TextStyle(
+                                          color: mutedColor,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700),
+                                    ),
+                                    Text(
+                                      "$totalPlannedSets séries/sem",
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                          color: textColor,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w900),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(
+                                _showFullOverview
+                                    ? Icons.expand_less_rounded
+                                    : Icons.expand_more_rounded,
+                                size: 16,
+                                color: mutedColor,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      isContinuous ? "LISTA CONTÍNUA" : "AGENDA SEMANAL",
+                      style: TextStyle(
+                        color: mutedColor,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                    InkWell(
+                      borderRadius: BorderRadius.circular(10),
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        provider.setOrganizationMode(
+                          isContinuous
+                              ? OrganizationMode.fixedDays
+                              : OrganizationMode.continuousList,
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: accentColor.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(10),
+                          border:
+                              Border.all(color: accentColor.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isContinuous
+                                  ? Icons.calendar_view_week_rounded
+                                  : Icons.view_agenda_rounded,
+                              size: 13,
+                              color: accentColor,
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              isContinuous ? "Usar Dias Fixos" : "Usar Lista",
+                              style: TextStyle(
+                                color: accentColor,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          }),
 
-          // Seletor de Modo de Organização
-          _buildOrganizationModeSelector(context, provider, state, accentColor),
-          const SizedBox(height: 16),
+          if (_showFullOverview) ...[
+            const SizedBox(height: 12),
+            // 1. Consistência Semanal
+            _buildWeeklyStreakHeader(context, provider, state, accentColor),
+            const SizedBox(height: 12),
+
+            // 2. Volume de Treino Planejado
+            _buildPlannedVolumeHeader(context, provider, state, accentColor),
+            const SizedBox(height: 12),
+
+            // Seletor de Modo de Organização completo
+            _buildOrganizationModeSelector(context, provider, state, accentColor),
+          ],
+          const SizedBox(height: 12),
 
           // Agenda
           if (state.settings.organizationMode ==
