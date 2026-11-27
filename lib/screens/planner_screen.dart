@@ -901,7 +901,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
       backgroundColor: Colors.transparent,
       body: ListView(
         padding:
-            const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 100),
+            const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 120),
         children: [
           // 1. Consistência Semanal
           _buildWeeklyStreakHeader(context, provider, state, accentColor),

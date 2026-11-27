@@ -47,19 +47,49 @@ class _ProgressScreenState extends State<ProgressScreen> with SingleTickerProvid
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(48),
-        child: TabBar(
-          controller: _tabController,
-          indicatorColor: accentColor,
-          labelColor: isDark ? Colors.white : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
-          unselectedLabelColor:
-              isDark ? (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)) : const Color(0xFF8E8E93),
-          labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-          tabs: const [
-            Tab(text: "Histórico"),
-            Tab(text: "Estatísticas"),
-            Tab(text: "Medidas"),
-          ],
+        preferredSize: const Size.fromHeight(58),
+        child: Container(
+          margin: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: isDark
+                ? Colors.white.withOpacity(0.06)
+                : Colors.black.withOpacity(0.06),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: TabBar(
+            controller: _tabController,
+            dividerColor: Colors.transparent,
+            indicatorSize: TabBarIndicatorSize.tab,
+            indicator: BoxDecoration(
+              color: isDark ? accentColor.withOpacity(0.22) : Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: isDark
+                  ? Border.all(color: accentColor.withOpacity(0.45))
+                  : null,
+              boxShadow: isDark
+                  ? null
+                  : [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.06),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+            ),
+            labelColor: isDark ? accentColor : const Color(0xFF1C1C1E),
+            unselectedLabelColor:
+                isDark ? Colors.white54 : const Color(0xFF6E6E73),
+            labelStyle:
+                const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+            unselectedLabelStyle:
+                const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+            tabs: const [
+              Tab(height: 36, text: "Histórico"),
+              Tab(height: 36, text: "Estatísticas"),
+              Tab(height: 36, text: "Medidas"),
+            ],
+          ),
         ),
       ),
       body: TabBarView(
@@ -221,7 +251,7 @@ class _HistoryTabState extends State<HistoryTab> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 80.0),
+        padding: const EdgeInsets.only(bottom: 92.0),
         child: FloatingActionButton(
           onPressed: () {
             _openAddManualLogDialog(context, provider);
@@ -290,7 +320,7 @@ class _HistoryTabState extends State<HistoryTab> {
                   }
                   return ListView.builder(
                           physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 100),
+                          padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 136),
                           itemCount: monthGroups.length,
                           itemBuilder: (context, groupIndex) {
                   final group = monthGroups[groupIndex];
@@ -642,7 +672,7 @@ class _HistoryTabState extends State<HistoryTab> {
 
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.only(bottom: 100, left: 16, right: 16, top: 8),
+      padding: const EdgeInsets.only(bottom: 136, left: 16, right: 16, top: 8),
       children: [
         _buildCalendarLegend(),
         GlassCard(
@@ -1983,7 +2013,7 @@ class _MedidasTabState extends State<MedidasTab> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 80.0),
+        padding: const EdgeInsets.only(bottom: 92.0),
         child: FloatingActionButton(
           onPressed: () {
             _openAddMeasurementDialog(context, provider);
@@ -2001,7 +2031,7 @@ class _MedidasTabState extends State<MedidasTab> {
               ),
             )
           : ListView.builder(
-              padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 100),
+              padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 136),
               itemCount: measurements.length,
               itemBuilder: (context, index) {
                 final m = measurements[index];

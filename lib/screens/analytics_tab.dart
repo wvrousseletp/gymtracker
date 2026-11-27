@@ -182,7 +182,7 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
         Expanded(
           child: _isEditing
               ? ReorderableListView(
-                  padding: const EdgeInsets.only(left: 16, right: 16, bottom: 80),
+                  padding: const EdgeInsets.only(left: 16, right: 16, bottom: 120),
                   physics: const BouncingScrollPhysics(),
                   onReorder: (oldIndex, newIndex) {
                     setState(() {
@@ -209,7 +209,7 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
                   }).toList(),
                 )
               : ListView.separated(
-                  padding: const EdgeInsets.only(left: 16, right: 16, bottom: 80),
+                  padding: const EdgeInsets.only(left: 16, right: 16, bottom: 120),
                   physics: const BouncingScrollPhysics(),
                   itemCount: _widgetOrder.length,
                   separatorBuilder: (context, index) => const SizedBox(height: 16),

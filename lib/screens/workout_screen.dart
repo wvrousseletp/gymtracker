@@ -904,7 +904,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: SingleChildScrollView(
-        padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 100),
+        padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 120),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1150,17 +1150,28 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  gradient: const LinearGradient(
-                    colors: [Color(0xff1a1a2e), Color(0xff16213e)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+                  color: isDark ? null : Colors.white,
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(
+                    color: isDark
+                        ? Colors.blueAccent.withOpacity(0.25)
+                        : Colors.blueAccent.withOpacity(0.22),
                   ),
+                  gradient: isDark
+                      ? const LinearGradient(
+                          colors: [Color(0xff1a1a2e), Color(0xff16213e)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        )
+                      : null,
                   boxShadow: [
                     BoxShadow(
-                        color: const Color(0xff1a1a2e).withOpacity(0.5),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10))
+                      color: isDark
+                          ? const Color(0xff1a1a2e).withOpacity(0.5)
+                          : Colors.black.withOpacity(0.05),
+                      blurRadius: isDark ? 20 : 16,
+                      offset: Offset(0, isDark ? 10 : 6),
+                    ),
                   ],
                 ),
                 child: Column(
@@ -1239,91 +1250,162 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               Column(
                 children: plannedRoutines.map((routine) {
                   final isCompleted = _isRoutineCompletedToday(routine.name, provider.history);
+                  int totalSets = 0;
+                  int totalRestSec = 0;
+                  for (final ex in routine.exercises) {
+                    totalSets += ex.sets;
+                    final r = ex.rest > 0 ? ex.rest : routine.defaultRest;
+                    totalRestSec += (ex.sets * r);
+                  }
+                  final estMins = ((totalRestSec + (totalSets * 45)) / 60).round().clamp(10, 180);
+                  final statusColor = isCompleted
+                      ? (isDark ? Colors.greenAccent : const Color(0xFF1E8E3E))
+                      : accentColor;
+                  final ctaTextColor = accentColor.computeLuminance() > 0.5
+                      ? Colors.black
+                      : Colors.white;
+
                   return GestureDetector(
                     onTap: () => _showPlannedRoutineDetails(context, provider, routine),
                     child: Container(
-                      margin: const EdgeInsets.only(bottom: 12),
+                      margin: const EdgeInsets.only(bottom: 14),
                       width: double.infinity,
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        gradient: isCompleted 
-                          ? LinearGradient(colors: [Colors.green.withOpacity(0.2), Colors.green.withOpacity(0.05)])
-                          : LinearGradient(colors: [accentColor.withOpacity(0.3), accentColor.withOpacity(0.05)]),
+                        color: isDark ? null : Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        gradient: isDark
+                            ? (isCompleted
+                                ? LinearGradient(colors: [Colors.green.withOpacity(0.20), Colors.green.withOpacity(0.05)])
+                                : LinearGradient(colors: [accentColor.withOpacity(0.28), accentColor.withOpacity(0.06)]))
+                            : null,
                         border: Border.all(
-                          color: isCompleted ? Colors.green.withOpacity(0.5) : accentColor.withOpacity(0.5),
-                          width: 1.5
+                          color: isCompleted
+                              ? statusColor.withOpacity(isDark ? 0.5 : 0.35)
+                              : accentColor.withOpacity(isDark ? 0.5 : 0.35),
+                          width: 1.5,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: (isCompleted ? Colors.green : accentColor).withOpacity(0.15),
-                            blurRadius: 20,
-                            offset: const Offset(0, 8)
-                          )
+                            color: isDark
+                                ? (isCompleted ? Colors.green : accentColor).withOpacity(0.15)
+                                : Colors.black.withOpacity(0.06),
+                            blurRadius: isDark ? 20 : 18,
+                            offset: Offset(0, isDark ? 8 : 6),
+                          ),
                         ],
                       ),
-                      child: Stack(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(20),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                Row(
-                                  children: [
-                                    Icon(isCompleted ? Icons.check_circle : Icons.fitness_center, 
-                                         color: isCompleted ? (Theme.of(context).brightness == Brightness.dark ? Colors.greenAccent : const Color(0xFF1E8E3E)) : accentColor, size: 24),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        routine.name,
-                                        style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 18, fontWeight: FontWeight.w900),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                Wrap(
-                                  spacing: 6,
-                                  runSpacing: 6,
-                                  children: provider.getRoutineMuscleTags(routine).take(4).map((tag) => Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.black.withOpacity(0.4) : Colors.black.withOpacity(0.08)),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text(tag, style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 10, fontWeight: FontWeight.bold)),
-                                  )).toList(),
-                                ),
-                                const SizedBox(height: 20),
-                                SizedBox(
-                                  width: double.infinity,
-                                  height: 48,
-                                  child: ElevatedButton.icon(
-                                    onPressed: () {
-                                      if (provider.activeWorkout != null) {
-                                        _promptPostponeOrCreateWorkout(context, provider, () {
-                                          WorkoutStarter.startWithCountdown(context, provider, routine, WorkoutRecovery(sleepOk: SleepQuality.okay, pain: [], warmUpDone: false), false);
-                                        });
-                                      } else {
-                                        WorkoutStarter.startWithCountdown(context, provider, routine, WorkoutRecovery(sleepOk: SleepQuality.okay, pain: [], warmUpDone: false), false);
-                                      }
-                                    },
-                                    icon: Icon(isCompleted ? Icons.replay : Icons.play_arrow, color: isCompleted ? (isDark ? Colors.white : const Color(0xFF1C1C1E)) : (isDark ? Colors.black : Colors.white)),
-                                    label: Text(
-                                      isCompleted ? "TREINAR NOVAMENTE" : "INICIAR TREINO",
-                                      style: TextStyle(color: isCompleted ? (isDark ? Colors.white : const Color(0xFF1C1C1E)) : (isDark ? Colors.black : Colors.white), fontWeight: FontWeight.bold, fontSize: 14),
-                                    ),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: isCompleted ? (isDark ? Colors.white.withOpacity(0.2) : Colors.black.withOpacity(0.08)) : accentColor,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                                      elevation: 0,
-                                    ),
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: statusColor.withOpacity(0.14),
+                                    borderRadius: BorderRadius.circular(14),
                                   ),
+                                  child: Icon(
+                                    isCompleted ? Icons.check_circle_rounded : Icons.fitness_center_rounded,
+                                    color: statusColor,
+                                    size: 22,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        routine.name,
+                                        style: TextStyle(
+                                          color: isDark ? Colors.white : const Color(0xFF1C1C1E),
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: -0.3,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        "${routine.exercises.length} exerc. • $totalSets séries • ~$estMins min",
+                                        style: TextStyle(
+                                          color: (isDark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.6),
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Icon(
+                                  Icons.chevron_right_rounded,
+                                  color: (isDark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.35),
+                                  size: 24,
                                 ),
                               ],
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 12),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 6,
+                              children: provider.getRoutineMuscleTags(routine).take(4).map((tag) => Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: isDark ? Colors.black.withOpacity(0.35) : accentColor.withOpacity(0.10),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  tag,
+                                  style: TextStyle(
+                                    color: isDark ? Colors.white70 : accentColor,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              )).toList(),
+                            ),
+                            const SizedBox(height: 18),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 54,
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  if (provider.activeWorkout != null) {
+                                    _promptPostponeOrCreateWorkout(context, provider, () {
+                                      WorkoutStarter.startWithCountdown(context, provider, routine, WorkoutRecovery(sleepOk: SleepQuality.okay, pain: [], warmUpDone: false), false);
+                                    });
+                                  } else {
+                                    WorkoutStarter.startWithCountdown(context, provider, routine, WorkoutRecovery(sleepOk: SleepQuality.okay, pain: [], warmUpDone: false), false);
+                                  }
+                                },
+                                icon: Icon(
+                                  isCompleted ? Icons.replay_rounded : Icons.play_arrow_rounded,
+                                  color: isCompleted ? (isDark ? Colors.white : const Color(0xFF1C1C1E)) : ctaTextColor,
+                                  size: 22,
+                                ),
+                                label: Text(
+                                  isCompleted ? "TREINAR NOVAMENTE" : "INICIAR TREINO",
+                                  style: TextStyle(
+                                    color: isCompleted ? (isDark ? Colors.white : const Color(0xFF1C1C1E)) : ctaTextColor,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 15,
+                                    letterSpacing: 0.4,
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: isCompleted
+                                      ? (isDark ? Colors.white.withOpacity(0.18) : Colors.black.withOpacity(0.08))
+                                      : accentColor,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                  elevation: 0,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   );

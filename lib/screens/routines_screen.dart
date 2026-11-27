@@ -179,7 +179,7 @@ class RoutinesTab extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.transparent,
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 80.0),
+        padding: const EdgeInsets.only(bottom: 92.0),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -216,9 +216,8 @@ class RoutinesTab extends StatelessWidget {
               addAutomaticKeepAlives: false,
               addRepaintBoundaries: false,
               padding: const EdgeInsets.only(
-                  left: 16, right: 16, top: 16, bottom: 100),
+                  left: 16, right: 16, top: 16, bottom: 136),
               itemCount: routines.length,
-              itemExtent: 140, // Fixed height for better performance
               itemBuilder: (context, index) {
                 final routine = routines[index];
                 return _buildRoutineCard(context, provider, routine);
@@ -242,40 +241,71 @@ class RoutinesTab extends StatelessWidget {
     final totalSec = totalRestSec + (totalSets * 45); // ~45s por série
     final estimatedMins = (totalSec / 60).round().clamp(10, 180);
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : const Color(0xFF1C1C1E);
+    final resolvedExercises = routine.exercises.map((ex) {
+      return state.library.firstWhere(
+        (l) => l.id == ex.exerciseId,
+        orElse: () => LibraryExercise(
+            id: '',
+            name: 'Deletado',
+            muscle: 'Desconhecido',
+            measurementType: MeasurementType.reps),
+      );
+    }).toList();
+    final uniqueMuscles = resolvedExercises
+        .map((e) => e.muscle)
+        .where((m) => m.isNotEmpty && m != 'Desconhecido')
+        .toSet()
+        .toList();
+
     return GestureDetector(
       onTap: () => _openRoutineForm(context, provider, routine),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 24),
+        margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              accentColor.withOpacity(0.15),
-              Colors.black.withOpacity(0.6),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(24),
+          color: isDark ? const Color(0xFF18181C) : Colors.white,
+          gradient: isDark
+              ? LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    accentColor.withOpacity(0.14),
+                    const Color(0xFF141417),
+                  ],
+                )
+              : null,
+          borderRadius: BorderRadius.circular(22),
           border: Border.all(
-            color: accentColor.withOpacity(0.2),
-            width: 1.5,
+            color: isDark
+                ? accentColor.withOpacity(0.22)
+                : Colors.black.withOpacity(0.06),
+            width: isDark ? 1.3 : 1.0,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: accentColor.withOpacity(0.05),
-              blurRadius: 20,
-              spreadRadius: 2,
-            ),
-          ],
+          boxShadow: isDark
+              ? [
+                  BoxShadow(
+                    color: accentColor.withOpacity(0.05),
+                    blurRadius: 16,
+                    spreadRadius: 1,
+                  ),
+                ]
+              : [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 14,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(22),
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(18),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // CABEÇALHO DA ROTINA E AÇÕES RAPIDAS
+                // CABEÇALHO DA ROTINA E AÇÕES RÁPIDAS
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -286,58 +316,20 @@ class RoutinesTab extends StatelessWidget {
                           Text(
                             routine.name.toUpperCase(),
                             style: TextStyle(
-                              color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Color(0xFF1C1C1E)),
-                              fontSize: 22,
+                              color: textColor,
+                              fontSize: 19,
                               fontWeight: FontWeight.w900,
-                              letterSpacing: -0.5,
+                              letterSpacing: -0.4,
                             ),
                           ),
                           const SizedBox(height: 6),
-                          Wrap(
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            spacing: 8,
-                            runSpacing: 4,
-                            children: [
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.timer_outlined,
-                                      size: 14,
-                                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.5)),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    "Descanso: ${routine.defaultRest}s",
-                                    style: TextStyle(
-                                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.6),
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: accentColor.withOpacity(0.15),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.schedule, size: 11, color: accentColor),
-                                    const SizedBox(width: 3),
-                                    Text(
-                                      "~$estimatedMins min",
-                                      style: TextStyle(
-                                        color: accentColor,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
+                          Text(
+                            "${routine.exercises.length} exerc. • $totalSets séries • ~$estimatedMins min • ${routine.defaultRest}s desc.",
+                            style: TextStyle(
+                              color: textColor.withOpacity(0.6),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ],
                       ),
@@ -346,28 +338,42 @@ class RoutinesTab extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
-                          icon: Icon(Icons.copy_rounded, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)), size: 20),
+                          icon: Icon(Icons.copy_rounded,
+                              color: isDark
+                                  ? Colors.white54
+                                  : const Color(0xFF6E6E73),
+                              size: 20),
                           tooltip: "Duplicar Rotina",
                           padding: const EdgeInsets.all(4),
                           constraints: const BoxConstraints(),
                           onPressed: () {
                             HapticFeedback.selectionClick();
-                            final clonedExercises = routine.exercises.map((e) => RoutineExercise(
-                              id: "e-${const Uuid().v4()}",
-                              exerciseId: e.exerciseId,
-                              sets: e.sets,
-                              reps: e.reps,
-                              rest: e.rest,
-                              weight: e.weight,
-                              weightsPerSet: e.weightsPerSet != null ? List.from(e.weightsPerSet!) : null,
-                              repsPerSet: e.repsPerSet != null ? List.from(e.repsPerSet!) : null,
-                              setTypes: e.setTypes != null ? List.from(e.setTypes!) : null,
-                              rirPerSet: e.rirPerSet != null ? List.from(e.rirPerSet!) : null,
-                              isCardio: e.isCardio,
-                              allowCardioSets: e.allowCardioSets,
-                              supersetId: e.supersetId,
-                              isUnilateral: e.isUnilateral,
-                            )).toList();
+                            final clonedExercises = routine.exercises
+                                .map((e) => RoutineExercise(
+                                      id: "e-${const Uuid().v4()}",
+                                      exerciseId: e.exerciseId,
+                                      sets: e.sets,
+                                      reps: e.reps,
+                                      rest: e.rest,
+                                      weight: e.weight,
+                                      weightsPerSet: e.weightsPerSet != null
+                                          ? List.from(e.weightsPerSet!)
+                                          : null,
+                                      repsPerSet: e.repsPerSet != null
+                                          ? List.from(e.repsPerSet!)
+                                          : null,
+                                      setTypes: e.setTypes != null
+                                          ? List.from(e.setTypes!)
+                                          : null,
+                                      rirPerSet: e.rirPerSet != null
+                                          ? List.from(e.rirPerSet!)
+                                          : null,
+                                      isCardio: e.isCardio,
+                                      allowCardioSets: e.allowCardioSets,
+                                      supersetId: e.supersetId,
+                                      isUnilateral: e.isUnilateral,
+                                    ))
+                                .toList();
 
                             provider.addRoutine(
                               "${routine.name} (Cópia)",
@@ -377,118 +383,76 @@ class RoutinesTab extends StatelessWidget {
                               circuitCycles: routine.circuitCycles,
                             );
 
-                            final isDark = Theme.of(context).brightness == Brightness.dark;
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
                                   "Rotina '${routine.name} (Cópia)' criada com sucesso!",
-                                  style: TextStyle(color: isDark ? Colors.white : const Color(0xFF1C1C1E)),
+                                  style: TextStyle(color: textColor),
                                 ),
-                                backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+                                backgroundColor: isDark
+                                    ? const Color(0xFF1C1C1E)
+                                    : Colors.white,
                                 duration: const Duration(seconds: 2),
                               ),
                             );
                           },
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6),
                         Icon(
                           Icons.chevron_right_rounded,
-                          color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.3),
-                          size: 28,
+                          color: textColor.withOpacity(0.3),
+                          size: 26,
                         ),
                       ],
                     ),
                   ],
                 ),
 
-                Padding(
-                  padding: EdgeInsets.symmetric(vertical: 20),
-                  child: Divider(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white10 : Color(0x0F000000)), height: 1),
-                ),
-
-                // RESUMO DE EXERCÍCIOS
-                Builder(
-                  builder: (context) {
-                    if (routine.exercises.isEmpty) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
+                if (uniqueMuscles.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: uniqueMuscles.take(4).map((muscle) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: accentColor.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                         child: Text(
-                          "Nenhum exercício adicionado.",
+                          muscle.toUpperCase(),
                           style: TextStyle(
-                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.5),
-                            fontSize: 14,
-                            fontStyle: FontStyle.italic,
+                            color: accentColor,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.4,
                           ),
                         ),
                       );
-                    }
+                    }).toList(),
+                  ),
+                ],
 
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: routine.exercises.map((ex) {
-                        final ref = state.library.firstWhere(
-                          (l) => l.id == ex.exerciseId,
-                          orElse: () => LibraryExercise(
-                              id: '',
-                              name: 'Deletado',
-                              muscle: 'Desconhecido',
-                              measurementType: MeasurementType.reps),
-                        );
-                        
-                        final isCardio = ref.muscle.toLowerCase().contains('cardio');
-                        final isTime = ref.measurementType == MeasurementType.time;
-                        final repsSuffix = isCardio ? 'min' : (isTime ? 's' : '');
-                        final repsText = ex.reps > 0 ? "${ex.sets}x${ex.reps}$repsSuffix" : "${ex.sets} séries";
-
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                margin: const EdgeInsets.only(top: 6, right: 10),
-                                width: 5,
-                                height: 5,
-                                decoration: BoxDecoration(
-                                  color: accentColor,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              Expanded(
-                                child: Text(
-                                  ref.name,
-                                  style: TextStyle(
-                                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.9),
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.06),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  repsText,
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.7),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 0.2,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                    );
-                  },
+                const SizedBox(height: 10),
+                Text(
+                  resolvedExercises.isEmpty
+                      ? "Nenhum exercício adicionado."
+                      : resolvedExercises.map((e) => e.name).join(" • "),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: textColor.withOpacity(0.55),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    fontStyle: resolvedExercises.isEmpty
+                        ? FontStyle.italic
+                        : FontStyle.normal,
+                  ),
                 ),
 
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
 
                 // BOTÃO INICIAR TREINO GIGANTE
                 SizedBox(
@@ -2672,7 +2636,7 @@ class _LibraryTabState extends State<LibraryTab> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 80.0),
+        padding: const EdgeInsets.only(bottom: 92.0),
         child: FloatingActionButton(
           onPressed: () {
             _openAddExerciseDialog(context, provider);
@@ -2782,7 +2746,7 @@ class _LibraryTabState extends State<LibraryTab> {
                   )
                 : ListView.builder(
                     padding: const EdgeInsets.only(
-                        left: 16, right: 16, top: 8, bottom: 100),
+                        left: 16, right: 16, top: 8, bottom: 136),
                     itemCount: sortedMuscles.length,
                     itemBuilder: (context, mIdx) {
                       final muscle = sortedMuscles[mIdx];
