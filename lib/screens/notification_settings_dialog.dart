@@ -23,13 +23,17 @@ class NotificationSettingsSheet extends StatelessWidget {
     final prefs = provider.preferences;
     
     final tracker = context.watch<TrackerProvider>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final accentColor = _getAccentColor(tracker.currentProfile);
+    final textColor = isDark ? Colors.white : const Color(0xFF1C1C1E);
+    final mutedColor = isDark ? Colors.white54 : const Color(0xFF6E6E73);
+    final cardBorder = (isDark ? Colors.white : Colors.black).withOpacity(0.1);
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xff1c1c1e),
+        color: isDark ? const Color(0xff1c1c1e) : Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: cardBorder),
       ),
       padding: EdgeInsets.only(
         left: 24,
@@ -51,14 +55,14 @@ class NotificationSettingsSheet extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
-                    color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
+                    color: textColor,
                   ),
                 ),
                 IconButton(
                   onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close_rounded, color: Colors.white, size: 22),
+                  icon: Icon(Icons.close_rounded, color: textColor, size: 22),
                   style: IconButton.styleFrom(
-                    backgroundColor: Colors.white.withOpacity(0.08),
+                    backgroundColor: (isDark ? Colors.white : Colors.black).withOpacity(0.08),
                     padding: const EdgeInsets.all(6),
                     minimumSize: const Size(36, 36),
                   ),
@@ -70,15 +74,15 @@ class NotificationSettingsSheet extends StatelessWidget {
             // Hydration Settings
             _buildSectionHeader("ÁGUA 💧", accentColor),
             const SizedBox(height: 12),
-            _buildHydrationSelector(context, prefs, provider, accentColor),
+            _buildHydrationSelector(context, prefs, provider, accentColor, isDark),
             const SizedBox(height: 12),
             SwitchListTile(
-              title: Text("Silenciar à noite", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontWeight: FontWeight.w600)),
+              title: Text("Silenciar à noite", style: TextStyle(color: textColor, fontWeight: FontWeight.w600)),
               subtitle: Text(
                 prefs.silenceHydrationAtNight 
                     ? "Não notificar entre ${prefs.silentNightStartHour}h e ${prefs.silentNightEndHour}h"
                     : "Desativado",
-                style: const TextStyle(color: Colors.white54, fontSize: 12),
+                style: TextStyle(color: mutedColor, fontSize: 12),
               ),
               value: prefs.silenceHydrationAtNight,
               activeColor: accentColor,
@@ -108,11 +112,11 @@ class NotificationSettingsSheet extends StatelessWidget {
             // Workout Settings
             _buildSectionHeader("TREINO 🏋️", accentColor),
             const SizedBox(height: 12),
-            _buildRestTimerSelector(context, prefs, provider, accentColor),
+            _buildRestTimerSelector(context, prefs, provider, accentColor, isDark),
             const SizedBox(height: 12),
             SwitchListTile(
-              title: Text("Lembretes Motivacionais", style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontWeight: FontWeight.w600)),
-              subtitle: const Text("Avisar quando você ficar muitos dias sem treinar", style: TextStyle(color: Colors.white54, fontSize: 12)),
+              title: Text("Lembretes Motivacionais", style: TextStyle(color: textColor, fontWeight: FontWeight.w600)),
+              subtitle: Text("Avisar quando você ficar muitos dias sem treinar", style: TextStyle(color: mutedColor, fontSize: 12)),
               value: prefs.motivationRemindersEnabled,
               activeColor: accentColor,
               contentPadding: EdgeInsets.zero,
@@ -136,17 +140,18 @@ class NotificationSettingsSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildHydrationSelector(BuildContext context, NotificationPreferences prefs, NotificationProvider provider, Color accentColor) {
+  Widget _buildHydrationSelector(BuildContext context, NotificationPreferences prefs, NotificationProvider provider, Color accentColor, bool isDark) {
+    final textColor = isDark ? Colors.white : const Color(0xFF1C1C1E);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Frequência de lembretes", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+        Text("Frequência de lembretes", style: TextStyle(color: textColor, fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.05),
+            color: (isDark ? Colors.white : Colors.black).withOpacity(0.05),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withOpacity(0.1)),
+            border: Border.all(color: (isDark ? Colors.white : Colors.black).withOpacity(0.1)),
           ),
           child: Column(
             children: [
@@ -156,33 +161,37 @@ class NotificationSettingsSheet extends StatelessWidget {
                 value: HydrationAggressiveness.aggressive,
                 groupValue: prefs.hydrationAggressiveness,
                 color: accentColor,
+                isDark: isDark,
                 onChanged: (val) => provider.setHydrationAggressiveness(val!),
               ),
-              _buildDivider(),
+              _buildDivider(isDark),
               _buildRadio(
                 title: "Padrão (2h)",
                 subtitle: "Lembrete a cada 2 horas (Recomendado).",
                 value: HydrationAggressiveness.standard,
                 groupValue: prefs.hydrationAggressiveness,
                 color: accentColor,
+                isDark: isDark,
                 onChanged: (val) => provider.setHydrationAggressiveness(val!),
               ),
-              _buildDivider(),
+              _buildDivider(isDark),
               _buildRadio(
                 title: "Suave (4h)",
                 subtitle: "Apenas 1 ou 2 alertas no dia se a meta estiver longe.",
                 value: HydrationAggressiveness.relaxed,
                 groupValue: prefs.hydrationAggressiveness,
                 color: accentColor,
+                isDark: isDark,
                 onChanged: (val) => provider.setHydrationAggressiveness(val!),
               ),
-              _buildDivider(),
+              _buildDivider(isDark),
               _buildRadio(
                 title: "Desativada",
                 subtitle: "Não me lembre de beber água.",
                 value: HydrationAggressiveness.disabled,
                 groupValue: prefs.hydrationAggressiveness,
                 color: accentColor,
+                isDark: isDark,
                 onChanged: (val) => provider.setHydrationAggressiveness(val!),
               ),
             ],
@@ -192,17 +201,18 @@ class NotificationSettingsSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildRestTimerSelector(BuildContext context, NotificationPreferences prefs, NotificationProvider provider, Color accentColor) {
+  Widget _buildRestTimerSelector(BuildContext context, NotificationPreferences prefs, NotificationProvider provider, Color accentColor, bool isDark) {
+    final textColor = isDark ? Colors.white : const Color(0xFF1C1C1E);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Notificação de Descanso", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+        Text("Notificação de Descanso", style: TextStyle(color: textColor, fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.05),
+            color: (isDark ? Colors.white : Colors.black).withOpacity(0.05),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withOpacity(0.1)),
+            border: Border.all(color: (isDark ? Colors.white : Colors.black).withOpacity(0.1)),
           ),
           child: Column(
             children: [
@@ -212,15 +222,17 @@ class NotificationSettingsSheet extends StatelessWidget {
                 value: RestTimerMode.all,
                 groupValue: prefs.restTimerMode,
                 color: accentColor,
+                isDark: isDark,
                 onChanged: (val) => provider.setRestTimerMode(val!),
               ),
-              _buildDivider(),
+              _buildDivider(isDark),
               _buildRadio(
                 title: "Apenas Ilha Dinâmica",
                 subtitle: "Sem banner e sem barulho. O descanso continua aparecendo discretamente na Live Activity do iPhone.",
                 value: RestTimerMode.liveActivityOnly,
                 groupValue: prefs.restTimerMode,
                 color: accentColor,
+                isDark: isDark,
                 onChanged: (val) => provider.setRestTimerMode(val!),
               ),
             ],
@@ -236,11 +248,14 @@ class NotificationSettingsSheet extends StatelessWidget {
     required T value,
     required T groupValue,
     required Color color,
+    required bool isDark,
     required ValueChanged<T?> onChanged,
   }) {
+    final textColor = isDark ? Colors.white : const Color(0xFF1C1C1E);
+    final mutedColor = isDark ? Colors.white54 : const Color(0xFF6E6E73);
     return RadioListTile<T>(
-      title: Text(title, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
-      subtitle: Text(subtitle, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+      title: Text(title, style: TextStyle(color: textColor, fontSize: 14, fontWeight: FontWeight.w600)),
+      subtitle: Text(subtitle, style: TextStyle(color: mutedColor, fontSize: 12)),
       value: value,
       groupValue: groupValue,
       activeColor: color,
@@ -249,8 +264,8 @@ class NotificationSettingsSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildDivider() {
-    return Divider(height: 1, color: Colors.white.withOpacity(0.1), indent: 16, endIndent: 16);
+  Widget _buildDivider(bool isDark) {
+    return Divider(height: 1, color: (isDark ? Colors.white : Colors.black).withOpacity(0.1), indent: 16, endIndent: 16);
   }
 
   Widget _buildTimeSelector(
@@ -260,6 +275,9 @@ class NotificationSettingsSheet extends StatelessWidget {
     Color accentColor,
     Function(String) onTimeChanged,
   ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : const Color(0xFF1C1C1E);
+    final mutedColor = isDark ? Colors.white54 : const Color(0xFF6E6E73);
     return InkWell(
       onTap: () async {
         final selected = await _showTimePickerDialog(context, currentHour, accentColor);
@@ -270,16 +288,16 @@ class NotificationSettingsSheet extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.05),
+          color: (isDark ? Colors.white : Colors.black).withOpacity(0.05),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withOpacity(0.1)),
+          border: Border.all(color: (isDark ? Colors.white : Colors.black).withOpacity(0.1)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
               label,
-              style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontSize: 14, fontWeight: FontWeight.w600),
+              style: TextStyle(color: textColor, fontSize: 14, fontWeight: FontWeight.w600),
             ),
             Row(
               children: [
@@ -288,7 +306,7 @@ class NotificationSettingsSheet extends StatelessWidget {
                   style: TextStyle(color: accentColor, fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(width: 8),
-                const Icon(Icons.chevron_right, color: Colors.white54, size: 20),
+                Icon(Icons.chevron_right, color: mutedColor, size: 20),
               ],
             ),
           ],
@@ -303,11 +321,14 @@ class NotificationSettingsSheet extends StatelessWidget {
     Color accentColor,
   ) async {
     int initialHour = int.tryParse(currentHour) ?? 22;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : const Color(0xFF1C1C1E);
+    final mutedColor = isDark ? Colors.white54 : const Color(0xFF6E6E73);
     
     return showDialog<String>(
       context: context,
       builder: (dialogCtx) => Dialog(
-        backgroundColor: const Color(0xff1c1c1e),
+        backgroundColor: isDark ? const Color(0xff1c1c1e) : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -316,7 +337,7 @@ class NotificationSettingsSheet extends StatelessWidget {
             children: [
               Text(
                 "Selecione a hora",
-                style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)), fontWeight: FontWeight.w800, fontSize: 18),
+                style: TextStyle(color: textColor, fontWeight: FontWeight.w800, fontSize: 18),
               ),
               const SizedBox(height: 24),
               SizedBox(
@@ -335,7 +356,7 @@ class NotificationSettingsSheet extends StatelessWidget {
                         child: Text(
                           "${index.toString().padLeft(2, '0')}h",
                           style: TextStyle(
-                            color: isSelected ? accentColor : Colors.white54,
+                            color: isSelected ? accentColor : mutedColor,
                             fontSize: isSelected ? 24 : 16,
                             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                           ),
@@ -352,12 +373,15 @@ class NotificationSettingsSheet extends StatelessWidget {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(dialogCtx),
-                    child: const Text("Cancelar", style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+                    child: Text("Cancelar", style: TextStyle(color: mutedColor, fontWeight: FontWeight.bold)),
                   ),
                   const SizedBox(width: 8),
                   TextButton(
                     onPressed: () => Navigator.pop(dialogCtx, initialHour.toString().padLeft(2, '0')),
-                    style: TextButton.styleFrom(backgroundColor: accentColor, foregroundColor: Colors.black),
+                    style: TextButton.styleFrom(
+                      backgroundColor: accentColor,
+                      foregroundColor: accentColor.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                    ),
                     child: const Text("Confirmar", style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ],

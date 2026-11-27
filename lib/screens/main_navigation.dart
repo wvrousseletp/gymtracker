@@ -61,7 +61,7 @@ class _MainNavigationState extends State<MainNavigation> {
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Center(
           child: CircularProgressIndicator(
-            color: isDark ? Colors.white : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white),
+            color: isDark ? Colors.white : const Color(0xFF1C1C1E),
           ),
         ),
       );

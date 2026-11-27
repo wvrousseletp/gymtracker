@@ -128,13 +128,14 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             isDark: isDark,
           );
           final backgroundColor =
-              isDark ? (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white) : Colors.white;
+              isDark ? const Color(0xFF1C1C1E) : Colors.white;
           final cardBg =
               isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF2F2F7);
-          final textPrimary = isDark ? Colors.white : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white);
+          final textPrimary = isDark ? Colors.white : const Color(0xFF1C1C1E);
           final textSecondary =
-              isDark ? (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)) : const Color(0xFF3C3C43);
-          final textMuted = isDark ? (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)) : const Color(0xFF6E6E73);
+              isDark ? Colors.white70 : const Color(0xFF3C3C43);
+          final textMuted =
+              isDark ? Colors.white54 : const Color(0xFF6E6E73);
           final borderSubtle = isDark
               ? Colors.white.withOpacity(0.12)
               : Colors.black.withOpacity(0.08);
@@ -1929,11 +1930,11 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
           provider.currentProfile.colorAccent,
           isDark: isDark,
         );
-        final textPrimary = isDark ? Colors.white : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white);
-        final textMuted = isDark ? (Theme.of(context).brightness == Brightness.dark ? Colors.white54 : const Color(0xFF6E6E73)) : const Color(0xFF6E6E73);
-        final textFaint = isDark ? (Theme.of(context).brightness == Brightness.dark ? Colors.white38 : const Color(0xFF8E8E93)) : const Color(0xFF8E8E93);
+        final textPrimary = isDark ? Colors.white : const Color(0xFF1C1C1E);
+        final textMuted = isDark ? Colors.white54 : const Color(0xFF6E6E73);
+        final textFaint = isDark ? Colors.white38 : const Color(0xFF8E8E93);
         final subtleBg = isDark
-            ? (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.05)
+            ? Colors.white.withOpacity(0.05)
             : Colors.black.withOpacity(0.04);
         final subtleBorder = isDark
             ? Colors.white.withOpacity(0.10)
