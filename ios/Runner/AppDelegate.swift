@@ -713,6 +713,20 @@ func _force_load_swiftCompatibilityDynamicReplacements() {}
             "dropReps": dropReps
           ])
         }
+      case "addExtraSet":
+        if let exerciseIndex = data["exerciseIndex"] as? Int {
+          self.invokeOrQueue(method: "addExtraSet", arguments: [
+            "exerciseIndex": exerciseIndex
+          ])
+        }
+      case "swapExercise":
+        if let exerciseIndex = data["exerciseIndex"] as? Int,
+           let newExerciseId = data["newExerciseId"] as? String {
+          self.invokeOrQueue(method: "swapExercise", arguments: [
+            "exerciseIndex": exerciseIndex,
+            "newExerciseId": newExerciseId
+          ])
+        }
       case "skipRest":
         self.invokeOrQueue(method: "skipRest", arguments: nil)
       case "adjustRestTimer":

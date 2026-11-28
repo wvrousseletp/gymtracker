@@ -86,6 +86,10 @@ struct ActiveWorkoutView: View {
     @State private var showPlateCalculator: Bool = false
     @State private var showNotesSheet: Bool = false
     @State private var showSetOptionsSheet: Bool = false
+    @State private var showSwapExerciseSheet: Bool = false
+    @State private var showInactivitySheet: Bool = false
+    @State private var lastActivityDate: Date = Date()
+    @State private var inactivityAlertedOnce: Bool = false
     @State private var isRestTimerMinimized: Bool = false
     @State private var activeWorkoutPage: Int = 1
     @State private var elapsedSeconds: Int = 0
@@ -1173,8 +1177,65 @@ struct ActiveWorkoutView: View {
                 Divider().background(Color.white.opacity(0.1))
                 
                 VStack(spacing: 6) {
+                    // + Série no exercício atual
+                    Button(action: {
+                        let exIdx = activeWorkout.currentExerciseIndex
+                        if exIdx >= 0 && exIdx < activeWorkout.exercises.count {
+                            hapticManager.playSetCompleted()
+                            connectivityManager.addExtraSet(exerciseIndex: exIdx)
+                            lastActivityDate = Date()
+                            inactivityAlertedOnce = false
+                            withAnimation { activeWorkoutPage = 1 }
+                        }
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.system(size: 14, weight: .bold))
+                            Text("+ Série")
+                                .font(.system(size: 14, weight: .bold))
+                            Spacer()
+                        }
+                        .foregroundColor(.cyan)
+                        .padding(.vertical, 10)
+                        .padding(.horizontal, 12)
+                        .background(Color.cyan.opacity(0.12))
+                        .cornerRadius(10)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.cyan.opacity(0.3), lineWidth: 0.5)
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+
+                    // Trocar Exercício (mesmo grupo muscular)
+                    Button(action: {
+                        lastActivityDate = Date()
+                        inactivityAlertedOnce = false
+                        showSwapExerciseSheet = true
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "arrow.left.arrow.right")
+                                .font(.system(size: 14, weight: .bold))
+                            Text("Trocar Exercício")
+                                .font(.system(size: 14, weight: .bold))
+                            Spacer()
+                        }
+                        .foregroundColor(.purple)
+                        .padding(.vertical, 10)
+                        .padding(.horizontal, 12)
+                        .background(Color.purple.opacity(0.14))
+                        .cornerRadius(10)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.purple.opacity(0.32), lineWidth: 0.5)
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+
                     // Pause/Resume Workout
                     Button(action: {
+                        lastActivityDate = Date()
+                        inactivityAlertedOnce = false
                         connectivityManager.togglePause(currentlyPaused: activeWorkout.paused)
                     }) {
                         HStack(spacing: 6) {
@@ -1660,6 +1721,18 @@ struct ActiveWorkoutView: View {
             if !isLuminanceReduced {
                 updateStopwatch()
             }
+            if let activeWorkout = connectivityManager.activeWorkout {
+                if !activeWorkout.paused &&
+                    connectivityManager.restTimer == nil &&
+                    !showInactivitySheet &&
+                    !showingFinishSheet &&
+                    !inactivityAlertedOnce &&
+                    Date().timeIntervalSince(lastActivityDate) >= 600 {
+                    inactivityAlertedOnce = true
+                    hapticManager.playRestTimerFinished()
+                    showInactivitySheet = true
+                }
+            }
             if isTimeTimerRunning {
                 timeTimerElapsed += 1
                 if let activeWorkout = connectivityManager.activeWorkout {
@@ -1672,6 +1745,48 @@ struct ActiveWorkoutView: View {
                     }
                 }
             }
+        }
+        .onReceive(connectivityManager.$activeWorkout) { _ in
+            lastActivityDate = Date()
+            inactivityAlertedOnce = false
+        }
+        .sheet(isPresented: $showSwapExerciseSheet) {
+            if let activeWorkout = connectivityManager.activeWorkout,
+               activeWorkout.currentExerciseIndex >= 0 && activeWorkout.currentExerciseIndex < activeWorkout.exercises.count {
+                let exIdx = activeWorkout.currentExerciseIndex
+                let currentEx = activeWorkout.exercises[exIdx]
+                WatchSwapExerciseSheet(
+                    isPresented: $showSwapExerciseSheet,
+                    currentExerciseName: currentEx.name,
+                    currentMuscle: currentEx.muscle,
+                    library: connectivityManager.library,
+                    onSelect: { newEx in
+                        hapticManager.playExerciseChange()
+                        connectivityManager.swapExercise(exerciseIndex: exIdx, newExercise: newEx)
+                        lastActivityDate = Date()
+                        inactivityAlertedOnce = false
+                        withAnimation { activeWorkoutPage = 1 }
+                    }
+                )
+            }
+        }
+        .sheet(isPresented: $showInactivitySheet) {
+            WatchInactivitySheet(
+                isPresented: $showInactivitySheet,
+                onContinue: {
+                    lastActivityDate = Date()
+                    inactivityAlertedOnce = false
+                },
+                onPause: {
+                    if let active = connectivityManager.activeWorkout, !active.paused {
+                        connectivityManager.togglePause(currentlyPaused: false)
+                    }
+                    lastActivityDate = Date()
+                },
+                onFinish: {
+                    showingFinishSheet = true
+                }
+            )
         }
         .onChange(of: isLuminanceReduced) { reduced in
             if !reduced {
@@ -2320,6 +2435,142 @@ struct SetOptionsSheet: View {
                 .buttonStyle(PlainButtonStyle())
             }
             .padding(.horizontal, 4)
+        }
+    }
+}
+
+struct WatchSwapExerciseSheet: View {
+    @Binding var isPresented: Bool
+    let currentExerciseName: String
+    let currentMuscle: String
+    let library: [WatchLibraryExercise]
+    let onSelect: (WatchLibraryExercise) -> Void
+
+    private var alternatives: [WatchLibraryExercise] {
+        let sameMuscle = library.filter {
+            $0.muscle.lowercased() == currentMuscle.lowercased() &&
+            $0.name.lowercased() != currentExerciseName.lowercased()
+        }
+        if !sameMuscle.isEmpty { return sameMuscle }
+        return library.filter { $0.name.lowercased() != currentExerciseName.lowercased() }
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 6) {
+                Text("Trocar Exercício")
+                    .font(.system(size: 13, weight: .black))
+                    .foregroundColor(.white)
+                Text(currentMuscle.uppercased())
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundColor(.purple)
+
+                if alternatives.isEmpty {
+                    Text("Nenhuma alternativa sincronizada.")
+                        .font(.system(size: 10))
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                        .padding(.vertical, 12)
+                } else {
+                    ForEach(alternatives) { ex in
+                        Button(action: {
+                            onSelect(ex)
+                            isPresented = false
+                        }) {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(ex.name)
+                                        .font(.system(size: 11, weight: .bold))
+                                        .foregroundColor(.white)
+                                        .lineLimit(2)
+                                        .multilineTextAlignment(.leading)
+                                    Text(ex.muscle)
+                                        .font(.system(size: 8))
+                                        .foregroundColor(.gray)
+                                }
+                                Spacer()
+                                Image(systemName: "arrow.right.circle.fill")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.purple)
+                            }
+                            .padding(8)
+                            .background(Color.white.opacity(0.06))
+                            .cornerRadius(10)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+            }
+            .padding(.horizontal, 4)
+        }
+    }
+}
+
+struct WatchInactivitySheet: View {
+    @Binding var isPresented: Bool
+    let onContinue: () -> Void
+    let onPause: () -> Void
+    let onFinish: () -> Void
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 8) {
+                Image(systemName: "bell.badge.fill")
+                    .font(.system(size: 20))
+                    .foregroundColor(.orange)
+                Text("Ainda treinando?")
+                    .font(.system(size: 14, weight: .black))
+                    .foregroundColor(.white)
+                Text("Faz 10 min sem registrar séries.")
+                    .font(.system(size: 10))
+                    .foregroundColor(.gray)
+                    .multilineTextAlignment(.center)
+
+                Button(action: {
+                    onContinue()
+                    isPresented = false
+                }) {
+                    Text("Continuar")
+                        .font(.system(size: 12, weight: .black))
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 9)
+                        .background(Color.green)
+                        .cornerRadius(12)
+                }
+                .buttonStyle(PlainButtonStyle())
+
+                Button(action: {
+                    onPause()
+                    isPresented = false
+                }) {
+                    Text("Pausar Treino")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(.orange)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(Color.orange.opacity(0.15))
+                        .cornerRadius(10)
+                }
+                .buttonStyle(PlainButtonStyle())
+
+                Button(action: {
+                    isPresented = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                        onFinish()
+                    }
+                }) {
+                    Text("Finalizar")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(Color.white.opacity(0.12))
+                        .cornerRadius(10)
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+            .padding(8)
         }
     }
 }

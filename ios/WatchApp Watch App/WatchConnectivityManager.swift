@@ -619,6 +619,76 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         }
     }
 
+    func addExtraSet(exerciseIndex: Int) {
+        if var workout = activeWorkout, exerciseIndex >= 0 && exerciseIndex < workout.exercises.count {
+            var ex = workout.exercises[exerciseIndex]
+            let prevSetsCount = ex.sets
+            let lastWeight = ex.weightsPerSet?.last ?? ex.weight
+            let lastReps = ex.repsPerSet?.last ?? ex.reps
+
+            var wps = ex.weightsPerSet ?? Array(repeating: ex.weight, count: prevSetsCount)
+            while wps.count < prevSetsCount { wps.append(ex.weight) }
+            wps.append(lastWeight)
+
+            var rps = ex.repsPerSet ?? Array(repeating: ex.reps, count: prevSetsCount)
+            while rps.count < prevSetsCount { rps.append(ex.reps) }
+            rps.append(lastReps)
+
+            ex.sets = prevSetsCount + 1
+            ex.setsState.append(false)
+            ex.failureReport.append(false)
+            ex.weightsPerSet = wps
+            ex.repsPerSet = rps
+
+            workout.exercises[exerciseIndex] = ex
+            self.activeWorkout = workout
+            cache.setLocalWorkoutState(workout)
+        }
+
+        if !isLocalWorkout {
+            sendToiPhone([
+                "action": "addExtraSet",
+                "exerciseIndex": exerciseIndex
+            ])
+        }
+    }
+
+    func swapExercise(exerciseIndex: Int, newExercise: WatchLibraryExercise) {
+        if var workout = activeWorkout, exerciseIndex >= 0 && exerciseIndex < workout.exercises.count {
+            let oldEx = workout.exercises[exerciseIndex]
+            let setsCount = max(1, oldEx.sets)
+            let updatedEx = WatchActiveExercise(
+                name: newExercise.name,
+                muscle: newExercise.muscle,
+                sets: setsCount,
+                reps: oldEx.reps,
+                rest: oldEx.rest,
+                weight: oldEx.weight,
+                setsState: Array(repeating: false, count: setsCount),
+                measurementType: newExercise.measurementType,
+                executionType: newExercise.executionType,
+                performedCardios: Array(repeating: nil, count: setsCount),
+                failureReport: Array(repeating: false, count: setsCount),
+                failureReps: Array(repeating: nil, count: setsCount),
+                isStationary: newExercise.isStationary,
+                instanceId: newExercise.id,
+                weightsPerSet: Array(repeating: oldEx.weight, count: setsCount),
+                repsPerSet: Array(repeating: oldEx.reps, count: setsCount)
+            )
+            workout.exercises[exerciseIndex] = updatedEx
+            self.activeWorkout = workout
+            cache.setLocalWorkoutState(workout)
+        }
+
+        if !isLocalWorkout {
+            sendToiPhone([
+                "action": "swapExercise",
+                "exerciseIndex": exerciseIndex,
+                "newExerciseId": newExercise.id
+            ])
+        }
+    }
+
     func updateExerciseWeightReps(exerciseIndex: Int, weight: Double, reps: Int) {
         // Optimistic UI Update
         updateExerciseWeightRepsLocal(exerciseIndex: exerciseIndex, weight: weight, reps: reps)
@@ -946,7 +1016,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
         switch action {
         case "startWorkout", "completeWorkout", "cancelWorkout", "postponeWorkout", "resumeWorkout":
             return .critical
-        case "toggleSet", "updateCardio", "updateFailure", "updateActiveWorkout", "skipRest", "adjustRestTimer", "changeExercise", "updateExerciseWeightReps", "updateExerciseSetWeightReps", "addDropSet":
+        case "toggleSet", "updateCardio", "updateFailure", "updateActiveWorkout", "skipRest", "adjustRestTimer", "changeExercise", "updateExerciseWeightReps", "updateExerciseSetWeightReps", "addDropSet", "addExtraSet", "swapExercise":
             return .high
         case "updateHealthMetrics", "updateWaterIntake":
             return .normal

@@ -165,8 +165,14 @@ class WatchService {
           failureRep: failureRep,
         );
 
-        // Envia de volta o estado atualizado do treino ativo
-        if (_provider!.state?.activeWorkout != null) {
+        // Espelha o foco no iPhone para o exercício ativo no Watch
+        final updatedActive = _provider!.state?.activeWorkout;
+        if (updatedActive != null) {
+          if (exerciseIndex >= 0 &&
+              exerciseIndex < updatedActive.exercises.length &&
+              updatedActive.currentExerciseIndex != exerciseIndex) {
+            _provider!.setCurrentExerciseIndex(exerciseIndex);
+          }
           sendActiveWorkout(_provider!.state!.activeWorkout!);
         }
         break;
@@ -236,6 +242,36 @@ class WatchService {
         _provider!.persistActiveWorkoutState();
         if (_provider!.state?.activeWorkout != null) {
           sendActiveWorkout(_provider!.state!.activeWorkout!);
+        }
+        break;
+
+      case 'addExtraSet':
+        final int exerciseIndex = call.arguments['exerciseIndex'] as int;
+        _provider!.workoutProvider?.addExtraSet(exerciseIndex);
+        _provider!.persistActiveWorkoutState();
+        if (_provider!.state?.activeWorkout != null) {
+          sendActiveWorkout(_provider!.state!.activeWorkout!);
+        }
+        break;
+
+      case 'swapExercise':
+        final int exerciseIndex = call.arguments['exerciseIndex'] as int;
+        final String newExerciseId = call.arguments['newExerciseId'] as String;
+        final active = _provider!.state?.activeWorkout;
+        if (active != null &&
+            exerciseIndex >= 0 &&
+            exerciseIndex < active.exercises.length) {
+          final oldExId = active.exercises[exerciseIndex].id;
+          final newLibEx = _provider!.state?.library
+              .where((l) => l.id == newExerciseId)
+              .firstOrNull;
+          if (newLibEx != null) {
+            _provider!.workoutProvider?.replaceActiveExercise(oldExId, newLibEx);
+            _provider!.persistActiveWorkoutState();
+            if (_provider!.state?.activeWorkout != null) {
+              sendActiveWorkout(_provider!.state!.activeWorkout!);
+            }
+          }
         }
         break;
 

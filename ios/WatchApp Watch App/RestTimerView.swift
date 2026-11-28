@@ -16,6 +16,7 @@ struct RestTimerView: View {
     @State private var rotationAngle: Double = 0
     @State private var lastTickedSecond: Int = -1
     @State private var crownAccumulator: Double = 0
+    @State private var waterJustAdded: Bool = false
     @FocusState private var isCrownFocused: Bool
     @Environment(\.isLuminanceReduced) var isLuminanceReduced
 
@@ -76,23 +77,48 @@ struct RestTimerView: View {
             }
 
             VStack(spacing: 0) {
-                if !isLuminanceReduced, let onMinimize = onMinimize {
-                    HStack {
-                        Button(action: onMinimize) {
-                            HStack(spacing: 4) {
-                                Image(systemName: "chevron.down")
-                                    .font(.system(size: 10, weight: .bold))
-                                Text("Minimizar")
-                                    .font(.system(size: 10, weight: .bold))
+                if !isLuminanceReduced {
+                    HStack(spacing: 6) {
+                        if let onMinimize = onMinimize {
+                            Button(action: onMinimize) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "chevron.down")
+                                        .font(.system(size: 10, weight: .bold))
+                                    Text("Minimizar")
+                                        .font(.system(size: 10, weight: .bold))
+                                }
+                                .foregroundColor(.white.opacity(0.9))
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 5)
+                                .background(Color.white.opacity(0.16))
+                                .cornerRadius(12)
                             }
-                            .foregroundColor(.white.opacity(0.9))
-                            .padding(.horizontal, 10)
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                        Spacer()
+                        Button(action: {
+                            #if canImport(WatchKit)
+                            WKInterfaceDevice.current().play(.click)
+                            #endif
+                            connectivityManager.updateWaterIntake(newAmountMl: connectivityManager.waterIntakeCurrent + 250)
+                            withAnimation { waterJustAdded = true }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                withAnimation { waterJustAdded = false }
+                            }
+                        }) {
+                            HStack(spacing: 3) {
+                                Image(systemName: waterJustAdded ? "checkmark" : "drop.fill")
+                                    .font(.system(size: 9, weight: .bold))
+                                Text(waterJustAdded ? "+250" : "+250ml")
+                                    .font(.system(size: 9, weight: .bold, design: .rounded))
+                            }
+                            .foregroundColor(waterJustAdded ? .green : .cyan)
+                            .padding(.horizontal, 8)
                             .padding(.vertical, 5)
-                            .background(Color.white.opacity(0.16))
+                            .background((waterJustAdded ? Color.green : Color.cyan).opacity(0.18))
                             .cornerRadius(12)
                         }
                         .buttonStyle(PlainButtonStyle())
-                        Spacer()
                     }
                     .padding(.horizontal, 6)
                     .padding(.top, 2)

@@ -653,6 +653,82 @@ class WorkoutProvider extends ChangeNotifier {
         false);
   }
 
+  void addExtraSet(int exIdx) {
+    if (activeWorkout == null) return;
+    final active = activeWorkout!;
+    if (exIdx < 0 || exIdx >= active.exercises.length) return;
+    final exercises = List<ActiveExercise>.from(active.exercises);
+    final ex = exercises[exIdx];
+    final lastWeight = (ex.weightsPerSet != null && ex.weightsPerSet!.isNotEmpty)
+        ? ex.weightsPerSet!.last
+        : ex.weight;
+    final lastReps = (ex.repsPerSet != null && ex.repsPerSet!.isNotEmpty)
+        ? ex.repsPerSet!.last
+        : ex.reps;
+
+    final newSetsState = List<bool>.from(ex.setsState)..add(false);
+    final newWeights = ex.weightsPerSet != null
+        ? (List<double>.from(ex.weightsPerSet!)..add(lastWeight))
+        : (List<double>.filled(ex.sets, ex.weight, growable: true)
+          ..add(lastWeight));
+    final newReps = ex.repsPerSet != null
+        ? (List<int>.from(ex.repsPerSet!)..add(lastReps))
+        : (List<int>.filled(ex.sets, ex.reps, growable: true)..add(lastReps));
+    final newFailure = List<bool>.from(ex.failureReport);
+    while (newFailure.length < ex.sets) {
+      newFailure.add(false);
+    }
+    newFailure.add(false);
+
+    final newFailureReps = List<int?>.from(ex.failureReps);
+    while (newFailureReps.length < ex.sets) {
+      newFailureReps.add(null);
+    }
+    newFailureReps.add(null);
+
+    final newCardios = List<PerformedCardio?>.from(ex.performedCardios);
+    while (newCardios.length < ex.sets) {
+      newCardios.add(null);
+    }
+    newCardios.add(null);
+
+    final newSetTypes = ex.setTypes != null
+        ? (List<String>.from(ex.setTypes!)..add('N'))
+        : (List<String>.filled(ex.sets, 'N', growable: true)..add('N'));
+    final newRir = ex.rirPerSet != null
+        ? (List<int?>.from(ex.rirPerSet!)..add(null))
+        : (List<int?>.filled(ex.sets, null, growable: true)..add(null));
+
+    exercises[exIdx] = ActiveExercise(
+      id: ex.id,
+      name: ex.name,
+      muscle: ex.muscle,
+      sets: ex.sets + 1,
+      reps: ex.reps,
+      weight: ex.weight,
+      weightsPerSet: newWeights,
+      repsPerSet: newReps,
+      setTypes: newSetTypes,
+      rirPerSet: newRir,
+      rest: ex.rest,
+      isCardio: ex.isCardio,
+      allowCardioSets: ex.allowCardioSets,
+      setsState: newSetsState,
+      failureReport: newFailure,
+      failureReps: newFailureReps,
+      performedCardios: newCardios,
+      executionType: ex.executionType,
+      measurementType: ex.measurementType,
+      isStationary: ex.isStationary,
+      supersetId: ex.supersetId,
+      isUnilateral: ex.isUnilateral,
+    );
+
+    activeWorkout = active.copyWith(exercises: exercises);
+    _save();
+    notifyListeners();
+  }
+
   void addDropSet(
       int exIdx, int sourceSetIdx, double dropWeight, int dropReps) {
     if (activeWorkout == null) return;

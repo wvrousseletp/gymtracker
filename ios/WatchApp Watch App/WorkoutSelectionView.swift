@@ -259,15 +259,49 @@ struct WorkoutSelectionView: View {
 
     @ViewBuilder
     private var offlineWarningSection: some View {
-        if !connectivityManager.isReachable {
+        let pendingCount = WatchLocalWorkoutManager.shared.getPendingSyncWorkouts().count
+        if !connectivityManager.isReachable || pendingCount > 0 {
             Section {
-                HStack(spacing: 6) {
-                    Image(systemName: "wifi.slash")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(.yellow)
-                    Text("Modo Offline Ativo")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(.yellow)
+                VStack(spacing: 6) {
+                    if !connectivityManager.isReachable {
+                        HStack(spacing: 6) {
+                            Image(systemName: "wifi.slash")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.yellow)
+                            Text("Modo Offline Ativo")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.yellow)
+                        }
+                    }
+                    if pendingCount > 0 {
+                        HStack(spacing: 6) {
+                            Image(systemName: "arrow.triangle.2.circlepath")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.cyan)
+                            Text("\(pendingCount) treino\(pendingCount > 1 ? "s" : "") aguardando iPhone")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundColor(.cyan)
+                                .lineLimit(1)
+                            Spacer(minLength: 2)
+                            if connectivityManager.isReachable {
+                                Button(action: {
+                                    #if canImport(WatchKit)
+                                    WKInterfaceDevice.current().play(.click)
+                                    #endif
+                                    connectivityManager.syncOfflineWorkouts()
+                                }) {
+                                    Text("Enviar")
+                                        .font(.system(size: 9, weight: .black))
+                                        .foregroundColor(.black)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 3)
+                                        .background(Color.cyan)
+                                        .cornerRadius(8)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+                        }
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.vertical, 2)
