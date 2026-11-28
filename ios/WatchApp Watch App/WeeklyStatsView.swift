@@ -19,10 +19,10 @@ struct WeeklyStatsView: View {
         streak.weeklyCardioMinutes ?? 0
     }
     
-    // Weekly data for the bar chart (last 4 weeks)
+    // Dados reais das últimas 4 semanas sincronizados do iPhone (vazio se ainda não sincronizado)
     private var weeklyData: [Int] {
-        let currentWeek = streak.currentWeekCount
-        return [max(1, currentWeek - 1), max(2, currentWeek), max(1, currentWeek + 1), currentWeek]
+        guard let real = streak.last4WeeksCounts, real.count == 4 else { return [] }
+        return real
     }
     
     private var trend: String {
@@ -242,55 +242,57 @@ struct WeeklyStatsView: View {
                 )
                 .padding(.horizontal, 4)
 
-                // MARK: - Weekly Trend Chart
-                VStack(spacing: 4) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "chart.bar.fill")
-                            .font(.system(size: 10))
-                            .foregroundColor(.blue)
-                        Text("Trend semanal")
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundColor(.white)
-                        Spacer()
-                        Text(trend)
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(trendColor)
-                    }
-                    
-                    // Simple bar chart
-                    HStack(spacing: 4) {
-                        ForEach(0..<weeklyData.count, id: \.self) { index in
-                            let value = weeklyData[index]
-                            let maxValue = max(weeklyData.max() ?? 1, 1)
-                            let barHeight = CGFloat(value) / CGFloat(maxValue)
-                            
-                            let calculatedHeight = CGFloat(30.0) * barHeight * CGFloat(barAnimation)
-                            VStack(spacing: 2) {
-                                Rectangle()
-                                    .fill(index == weeklyData.count - 1 ? Color.blue : Color.blue.opacity(0.5))
-                                    .frame(width: 8, height: max(calculatedHeight, 2.0))
-                                    .cornerRadius(2)
-                                Text("\(value)")
-                                    .font(.system(size: 6, weight: .bold))
-                                    .foregroundColor(.white)
-                            }
+                // MARK: - Weekly Trend Chart (somente com dados reais)
+                if !weeklyData.isEmpty {
+                    VStack(spacing: 4) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "chart.bar.fill")
+                                .font(.system(size: 10))
+                                .foregroundColor(.blue)
+                            Text("Últimas 4 semanas")
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundColor(.white)
+                            Spacer()
+                            Text(trend)
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(trendColor)
                         }
-                        Spacer()
+                        
+                        // Simple bar chart
+                        HStack(spacing: 6) {
+                            ForEach(0..<weeklyData.count, id: \.self) { index in
+                                let value = weeklyData[index]
+                                let maxValue = max(weeklyData.max() ?? 1, 1)
+                                let barHeight = CGFloat(value) / CGFloat(maxValue)
+                                
+                                let calculatedHeight = CGFloat(30.0) * barHeight * CGFloat(barAnimation)
+                                VStack(spacing: 2) {
+                                    Rectangle()
+                                        .fill(index == weeklyData.count - 1 ? Color.blue : Color.blue.opacity(0.5))
+                                        .frame(width: 10, height: max(calculatedHeight, 2.0))
+                                        .cornerRadius(2)
+                                    Text("\(value)")
+                                        .font(.system(size: 6, weight: .bold))
+                                        .foregroundColor(.white)
+                                }
+                            }
+                            Spacer()
+                        }
+                        .frame(height: 40)
                     }
-                    .frame(height: 40)
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-                .background(Color.white.opacity(0.04))
-                .cornerRadius(12)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                )
-                .padding(.horizontal, 4)
-                .onAppear {
-                    withAnimation(.easeOut(duration: 0.8)) {
-                        barAnimation = 1.0
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+                    .background(Color.white.opacity(0.04))
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                    )
+                    .padding(.horizontal, 4)
+                    .onAppear {
+                        withAnimation(.easeOut(duration: 0.8)) {
+                            barAnimation = 1.0
+                        }
                     }
                 }
 

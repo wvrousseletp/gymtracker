@@ -1220,7 +1220,7 @@ struct ActiveWorkoutView: View {
                     .buttonStyle(PlainButtonStyle())
                     
                     Button(action: {
-                        showSummary = true
+                        showingFinishSheet = true
                     }) {
                         HStack(spacing: 6) {
                             Image(systemName: "checkmark.seal.fill")
@@ -1569,9 +1569,22 @@ struct ActiveWorkoutView: View {
             )
         }
         .sheet(isPresented: $showingFinishSheet) {
-            FinishWorkoutSheet(isPresented: $showingFinishSheet) { rpe, notes in
-                connectivityManager.completeWorkout(rpe: rpe, notes: notes)
-            }
+            let active = connectivityManager.activeWorkout
+            let totalSets = active?.exercises.reduce(0) { $0 + $1.setsState.count } ?? 0
+            let completedSets = active?.exercises.reduce(0) { $0 + $1.setsState.filter { $0 }.count } ?? 0
+            FinishWorkoutSheet(
+                isPresented: $showingFinishSheet,
+                workoutName: active?.name ?? "",
+                durationText: formatDuration(elapsedSeconds),
+                completedSets: completedSets,
+                totalSets: totalSets,
+                onConfirm: { rpe, notes in
+                    connectivityManager.completeWorkout(rpe: rpe, notes: notes)
+                },
+                onDiscard: {
+                    showingCancelAlert = true
+                }
+            )
         }
         .sheet(isPresented: $showPlateCalculator) {
             if let activeWorkout = connectivityManager.activeWorkout,

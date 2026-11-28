@@ -632,7 +632,33 @@ class WatchService {
 
   Future<void> sendPlanner(Map<String, List<String>> planner) async {
     try {
-      final serialized = json.encode(planner);
+      final state = _provider?.state;
+      Map<String, List<String>> effectivePlanner = planner.map(
+        (k, v) => MapEntry(k, List<String>.from(v)),
+      );
+
+      // Quando o usuário usa Lista Contínua, projeta os treinos ativos de hoje
+      // na chave do dia atual para o Watch exibir exatamente "Treinos de Hoje".
+      if (state != null &&
+          state.settings.organizationMode == OrganizationMode.continuousList) {
+        final weekdayKeys = ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'];
+        final todayKey = weekdayKeys[DateTime.now().weekday - 1];
+        if (_provider?.isContinuousRestToday == true) {
+          effectivePlanner[todayKey] = [];
+        } else {
+          final todayRoutines = _getTodayRoutines(
+            state.settings,
+            state.planner,
+            state.routines,
+            state.streak,
+            state.continuousBlocks,
+          );
+          effectivePlanner[todayKey] =
+              todayRoutines.map((r) => 'routine:${r.id}').toList();
+        }
+      }
+
+      final serialized = json.encode(effectivePlanner);
       if (serialized == _lastSentPlannerJson) return;
       _lastSentPlannerJson = serialized;
       await _channel.invokeMethod('updatePlanner', serialized);
@@ -695,9 +721,42 @@ class WatchService {
     }
   }
 
+  List<int> _computeLast4WeeksCounts(WorkoutStreak streak) {
+    final history = _provider?.state?.history ?? const <WorkoutLog>[];
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final currentWeekMonday = today.subtract(Duration(days: today.weekday - 1));
+
+    final List<Set<String>> weekDaySets = List.generate(4, (_) => <String>{});
+    for (final log in history) {
+      if (log.isRestDayLog) continue;
+      final dt = DateTime.tryParse(log.date)?.toLocal();
+      if (dt == null) continue;
+      final d = DateTime(dt.year, dt.month, dt.day);
+      final diffDays = d.difference(currentWeekMonday).inDays;
+      // 0..6 -> index 3 (current week), -7..-1 -> index 2, -14..-8 -> index 1, -21..-15 -> index 0
+      final weekOffset = diffDays >= 0
+          ? 0
+          : -(((-diffDays - 1) ~/ 7) + 1);
+      final idx = 3 + weekOffset;
+      if (idx >= 0 && idx < 4) {
+        final key = "${d.year}-${d.month}-${d.day}";
+        weekDaySets[idx].add(key);
+      }
+    }
+
+    final counts = weekDaySets.map((s) => s.length).toList();
+    if (streak.currentWeekCount > counts[3]) {
+      counts[3] = streak.currentWeekCount;
+    }
+    return counts;
+  }
+
   Future<void> sendStreak(WorkoutStreak streak) async {
     try {
-      await _channel.invokeMethod('updateStreak', streak.toJson());
+      final payload = Map<String, dynamic>.from(streak.toJson());
+      payload['last4WeeksCounts'] = _computeLast4WeeksCounts(streak);
+      await _channel.invokeMethod('updateStreak', payload);
     } on PlatformException catch (e) {
       debugPrint("[WatchService] Erro ao enviar streak: $e");
     }

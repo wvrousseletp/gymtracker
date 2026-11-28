@@ -79,17 +79,17 @@ struct RestTimerView: View {
                 if !isLuminanceReduced, let onMinimize = onMinimize {
                     HStack {
                         Button(action: onMinimize) {
-                            HStack(spacing: 3) {
+                            HStack(spacing: 4) {
                                 Image(systemName: "chevron.down")
-                                    .font(.system(size: 8, weight: .bold))
+                                    .font(.system(size: 10, weight: .bold))
                                 Text("Minimizar")
-                                    .font(.system(size: 8, weight: .bold))
+                                    .font(.system(size: 10, weight: .bold))
                             }
-                            .foregroundColor(.white.opacity(0.8))
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 3)
-                            .background(Color.white.opacity(0.12))
-                            .cornerRadius(10)
+                            .foregroundColor(.white.opacity(0.9))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(Color.white.opacity(0.16))
+                            .cornerRadius(12)
                         }
                         .buttonStyle(PlainButtonStyle())
                         Spacer()
@@ -147,7 +147,7 @@ struct RestTimerView: View {
                     )
                     .padding(.bottom, 6)
                     
-                    // Quick adjust buttons
+                    // Quick adjust buttons (-15s / +15s simétricos com o iPhone)
                     HStack(spacing: 8) {
                         Button(action: {
                             connectivityManager.adjustRestTimer(by: -15)
@@ -159,25 +159,25 @@ struct RestTimerView: View {
                                 .font(.system(size: 12, weight: .bold, design: .rounded))
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
-                                .frame(height: 32)
+                                .frame(height: 34)
                                 .background(Color.white.opacity(0.15))
-                                .cornerRadius(16)
+                                .cornerRadius(17)
                         }
                         .buttonStyle(PlainButtonStyle())
                         
                         Button(action: {
-                            connectivityManager.adjustRestTimer(by: 30)
+                            connectivityManager.adjustRestTimer(by: 15)
                             #if canImport(WatchKit)
                             WKInterfaceDevice.current().play(.click)
                             #endif
                         }) {
-                            Text("+30s")
+                            Text("+15s")
                                 .font(.system(size: 12, weight: .bold, design: .rounded))
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
-                                .frame(height: 32)
-                                .background(Color.white.opacity(0.15))
-                                .cornerRadius(16)
+                                .frame(height: 34)
+                                .background(themeColor.opacity(0.28))
+                                .cornerRadius(17)
                         }
                         .buttonStyle(PlainButtonStyle())
                     }

@@ -1,50 +1,71 @@
 import SwiftUI
+#if canImport(WatchKit)
+import WatchKit
+#endif
 
 struct PlannedRoutineRow: View {
     let routine: WatchRoutine
     let item: PlannedWatchItem
     let isCompleted: Bool
+    let onStartTap: (String) -> Void
     
     var body: some View {
-        NavigationLink(destination: WorkoutSetupView(routine: routine)) {
-            HStack(spacing: 8) {
-                ZStack {
-                    Circle()
-                        .fill(isCompleted ? Color.green.opacity(0.12) : Color.green.opacity(0.12))
-                        .frame(width: 24, height: 24)
-                    Image(systemName: isCompleted ? "checkmark.seal.fill" : "calendar")
-                        .font(.system(size: 10))
-                        .foregroundColor(isCompleted ? .green : .green)
-                        .transition(.scale.combined(with: .opacity))
+        HStack(spacing: 6) {
+            Button(action: {
+                #if canImport(WatchKit)
+                WKInterfaceDevice.current().play(.click)
+                #endif
+                onStartTap(routine.id)
+            }) {
+                HStack(spacing: 8) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.green.opacity(0.14))
+                            .frame(width: 24, height: 24)
+                        Image(systemName: isCompleted ? "checkmark.seal.fill" : "play.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(.green)
+                            .transition(.scale.combined(with: .opacity))
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(item.title)
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(isCompleted ? .gray : .white)
+                            .strikethrough(isCompleted, color: .gray)
+                            .lineLimit(1)
+                        Text(isCompleted ? "Treino concluído hoje" : item.subtitle)
+                            .font(.system(size: 9))
+                            .foregroundColor(isCompleted ? .green.opacity(0.8) : .gray)
+                            .lineLimit(1)
+                    }
+                    Spacer(minLength: 2)
                 }
-                
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(item.title)
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(isCompleted ? .gray : .white)
-                        .strikethrough(isCompleted, color: .gray)
-                    Text(isCompleted ? "Treino concluído hoje" : item.subtitle)
-                        .font(.system(size: 9))
-                        .foregroundColor(isCompleted ? .green.opacity(0.8) : .gray)
-                }
-                Spacer()
-                Image(systemName: isCompleted ? "checkmark.circle.fill" : "play.fill")
-                    .font(.system(size: isCompleted ? 12 : 8))
-                    .foregroundColor(isCompleted ? .green : .green)
-                    .transition(.scale.combined(with: .opacity))
+                .padding(.vertical, 4)
+                .contentShape(Rectangle())
             }
-            .padding(.vertical, 4)
+            .buttonStyle(PlainButtonStyle())
+
+            NavigationLink(destination: WorkoutSetupView(routine: routine)) {
+                Image(systemName: "slider.horizontal.3")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.65))
+                    .frame(width: 26, height: 26)
+                    .background(Color.white.opacity(0.08))
+                    .clipShape(Circle())
+            }
+            .buttonStyle(PlainButtonStyle())
+            .accessibilityLabel("Configurar \(item.title)")
         }
-        .buttonStyle(PlainButtonStyle())
         .padding(8)
-        .background(isCompleted ? Color.black.opacity(0.2) : Color.green.opacity(0.04))
+        .background(isCompleted ? Color.black.opacity(0.2) : Color.green.opacity(0.06))
         .cornerRadius(10)
         .overlay(
             RoundedRectangle(cornerRadius: 10)
-                .stroke(isCompleted ? Color.green.opacity(0.2) : Color.green.opacity(0.15), lineWidth: 1)
+                .stroke(isCompleted ? Color.green.opacity(0.2) : Color.green.opacity(0.22), lineWidth: 1)
         )
         .accessibilityLabel(isCompleted ? "\(item.title), treino concluído" : "\(item.title), \(item.subtitle)")
-        .accessibilityHint(isCompleted ? "Toque para ver detalhes" : "Toque para iniciar treino")
+        .accessibilityHint("Toque para iniciar treino em 1 toque")
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isCompleted)
     }
 }
@@ -104,6 +125,7 @@ struct PlannedExerciseRow: View {
 struct PlannedItemRow: View {
     let item: PlannedWatchItem
     let isCompleted: Bool
+    let onRoutineStartTap: (String) -> Void
     let onSingleExerciseTap: (String) -> Void
     let routines: [WatchRoutine]
     
@@ -111,7 +133,7 @@ struct PlannedItemRow: View {
         if item.kind == .routine,
            let routineId = item.routineId,
            let routine = routines.first(where: { $0.id == routineId }) {
-            PlannedRoutineRow(routine: routine, item: item, isCompleted: isCompleted)
+            PlannedRoutineRow(routine: routine, item: item, isCompleted: isCompleted, onStartTap: onRoutineStartTap)
         } else if item.kind == .singleExercise, let exerciseId = item.exerciseId {
             PlannedExerciseRow(exerciseId: exerciseId, item: item, isCompleted: isCompleted, onSingleExerciseTap: onSingleExerciseTap)
         } else {
@@ -170,6 +192,9 @@ struct WorkoutSelectionView: View {
     @StateObject var workoutManager = WorkoutManager.shared
     @State private var activeTab = 0
     @State private var showAllWorkouts = false
+    @State private var favoriteRoutineIds: Set<String> = Set(
+        UserDefaults.standard.stringArray(forKey: "favorite_routines") ?? []
+    )
 
     private var todayPlannedItems: [PlannedWatchItem] {
         WatchPlannerHelper.resolveTodayPlannedItems(
@@ -179,23 +204,19 @@ struct WorkoutSelectionView: View {
         )
     }
     
-    private var favoriteRoutines: Set<String> {
-        get {
-            Set(UserDefaults.standard.stringArray(forKey: "favorite_routines") ?? [])
-        }
-        set {
-            UserDefaults.standard.set(Array(newValue), forKey: "favorite_routines")
-        }
+    private var sortedRoutines: [WatchRoutine] {
+        let favs = connectivityManager.routines.filter { favoriteRoutineIds.contains($0.id) }
+        let rest = connectivityManager.routines.filter { !favoriteRoutineIds.contains($0.id) }
+        return favs + rest
     }
     
     private func toggleFavorite(routineId: String) {
-        var favorites = favoriteRoutines
-        if favorites.contains(routineId) {
-            favorites.remove(routineId)
+        if favoriteRoutineIds.contains(routineId) {
+            favoriteRoutineIds.remove(routineId)
         } else {
-            favorites.insert(routineId)
+            favoriteRoutineIds.insert(routineId)
         }
-        UserDefaults.standard.set(Array(favorites), forKey: "favorite_routines")
+        UserDefaults.standard.set(Array(favoriteRoutineIds), forKey: "favorite_routines")
     }
 
     // MARK: - Subviews
@@ -323,6 +344,9 @@ struct WorkoutSelectionView: View {
                     PlannedItemRow(
                         item: item,
                         isCompleted: isCompleted,
+                        onRoutineStartTap: { routineId in
+                            connectivityManager.startWorkout(routineId: routineId)
+                        },
                         onSingleExerciseTap: { exerciseId in
                             connectivityManager.startSingleExercise(exerciseId: exerciseId)
                         },
@@ -385,7 +409,7 @@ struct WorkoutSelectionView: View {
 
     @ViewBuilder
     private var routinesSection: some View {
-        if !connectivityManager.routines.isEmpty {
+        if !sortedRoutines.isEmpty {
             Section(header: 
                 HStack(spacing: 4) {
                     Image(systemName: "list.bullet")
@@ -395,9 +419,9 @@ struct WorkoutSelectionView: View {
                 }
                 .foregroundColor(.orange)
             ) {
-                ForEach(connectivityManager.routines) { routine in
+                ForEach(sortedRoutines) { routine in
                     let isCompleted = connectivityManager.streak.completedTodayRoutines.contains(routine.name)
-                    let isFavorite = favoriteRoutines.contains(routine.id)
+                    let isFavorite = favoriteRoutineIds.contains(routine.id)
                     
                     RoutineSelectionRow(
                         routine: routine,
@@ -594,24 +618,43 @@ struct WatchWaterView: View {
                         }
                     }
                     
-                    // Reset or Minus button for adjustments
+                    // Quick -250ml undo + custom remove button
                     if connectivityManager.waterIntakeCurrent > 0 {
-                        Button(action: {
-                            showRemoveSheet = true
-                        }) {
-                            HStack(spacing: 4) {
-                                Image(systemName: "minus.circle")
-                                    .font(.system(size: 9))
-                                Text("Remover...")
-                                    .font(.system(size: 9, weight: .semibold))
+                        HStack(spacing: 6) {
+                            Button(action: {
+                                #if canImport(WatchKit)
+                                WKInterfaceDevice.current().play(.click)
+                                #endif
+                                let newTotal = max(0, connectivityManager.waterIntakeCurrent - 250)
+                                connectivityManager.updateWaterIntake(newAmountMl: newTotal)
+                            }) {
+                                Text("-250 ml")
+                                    .font(.system(size: 9, weight: .bold, design: .rounded))
+                                    .foregroundColor(.orange)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 6)
+                                    .background(Color.orange.opacity(0.12))
+                                    .cornerRadius(8)
                             }
-                            .foregroundColor(.red.opacity(0.8))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 5)
-                            .background(Color.red.opacity(0.08))
-                            .cornerRadius(8)
+                            .buttonStyle(PlainButtonStyle())
+
+                            Button(action: {
+                                showRemoveSheet = true
+                            }) {
+                                HStack(spacing: 3) {
+                                    Image(systemName: "minus.circle")
+                                        .font(.system(size: 9))
+                                    Text("Outro")
+                                        .font(.system(size: 9, weight: .semibold))
+                                }
+                                .foregroundColor(.red.opacity(0.85))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 6)
+                                .background(Color.red.opacity(0.10))
+                                .cornerRadius(8)
+                            }
+                            .buttonStyle(PlainButtonStyle())
                         }
-                        .buttonStyle(PlainButtonStyle())
                     }
                 }
                 .padding(.horizontal, 4)
