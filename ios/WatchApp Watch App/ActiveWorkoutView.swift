@@ -340,63 +340,68 @@ struct ActiveWorkoutView: View {
         return ("Z5 Pico", .red, 5)
     }
 
-    private func strengthControls(exercise: WatchActiveExercise, exIndex: Int, selectedSetIdx: Int) -> some View {
+    private func strengthSummaryControls(exercise: WatchActiveExercise, exIndex: Int, selectedSetIdx: Int) -> some View {
+        let setWeight = exercise.weightForSet(selectedSetIdx)
+        let setReps = exercise.repsForSet(selectedSetIdx)
+
+        return HStack(spacing: 6) {
+            // Weight Info Block (Tappable for Plate Calculator)
+            Button(action: {
+                showPlateCalculator = true
+                #if canImport(WatchKit)
+                hapticManager.play(.light)
+                #endif
+            }) {
+                HStack(spacing: 4) {
+                    Image(systemName: "dumbbell.fill")
+                        .font(.system(size: 10))
+                        .foregroundColor(.orange)
+                    Text(String(format: "%.1f kg", setWeight))
+                        .font(.system(size: 13, weight: .heavy, design: .rounded))
+                        .foregroundColor(crownFeedbackColor)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                        .scaleEffect(crownFeedbackScale)
+                        .animation(.spring(response: 0.2, dampingFraction: 0.5), value: crownFeedbackScale)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 6)
+                .padding(.horizontal, 6)
+                .background(Color.white.opacity(0.07))
+                .cornerRadius(10)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color.orange.opacity(0.28), lineWidth: 0.6)
+                )
+            }
+            .buttonStyle(PlainButtonStyle())
+
+            // Reps / Time Info Block
+            HStack(spacing: 4) {
+                Image(systemName: exercise.measurementType == "time" ? "timer" : "arrow.3.trianglepath")
+                    .font(.system(size: 10))
+                    .foregroundColor(.orange)
+                Text(exercise.measurementType == "time" ? "\(setReps)s" : "\(setReps) reps")
+                    .font(.system(size: 13, weight: .heavy, design: .rounded))
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 6)
+            .padding(.horizontal, 6)
+            .background(Color.white.opacity(0.07))
+            .cornerRadius(10)
+        }
+    }
+
+    private func strengthAdjustControls(exercise: WatchActiveExercise, exIndex: Int, selectedSetIdx: Int) -> some View {
         let isFailure = (selectedSetIdx >= 0 && selectedSetIdx < exercise.failureReport.count) ? exercise.failureReport[selectedSetIdx] : false
         let failureRep = (selectedSetIdx >= 0 && selectedSetIdx < exercise.failureReps.count) ? exercise.failureReps[selectedSetIdx] : nil
         let setWeight = exercise.weightForSet(selectedSetIdx)
         let setReps = exercise.repsForSet(selectedSetIdx)
 
         return VStack(spacing: 6) {
-            HStack {
-                Spacer()
-                
-                // Weight Info Block (Tappable for Plate Calculator)
-                Button(action: {
-                    showPlateCalculator = true
-                    #if canImport(WatchKit)
-                    hapticManager.play(.light)
-                    #endif
-                }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "dumbbell.fill")
-                            .font(.system(size: 10))
-                            .foregroundColor(.orange)
-                        Text(String(format: "%.1f kg", setWeight))
-                            .font(.system(size: 12, weight: .bold, design: .rounded))
-                            .foregroundColor(crownFeedbackColor)
-                            .scaleEffect(crownFeedbackScale)
-                            .animation(.spring(response: 0.2, dampingFraction: 0.5), value: crownFeedbackScale)
-                    }
-                    .padding(.vertical, 6)
-                    .padding(.horizontal, 10)
-                    .background(Color.white.opacity(0.06))
-                    .cornerRadius(8)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.orange.opacity(0.25), lineWidth: 0.5)
-                    )
-                }
-                .buttonStyle(PlainButtonStyle())
-                
-                Spacer(minLength: 12)
-                
-                // Reps Info Block
-                HStack(spacing: 4) {
-                    Image(systemName: "arrow.3.trianglepath")
-                        .font(.system(size: 10))
-                        .foregroundColor(.orange)
-                    Text(exercise.measurementType == "time" ? "\(setReps)s" : "\(setReps) reps")
-                        .font(.system(size: 12, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
-                }
-                .padding(.vertical, 6)
-                .padding(.horizontal, 10)
-                .background(Color.white.opacity(0.06))
-                .cornerRadius(8)
-                
-                Spacer()
-            }
-            
             // Fast Touch Controls for Weight & Reps
             if exercise.measurementType != "time" {
                 VStack(spacing: 3) {
@@ -837,17 +842,17 @@ struct ActiveWorkoutView: View {
         let exIndex = activeWorkout.currentExerciseIndex
         
         return ScrollView {
-            VStack(spacing: 6) {
-            // Battery Indicator
-            if !isLuminanceReduced {
+            VStack(spacing: 5) {
+            // Battery Indicator (only show when low, critical, or power-saver to keep top compact)
+            if !isLuminanceReduced && (batterySaver.isLowBattery || batterySaver.isCriticalBattery || batterySaver.isBatterySaverEnabled) {
                 batteryIndicatorView()
                     .padding(.horizontal, 4)
-                    .padding(.top, 2)
+                    .padding(.top, 1)
             }
             
             // Workout Progress
             workoutProgressView(activeWorkout: activeWorkout)
-                .padding(.bottom, 2)
+                .padding(.bottom, 1)
             
             if exIndex >= 0 && exIndex < activeWorkout.exercises.count {
                 let exercise = activeWorkout.exercises[exIndex]
@@ -871,7 +876,7 @@ struct ActiveWorkoutView: View {
                         
                         Spacer()
                         
-                        VStack(alignment: .center, spacing: 2) {
+                        VStack(alignment: .center, spacing: 1) {
                             HStack(spacing: 4) {
                                 Text(exercise.name)
                                     .font(.system(size: 14, weight: .heavy))
@@ -937,8 +942,6 @@ struct ActiveWorkoutView: View {
                                 }
                             }
                     )
-                    
-                    Divider().background(Color.white.opacity(0.08))
                     
                     // 2. Compact Horizontal Sets Row (Tappable circles/capsules)
                     let activeSetIdx = getSelectedSetIndex(for: exercise, index: exIndex)
@@ -1032,18 +1035,15 @@ struct ActiveWorkoutView: View {
                     }
                     .padding(.vertical, 2)
                     
-                    Divider().background(Color.white.opacity(0.08))
-                    
-                    // 3. Ultra Compact Info & Quick Toggle Controls Area (Weights & Reps + Compact Toggle)
-                    VStack(spacing: 4) {
+                    // 3. Summary (Weight/Reps or Cardio) + Primary CONCLUIR SÉRIE CTA above the fold
+                    VStack(spacing: 6) {
                         if isCardio {
                             cardioControls(exercise: exercise, exIndex: exIndex, selectedSetIdx: activeSetIdx)
                         } else {
-                            strengthControls(exercise: exercise, exIndex: exIndex, selectedSetIdx: activeSetIdx)
+                            strengthSummaryControls(exercise: exercise, exIndex: exIndex, selectedSetIdx: activeSetIdx)
                         }
                         
                         if !isLuminanceReduced {
-                            // Solid Concluir/Desfazer button shrunk down
                             Button(action: {
                                 let isCompleted = (activeSetIdx >= 0 && activeSetIdx < exercise.setsState.count) ? exercise.setsState[activeSetIdx] : false
                                 let isFailure = (activeSetIdx >= 0 && activeSetIdx < exercise.failureReport.count) ? exercise.failureReport[activeSetIdx] : false
@@ -1063,14 +1063,14 @@ struct ActiveWorkoutView: View {
                                 #endif
 
                                 connectivityManager.toggleSet(
-                                            exerciseIndex: exIndex,
-                                            setIndex: activeSetIdx,
-                                            isDone: !isCompleted,
-                                            isFailure: isFailure,
-                                            failureRep: failureRep,
-                                            distance: pc?.distanceKm,
-                                            duration: pc?.durationSeconds
-                                        )
+                                    exerciseIndex: exIndex,
+                                    setIndex: activeSetIdx,
+                                    isDone: !isCompleted,
+                                    isFailure: isFailure,
+                                    failureRep: failureRep,
+                                    distance: pc?.distanceKm,
+                                    duration: pc?.durationSeconds
+                                )
                                         
                                 if !isCompleted {
                                     let willCompleteWorkout = checkAllSetsCompleted(activeWorkout: activeWorkout, overridingSet: (exIdx: exIndex, setIdx: activeSetIdx, isDone: true))
@@ -1098,6 +1098,14 @@ struct ActiveWorkoutView: View {
                                 .cornerRadius(14)
                             }
                             .buttonStyle(PlainButtonStyle())
+                        }
+
+                        // 4. Fine-tuning adjustments (below CONCLUIR SÉRIE, revealed on scroll)
+                        if !isCardio && !isLuminanceReduced {
+                            Divider()
+                                .background(Color.white.opacity(0.08))
+                                .padding(.top, 2)
+                            strengthAdjustControls(exercise: exercise, exIndex: exIndex, selectedSetIdx: activeSetIdx)
                         }
                     }
                 }

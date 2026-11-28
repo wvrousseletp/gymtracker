@@ -1118,146 +1118,294 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             }),
 
             const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "Treino Planejado para Hoje",
-                  style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 13, fontWeight: FontWeight.w700),
-                ),
-                if (!isRestDay)
-                  TextButton.icon(
-                    onPressed: () {
-                      _showRestDayModal(context, provider, accentColor);
-                    },
-                    icon: Icon(Icons.nightlight_round, color: accentColor, size: 14),
-                    label: Text(
-                      "Descansar Hoje",
-                      style: TextStyle(color: accentColor, fontSize: 12, fontWeight: FontWeight.bold),
-                    ),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 8),
+            Builder(builder: (context) {
+              final isContinuousMode = provider.settings.organizationMode == OrganizationMode.continuousList;
+              final todayStr = DateTime.now().toLocal().toString().substring(0, 10);
+              final todayCompletedLogs = provider.history.where((log) {
+                if (log.isRestDayLog) return false;
+                try {
+                  return DateTime.parse(log.date).toLocal().toString().substring(0, 10) == todayStr;
+                } catch (_) {
+                  return false;
+                }
+              }).toList();
+              final isContinuousDoneToday = isContinuousMode && !isRestDay && todayCompletedLogs.isNotEmpty;
 
-            // 3. Hero Card
-            if (isRestDay)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
-                decoration: BoxDecoration(
-                  color: isDark ? null : Colors.white,
-                  borderRadius: BorderRadius.circular(22),
-                  border: Border.all(
-                    color: isDark
-                        ? Colors.blueAccent.withOpacity(0.25)
-                        : Colors.blueAccent.withOpacity(0.22),
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        isContinuousDoneToday ? "Treino de Hoje" : "Treino Planejado para Hoje",
+                        style: TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 13, fontWeight: FontWeight.w700),
+                      ),
+                      if (!isRestDay && !isContinuousDoneToday)
+                        TextButton.icon(
+                          onPressed: () {
+                            _showRestDayModal(context, provider, accentColor);
+                          },
+                          icon: Icon(Icons.nightlight_round, color: accentColor, size: 14),
+                          label: Text(
+                            "Descansar Hoje",
+                            style: TextStyle(color: accentColor, fontSize: 12, fontWeight: FontWeight.bold),
+                          ),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ),
+                    ],
                   ),
-                  gradient: isDark
-                      ? const LinearGradient(
-                          colors: [Color(0xff1a1a2e), Color(0xff16213e)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        )
-                      : null,
-                  boxShadow: [
-                    BoxShadow(
-                      color: isDark
-                          ? const Color(0xff1a1a2e).withOpacity(0.5)
-                          : Colors.black.withOpacity(0.05),
-                      blurRadius: isDark ? 20 : 16,
-                      offset: Offset(0, isDark ? 10 : 6),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    const Icon(Icons.nightlight_round,
-                        color: Colors.blueAccent, size: 40),
-                    const SizedBox(height: 12),
-                    Text(
-                      "Dia de Descanso",
-                      style: TextStyle(
-                          color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      (todayRestLog != null && todayRestLog.name.isNotEmpty)
-                          ? todayRestLog.name
-                          : "Aproveite para se recuperar.",
-                      textAlign: TextAlign.center,
-                      style:
-                          TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 13),
-                    ),
-                    const SizedBox(height: 16),
-                    OutlinedButton.icon(
-                      onPressed: () {
-                        HapticFeedback.lightImpact();
-                        provider.undoShiftPlannerForward();
-                      },
-                      icon: Icon(Icons.undo_rounded,
-                          size: 16, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43))),
-                      label: Text(
-                        "Desfazer descanso e voltar a treinar",
-                        style: TextStyle(
-                            color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600),
+                  const SizedBox(height: 8),
+
+                  // 3. Hero Card
+                  if (isRestDay)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
+                      decoration: BoxDecoration(
+                        color: isDark ? null : Colors.white,
+                        borderRadius: BorderRadius.circular(22),
+                        border: Border.all(
+                          color: isDark
+                              ? Colors.blueAccent.withOpacity(0.25)
+                              : Colors.blueAccent.withOpacity(0.22),
+                        ),
+                        gradient: isDark
+                            ? const LinearGradient(
+                                colors: [Color(0xff1a1a2e), Color(0xff16213e)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              )
+                            : null,
+                        boxShadow: [
+                          BoxShadow(
+                            color: isDark
+                                ? const Color(0xff1a1a2e).withOpacity(0.5)
+                                : Colors.black.withOpacity(0.05),
+                            blurRadius: isDark ? 20 : 16,
+                            offset: Offset(0, isDark ? 10 : 6),
+                          ),
+                        ],
                       ),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.2)),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 8),
+                      child: Column(
+                        children: [
+                          const Icon(Icons.nightlight_round,
+                              color: Colors.blueAccent, size: 40),
+                          const SizedBox(height: 12),
+                          Text(
+                            "Dia de Descanso",
+                            style: TextStyle(
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)),
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            (todayRestLog != null && todayRestLog.name.isNotEmpty)
+                                ? todayRestLog.name
+                                : "Aproveite para se recuperar.",
+                            textAlign: TextAlign.center,
+                            style:
+                                TextStyle(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)), fontSize: 13),
+                          ),
+                          const SizedBox(height: 16),
+                          OutlinedButton.icon(
+                            onPressed: () {
+                              HapticFeedback.lightImpact();
+                              provider.undoShiftPlannerForward();
+                            },
+                            icon: Icon(Icons.undo_rounded,
+                                size: 16, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43))),
+                            label: Text(
+                              "Desfazer descanso e voltar a treinar",
+                              style: TextStyle(
+                                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : const Color(0xFF3C3C43)),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.2)),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 8),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
-              )
-            else if (plannedRoutines.isEmpty)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  color: context.cardBg,
-                  border: Border.all(color: context.subtleBorder),
-                ),
-                child: Column(
-                  children: [
-                    Icon(Icons.calendar_today_outlined, color: context.textFaint, size: 40),
-                    const SizedBox(height: 12),
-                    Text(
-                      "Nenhum treino planejado.",
-                      style: TextStyle(color: context.textSecondary, fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      "Selecione um treino rápido abaixo.",
-                      style: TextStyle(color: context.textFaint, fontSize: 13),
-                    ),
-                  ],
-                ),
-              )
-            else
-              Column(
-                children: plannedRoutines.map((routine) {
-                  final isCompleted = _isRoutineCompletedToday(routine.name, provider.history);
-                  int totalSets = 0;
-                  int totalRestSec = 0;
-                  for (final ex in routine.exercises) {
-                    totalSets += ex.sets;
-                    final r = ex.rest > 0 ? ex.rest : routine.defaultRest;
-                    totalRestSec += (ex.sets * r);
-                  }
+                    )
+                  else if (isContinuousDoneToday)
+                    Builder(builder: (context) {
+                      final doneLog = todayCompletedLogs.first;
+                      final nextRoutine = plannedRoutines.isNotEmpty ? plannedRoutines.first : null;
+                      final greenColor = isDark ? Colors.greenAccent : const Color(0xFF1E8E3E);
+
+                      return Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: isDark ? null : Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          gradient: isDark
+                              ? LinearGradient(colors: [Colors.green.withOpacity(0.22), Colors.green.withOpacity(0.06)])
+                              : null,
+                          border: Border.all(
+                            color: greenColor.withOpacity(isDark ? 0.5 : 0.35),
+                            width: 1.5,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: isDark
+                                  ? Colors.green.withOpacity(0.15)
+                                  : Colors.black.withOpacity(0.06),
+                              blurRadius: isDark ? 20 : 18,
+                              offset: Offset(0, isDark ? 8 : 6),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: greenColor.withOpacity(0.14),
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  child: Icon(Icons.check_circle_rounded, color: greenColor, size: 24),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "Treino de hoje concluído!",
+                                        style: TextStyle(
+                                          color: greenColor,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        doneLog.name,
+                                        style: TextStyle(
+                                          color: isDark ? Colors.white : const Color(0xFF1C1C1E),
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: -0.3,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (nextRoutine != null) ...[
+                              const SizedBox(height: 14),
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: (isDark ? Colors.white : Colors.black).withOpacity(0.05),
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.schedule_rounded, size: 16, color: context.textSecondary),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        "Próximo na sequência: ${nextRoutine.name}",
+                                        style: TextStyle(
+                                          color: context.textSecondary,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton.icon(
+                                  onPressed: () {
+                                    if (provider.activeWorkout != null) {
+                                      _promptPostponeOrCreateWorkout(context, provider, () {
+                                        WorkoutStarter.startWithCountdown(context, provider, nextRoutine, WorkoutRecovery(sleepOk: SleepQuality.okay, pain: [], warmUpDone: false), false);
+                                      });
+                                    } else {
+                                      WorkoutStarter.startWithCountdown(context, provider, nextRoutine, WorkoutRecovery(sleepOk: SleepQuality.okay, pain: [], warmUpDone: false), false);
+                                    }
+                                  },
+                                  icon: Icon(Icons.play_arrow_rounded, size: 18, color: context.textSecondary),
+                                  label: Text(
+                                    "Fazer ${nextRoutine.name} agora mesmo",
+                                    style: TextStyle(
+                                      color: context.textSecondary,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    side: BorderSide(color: (isDark ? Colors.white : const Color(0xFF1C1C1E)).withOpacity(0.18)),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                    padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 14),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      );
+                    })
+                  else if (plannedRoutines.isEmpty)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        color: context.cardBg,
+                        border: Border.all(color: context.subtleBorder),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(Icons.calendar_today_outlined, color: context.textFaint, size: 40),
+                          const SizedBox(height: 12),
+                          Text(
+                            "Nenhum treino planejado.",
+                            style: TextStyle(color: context.textSecondary, fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            "Selecione um treino rápido abaixo.",
+                            style: TextStyle(color: context.textFaint, fontSize: 13),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    Column(
+                      children: plannedRoutines.map((routine) {
+                        final isCompleted = _isRoutineCompletedToday(routine.name, provider.history);
+                        int totalSets = 0;
+                        int totalRestSec = 0;
+                        for (final ex in routine.exercises) {
+                          totalSets += ex.sets;
+                          final r = ex.rest > 0 ? ex.rest : routine.defaultRest;
+                          totalRestSec += (ex.sets * r);
+                        }
                   final estMins = ((totalRestSec + (totalSets * 45)) / 60).round().clamp(10, 180);
                   final statusColor = isCompleted
                       ? (isDark ? Colors.greenAccent : const Color(0xFF1E8E3E))
@@ -1412,6 +1560,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                   );
                 }).toList(),
               ),
+                ],
+              );
+            }),
 
             // 3b. Engajamento: desafios do mês + resumo da semana
             ..._buildEngagementCards(provider, accentColor),
