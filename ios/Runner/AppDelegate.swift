@@ -172,15 +172,8 @@ func _force_load_swiftCompatibilityDynamicReplacements() {}
     }
 
     if session.isReachable {
-      session.sendMessage(msg, replyHandler: nil) { [weak self] error in
+      session.sendMessage(msg, replyHandler: nil) { error in
         print("[AppDelegate] Error sending real-time message for \(key): \(error.localizedDescription)")
-        if key == "activeWorkout" || clearActive {
-           self?.session?.transferUserInfo(msg)
-        }
-      }
-    } else {
-      if key == "activeWorkout" || clearActive {
-         session.transferUserInfo(msg)
       }
     }
   }
@@ -223,10 +216,7 @@ func _force_load_swiftCompatibilityDynamicReplacements() {}
     if session.isReachable {
       session.sendMessage(msg, replyHandler: nil) { error in
         print("[AppDelegate] Error sending real-time water: \(error.localizedDescription)")
-        session.transferUserInfo(msg)
       }
-    } else {
-      session.transferUserInfo(msg)
     }
   }
 
@@ -461,31 +451,24 @@ func _force_load_swiftCompatibilityDynamicReplacements() {}
       }
 
     case "prCelebration":
-      // Forward a PR celebration to the Apple Watch
-      if let exerciseNames = call.arguments as? [String] {
+      // Forward a PR celebration to the Apple Watch only if it is currently open/reachable
+      if let exerciseNames = call.arguments as? [String], session.isReachable {
         let msg: [String: Any] = [
           "action": "prCelebration",
           "exerciseNames": exerciseNames
         ]
-        if session.isReachable {
-          session.sendMessage(msg, replyHandler: nil) { [weak self] error in
-            print("[AppDelegate] Error sending prCelebration: \(error.localizedDescription)")
-            self?.session?.transferUserInfo(msg)
-          }
-        } else {
-          session.transferUserInfo(msg)
+        session.sendMessage(msg, replyHandler: nil) { error in
+          print("[AppDelegate] Error sending prCelebration: \(error.localizedDescription)")
         }
-        result(nil)
-      } else {
-        result(nil)
       }
+      result(nil)
 
     case "updateStreak":
       // Forward streak update to the Apple Watch
       if let streakArgs = call.arguments as? [String: Any],
          let streakData = try? JSONSerialization.data(withJSONObject: streakArgs),
          let streakJson = String(data: streakData, encoding: .utf8) {
-        // Persist in application context for offline access
+        // Persist in application context for offline access (latest snapshot only, no queue)
         applicationContextCache["streak"] = streakJson
         do {
           try session.updateApplicationContext(applicationContextCache)
@@ -495,12 +478,9 @@ func _force_load_swiftCompatibilityDynamicReplacements() {}
         // Also send real-time if reachable
         let msg: [String: Any] = ["action": "updateStreak", "streak": streakJson]
         if session.isReachable {
-          session.sendMessage(msg, replyHandler: nil) { [weak self] error in
+          session.sendMessage(msg, replyHandler: nil) { error in
             print("[AppDelegate] Error sending streak: \(error.localizedDescription)")
-            self?.session?.transferUserInfo(msg)
           }
-        } else {
-          session.transferUserInfo(msg)
         }
         result(nil)
       } else {

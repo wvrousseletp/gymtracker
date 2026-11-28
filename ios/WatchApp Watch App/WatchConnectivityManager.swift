@@ -168,7 +168,14 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     }
 
     func session(_ session: WCSession, didReceiveUserInfo userInfo: [String : Any] = [:]) {
-        handleIncomingData(userInfo)
+        // Only one-off offline workout acknowledgements need FIFO userInfo delivery.
+        // All state (activeWorkout, water, streak, routines, planner) arrives as a single
+        // latest snapshot via applicationContext or live sendMessage, avoiding stale replay floods.
+        if let action = userInfo["action"] as? String, action == "offlineWorkoutAck" {
+            handleIncomingData(userInfo)
+        } else {
+            WatchLogger.connectivity.info("Ignoring stale queued userInfo payload (action: \(userInfo["action"] as? String ?? "none"))")
+        }
     }
 
     func session(_ session: WCSession, didReceiveMessage message: [String : Any]) {
