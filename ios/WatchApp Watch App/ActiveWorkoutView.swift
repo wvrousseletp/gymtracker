@@ -1614,6 +1614,99 @@ struct ActiveWorkoutView: View {
         .padding()
     }
 
+    private func handleStopwatchTick() {
+        if !isLuminanceReduced {
+            updateStopwatch()
+        }
+        if let activeWorkout = connectivityManager.activeWorkout {
+            if !activeWorkout.paused &&
+                activeWorkout.restTimer == nil &&
+                !showInactivitySheet &&
+                !showingFinishSheet &&
+                !inactivityAlertedOnce &&
+                Date().timeIntervalSince(lastActivityDate) >= 600 {
+                inactivityAlertedOnce = true
+                hapticManager.playRestTimerFinished()
+                showInactivitySheet = true
+            }
+        }
+        if isTimeTimerRunning {
+            timeTimerElapsed += 1
+            if let activeWorkout = connectivityManager.activeWorkout {
+                let exIdx = activeWorkout.currentExerciseIndex
+                if exIdx >= 0 && exIdx < activeWorkout.exercises.count {
+                    let exercise = activeWorkout.exercises[exIdx]
+                    if timeTimerElapsed == exercise.reps {
+                        hapticManager.playIsometryFinished()
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var finishSheetContent: some View {
+        let active = connectivityManager.activeWorkout
+        let totalSets = active?.exercises.reduce(0) { $0 + $1.setsState.count } ?? 0
+        let completedSets = active?.exercises.reduce(0) { $0 + $1.setsState.filter { $0 }.count } ?? 0
+        FinishWorkoutSheet(
+            isPresented: $showingFinishSheet,
+            workoutName: active?.name ?? "",
+            durationText: formatDuration(elapsedSeconds),
+            completedSets: completedSets,
+            totalSets: totalSets,
+            onConfirm: { rpe, notes in
+                hapticManager.playWorkoutFinish()
+                connectivityManager.completeWorkout(rpe: rpe, notes: notes)
+            },
+            onDiscard: {
+                showingCancelAlert = true
+            }
+        )
+    }
+
+    @ViewBuilder
+    private var swapExerciseSheetContent: some View {
+        if let activeWorkout = connectivityManager.activeWorkout,
+           activeWorkout.currentExerciseIndex >= 0 && activeWorkout.currentExerciseIndex < activeWorkout.exercises.count {
+            let exIdx = activeWorkout.currentExerciseIndex
+            let currentEx = activeWorkout.exercises[exIdx]
+            WatchSwapExerciseSheet(
+                isPresented: $showSwapExerciseSheet,
+                currentExerciseName: currentEx.name,
+                currentMuscle: currentEx.muscle,
+                library: connectivityManager.library,
+                onSelect: { newEx in
+                    hapticManager.playExerciseChange()
+                    connectivityManager.swapExercise(exerciseIndex: exIdx, newExercise: newEx)
+                    lastActivityDate = Date()
+                    inactivityAlertedOnce = false
+                    withAnimation { activeWorkoutPage = 1 }
+                }
+            )
+        }
+    }
+
+    @ViewBuilder
+    private var inactivitySheetContent: some View {
+        WatchInactivitySheet(
+            isPresented: $showInactivitySheet,
+            onContinue: {
+                lastActivityDate = Date()
+                inactivityAlertedOnce = false
+            },
+            onPause: {
+                if let active = connectivityManager.activeWorkout, !active.paused {
+                    connectivityManager.togglePause(currentlyPaused: false)
+                }
+                lastActivityDate = Date()
+            },
+            onFinish: {
+                showingFinishSheet = true
+            }
+        )
+    }
+
     var body: some View {
         Group {
             if showSummary, let activeWorkout = connectivityManager.activeWorkout {
@@ -1656,22 +1749,7 @@ struct ActiveWorkoutView: View {
             )
         }
         .sheet(isPresented: $showingFinishSheet) {
-            let active = connectivityManager.activeWorkout
-            let totalSets = active?.exercises.reduce(0) { $0 + $1.setsState.count } ?? 0
-            let completedSets = active?.exercises.reduce(0) { $0 + $1.setsState.filter { $0 }.count } ?? 0
-            FinishWorkoutSheet(
-                isPresented: $showingFinishSheet,
-                workoutName: active?.name ?? "",
-                durationText: formatDuration(elapsedSeconds),
-                completedSets: completedSets,
-                totalSets: totalSets,
-                onConfirm: { rpe, notes in
-                    connectivityManager.completeWorkout(rpe: rpe, notes: notes)
-                },
-                onDiscard: {
-                    showingCancelAlert = true
-                }
-            )
+            finishSheetContent
         }
         .sheet(isPresented: $showPlateCalculator) {
             if let activeWorkout = connectivityManager.activeWorkout,
@@ -1744,75 +1822,17 @@ struct ActiveWorkoutView: View {
             resetTimeTimer()
         }
         .onReceive(stopwatchTimer) { _ in
-            if !isLuminanceReduced {
-                updateStopwatch()
-            }
-            if let activeWorkout = connectivityManager.activeWorkout {
-                if !activeWorkout.paused &&
-                    activeWorkout.restTimer == nil &&
-                    !showInactivitySheet &&
-                    !showingFinishSheet &&
-                    !inactivityAlertedOnce &&
-                    Date().timeIntervalSince(lastActivityDate) >= 600 {
-                    inactivityAlertedOnce = true
-                    hapticManager.playRestTimerFinished()
-                    showInactivitySheet = true
-                }
-            }
-            if isTimeTimerRunning {
-                timeTimerElapsed += 1
-                if let activeWorkout = connectivityManager.activeWorkout {
-                    let exIdx = activeWorkout.currentExerciseIndex
-                    if exIdx >= 0 && exIdx < activeWorkout.exercises.count {
-                        let exercise = activeWorkout.exercises[exIdx]
-                        if timeTimerElapsed == exercise.reps {
-                            hapticManager.playIsometryFinished()
-                        }
-                    }
-                }
-            }
+            handleStopwatchTick()
         }
         .onReceive(connectivityManager.$activeWorkout) { _ in
             lastActivityDate = Date()
             inactivityAlertedOnce = false
         }
         .sheet(isPresented: $showSwapExerciseSheet) {
-            if let activeWorkout = connectivityManager.activeWorkout,
-               activeWorkout.currentExerciseIndex >= 0 && activeWorkout.currentExerciseIndex < activeWorkout.exercises.count {
-                let exIdx = activeWorkout.currentExerciseIndex
-                let currentEx = activeWorkout.exercises[exIdx]
-                WatchSwapExerciseSheet(
-                    isPresented: $showSwapExerciseSheet,
-                    currentExerciseName: currentEx.name,
-                    currentMuscle: currentEx.muscle,
-                    library: connectivityManager.library,
-                    onSelect: { newEx in
-                        hapticManager.playExerciseChange()
-                        connectivityManager.swapExercise(exerciseIndex: exIdx, newExercise: newEx)
-                        lastActivityDate = Date()
-                        inactivityAlertedOnce = false
-                        withAnimation { activeWorkoutPage = 1 }
-                    }
-                )
-            }
+            swapExerciseSheetContent
         }
         .sheet(isPresented: $showInactivitySheet) {
-            WatchInactivitySheet(
-                isPresented: $showInactivitySheet,
-                onContinue: {
-                    lastActivityDate = Date()
-                    inactivityAlertedOnce = false
-                },
-                onPause: {
-                    if let active = connectivityManager.activeWorkout, !active.paused {
-                        connectivityManager.togglePause(currentlyPaused: false)
-                    }
-                    lastActivityDate = Date()
-                },
-                onFinish: {
-                    showingFinishSheet = true
-                }
-            )
+            inactivitySheetContent
         }
         .onChange(of: isLuminanceReduced) { reduced in
             if !reduced {
