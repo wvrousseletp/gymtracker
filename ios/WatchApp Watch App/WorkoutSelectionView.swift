@@ -10,62 +10,61 @@ struct PlannedRoutineRow: View {
     let onStartTap: (String) -> Void
     
     var body: some View {
-        HStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 6) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(item.title)
+                        .font(.system(size: 14, weight: .heavy, design: .rounded))
+                        .foregroundColor(isCompleted ? .gray : .white)
+                        .strikethrough(isCompleted, color: .gray)
+                        .lineLimit(2)
+                    Text(isCompleted ? "Concluído hoje ✓" : item.subtitle)
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(isCompleted ? .green.opacity(0.85) : .gray)
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 2)
+                NavigationLink(destination: WorkoutSetupView(routine: routine)) {
+                    Image(systemName: "slider.horizontal.3")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.75))
+                        .frame(width: 26, height: 26)
+                        .background(Color.white.opacity(0.10))
+                        .clipShape(Circle())
+                }
+                .buttonStyle(PlainButtonStyle())
+                .accessibilityLabel("Configurar \(item.title)")
+            }
+
             Button(action: {
                 #if canImport(WatchKit)
                 WatchHapticManager.shared.play(.light)
                 #endif
                 onStartTap(routine.id)
             }) {
-                HStack(spacing: 8) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.green.opacity(0.14))
-                            .frame(width: 24, height: 24)
-                        Image(systemName: isCompleted ? "checkmark.seal.fill" : "play.fill")
-                            .font(.system(size: 10))
-                            .foregroundColor(.green)
-                            .transition(.scale.combined(with: .opacity))
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(item.title)
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(isCompleted ? .gray : .white)
-                            .strikethrough(isCompleted, color: .gray)
-                            .lineLimit(1)
-                        Text(isCompleted ? "Treino concluído hoje" : item.subtitle)
-                            .font(.system(size: 9))
-                            .foregroundColor(isCompleted ? .green.opacity(0.8) : .gray)
-                            .lineLimit(1)
-                    }
-                    Spacer(minLength: 2)
+                HStack(spacing: 5) {
+                    Image(systemName: isCompleted ? "arrow.clockwise" : "play.fill")
+                        .font(.system(size: 11, weight: .black))
+                    Text(isCompleted ? "TREINAR NOVAMENTE" : "INICIAR")
+                        .font(.system(size: 11, weight: .black, design: .rounded))
                 }
-                .padding(.vertical, 4)
-                .contentShape(Rectangle())
+                .foregroundColor(isCompleted ? .white : .black)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
+                .background(isCompleted ? Color.white.opacity(0.14) : Color.green)
+                .cornerRadius(12)
             }
             .buttonStyle(PlainButtonStyle())
-
-            NavigationLink(destination: WorkoutSetupView(routine: routine)) {
-                Image(systemName: "slider.horizontal.3")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(.white.opacity(0.65))
-                    .frame(width: 26, height: 26)
-                    .background(Color.white.opacity(0.08))
-                    .clipShape(Circle())
-            }
-            .buttonStyle(PlainButtonStyle())
-            .accessibilityLabel("Configurar \(item.title)")
         }
-        .padding(8)
-        .background(isCompleted ? Color.black.opacity(0.2) : Color.green.opacity(0.06))
-        .cornerRadius(10)
+        .padding(10)
+        .background(isCompleted ? Color.black.opacity(0.25) : Color.green.opacity(0.08))
+        .cornerRadius(14)
         .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(isCompleted ? Color.green.opacity(0.2) : Color.green.opacity(0.22), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(isCompleted ? Color.green.opacity(0.22) : Color.green.opacity(0.32), lineWidth: 1.2)
         )
         .accessibilityLabel(isCompleted ? "\(item.title), treino concluído" : "\(item.title), \(item.subtitle)")
-        .accessibilityHint("Toque para iniciar treino em 1 toque")
+        .accessibilityHint("Toque em iniciar para começar o treino em 1 toque")
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isCompleted)
     }
 }

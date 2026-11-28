@@ -784,47 +784,49 @@ struct ActiveWorkoutView: View {
         let completedSets = activeWorkout.exercises.reduce(0) { $0 + $1.setsState.filter { $0 }.count }
         let progress = totalSets > 0 ? Double(completedSets) / Double(totalSets) : 0.0
         
-        return VStack(spacing: 2) {
+        return VStack(spacing: 3) {
             HStack(spacing: 8) {
                 // Exercise progress
-                HStack(spacing: 2) {
+                HStack(spacing: 3) {
                     Image(systemName: "figure.strengthtraining.traditional")
-                        .font(.system(size: 6))
+                        .font(.system(size: 8, weight: .bold))
                         .foregroundColor(.orange)
                     Text("\(currentExerciseIndex)/\(totalExercises)")
-                        .font(.system(size: 7, weight: .bold))
-                        .foregroundColor(.white)
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundColor(.white.opacity(0.9))
                 }
-                
+
+                Spacer()
+
                 // Sets progress
-                HStack(spacing: 2) {
-                    Image(systemName: "checkmark.circle")
-                        .font(.system(size: 6))
+                HStack(spacing: 3) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 8, weight: .bold))
                         .foregroundColor(.green)
                     Text("\(completedSets)/\(totalSets)")
-                        .font(.system(size: 7, weight: .bold))
-                        .foregroundColor(.white)
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundColor(.white.opacity(0.9))
                 }
             }
-            
+
             // Progress bar
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
-                    Rectangle()
-                        .fill(Color.white.opacity(0.1))
-                        .frame(height: 3)
-                    
-                    Rectangle()
+                    Capsule()
+                        .fill(Color.white.opacity(0.14))
+                        .frame(height: 4)
+
+                    Capsule()
                         .fill(LinearGradient(
                             colors: [Color.orange, Color.green],
                             startPoint: .leading,
                             endPoint: .trailing
                         ))
-                        .frame(width: geometry.size.width * progress, height: 3)
+                        .frame(width: max(0, geometry.size.width * progress), height: 4)
+                        .animation(.easeInOut(duration: 0.25), value: progress)
                 }
-                .cornerRadius(1.5)
             }
-            .frame(height: 3)
+            .frame(height: 4)
         }
         .padding(.horizontal, 4)
         .accessibilityLabel("Progresso do treino: exercício \(currentExerciseIndex) de \(totalExercises), \(completedSets) de \(totalSets) séries concluídas")
@@ -869,13 +871,14 @@ struct ActiveWorkoutView: View {
                         
                         Spacer()
                         
-                        VStack(alignment: .center, spacing: 0) {
-                            HStack(spacing: 3) {
+                        VStack(alignment: .center, spacing: 2) {
+                            HStack(spacing: 4) {
                                 Text(exercise.name)
-                                    .font(.system(size: 12, weight: .bold))
+                                    .font(.system(size: 14, weight: .heavy))
                                     .foregroundColor(themeAccent)
                                     .multilineTextAlignment(.center)
                                     .lineLimit(1)
+                                    .minimumScaleFactor(0.8)
                                 
                                 Button(action: {
                                     showNotesSheet = true
@@ -884,7 +887,7 @@ struct ActiveWorkoutView: View {
                                     #endif
                                 }) {
                                     Image(systemName: "square.and.pencil")
-                                        .font(.system(size: 8))
+                                        .font(.system(size: 11, weight: .semibold))
                                         .foregroundColor(.gray)
                                 }
                                 .buttonStyle(PlainButtonStyle())
@@ -892,15 +895,15 @@ struct ActiveWorkoutView: View {
                             
                             HStack(spacing: 4) {
                                 Text(exercise.muscle)
-                                    .font(.system(size: 7, weight: .semibold))
+                                    .font(.system(size: 9, weight: .semibold))
                                     .foregroundColor(.gray)
                                 
                                 if let exec = exercise.executionType, !exec.isEmpty {
                                     Text("•")
-                                        .font(.system(size: 7))
+                                        .font(.system(size: 9))
                                         .foregroundColor(.gray)
                                     Text(exec)
-                                        .font(.system(size: 7))
+                                        .font(.system(size: 9, weight: .semibold))
                                         .foregroundColor(.blue)
                                 }
                             }
@@ -1079,18 +1082,20 @@ struct ActiveWorkoutView: View {
                                 }
                             }) {
                                 let isCompleted = (activeSetIdx >= 0 && activeSetIdx < exercise.setsState.count) ? exercise.setsState[activeSetIdx] : false
-                                HStack(spacing: 4) {
-                                    Image(systemName: isCompleted ? "checkmark.circle.fill" : "play.circle.fill")
-                                        .font(.system(size: 10, weight: .bold))
+                                HStack(spacing: 5) {
+                                    Image(systemName: isCompleted ? "checkmark.circle.fill" : "checkmark")
+                                        .font(.system(size: 12, weight: .black))
                                         .foregroundColor(isCompleted ? .white : .black)
-                                    Text(isCompleted ? "CONCLUÍDO" : "CONCLUIR SÉRIE")
-                                        .font(.system(size: 9, weight: .black))
+                                    Text(isCompleted ? "SÉRIE \(activeSetIdx + 1) FEITA" : "CONCLUIR SÉRIE \(activeSetIdx + 1)")
+                                        .font(.system(size: 12, weight: .black))
                                         .foregroundColor(isCompleted ? .white : .black)
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.85)
                                 }
                                 .frame(maxWidth: .infinity)
-                                .padding(.vertical, 6)
-                                .background(isCompleted ? Color.gray.opacity(0.3) : Color.green)
-                                .cornerRadius(8)
+                                .padding(.vertical, 10)
+                                .background(isCompleted ? Color.gray.opacity(0.32) : Color.green)
+                                .cornerRadius(14)
                             }
                             .buttonStyle(PlainButtonStyle())
                         }
@@ -1177,185 +1182,127 @@ struct ActiveWorkoutView: View {
                 
                 Divider().background(Color.white.opacity(0.1))
                 
-                VStack(spacing: 6) {
-                    // + Série no exercício atual
-                    Button(action: {
-                        let exIdx = activeWorkout.currentExerciseIndex
-                        if exIdx >= 0 && exIdx < activeWorkout.exercises.count {
-                            hapticManager.playSetCompleted()
-                            connectivityManager.addExtraSet(exerciseIndex: exIdx)
+                VStack(spacing: 8) {
+                    // Row 1: Pausar/Retomar + Finalizar
+                    HStack(spacing: 8) {
+                        controlTile(
+                            icon: activeWorkout.paused ? "play.fill" : "pause.fill",
+                            label: activeWorkout.paused ? "Retomar" : "Pausar",
+                            color: activeWorkout.paused ? .green : .orange
+                        ) {
                             lastActivityDate = Date()
                             inactivityAlertedOnce = false
-                            withAnimation { activeWorkoutPage = 1 }
+                            connectivityManager.togglePause(currentlyPaused: activeWorkout.paused)
                         }
-                    }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.system(size: 14, weight: .bold))
-                            Text("+ Série")
-                                .font(.system(size: 14, weight: .bold))
-                            Spacer()
-                        }
-                        .foregroundColor(.cyan)
-                        .padding(.vertical, 10)
-                        .padding(.horizontal, 12)
-                        .background(Color.cyan.opacity(0.12))
-                        .cornerRadius(10)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(Color.cyan.opacity(0.3), lineWidth: 0.5)
-                        )
-                    }
-                    .buttonStyle(PlainButtonStyle())
 
-                    // Trocar Exercício (mesmo grupo muscular)
-                    Button(action: {
-                        lastActivityDate = Date()
-                        inactivityAlertedOnce = false
-                        showSwapExerciseSheet = true
-                    }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "arrow.left.arrow.right")
-                                .font(.system(size: 14, weight: .bold))
-                            Text("Trocar Exercício")
-                                .font(.system(size: 14, weight: .bold))
-                            Spacer()
+                        controlTile(
+                            icon: "checkmark.seal.fill",
+                            label: "Finalizar",
+                            color: .green
+                        ) {
+                            showingFinishSheet = true
                         }
-                        .foregroundColor(.purple)
-                        .padding(.vertical, 10)
-                        .padding(.horizontal, 12)
-                        .background(Color.purple.opacity(0.14))
-                        .cornerRadius(10)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(Color.purple.opacity(0.32), lineWidth: 0.5)
-                        )
                     }
-                    .buttonStyle(PlainButtonStyle())
 
-                    // Vibração (Normal -> Forte -> Leve -> Desligada)
-                    Button(action: {
-                        hapticModeLabel = hapticManager.cycleHapticMode()
-                        lastActivityDate = Date()
-                    }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: hapticManager.areHapticsEnabled() ? "iphone.radiowaves.left.and.right" : "speaker.slash.fill")
-                                .font(.system(size: 13, weight: .bold))
-                            Text("Vibração: \(hapticModeLabel)")
-                                .font(.system(size: 13, weight: .bold))
-                                .lineLimit(1)
-                            Spacer()
+                    // Row 2: + Série + Trocar Exercício
+                    HStack(spacing: 8) {
+                        controlTile(
+                            icon: "plus.circle.fill",
+                            label: "+ Série",
+                            color: .cyan
+                        ) {
+                            let exIdx = activeWorkout.currentExerciseIndex
+                            if exIdx >= 0 && exIdx < activeWorkout.exercises.count {
+                                hapticManager.playSetCompleted()
+                                connectivityManager.addExtraSet(exerciseIndex: exIdx)
+                                lastActivityDate = Date()
+                                inactivityAlertedOnce = false
+                                withAnimation { activeWorkoutPage = 1 }
+                            }
                         }
-                        .foregroundColor(hapticManager.areHapticsEnabled() ? .yellow : .gray)
-                        .padding(.vertical, 10)
-                        .padding(.horizontal, 12)
-                        .background((hapticManager.areHapticsEnabled() ? Color.yellow : Color.gray).opacity(0.12))
-                        .cornerRadius(10)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke((hapticManager.areHapticsEnabled() ? Color.yellow : Color.gray).opacity(0.3), lineWidth: 0.5)
-                        )
-                    }
-                    .buttonStyle(PlainButtonStyle())
 
-                    // Pause/Resume Workout
-                    Button(action: {
-                        lastActivityDate = Date()
-                        inactivityAlertedOnce = false
-                        connectivityManager.togglePause(currentlyPaused: activeWorkout.paused)
-                    }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: activeWorkout.paused ? "play.fill" : "pause.fill")
-                                .font(.system(size: 14, weight: .bold))
-                            Text(activeWorkout.paused ? "Retomar" : "Pausar")
-                                .font(.system(size: 14, weight: .bold))
-                            Spacer()
+                        controlTile(
+                            icon: "arrow.left.arrow.right",
+                            label: "Trocar",
+                            color: .purple
+                        ) {
+                            lastActivityDate = Date()
+                            inactivityAlertedOnce = false
+                            showSwapExerciseSheet = true
                         }
-                        .foregroundColor(activeWorkout.paused ? .green : .orange)
-                        .padding(.vertical, 10)
-                        .padding(.horizontal, 12)
-                        .background(activeWorkout.paused ? Color.green.opacity(0.12) : Color.orange.opacity(0.12))
-                        .cornerRadius(10)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(activeWorkout.paused ? Color.green.opacity(0.3) : Color.orange.opacity(0.3), lineWidth: 0.5)
-                        )
                     }
-                    .buttonStyle(PlainButtonStyle())
-                    
-                    // Adiar Treino (Postpone)
-                    Button(action: {
-                        connectivityManager.postponeWorkout()
-                    }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "snooze")
-                                .font(.system(size: 14, weight: .bold))
-                            Text("Adiar Treino")
-                                .font(.system(size: 14, weight: .bold))
-                            Spacer()
+
+                    // Row 3: Vibração + Adiar
+                    HStack(spacing: 8) {
+                        controlTile(
+                            icon: hapticManager.areHapticsEnabled() ? "iphone.radiowaves.left.and.right" : "speaker.slash.fill",
+                            label: hapticModeLabel,
+                            color: hapticManager.areHapticsEnabled() ? .yellow : .gray
+                        ) {
+                            hapticModeLabel = hapticManager.cycleHapticMode()
+                            lastActivityDate = Date()
                         }
-                        .foregroundColor(.blue)
-                        .padding(.vertical, 10)
-                        .padding(.horizontal, 12)
-                        .background(Color.blue.opacity(0.12))
-                        .cornerRadius(10)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(Color.blue.opacity(0.3), lineWidth: 0.5)
-                        )
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    
-                    Button(action: {
-                        showingFinishSheet = true
-                    }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "checkmark.seal.fill")
-                                .font(.system(size: 14, weight: .bold))
-                            Text("Finalizar")
-                                .font(.system(size: 14, weight: .bold))
-                            Spacer()
+
+                        controlTile(
+                            icon: "snooze",
+                            label: "Adiar",
+                            color: .blue
+                        ) {
+                            connectivityManager.postponeWorkout()
                         }
-                        .foregroundColor(.green)
-                        .padding(.vertical, 10)
-                        .padding(.horizontal, 12)
-                        .background(Color.green.opacity(0.12))
-                        .cornerRadius(10)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(Color.green.opacity(0.3), lineWidth: 0.5)
-                        )
                     }
-                    .buttonStyle(PlainButtonStyle())
-                    
-                    // Cancelar Treino
+
+                    // Compact Cancelar button
                     Button(action: {
                         showingCancelAlert = true
                     }) {
-                        HStack(spacing: 6) {
+                        HStack(spacing: 5) {
                             Image(systemName: "trash.fill")
-                                .font(.system(size: 14, weight: .bold))
-                            Text("Cancelar")
-                                .font(.system(size: 14, weight: .bold))
-                            Spacer()
+                                .font(.system(size: 11, weight: .bold))
+                            Text("Cancelar Treino")
+                                .font(.system(size: 11, weight: .bold))
                         }
                         .foregroundColor(.red)
-                        .padding(.vertical, 10)
-                        .padding(.horizontal, 12)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
                         .background(Color.red.opacity(0.12))
-                        .cornerRadius(10)
+                        .cornerRadius(12)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(Color.red.opacity(0.3), lineWidth: 0.5)
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.red.opacity(0.28), lineWidth: 0.5)
                         )
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
                 .padding(.horizontal, 4)
-                .padding(.bottom, 20)
+                .padding(.bottom, 16)
             }
         }
         .focusable()
+    }
+
+    private func controlTile(icon: String, label: String, color: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 5) {
+                Image(systemName: icon)
+                    .font(.system(size: 18, weight: .bold))
+                Text(label)
+                    .font(.system(size: 11, weight: .bold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+            .foregroundColor(color)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .padding(.horizontal, 4)
+            .background(color.opacity(0.14))
+            .cornerRadius(14)
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(color.opacity(0.3), lineWidth: 0.6)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
     }
 
     @ViewBuilder
