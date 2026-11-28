@@ -1,13 +1,28 @@
 import Foundation
 import os.log
+import UserNotifications
 #if os(watchOS)
 import WatchKit
 #endif
 
 class WatchHapticManager {
     static let shared = WatchHapticManager()
-    
-    private init() {}
+
+    private let enabledKey = "watch_haptics_enabled"
+    private let intensityKey = "watch_haptics_intensity"
+    private let restNotifId = "watch_rest_timer_end"
+    private var lastScheduledRestEndTimeMs: Int64 = 0
+    private var batterySaverLowIntensity: Bool = false
+
+    private init() {
+        if UserDefaults.standard.object(forKey: enabledKey) != nil {
+            hapticsEnabled = UserDefaults.standard.bool(forKey: enabledKey)
+        }
+        if let raw = UserDefaults.standard.string(forKey: intensityKey),
+           let saved = HapticIntensity(rawValue: raw) {
+            currentIntensity = saved
+        }
+    }
     
     // MARK: - Haptic Patterns
     
@@ -21,21 +36,38 @@ class WatchHapticManager {
         case medium            // Standard feedback
         case heavy             // Strong feedback
     }
+
+    enum HapticIntensity: String {
+        case low
+        case medium
+        case high
+
+        var label: String {
+            switch self {
+            case .low: return "Leve"
+            case .medium: return "Normal"
+            case .high: return "Forte"
+            }
+        }
+    }
     
     // MARK: - Public Methods
     
     private var lastPlayedTime: Date = Date.distantPast
     
-    func play(_ pattern: HapticPattern) {
+    func play(_ pattern: HapticPattern, bypassThrottle: Bool = false) {
         guard hapticsEnabled else { return }
         #if os(watchOS)
         let now = Date()
-        guard now.timeIntervalSince(lastPlayedTime) > 0.1 else { return }
+        if !bypassThrottle {
+            guard now.timeIntervalSince(lastPlayedTime) > 0.1 else { return }
+        }
         lastPlayedTime = now
-        
+
+        let effective = resolvePatternForIntensity(pattern)
         let device = WKInterfaceDevice.current()
         
-        switch pattern {
+        switch effective {
         case .success:
             device.play(.success)
             
@@ -61,8 +93,31 @@ class WatchHapticManager {
             device.play(.stop)
         }
         
-        os_log("Played haptic pattern: %d", log: OSLog(subsystem: "com.losmooscles.watch", category: "Haptic"), type: .info, pattern.hashValue)
+        os_log("Played haptic pattern: %d", log: OSLog(subsystem: "com.losmooscles.watch", category: "Haptic"), type: .info, effective.hashValue)
         #endif
+    }
+
+    private func resolvePatternForIntensity(_ pattern: HapticPattern) -> HapticPattern {
+        let effectiveIntensity: HapticIntensity = batterySaverLowIntensity ? .low : currentIntensity
+        switch effectiveIntensity {
+        case .low:
+            switch pattern {
+            case .success, .medium: return .light
+            case .celebration, .heavy: return .medium
+            case .failure, .warning: return .light
+            default: return pattern
+            }
+        case .medium:
+            return pattern
+        case .high:
+            switch pattern {
+            case .light: return .medium
+            case .medium: return .heavy
+            case .success: return .celebration
+            case .failure: return .warning
+            default: return pattern
+            }
+        }
     }
     
     // MARK: - Context-Specific Methods
@@ -77,9 +132,12 @@ class WatchHapticManager {
         play(.light)
     }
     
-    /// Play haptic when isometry count is finished (clean success burst)
+    /// Play haptic when isometry count is finished (distinctive double tap)
     func playIsometryFinished() {
-        play(.success)
+        play(.success, bypassThrottle: true)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) { [weak self] in
+            self?.play(.heavy, bypassThrottle: true)
+        }
     }
     
     /// Play haptic when failure is registered
@@ -99,12 +157,15 @@ class WatchHapticManager {
     
     /// Play haptic when rest timer finishes
     func playRestTimerFinished() {
-        play(.reminder)
+        playCountdownFinal()
     }
     
-    /// Play haptic when PR is beaten
+    /// Play celebratory double-tap when PR is beaten
     func playPRBeaten() {
-        play(.celebration)
+        play(.success, bypassThrottle: true)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) { [weak self] in
+            self?.play(.celebration, bypassThrottle: true)
+        }
     }
     
     /// Play haptic when workout starts
@@ -112,9 +173,12 @@ class WatchHapticManager {
         play(.medium)
     }
     
-    /// Play haptic when workout finishes
+    /// Play celebratory double-tap when workout finishes
     func playWorkoutFinish() {
-        play(.celebration)
+        play(.success, bypassThrottle: true)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) { [weak self] in
+            self?.play(.celebration, bypassThrottle: true)
+        }
     }
     
     /// Play haptic when exercise changes
@@ -144,49 +208,87 @@ class WatchHapticManager {
     
     /// Play haptic for rest timer countdown warning (3s, 2s, 1s)
     func playCountdownTick() {
-        play(.medium) // Use .start for a more noticeable tick than .click
+        play(.medium, bypassThrottle: true)
     }
     
-    /// Play haptic when rest countdown hits 0 (clean single notification burst)
+    /// Play distinctive double-tap when rest countdown hits 0
     func playCountdownFinal() {
-        play(.heavy) // Use .stop for a strong but shorter burst than .notification
+        play(.reminder, bypassThrottle: true)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
+            self?.play(.heavy, bypassThrottle: true)
+        }
     }
     
     /// Play haptic when workout is cancelled
     func playWorkoutCancelled() {
         play(.failure)
     }
+
+    // MARK: - Background / Wrist-Down Rest End Notification
+
+    func scheduleRestEndNotification(endTimeMs: Int64, nextExerciseName: String) {
+        guard hapticsEnabled else {
+            cancelRestEndNotification()
+            return
+        }
+        guard endTimeMs != lastScheduledRestEndTimeMs else { return }
+        let nowMs = Int64(Date().timeIntervalSince1970 * 1000)
+        let remainingSec = Double(endTimeMs - nowMs) / 1000.0
+        guard remainingSec > 1.0 else {
+            cancelRestEndNotification()
+            return
+        }
+
+        lastScheduledRestEndTimeMs = endTimeMs
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: [restNotifId])
+
+        let content = UNMutableNotificationContent()
+        content.title = "⏱️ Descanso Concluído"
+        content.body = nextExerciseName.isEmpty ? "Hora da próxima série!" : "Próximo: \(nextExerciseName)"
+        content.sound = .default
+
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: remainingSec, repeats: false)
+        let request = UNNotificationRequest(identifier: restNotifId, content: content, trigger: trigger)
+        center.add(request) { error in
+            if let error = error {
+                os_log("Error scheduling watch rest notification: %@", log: OSLog(subsystem: "com.losmooscles.watch", category: "Haptic"), type: .error, error.localizedDescription)
+            }
+        }
+    }
+
+    func cancelRestEndNotification() {
+        lastScheduledRestEndTimeMs = 0
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [restNotifId])
+    }
     
     // MARK: - Custom Patterns
     
-    /// Play custom haptic pattern with specified delays
     func playCustomPattern(patterns: [(HapticPattern, TimeInterval)]) {
         var delay: TimeInterval = 0
         
         for (pattern, patternDelay) in patterns {
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-                self?.play(pattern)
+                self?.play(pattern, bypassThrottle: true)
             }
             delay += patternDelay
         }
     }
     
-    /// Play rhythmic pattern (e.g., for countdown)
     func playRhythmicPattern(count: Int, interval: TimeInterval = 0.5) {
         for i in 0..<count {
             DispatchQueue.main.asyncAfter(deadline: .now() + (Double(i) * interval)) { [weak self] in
-                self?.play(.light)
+                self?.play(.light, bypassThrottle: true)
             }
         }
     }
     
-    /// Play accelerating pattern (e.g., for urgency)
     func playAcceleratingPattern(count: Int, baseInterval: TimeInterval = 0.3) {
         var delay: TimeInterval = 0
         
         for i in 0..<count {
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-                self?.play(.light)
+                self?.play(.light, bypassThrottle: true)
             }
             delay += baseInterval * (1.0 - Double(i) / Double(count))
         }
@@ -195,70 +297,62 @@ class WatchHapticManager {
     // MARK: - Haptic Settings
     
     private var hapticsEnabled = true
+    private var currentIntensity = HapticIntensity.medium
     
     func setHapticsEnabled(_ enabled: Bool) {
         hapticsEnabled = enabled
+        UserDefaults.standard.set(enabled, forKey: enabledKey)
+        if !enabled {
+            cancelRestEndNotification()
+        }
         os_log("Haptics enabled: %d", log: OSLog(subsystem: "com.losmooscles.watch", category: "Haptic"), type: .info, enabled ? 1 : 0)
     }
     
     func areHapticsEnabled() -> Bool {
         return hapticsEnabled
     }
-    
-    // MARK: - Intensity Control
-    
-    enum HapticIntensity {
-        case low
-        case medium
-        case high
+
+    func setBatterySaverLowIntensity(_ active: Bool) {
+        batterySaverLowIntensity = active
     }
-    
-    private var currentIntensity = HapticIntensity.medium
     
     func setHapticIntensity(_ intensity: HapticIntensity) {
         currentIntensity = intensity
-        os_log("Haptic intensity set to: %d", log: OSLog(subsystem: "com.losmooscles.watch", category: "Haptic"), type: .info, intensity.hashValue)
+        UserDefaults.standard.set(intensity.rawValue, forKey: intensityKey)
+        os_log("Haptic intensity set to: %@", log: OSLog(subsystem: "com.losmooscles.watch", category: "Haptic"), type: .info, intensity.rawValue)
     }
     
     func getHapticIntensity() -> HapticIntensity {
         return currentIntensity
     }
-    
-    // MARK: - Play with Intensity
-    
-    func playWithIntensity(_ pattern: HapticPattern) {
-        guard hapticsEnabled else { return }
-        
-        switch currentIntensity {
-        case .low:
-            // Reduce intensity by using lighter patterns
-            switch pattern {
-            case .success, .medium:
-                play(.light)
-            case .celebration, .heavy:
-                play(.medium)
-            case .failure, .warning:
-                play(.light)
-            default:
-                play(pattern)
-            }
-            
-        case .medium:
-            // Normal intensity
-            play(pattern)
-            
-        case .high:
-            // Increase intensity by using stronger patterns
-            switch pattern {
-            case .light, .medium:
-                play(.heavy)
-            case .success:
-                play(.celebration)
-            case .failure:
-                play(.warning)
-            default:
-                play(pattern)
+
+    /// Cycles: Normal -> Forte -> Leve -> Desligada -> Normal
+    func cycleHapticMode() -> String {
+        if !hapticsEnabled {
+            setHapticsEnabled(true)
+            setHapticIntensity(.medium)
+            play(.medium, bypassThrottle: true)
+        } else {
+            switch currentIntensity {
+            case .medium:
+                setHapticIntensity(.high)
+                play(.heavy, bypassThrottle: true)
+            case .high:
+                setHapticIntensity(.low)
+                play(.light, bypassThrottle: true)
+            case .low:
+                setHapticsEnabled(false)
             }
         }
+        return currentModeLabel()
+    }
+
+    func currentModeLabel() -> String {
+        if !hapticsEnabled { return "Desligada" }
+        return currentIntensity.label
+    }
+    
+    func playWithIntensity(_ pattern: HapticPattern) {
+        play(pattern)
     }
 }

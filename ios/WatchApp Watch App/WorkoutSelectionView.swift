@@ -13,7 +13,7 @@ struct PlannedRoutineRow: View {
         HStack(spacing: 6) {
             Button(action: {
                 #if canImport(WatchKit)
-                WKInterfaceDevice.current().play(.click)
+                WatchHapticManager.shared.play(.light)
                 #endif
                 onStartTap(routine.id)
             }) {
@@ -286,7 +286,7 @@ struct WorkoutSelectionView: View {
                             if connectivityManager.isReachable {
                                 Button(action: {
                                     #if canImport(WatchKit)
-                                    WKInterfaceDevice.current().play(.click)
+                                    WatchHapticManager.shared.play(.light)
                                     #endif
                                     connectivityManager.syncOfflineWorkouts()
                                 }) {
@@ -630,9 +630,9 @@ struct WatchWaterView: View {
                                 connectivityManager.updateWaterIntake(newAmountMl: newTotal)
                                 #if os(watchOS)
                                 if Double(newTotal) >= Double(connectivityManager.waterIntakeTarget) {
-                                    WKInterfaceDevice.current().play(.success)
+                                    WatchHapticManager.shared.playWaterIntake()
                                 } else {
-                                    WKInterfaceDevice.current().play(.click)
+                                    WatchHapticManager.shared.play(.light)
                                 }
                                 #endif
                             }) {
@@ -657,7 +657,7 @@ struct WatchWaterView: View {
                         HStack(spacing: 6) {
                             Button(action: {
                                 #if canImport(WatchKit)
-                                WKInterfaceDevice.current().play(.click)
+                                WatchHapticManager.shared.play(.light)
                                 #endif
                                 let newTotal = max(0, connectivityManager.waterIntakeCurrent - 250)
                                 connectivityManager.updateWaterIntake(newAmountMl: newTotal)

@@ -96,9 +96,9 @@ class WatchBatterySaverManager: ObservableObject {
             WorkoutManager.shared.setReducedSensorSampling(enabled: true)
         }
         
-        // Reduce haptic feedback
+        // Reduce haptic feedback without killing rest-timer alerts
         if reducedHapticFeedback {
-            WatchHapticManager.shared.setHapticsEnabled(false)
+            WatchHapticManager.shared.setBatterySaverLowIntensity(true)
         }
         #endif
         
@@ -118,7 +118,7 @@ class WatchBatterySaverManager: ObservableObject {
         
         // Restore haptic feedback
         if reducedHapticFeedback {
-            WatchHapticManager.shared.setHapticsEnabled(true)
+            WatchHapticManager.shared.setBatterySaverLowIntensity(false)
         }
         #endif
         

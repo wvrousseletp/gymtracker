@@ -26,6 +26,15 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
 
     @Published var activeWorkout: WatchActiveWorkoutState? {
         didSet {
+            if let rt = activeWorkout?.restTimer {
+                WatchHapticManager.shared.scheduleRestEndNotification(
+                    endTimeMs: rt.endTime,
+                    nextExerciseName: rt.nextExerciseName
+                )
+            } else {
+                WatchHapticManager.shared.cancelRestEndNotification()
+            }
+
             if isLocalWorkout {
                 if let workout = activeWorkout {
                     WatchLocalWorkoutManager.shared.updateLocalWorkout(workout)
@@ -332,15 +341,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                     let names = data["exerciseNames"] as? [String] ?? []
                     if !names.isEmpty {
                         self.prExerciseNames = names
-                        #if os(watchOS)
-                        WKInterfaceDevice.current().play(.success)
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            WKInterfaceDevice.current().play(.success)
-                        }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                            WKInterfaceDevice.current().play(.notification)
-                        }
-                        #endif
+                        WatchHapticManager.shared.playPRBeaten()
                         // Reseta após 4 segundos para limpar o banner
                         DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
                             self.prExerciseNames = []

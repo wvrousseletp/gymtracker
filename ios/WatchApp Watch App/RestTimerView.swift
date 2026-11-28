@@ -97,9 +97,7 @@ struct RestTimerView: View {
                         }
                         Spacer()
                         Button(action: {
-                            #if canImport(WatchKit)
-                            WKInterfaceDevice.current().play(.click)
-                            #endif
+                            WatchHapticManager.shared.playWaterIntake()
                             connectivityManager.updateWaterIntake(newAmountMl: connectivityManager.waterIntakeCurrent + 250)
                             withAnimation { waterJustAdded = true }
                             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
@@ -177,9 +175,7 @@ struct RestTimerView: View {
                     HStack(spacing: 8) {
                         Button(action: {
                             connectivityManager.adjustRestTimer(by: -15)
-                            #if canImport(WatchKit)
-                            WKInterfaceDevice.current().play(.click)
-                            #endif
+                            WatchHapticManager.shared.play(.light)
                         }) {
                             Text("-15s")
                                 .font(.system(size: 12, weight: .bold, design: .rounded))
@@ -193,9 +189,7 @@ struct RestTimerView: View {
                         
                         Button(action: {
                             connectivityManager.adjustRestTimer(by: 15)
-                            #if canImport(WatchKit)
-                            WKInterfaceDevice.current().play(.click)
-                            #endif
+                            WatchHapticManager.shared.play(.light)
                         }) {
                             Text("+15s")
                                 .font(.system(size: 12, weight: .bold, design: .rounded))

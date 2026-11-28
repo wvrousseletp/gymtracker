@@ -90,6 +90,7 @@ struct ActiveWorkoutView: View {
     @State private var showInactivitySheet: Bool = false
     @State private var lastActivityDate: Date = Date()
     @State private var inactivityAlertedOnce: Bool = false
+    @State private var hapticModeLabel: String = WatchHapticManager.shared.currentModeLabel()
     @State private var isRestTimerMinimized: Bool = false
     @State private var activeWorkoutPage: Int = 1
     @State private var elapsedSeconds: Int = 0
@@ -1232,6 +1233,31 @@ struct ActiveWorkoutView: View {
                     }
                     .buttonStyle(PlainButtonStyle())
 
+                    // Vibração (Normal -> Forte -> Leve -> Desligada)
+                    Button(action: {
+                        hapticModeLabel = hapticManager.cycleHapticMode()
+                        lastActivityDate = Date()
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: hapticManager.areHapticsEnabled() ? "iphone.radiowaves.left.and.right" : "speaker.slash.fill")
+                                .font(.system(size: 13, weight: .bold))
+                            Text("Vibração: \(hapticModeLabel)")
+                                .font(.system(size: 13, weight: .bold))
+                                .lineLimit(1)
+                            Spacer()
+                        }
+                        .foregroundColor(hapticManager.areHapticsEnabled() ? .yellow : .gray)
+                        .padding(.vertical, 10)
+                        .padding(.horizontal, 12)
+                        .background((hapticManager.areHapticsEnabled() ? Color.yellow : Color.gray).opacity(0.12))
+                        .cornerRadius(10)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke((hapticManager.areHapticsEnabled() ? Color.yellow : Color.gray).opacity(0.3), lineWidth: 0.5)
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+
                     // Pause/Resume Workout
                     Button(action: {
                         lastActivityDate = Date()
@@ -1456,7 +1482,7 @@ struct ActiveWorkoutView: View {
         connectivityManager.togglePause(currentlyPaused: activeWorkout.paused)
         
         #if canImport(WatchKit)
-        WKInterfaceDevice.current().play(.notification)
+        WatchHapticManager.shared.playRestTimerFinished()
         #endif
     }
     
@@ -1723,7 +1749,7 @@ struct ActiveWorkoutView: View {
             }
             if let activeWorkout = connectivityManager.activeWorkout {
                 if !activeWorkout.paused &&
-                    connectivityManager.restTimer == nil &&
+                    activeWorkout.restTimer == nil &&
                     !showInactivitySheet &&
                     !showingFinishSheet &&
                     !inactivityAlertedOnce &&
@@ -1796,9 +1822,9 @@ struct ActiveWorkoutView: View {
         .onChange(of: connectivityManager.prExerciseNames) { names in
             if !names.isEmpty {
                 #if canImport(WatchKit)
-                WKInterfaceDevice.current().play(.retry)
+                WatchHapticManager.shared.play(.warning, bypassThrottle: true)
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                    WKInterfaceDevice.current().play(.success)
+                    WatchHapticManager.shared.play(.success, bypassThrottle: true)
                 }
                 #endif
             }
@@ -1898,7 +1924,7 @@ struct WorkoutSummaryView: View {
                 // Botão Finalizar
                 Button(action: {
                     #if canImport(WatchKit)
-                    WKInterfaceDevice.current().play(.success)
+                    WatchHapticManager.shared.play(.success)
                     #endif
                     connectivityManager.completeWorkout(rpe: 8, notes: "Concluído no Watch")
                 }) {
@@ -2018,7 +2044,7 @@ struct WatchPlateCalculatorView: View {
                     Button(action: {
                         barWeight = 20.0
                         #if canImport(WatchKit)
-                        WKInterfaceDevice.current().play(.click)
+                        WatchHapticManager.shared.play(.light)
                         #endif
                     }) {
                         Text("20kg")
@@ -2034,7 +2060,7 @@ struct WatchPlateCalculatorView: View {
                     Button(action: {
                         barWeight = 10.0
                         #if canImport(WatchKit)
-                        WKInterfaceDevice.current().play(.click)
+                        WatchHapticManager.shared.play(.light)
                         #endif
                     }) {
                         Text("10kg")
@@ -2050,7 +2076,7 @@ struct WatchPlateCalculatorView: View {
                     Button(action: {
                         barWeight = 0.0
                         #if canImport(WatchKit)
-                        WKInterfaceDevice.current().play(.click)
+                        WatchHapticManager.shared.play(.light)
                         #endif
                     }) {
                         Text("Sem Barra")
@@ -2192,7 +2218,7 @@ struct WatchExerciseNotesView: View {
                     Button(action: {
                         onSave(noteText)
                         #if canImport(WatchKit)
-                        WKInterfaceDevice.current().play(.success)
+                        WatchHapticManager.shared.play(.success)
                         #endif
                         dismiss()
                     }) {
@@ -2225,7 +2251,7 @@ struct WatchExerciseNotesView: View {
                 noteText += ", \(tag)"
             }
             #if canImport(WatchKit)
-            WKInterfaceDevice.current().play(.click)
+            WatchHapticManager.shared.play(.light)
             #endif
         }) {
             Text(tag)
@@ -2265,7 +2291,7 @@ struct FloatingRestTimerView: View {
             Button(action: {
                 connectivityManager.adjustRestTimer(by: -15)
                 #if canImport(WatchKit)
-                WKInterfaceDevice.current().play(.click)
+                WatchHapticManager.shared.play(.light)
                 #endif
             }) {
                 Text("-15")
@@ -2281,7 +2307,7 @@ struct FloatingRestTimerView: View {
             Button(action: {
                 connectivityManager.adjustRestTimer(by: 15)
                 #if canImport(WatchKit)
-                WKInterfaceDevice.current().play(.click)
+                WatchHapticManager.shared.play(.light)
                 #endif
             }) {
                 Text("+15")
