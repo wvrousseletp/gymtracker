@@ -148,7 +148,6 @@ class WatchDataCache {
         memoryCache["water_current"] = value
         scheduleWrite(key: "cached_water_intake", value: value)
         scheduleWrite(key: "waterIntakeCurrent", value: value)
-        WidgetCenter.shared.reloadAllTimelines()
     }
     
     func getWaterIntakeTarget() -> Int {
@@ -163,7 +162,6 @@ class WatchDataCache {
         memoryCache["water_target"] = value
         scheduleWrite(key: "cached_water_target", value: value)
         scheduleWrite(key: "waterIntakeTarget", value: value)
-        WidgetCenter.shared.reloadAllTimelines()
     }
     
     func getWaterDate() -> String {
@@ -188,12 +186,17 @@ class WatchDataCache {
     }
     
     func setLocalWorkoutState(_ state: WatchActiveWorkoutState?) {
-        if let state = state {
-            if let encoded = try? JSONEncoder().encode(state) {
-                scheduleWrite(key: "local_workout_state", value: encoded)
+        cacheQueue.async { [weak self] in
+            guard let self = self else { return }
+            self.pendingWrites.removeValue(forKey: "local_workout_state")
+            if let state = state, let encoded = try? JSONEncoder().encode(state) {
+                self.userDefaults.set(encoded, forKey: "local_workout_state")
+            } else {
+                self.userDefaults.removeObject(forKey: "local_workout_state")
             }
-        } else {
-            scheduleWrite(key: "local_workout_state", value: nil)
+            DispatchQueue.main.async {
+                WidgetCenter.shared.reloadAllTimelines()
+            }
         }
     }
     
@@ -210,13 +213,14 @@ class WatchDataCache {
     private func scheduleWrite(key: String, value: Any?) {
         cacheQueue.async { [weak self] in
             guard let self = self else { return }
-            self.pendingWrites[key] = value
+            // Use NSNull() sentinel so nil values actually trigger removeObject(forKey:)
+            self.pendingWrites[key] = value ?? NSNull()
             self.debounceWorkItem?.cancel()
             let workItem = DispatchWorkItem { [weak self] in
                 self?.flushPendingWrites()
             }
             self.debounceWorkItem = workItem
-            self.cacheQueue.asyncAfter(deadline: .now() + 1.0, execute: workItem)
+            self.cacheQueue.asyncAfter(deadline: .now() + 0.5, execute: workItem)
         }
     }
     
@@ -229,7 +233,9 @@ class WatchDataCache {
             self.pendingWrites.removeAll()
             
             for (key, value) in writes {
-                if let stringValue = value as? String {
+                if value is NSNull {
+                    self.userDefaults.removeObject(forKey: key)
+                } else if let stringValue = value as? String {
                     self.userDefaults.set(stringValue, forKey: key)
                 } else if let intValue = value as? Int {
                     self.userDefaults.set(intValue, forKey: key)
@@ -245,6 +251,9 @@ class WatchDataCache {
                 } else {
                     self.userDefaults.removeObject(forKey: key)
                 }
+            }
+            DispatchQueue.main.async {
+                WidgetCenter.shared.reloadAllTimelines()
             }
         }
     }

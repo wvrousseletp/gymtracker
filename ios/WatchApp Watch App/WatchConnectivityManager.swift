@@ -252,7 +252,9 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                 if let jsonString = data["activeWorkout"] as? String,
                    let jsonData = jsonString.data(using: .utf8) {
                     do {
-                        self.activeWorkout = try JSONDecoder().decode(WatchActiveWorkoutState.self, from: jsonData)
+                        let decoded = try JSONDecoder().decode(WatchActiveWorkoutState.self, from: jsonData)
+                        self.activeWorkout = decoded
+                        self.cache.setLocalWorkoutState(decoded)
                         receivedActiveWorkout = true
                         if self.pendingHandoffToPhone {
                             self.pendingHandoffToPhone = false
@@ -263,6 +265,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                     }
                 } else if data["clearActiveWorkout"] as? Bool == true {
                     self.activeWorkout = nil
+                    self.cache.setLocalWorkoutState(nil)
                     receivedActiveWorkout = true
                 }
             }
@@ -334,6 +337,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
                 case "clearActiveWorkout", "workoutFinished", "workoutCancelled", "workoutPostponed":
                     if !self.isLocalWorkout {
                         self.activeWorkout = nil
+                        self.cache.setLocalWorkoutState(nil)
                     }
 
                 case "prCelebration":
@@ -1465,6 +1469,7 @@ class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
     }
 
     private func cancelWorkoutLocal() {
+        localWorkoutManager.clearLocalWorkout()
         activeWorkout = nil
         isLocalWorkout = false
         WorkoutManager.shared.endWorkout(save: false)
